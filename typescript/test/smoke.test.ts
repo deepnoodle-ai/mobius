@@ -5,7 +5,6 @@ import {
   Client,
   ConfigError,
   DEFAULT_BASE_URL,
-  isTerminalRunStatus,
 } from "../src/client.js";
 import type { SessionTranscriptFrame } from "../src/api/index.js";
 import {
@@ -60,13 +59,13 @@ test("client: defaults to the production API host", async () => {
   });
   try {
     const client = new Client({ apiKey: "mbx_test" });
-    await client.listLoops();
+    await client.listAgents();
   } finally {
     restore();
   }
   assert.equal(
     requestedURL,
-    `${DEFAULT_BASE_URL}/v1/loops`,
+    `${DEFAULT_BASE_URL}/v1/agents`,
   );
 });
 
@@ -163,98 +162,6 @@ test("client: workerSocketURL uses websocket scheme", () => {
   );
 });
 
-test("client: startRun posts the new request shape", async () => {
-  let requestedURL = "";
-  let requestBody = "";
-  let idempotencyHeader: string | null = null;
-  const restore = installFakeFetch({
-    status: 202,
-    body: loopRun("run_1", "running"),
-    capture: (input, init) => {
-      requestedURL = typeof input === "string" ? input : input.toString();
-      requestBody = String(init?.body ?? "");
-      idempotencyHeader = new Headers(init?.headers).get("Idempotency-Key");
-    },
-  });
-  try {
-    const client = new Client({
-      apiKey: "mbx_test",
-      baseURL: "https://api.example.invalid",
-    });
-    const run = await client.startRun("loop_1", {
-      idempotencyKey: "run-request-1",
-      event: { topic: "sdk" },
-      config: { audience: "operators" },
-    });
-    assert.equal(run.id, "run_1");
-  } finally {
-    restore();
-  }
-  assert.equal(
-    requestedURL,
-    "https://api.example.invalid/v1/loops/loop_1/runs",
-  );
-  assert.match(requestBody, /"idempotency_key":"run-request-1"/);
-  assert.equal(idempotencyHeader, "run-request-1");
-  assert.match(requestBody, /"event":\{"topic":"sdk"\}/);
-  assert.match(requestBody, /"config":\{"audience":"operators"\}/);
-});
-
-test("client: startRun keeps external_id as a deprecated alias", async () => {
-  let requestBody = "";
-  const restore = installFakeFetch({
-    status: 202,
-    body: loopRun("run_1", "running"),
-    capture: (_input, init) => {
-      requestBody = String(init?.body ?? "");
-    },
-  });
-  try {
-    const client = new Client({ apiKey: "mbx_test" });
-    await client.startRun("loop_1", { external_id: "legacy-1" });
-    await assert.rejects(
-      client.startRun("loop_1", { idempotencyKey: "a", external_id: "b" }),
-      ConfigError,
-    );
-  } finally {
-    restore();
-  }
-  assert.match(requestBody, /"idempotency_key":"legacy-1"/);
-});
-
-test("client: run control helpers use loop run endpoints", async () => {
-  const seen: string[] = [];
-  const restore = installFakeFetch({
-    status: 200,
-    body: loopRun("run_1", "cancelled"),
-    capture: (input) => {
-      seen.push(typeof input === "string" ? input : input.toString());
-    },
-  });
-  try {
-    const client = new Client({
-      apiKey: "mbx_test",
-      baseURL: "https://api.example.invalid",
-    });
-    await client.getRun("run_1");
-    await client.cancelRun("run_1", "user requested");
-    await client.signalRun("run_1", "approval", { ok: true });
-  } finally {
-    restore();
-  }
-  assert.ok(seen.some((url) => url.endsWith("/v1/runs/run_1")));
-  assert.ok(
-    seen.some((url) =>
-      url.endsWith("/v1/runs/run_1/cancel"),
-    ),
-  );
-  assert.ok(
-    seen.some((url) =>
-      url.endsWith("/v1/runs/run_1/signals"),
-    ),
-  );
-});
-
 test("client: resolves agents by name and sessions by agent name plus key", async () => {
   const seen: string[] = [];
   const original = globalThis.fetch;
@@ -304,40 +211,8 @@ test("client: resolves agents by name and sessions by agent name plus key", asyn
   assert.equal(seen.filter((url) => url.includes("/agents?name=")).length, 1);
 });
 
-test("smoke: waitRun fetches after stream closes before terminal", async () => {
-  let getCalls = 0;
-  globalThis.fetch = (async (input: RequestInfo | URL) => {
-    const url = typeof input === "string" ? input : input.toString();
-    const path = new URL(url).pathname;
-    if (path.endsWith("/events.stream")) {
-      return new Response(
-        `event: run_updated
-id: 7
-data: {"type":"run_updated","run_id":"run_1","seq":7,"timestamp":"2026-04-27T00:00:00Z","data":{"status":"active"}}
-
-`,
-        { status: 200, headers: { "Content-Type": "text/event-stream" } },
-      );
-    }
-    getCalls += 1;
-    return new Response(
-      JSON.stringify(loopRun("run_1", getCalls === 1 ? "running" : "completed")),
-      { status: 200, headers: { "Content-Type": "application/json" } },
-    );
-  }) as typeof fetch;
-
-  const client = new Client({
-    apiKey: "mbx_test",
-    baseURL: "https://api.example.invalid",
-  });
-  const run = await client.waitRun("run_1", { reconnectDelayMs: 1 });
-
-  assert.equal(run.status, "completed");
-  assert.equal(getCalls, 2);
-});
-
 test("smoke: signing helpers verify and parse webhook deliveries", async () => {
-  const body = `{"type":"run.completed","data":{"id":"run_1"}}`;
+  const body = `{"type":"ping","data":{"id":"run_1"}}`;
   const key = Buffer.from("01234567890123456789012345678901");
   const signature = signDelivery(key, Buffer.from(body), {
     deliveryId: "delivery_1",
@@ -360,7 +235,7 @@ test("smoke: signing helpers verify and parse webhook deliveries", async () => {
     now: () => 1710000005,
   });
   const parsed = parseWebhookDelivery<{ id: string }>(signed);
-  assert.equal(parsed.type, "run.completed");
+  assert.equal(parsed.type, "ping");
   assert.equal(parsed.data.id, "run_1");
   assert.equal(Buffer.from(signed.body).toString("utf8"), body);
 
@@ -406,13 +281,13 @@ test("smoke: synthetic webhook delivery posts signed Mobius envelope", async () 
     secretVersion: 2,
     deliveryId: "delivery_2",
     timestamp: 1710000000,
-    eventType: "run.completed",
+    eventType: "ping",
     data: { id: "run_1" },
     fetch: fetchFn,
   });
 
   assert.equal(requestedURL, "https://example.invalid/webhooks/mobius");
-  assert.equal(eventType, "run.completed");
+  assert.equal(eventType, "ping");
   assert.equal(version, "v1");
   assert.equal(deliveryID, "delivery_2");
   assert.equal(
@@ -424,15 +299,8 @@ test("smoke: synthetic webhook delivery posts signed Mobius envelope", async () 
   );
   assert.equal(
     requestBody,
-    buildSyntheticWebhookPayload("run.completed", { id: "run_1" }),
+    buildSyntheticWebhookPayload("ping", { id: "run_1" }),
   );
-});
-
-test("client: terminal run status helper includes cancelled", () => {
-  assert.equal(isTerminalRunStatus("completed"), true);
-  assert.equal(isTerminalRunStatus("failed"), true);
-  assert.equal(isTerminalRunStatus("cancelled"), true);
-  assert.equal(isTerminalRunStatus("running"), false);
 });
 
 test("client: invokeAgent posts the compound invoke request shape", async () => {
@@ -500,6 +368,8 @@ test("client: invokeAgent posts the compound invoke request shape", async () => 
   assert.match(requestBody, /"context":\[\{"name":"naming-board","content":"Chosen: none"\}\]/);
   assert.match(requestBody, /"session_key":"app:acct_1:user_2"/);
   assert.match(requestBody, /"model_override":"claude-sonnet-5"/);
+  // The stored agent is the sole definition authority: model_override above is
+  // the one execution override an invocation carries, so no inline config.
   assert.doesNotMatch(requestBody, /"config":\{/);
   assert.match(requestBody, /"operation":\{"timeout_seconds":90\}/);
   assert.match(requestBody, /"output":\{"schema":\{"type":"object"\}\}/);
@@ -771,19 +641,6 @@ test("client: invokeAgentStream streams session frames inline", async () => {
     42,
   );
 });
-
-function loopRun(id: string, status: string) {
-  return {
-    id,
-    org_id: "org_1",
-    loop_id: "loop_1",
-    loop_version_id: "lver_1",
-    loop_version: 1,
-    status,
-    created_at: "2026-05-27T00:00:00Z",
-    updated_at: "2026-05-27T00:00:00Z",
-  };
-}
 
 function turnAck(sessionId: string, turnId: string, afterSequence: number) {
   return {

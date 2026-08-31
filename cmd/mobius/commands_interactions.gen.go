@@ -56,6 +56,21 @@ func registerInteractionsCommands(app *cli.App) {
 	interactionsGrp.Command("create").
 		Description("Create interaction").
 		Flags(
+			cli.String("consumer", "").Help("consumer Accepts JSON, @file, or @-."),
+			cli.String("context", "").Help("Additional key-value context surfaced in the UI alongside the title and description. Accepts JSON, @file, or @-."),
+			cli.String("delivery", "").Help("Optional per-interaction delivery override. When absent, each participant is notified via the app inbox only. Accepts JSON, @file, or @-."),
+			cli.String("description", "").Help("Optional longer responder-facing detail or instructions."),
+			cli.String("expires-at", "").Help("Timestamp after which this interaction expires if not responded to. Accepts JSON, @file, or @-."),
+			cli.String("kind", "").Help("[required] Protocol kind of the interaction: * `request_information` — a data-collection protocol with structured or free-form input *…"),
+			cli.String("properties", "").Help("Free-form structured metadata to attach to the interaction. Accepts JSON, @file, or @-."),
+			cli.String("references", "").Help("Supporting links and related entities. Accepts JSON, @file, or @-."),
+			cli.Bool("require-all", "").Help("When true, all target users must respond before the interaction is considered complete. Defaults to false when omitted. Mutually exclusive…"),
+			cli.String("resolution-policy", "").Help("Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome, and whether that… Accepts JSON, @file, or @-."),
+			cli.String("spec", "").Help("Declarative dialog contract for rendering and validating an interaction. Used at both authoring time and runtime (persisted on an… Accepts JSON, @file, or @-."),
+			cli.String("subject", "").Help("Pointer to the work item, artifact, external ticket, or Mobius entity this interaction is about. Accepts JSON, @file, or @-."),
+			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
+			cli.Strings("target-user-ids", "").Help("[required] Resolved user IDs to target directly. At least one target is required — every interaction needs someone who can answer it, even when a…"),
+			cli.String("title", "").Help("[required] Short non-empty title shown to the responder."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -70,11 +85,86 @@ func registerInteractionsCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			if ctx.String("file") == "" {
-				return fmt.Errorf("--file is required")
+			if ctx.IsSet("consumer") {
+				if err := decodeFlagJSON(ctx, "consumer", ctx.String("consumer"), &body.Consumer); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("context") {
+				if err := decodeFlagJSON(ctx, "context", ctx.String("context"), &body.Context); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("delivery") {
+				if err := decodeFlagJSON(ctx, "delivery", ctx.String("delivery"), &body.Delivery); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("description") {
+				v := ctx.String("description")
+				body.Description = &v
+			}
+			if ctx.IsSet("expires-at") {
+				if err := decodeFlagJSON(ctx, "expires-at", ctx.String("expires-at"), &body.ExpiresAt); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("kind") {
+				body.Kind = api.InteractionKind(ctx.String("kind"))
+			}
+			if ctx.IsSet("properties") {
+				if err := decodeFlagJSON(ctx, "properties", ctx.String("properties"), &body.Properties); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("references") {
+				if err := decodeFlagJSON(ctx, "references", ctx.String("references"), &body.References); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("require-all") {
+				v := ctx.Bool("require-all")
+				body.RequireAll = &v
+			}
+			if ctx.IsSet("resolution-policy") {
+				if err := decodeFlagJSON(ctx, "resolution-policy", ctx.String("resolution-policy"), &body.ResolutionPolicy); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("spec") {
+				if err := decodeFlagJSON(ctx, "spec", ctx.String("spec"), &body.Spec); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("subject") {
+				if err := decodeFlagJSON(ctx, "subject", ctx.String("subject"), &body.Subject); err != nil {
+					return err
+				}
+			}
+			if tags, err := parseTagFlags(ctx); err != nil {
+				return err
+			} else if tags != nil {
+				v := api.TagMap(tags)
+				body.Tags = &v
+			}
+			if ctx.IsSet("target-user-ids") {
+				v := ctx.Strings("target-user-ids")
+				body.TargetUserIds = v
+			}
+			if ctx.IsSet("title") {
+				body.Title = ctx.String("title")
+			}
+			if body.Kind == "" {
+				return fmt.Errorf("--kind is required (or supply it via --file)")
+			}
+			if len(body.TargetUserIds) == 0 {
+				return fmt.Errorf("--target-user-ids is required (or supply it via --file)")
+			}
+			if body.Title == "" {
+				return fmt.Errorf("--title is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "consumer", "context", "delivery", "expires_at", "properties", "references", "resolution_policy", "spec", "subject", "tags")
 			}
 			resp, err := client.CreateInteractionWithResponse(ctx.Context(), body)
 			if err != nil {
@@ -124,7 +214,6 @@ func registerInteractionsCommands(app *cli.App) {
 		Flags(
 			cli.String("status", "").Help("Filter by status"),
 			cli.String("kind", "").Help("Filter by interaction protocol kind"),
-			cli.String("run-id", "").Help("Filter by originating run ID"),
 			cli.String("session-id", "").Help("Filter to interactions raised by an agent tool call (`consumer.kind=agent_tool`) whose invocation is a turn of the given chat session. Lets…"),
 			cli.String("target-user-id", "").Help("Filter by resolved target user ID."),
 			cli.Bool("inbox", "").Help("When true, returns only interactions visible to the authenticated user."),
@@ -146,10 +235,6 @@ func registerInteractionsCommands(app *cli.App) {
 			if ctx.IsSet("kind") {
 				v := api.InteractionKind(ctx.String("kind"))
 				params.Kind = &v
-			}
-			if ctx.IsSet("run-id") {
-				v := ctx.String("run-id")
-				params.RunId = &v
 			}
 			if ctx.IsSet("session-id") {
 				v := ctx.String("session-id")

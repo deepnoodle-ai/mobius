@@ -799,6 +799,13 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 			fmt.Fprintf(b, "\t\t\tp%d, err := parseInt64Arg(ctx.Arg(%d), %q)\n", i, argIdx, p.FlagName)
 			fmt.Fprintf(b, "\t\t\tif err != nil { return err }\n")
 			argIdx++
+		case p.GoType != "" && p.GoType != "string":
+			// A path param whose spec declares an inline enum becomes a
+			// DEFINED type in the generated client (type X string), not an
+			// alias, so a bare string does not satisfy the signature. The
+			// conversion is a no-op for aliases, so emit it uniformly.
+			fmt.Fprintf(b, "\t\t\tp%d := api.%s(ctx.Arg(%d))\n", i, p.GoType, argIdx)
+			argIdx++
 		default:
 			if p.GoType == "string" {
 				fmt.Fprintf(b, "\t\t\tp%d := ctx.Arg(%d)\n", i, argIdx)

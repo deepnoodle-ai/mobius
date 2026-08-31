@@ -48,7 +48,6 @@ export interface ActionInvocationOriginV1 {
   kind: ActionInvocationOriginKind;
   runId?: string;
   channelExchangeId?: string;
-  loopId?: string;
   stepKey?: string;
   agentTurnId?: string;
   sessionId?: string;
@@ -401,7 +400,6 @@ function optionalOriginFields(
   const mappings = [
     ["run_id", "runId"],
     ["channel_exchange_id", "channelExchangeId"],
-    ["loop_id", "loopId"],
     ["step_key", "stepKey"],
     ["agent_turn_id", "agentTurnId"],
     ["session_id", "sessionId"],

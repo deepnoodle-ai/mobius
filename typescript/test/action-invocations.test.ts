@@ -37,7 +37,6 @@ test("client: listActionInvocations encodes every filter", async () => {
     },
     async (client) => {
       await client.listActionInvocations({
-        runId: "run_1",
         jobId: "job_1",
         environmentId: "env_1",
         actionName: "crm.sync",
@@ -55,7 +54,6 @@ test("client: listActionInvocations encodes every filter", async () => {
   );
   assert.deepEqual(queries, [
     {
-      run_id: "run_1",
       job_id: "job_1",
       environment_id: "env_1",
       action_name: "crm.sync",

@@ -13,10 +13,10 @@ import (
 )
 
 func TestBuildSyntheticWebhookPayload(t *testing.T) {
-	payload, err := BuildSyntheticWebhookPayload("run.completed", map[string]any{"id": "run_1"})
+	payload, err := BuildSyntheticWebhookPayload("ping", map[string]any{"id": "run_1"})
 	assert.NoError(t, err)
 
-	assertJSONEqual(t, payload, []byte(`{"type":"run.completed","data":{"id":"run_1"}}`))
+	assertJSONEqual(t, payload, []byte(`{"type":"ping","data":{"id":"run_1"}}`))
 }
 
 func assertJSONEqual(t *testing.T, got, want []byte) {
@@ -65,19 +65,19 @@ func TestDeliverSyntheticWebhook(t *testing.T) {
 		SecretVersion: 2,
 		DeliveryID:    "delivery_1",
 		Timestamp:     1710000000,
-		EventType:     "run.completed",
+		EventType:     "ping",
 		Data:          map[string]any{"id": "run_1"},
 	})
 	assert.NoError(t, err)
 
-	assert.Equal(t, "run.completed", gotEventType)
+	assert.Equal(t, "ping", gotEventType)
 	assert.Equal(t, syntheticWebhookUserAgent, gotUserAgent)
 	assert.Equal(t, "v1", gotVersion)
 	assert.Equal(t, "1710000000", gotTimestamp)
 	assert.Equal(t, "delivery_1", gotDeliveryID)
 	assert.Equal(t, "2", gotSecretVersion)
 	assert.Equal(t, SignDelivery(key, gotBody, "delivery_1", 1710000000), gotSignature)
-	assertJSONEqual(t, gotBody, []byte(`{"type":"run.completed","data":{"id":"run_1"}}`))
+	assertJSONEqual(t, gotBody, []byte(`{"type":"ping","data":{"id":"run_1"}}`))
 }
 
 func TestDeliverSyntheticWebhookReturnsReceiverError(t *testing.T) {
@@ -90,7 +90,7 @@ func TestDeliverSyntheticWebhookReturnsReceiverError(t *testing.T) {
 		URL:           server.URL,
 		Key:           []byte("01234567890123456789012345678901"),
 		SecretVersion: 2,
-		EventType:     "run.failed",
+		EventType:     "ping",
 		Data:          json.RawMessage(`{"id":"run_1"}`),
 	})
 	assert.Error(t, err)

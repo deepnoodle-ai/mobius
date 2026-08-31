@@ -30,19 +30,19 @@ var ErrNoDefaultProfile = errors.New("no default profile")
 
 // Profile is one named CLI credential profile.
 type Profile struct {
-	Name          string `toml:"-"`
-	Default       bool   `toml:"default,omitempty"`
-	Source        Source `toml:"source,omitempty"`
-	APIURL        string `toml:"endpoint,omitempty"`
-	Token         string `toml:"token,omitempty"`
-	CredentialID  string `toml:"credential_id,omitempty"`
-	OrgID         string `toml:"org_id,omitempty"`
-	OrgName       string `toml:"org_name,omitempty"`
-	UserID        string `toml:"user_id,omitempty"`
-	UserEmail     string `toml:"user_email,omitempty"`
-	UserName      string `toml:"user_name,omitempty"`
-	CreatedAt     string `toml:"created_at,omitempty"`
-	LastUsedAt    string `toml:"last_used_at,omitempty"`
+	Name         string `toml:"-"`
+	Default      bool   `toml:"default,omitempty"`
+	Source       Source `toml:"source,omitempty"`
+	APIURL       string `toml:"endpoint,omitempty"`
+	Token        string `toml:"token,omitempty"`
+	CredentialID string `toml:"credential_id,omitempty"`
+	OrgID        string `toml:"org_id,omitempty"`
+	OrgName      string `toml:"org_name,omitempty"`
+	UserID       string `toml:"user_id,omitempty"`
+	UserEmail    string `toml:"user_email,omitempty"`
+	UserName     string `toml:"user_name,omitempty"`
+	CreatedAt    string `toml:"created_at,omitempty"`
+	LastUsedAt   string `toml:"last_used_at,omitempty"`
 }
 
 // Credential is kept as a compatibility alias for older single-profile code.

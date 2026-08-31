@@ -967,6 +967,8 @@ def _ack_body() -> dict[str, object]:
             "visibility": "private",
             "posture": "team",
             "version": 1,
+            "owner": {"kind": "person", "id": "user_1"},
+            "posture": "only_you",
             "message_count": 1,
             "token_input_total": 0,
             "cache_read_input_total": 0,

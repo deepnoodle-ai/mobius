@@ -27,7 +27,7 @@ class Error(BaseModel):
     )
     code: str = Field(
         ...,
-        description='Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `loop_paused`, `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family.',
+        description='Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family.',
     )
     message: str = Field(..., description='Human-readable error message')
     details: dict[str, Any] | None = Field(
@@ -47,30 +47,19 @@ class ErrorResponse(BaseModel):
     error: Error = Field(..., description='Error detail.')
 
 
-class GenericEventPayload(BaseModel):
-    """
-    Event-type-specific payload for less common event types.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-
-
 class EventType(StrEnum):
     generation_delta = 'generation.delta'
 
 
 class GenerationDeltaFrame(BaseModel):
     """
-    Live-only token preview frame that can appear on run and session SSE streams. It is not persisted, does not carry an SSE `id:`, and cannot be replayed with `after_sequence` or `Last-Event-ID`.
+    Live-only token preview frame that can appear on session SSE streams. It is not persisted, does not carry an SSE `id:`, and cannot be replayed with `after_sequence` or `Last-Event-ID`.
     """
 
     model_config = ConfigDict(
         extra='allow',
     )
     event_type: EventType
-    run_id: str | None = None
     session_id: str | None = None
     turn_id: str | None = None
     job_id: str | None = None
@@ -264,6 +253,13 @@ class ResourceOwnershipState(BaseModel):
     posture: ResourcePosture
 
 
+class RoutineStatus(StrEnum):
+    active = 'active'
+    paused = 'paused'
+    completed = 'completed'
+    cancelled = 'cancelled'
+
+
 class AgentStatus(StrEnum):
     """
     Administrative status. Inactive agents cannot claim new jobs. Deleted agents are excluded from normal reads.
@@ -284,7 +280,7 @@ class AgentModelRouteMode(StrEnum):
 
 class AgentModelRoute(BaseModel):
     """
-    Default model route used by built-in messaging and by loop agent steps that do not override the route.
+    Default model route used by built-in messaging and by any turn that does not override the route.
     """
 
     model_config = ConfigDict(
@@ -446,7 +442,7 @@ class MemoryContextPolicy(BaseModel):
 
 class ThinkingEffort(StrEnum):
     """
-    Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
+    Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session, or the provider's own default when nothing sets a level.
     """
 
     inherit = 'inherit'
@@ -475,7 +471,7 @@ class AgentVisibility(StrEnum):
 
 class Agent(BaseModel):
     """
-    AI actor identity. An agent IS a principal (its permissions are role grants on that principal); agents are useful when loops need a named actor with instructions, configuration, and session presence.
+    AI actor identity. An agent IS a principal (its permissions are role grants on that principal) with instructions, configuration, and session presence.
     """
 
     model_config = ConfigDict(
@@ -517,7 +513,7 @@ class Agent(BaseModel):
     )
     tool_presentation: AgentToolPresentation | None = Field(
         None,
-        description='Default tool presentation used by loop agent steps and built-in channel-message replies for this agent.',
+        description="Default tool presentation used by this agent's turns and built-in channel-message replies.",
     )
     tool_selectors: list[ActionSelector] | None = Field(
         None,
@@ -533,7 +529,7 @@ class Agent(BaseModel):
     )
     timeout_seconds: int | None = Field(
         None,
-        description="Execution timeout, in seconds, for a single turn of this agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A loop step's own timeout overrides this for that step.",
+        description="Execution timeout, in seconds, for a single turn of this agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A request's `operation.timeout_seconds` overrides this for that turn.",
         ge=0,
     )
     compaction_policy: SessionCompactionPolicy | None = Field(
@@ -550,7 +546,7 @@ class Agent(BaseModel):
     )
     thinking_effort: ThinkingEffort | None = Field(
         None,
-        description='Default reasoning-effort level. New sessions and loop agent steps inherit it, above the provider default and below explicit per-session/per-step overrides. Absent when the agent has no default.',
+        description='Default reasoning-effort level. New sessions inherit it, above the provider default and below an explicit per-session override. Absent when the agent has no default.',
     )
     status: AgentStatus = Field(
         ..., description='Current agent status: `active` or `inactive`.'
@@ -611,22 +607,20 @@ class SessionStatus(StrEnum):
 
 class SessionOrigin(StrEnum):
     """
-    Surface that created the session: `manual`, `api`, `loop`, or `interaction`.
+    Surface that created the session: `manual`, `api`, or `interaction`.
     """
 
     manual = 'manual'
     api = 'api'
-    loop = 'loop'
     interaction = 'interaction'
 
 
 class SessionScope(StrEnum):
     """
-    Boundary used to resolve named sessions: `agent` or `loop`.
+    Boundary used to resolve named sessions.
     """
 
     agent = 'agent'
-    loop = 'loop'
 
 
 class Mode(StrEnum):
@@ -809,6 +803,14 @@ class Session(BaseModel):
         ...,
         description='Lifetime prompt-cache-write (cache creation) input-token total for this session.',
     )
+    next_routine_fire_at: AwareDatetime | None = Field(
+        None,
+        description="Earliest next fire among the caller's active routines in this conversation.",
+    )
+    unread_scheduled_result: bool | None = Field(
+        None,
+        description='True when the routine owner has not opened this conversation since its latest admitted scheduled result settled.',
+    )
     version: int = Field(
         ..., description='Optimistic-concurrency version. Increments on every mutation.'
     )
@@ -867,498 +869,9 @@ class SessionMessageEntryType(StrEnum):
     compaction = 'compaction'
 
 
-class LoopRunStepKind(StrEnum):
-    """
-    Step type: `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, `check`, or system-materialized `cleanup`. `cleanup` appears in run step listings for terminal cleanup work but cannot be authored in a `LoopSpec`.
-    """
-
-    agent = 'agent'
-    action = 'action'
-    sleep = 'sleep'
-    wait_for_event = 'wait_for_event'
-    interaction = 'interaction'
-    loop = 'loop'
-    check = 'check'
-    cleanup = 'cleanup'
-
-
-class LoopRunStepStatus(StrEnum):
-    """
-    Step lifecycle state: `pending`, `running`, `suspended`, `completed`, `failed`, `skipped`, or `cancelled`.
-    """
-
-    pending = 'pending'
-    running = 'running'
-    suspended = 'suspended'
-    completed = 'completed'
-    failed = 'failed'
-    skipped = 'skipped'
-    cancelled = 'cancelled'
-
-
-class Verdict(StrEnum):
-    """
-    Check outcome for `check`-kind steps: `pass` or `fail`; absent on every other kind. A failed check routed `on_fail: continue` completes the step with `verdict: fail` — status and verdict are separate axes (the step did its job: it checked).
-    """
-
-    pass_ = 'pass'
-    fail = 'fail'
-
-
-class LoopRunStep(BaseModel):
-    """
-    One execution step inside a loop run.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Stable step identifier.')
-    run_id: str = Field(..., description='Run this step belongs to.')
-    step_key: str = Field(
-        ..., description='Stable key for this step within its loop version.'
-    )
-    step_name: str | None = Field(
-        None, description='Display name from the authored spec, when present.'
-    )
-    kind: LoopRunStepKind = Field(
-        ...,
-        description='Step kind copied from the authored spec or system cleanup step.',
-    )
-    status: LoopRunStepStatus = Field(
-        ..., description='Current lifecycle state of this run step.'
-    )
-    seq: int = Field(
-        ..., description='Zero-indexed ordinal of this step within its run.'
-    )
-    attempt: int = Field(
-        ..., description='Number of times this step has been attempted.'
-    )
-    inputs: dict[str, Any] | None = Field(
-        None,
-        description='Resolved inputs passed into the step, after template rendering.',
-    )
-    parameters: dict[str, Any] | None = Field(
-        None, description='Authored step parameters, before template rendering.'
-    )
-    result: Any | None = Field(
-        None,
-        description='Step output (shape varies by kind); absent until completion. Downstream step templates reach this value at `${{ steps.<id>.output }}` or `${{ steps[0].output }}`.',
-    )
-    job_id: str | None = Field(
-        None, description='Worker job that executed this step, when applicable.'
-    )
-    wait_id: str | None = Field(
-        None, description='Wait record this step is suspended on, when applicable.'
-    )
-    session_id: str | None = Field(
-        None,
-        description="Session the agent ran in, for `agent`-kind steps. Present once the step has started a turn; links the step to its conversation so the UI can open the transcript with this step's messages highlighted.",
-    )
-    agent_id: str | None = Field(
-        None, description='Agent that executed this step, for `agent`-kind steps.'
-    )
-    agent_turn_id: str | None = Field(
-        None,
-        description="Most recent AgentTurn this step ran (its latest attempt), for `agent`-kind steps. Resolves to the step's messages within the session via their `turn_id`.",
-    )
-    error_type: str | None = Field(
-        None, description='Machine-readable error code populated on failure.'
-    )
-    error_message: str | None = Field(
-        None, description='Human-readable error message populated on failure.'
-    )
-    verdict: Verdict | None = Field(
-        None,
-        description='Check outcome for `check`-kind steps: `pass` or `fail`; absent on every other kind. A failed check routed `on_fail: continue` completes the step with `verdict: fail` — status and verdict are separate axes (the step did its job: it checked).',
-    )
-    verdict_detail: dict[str, Any] | None = Field(
-        None,
-        description='Verdict document for `check`-kind steps: `verdict`, `on_fail`, `checks` (per-assertion results — name, kind, pass, expr or judge reason, judge identity, evidence refs), `failed` (red assertion names), and `overridden_by` / `gate` records when an approval gate resolved the verdict.',
-    )
-    started_at: AwareDatetime | None = Field(
-        None, description='Time the step entered `running`; null until the step starts.'
-    )
-    completed_at: AwareDatetime | None = Field(
-        None,
-        description='Time the step reached a terminal status; null until the step completes.',
-    )
-    created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
-    updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
-
-
-class RunStartedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    loop_id: str | None = None
-    loop_version_id: str | None = None
-    source_event_id: str | None = None
-    trigger_id: str | None = None
-
-
-class WaitPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    step: str | None = None
-    event_type: str | None = Field(
-        None, description='Source event type or pattern this wait is listening for.'
-    )
-    source_id: str | None = Field(
-        None, description='Optional source identifier that scopes event matching.'
-    )
-    match: dict[str, Any] | None = Field(
-        None, description='Optional matcher fields required on the source event.'
-    )
-    wait_id: str | None = None
-    wait_kind: str | None = None
-    expires_at: AwareDatetime | None = Field(
-        None, description='Wall-clock expiry for the wait, when bounded.'
-    )
-    deadline: AwareDatetime | None = None
-    subject: dict[str, Any] | None = None
-
-
-class RecoveryAction(StrEnum):
-    resume = 'resume'
-    retry = 'retry'
-
-
-class RunResumedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    step: str | None = None
-    reason: str | None = None
-    recovery_action: RecoveryAction | None = None
-    attempt: int | None = None
-
-
-class RunCompletedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    output: dict[str, Any] | None = None
-
-
-class RunFailedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    error: str | None = None
-    error_type: str | None = None
-    step: str | None = None
-
-
-class RunCancelledPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    reason: str | None = None
-
-
-class StepStartedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    step: str | None = None
-    kind: str | None = None
-    agent_id: str | None = None
-
-
-class StepCompletedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    step: str | None = None
-    output: dict[str, Any] | None = None
-
-
-class StepFailedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    step: str | None = None
-    error: str | None = None
-    error_type: str | None = None
-
-
-class RetryScope(StrEnum):
-    """
-    Retry source. `step_policy` means the authored step retry policy was consumed, `transient` means Mobius retried a transient provider failure before spending step retry budget, and `run_recovery` means an operator resumed or retried a failed run in place.
-    """
-
-    step_policy = 'step_policy'
-    transient = 'transient'
-    run_recovery = 'run_recovery'
-
-
-class RecoveryAction1(StrEnum):
-    """
-    Operator intent for a `run_recovery` retry. Named consistently with `RunResumedPayload.recovery_action`.
-    """
-
-    resume = 'resume'
-    retry = 'retry'
-
-
-class StepRetriedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    step: str | None = None
-    kind: str | None = None
-    attempt: int | None = None
-    max_attempts: int | None = None
-    retry_scope: RetryScope | None = Field(
-        None,
-        description='Retry source. `step_policy` means the authored step retry policy was consumed, `transient` means Mobius retried a transient provider failure before spending step retry budget, and `run_recovery` means an operator resumed or retried a failed run in place.',
-    )
-    recovery_action: RecoveryAction1 | None = Field(
-        None,
-        description='Operator intent for a `run_recovery` retry. Named consistently with `RunResumedPayload.recovery_action`.',
-    )
-    error_type: str | None = None
-    error: str | None = None
-
-
-class StepResumedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    step: str | None = None
-    kind: str | None = None
-
-
-class StepSkippedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    step: str | None = None
-    kind: str | None = None
-    reason: str | None = None
-
-
-class ActionCalledPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    action: str | None = None
-    step: str | None = None
-    parameters: dict[str, Any] | None = None
-
-
-class ActionCompletedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    action: str | None = None
-    step: str | None = None
-    result: dict[str, Any] | None = None
-
-
-class ActionFailedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    action: str | None = None
-    step: str | None = None
-    error: str | None = None
-    error_type: str | None = None
-
-
-class ActionRetriedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    action: str | None = None
-    attempt: int | None = None
-    max_attempts: int | None = None
-
-
-class ActionResultPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    action: str | None = None
-    result: dict[str, Any] | None = None
-
-
-class CheckVerdictPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    step: str | None = None
-    verdict: str | None = None
-    on_fail: str | None = None
-    failed: list[str] | None = None
-
-
-class InteractionRespondedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    interaction_id: str | None = None
-    response: dict[str, Any] | None = None
-    responder: dict[str, Any] | None = None
-
-
-class WaitResumedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    step: str | None = None
-    wait_id: str | None = None
-    payload: dict[str, Any] | None = None
-
-
-class WaitTimedOutPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    step: str | None = None
-    wait_id: str | None = None
-    reason: str | None = None
-
-
-class BudgetExceededPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    step: str | None = None
-    credit_spent: float | None = None
-    credit_budget: float | None = None
-    percent_used: int | None = None
-
-
-class ProgressStalledPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    step: str | None = None
-    tool: str | None = None
-    duplicate_calls: int | None = None
-    limit: int | None = None
-
-
-class LimitReachedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    step: str | None = None
-    limit_kind: str | None = None
-    used: int | None = None
-    limit: int | None = None
-
-
-class ArtifactCreatedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    artifact_id: str | None = None
-    name: str | None = None
-    content_type: str | None = None
-    step: str | None = None
-
-
-class RunEventPayload(
-    RootModel[
-        RunStartedPayload
-        | WaitPayload
-        | RunResumedPayload
-        | RunCompletedPayload
-        | RunFailedPayload
-        | RunCancelledPayload
-        | StepStartedPayload
-        | StepCompletedPayload
-        | StepFailedPayload
-        | StepRetriedPayload
-        | StepResumedPayload
-        | StepSkippedPayload
-        | ActionCalledPayload
-        | ActionCompletedPayload
-        | ActionFailedPayload
-        | ActionRetriedPayload
-        | ActionResultPayload
-        | CheckVerdictPayload
-        | InteractionRespondedPayload
-        | WaitResumedPayload
-        | WaitTimedOutPayload
-        | BudgetExceededPayload
-        | ProgressStalledPayload
-        | LimitReachedPayload
-        | ArtifactCreatedPayload
-        | GenericEventPayload
-    ]
-):
-    root: (
-        RunStartedPayload
-        | WaitPayload
-        | RunResumedPayload
-        | RunCompletedPayload
-        | RunFailedPayload
-        | RunCancelledPayload
-        | StepStartedPayload
-        | StepCompletedPayload
-        | StepFailedPayload
-        | StepRetriedPayload
-        | StepResumedPayload
-        | StepSkippedPayload
-        | ActionCalledPayload
-        | ActionCompletedPayload
-        | ActionFailedPayload
-        | ActionRetriedPayload
-        | ActionResultPayload
-        | CheckVerdictPayload
-        | InteractionRespondedPayload
-        | WaitResumedPayload
-        | WaitTimedOutPayload
-        | BudgetExceededPayload
-        | ProgressStalledPayload
-        | LimitReachedPayload
-        | ArtifactCreatedPayload
-        | GenericEventPayload
-    ) = Field(
-        ...,
-        description='Typed payloads for common durable run event types. The containing `LoopRunEvent.event_type` selects the payload shape; payload objects do not duplicate that discriminator because some payloads use fields such as `event_type` for their own lifecycle data (for example, the external matcher recorded by `wait.opened`).',
-    )
-
-
-class LoopRunEvent(BaseModel):
-    """
-    One durable event emitted while a loop run progresses.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Stable event identifier.')
-    run_id: str = Field(..., description='Run this event belongs to.')
-    sequence: int = Field(
-        ...,
-        description='Monotonic per-run sequence number used for ordering and resume.',
-    )
-    event_type: str = Field(
-        ...,
-        description="Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`).\n\nGuardrail events: `run.budget_exceeded` fires when the budget halts the run at a checkpoint (payload: `credit_budget`, `credit_spent`, `percent_used`, plus the `step` it halted before). Metered spend is recorded in the billing ledger and denormalized onto the run's `credit_spent`; it is not represented as a timeline event.",
-    )
-    step_id: str | None = Field(
-        None, description='ID of the step this event belongs to, when applicable.'
-    )
-    step_key: str | None = Field(
-        None,
-        description='Legacy alias for the loop step ID this event belongs to, when applicable.',
-    )
-    payload: RunEventPayload | None = None
-    created_at: AwareDatetime = Field(
-        ..., description='Server timestamp when the event was recorded.'
-    )
-
-
 class APIKey(BaseModel):
     """
-    Stored API credential metadata for loop and service access. The raw secret is never returned here; use this object to list, audit, expire, or identify keys by prefix without exposing tokens.
+    Stored API credential metadata for agent and service access. The raw secret is never returned here; use this object to list, audit, expire, or identify keys by prefix without exposing tokens.
     """
 
     model_config = ConfigDict(
@@ -1460,7 +973,7 @@ class APIKeyListResponse(BaseModel):
 
 class Role(StrEnum):
     """
-    System role the key acts as when `principal_id` is omitted, applied org-wide. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org administration without billing; lower roles narrow to build/run, run-only, or read-only. Ignored when `principal_id` is set.
+    Mandatory scope role when `principal_id` is omitted. The permanent organization principal holds Owner, and this credential scope can only narrow it. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org administration without billing; lower roles narrow to build/run, run-only, or read-only. Ignored when `principal_id` is set.
     """
 
     Owner = 'Owner'
@@ -1472,7 +985,7 @@ class Role(StrEnum):
 
 class CreateAPIKeyRequest(BaseModel):
     """
-    Request shape for creating an organization API key. Pass `principal_id` to bind the key to an existing machine principal — the key authenticates as that principal, and permissions are managed by assigning roles to the principal rather than to the key. Omit `principal_id` to mint a key that acts directly with the chosen system `role` instead.
+    Request shape for creating an organization API key. Pass `principal_id` to bind the key to an existing machine principal — the key authenticates as that principal, and permissions are managed by assigning roles to the principal rather than to the key. Omit `principal_id` to bind the key to the permanent organization principal; the chosen system `role` is stored as the credential scope.
     """
 
     model_config = ConfigDict(
@@ -1483,7 +996,7 @@ class CreateAPIKeyRequest(BaseModel):
     )
     principal_id: str | None = Field(
         None,
-        description='Principal this key authenticates as. Omit to create a system-role key not bound to any principal.',
+        description='Principal this key authenticates as. Omit to use the permanent organization principal with the requested role as a mandatory scope.',
     )
     scope_role_id: str | None = Field(
         None,
@@ -1495,7 +1008,7 @@ class CreateAPIKeyRequest(BaseModel):
     )
     role: Role = Field(
         'Admin',
-        description='System role the key acts as when `principal_id` is omitted, applied org-wide. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org administration without billing; lower roles narrow to build/run, run-only, or read-only. Ignored when `principal_id` is set.',
+        description='Mandatory scope role when `principal_id` is omitted. The permanent organization principal holds Owner, and this credential scope can only narrow it. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org administration without billing; lower roles narrow to build/run, run-only, or read-only. Ignored when `principal_id` is set.',
     )
     expires_at: AwareDatetime | None = Field(
         None, description='Optional hard expiry. Omit for a non-expiring key.'
@@ -1558,7 +1071,7 @@ class ActionEndpointKind(StrEnum):
 
 class ActionInvocationFormat(StrEnum):
     """
-    Outbound request-body contract for an HTTP action. `legacy` sends the unversioned `{run_id, step_key, parameters}` body. `signed_context_v1` sends a versioned envelope whose org, action, actor, and origin claims are derived by Mobius and covered by the existing HMAC signature. Worker-backed actions must use `legacy`.
+    Outbound request-body contract for an HTTP action. `legacy` sends the unversioned `{step_key, parameters}` body. `signed_context_v1` sends a versioned envelope whose org, action, actor, and origin claims are derived by Mobius and covered by the existing HMAC signature. Worker-backed actions must use `legacy`.
     """
 
     legacy = 'legacy'
@@ -1615,9 +1128,7 @@ class ActionInvocationOriginV1(BaseModel):
         extra='allow',
     )
     kind: Kind2
-    run_id: str | None = None
     channel_exchange_id: str | None = None
-    loop_id: str | None = None
     step_key: str | None = None
     agent_turn_id: str | None = None
     session_id: str | None = None
@@ -1626,7 +1137,7 @@ class ActionInvocationOriginV1(BaseModel):
 
 class CreateActionRequest(BaseModel):
     """
-    Registers an org-owned custom action callable from loops and agents.
+    Registers an org-owned custom action agents can call as a tool.
     """
 
     model_config = ConfigDict(
@@ -1634,7 +1145,7 @@ class CreateActionRequest(BaseModel):
     )
     name: str = Field(
         ...,
-        description='Identifier used in loop step definitions. Lowercase alphanumeric + hyphens, e.g. "send-email". Must be unique within the org. Cannot start with "mobius." (reserved prefix).',
+        description='Identifier agents and direct invocations call the action by. Lowercase alphanumeric + hyphens, e.g. "send-email". Must be unique within the org. Cannot start with "mobius." (reserved prefix).',
     )
     title: str | None = Field(
         None, description='Human-readable display name shown in the UI and catalog.'
@@ -1708,7 +1219,7 @@ class UpdateActionRequest(BaseModel):
 
 class Action(BaseModel):
     """
-    Org-owned custom action definition callable by loops and agents.
+    Org-owned custom action definition agents can call as a tool.
     """
 
     model_config = ConfigDict(
@@ -1719,7 +1230,7 @@ class Action(BaseModel):
     visibility: ResourceVisibility
     container: ResourceContainer | None = None
     posture: ResourcePosture
-    name: str = Field(..., description='Stable identifier used in loop definitions.')
+    name: str = Field(..., description='Stable identifier the action is called by.')
     title: str | None = Field(
         None, description='Human-readable display title for the action.'
     )
@@ -1837,7 +1348,7 @@ class DefaultLocation(StrEnum):
 
 class ActionExecutionMetadata(BaseModel):
     """
-    Execution-location metadata surfaced to loop authors and action pickers.
+    Execution-location metadata surfaced to action pickers.
     """
 
     model_config = ConfigDict(
@@ -1907,9 +1418,6 @@ class ActionInvocationResult(BaseModel):
     job_id: str | None = Field(
         None, description='Job created for this direct invocation.'
     )
-    run_id: str | None = Field(
-        None, description='Loop run ID. Present when an asynchronous run was created.'
-    )
     output: dict[str, Any] | None = Field(
         None, description='Action output. Present when status is "completed".'
     )
@@ -1947,9 +1455,6 @@ class ActionInvocationEntry(BaseModel):
         extra='forbid',
     )
     id: str = Field(..., description='Unique identifier for this invocation record.')
-    run_id: str | None = Field(
-        None, description='Loop run that triggered this invocation, if run-backed.'
-    )
     job_id: str | None = Field(
         None, description='Job that triggered this invocation, if job-backed.'
     )
@@ -1958,7 +1463,7 @@ class ActionInvocationEntry(BaseModel):
         description='Environment that executed this invocation, if environment-backed.',
     )
     step_name: str | None = Field(
-        None, description='Loop step name that triggered this invocation.'
+        None, description='Name of the step that triggered this invocation.'
     )
     action_id: str | None = Field(
         None, description='Immutable action definition ID used for this invocation.'
@@ -1981,10 +1486,6 @@ class ActionInvocationEntry(BaseModel):
     )
     agent_id: str | None = Field(
         None, description='Agent resource ID when the actor was an agent.'
-    )
-    loop_id: str | None = Field(
-        None,
-        description='Loop definition correlated with this invocation, when applicable.',
     )
     channel_exchange_id: str | None = Field(
         None,
@@ -2017,7 +1518,10 @@ class ActionInvocationEntry(BaseModel):
         ge=100,
         le=599,
     )
-    source: str = Field(..., description='Invocation source ("loop", "direct", etc.).')
+    source: str = Field(
+        ...,
+        description='The job origin that produced this invocation: `agent_tool_call`, `loop_action_step`, `direct_action_invoke`, or `server_internal`.',
+    )
     parameters: dict[str, Any] | None = Field(
         None, description='Input parameters passed to the action.'
     )
@@ -2193,192 +1697,6 @@ class WorkerModelRoute(BaseModel):
     )
     model: str = Field(
         ..., description='Model identifier advertised by the local worker.'
-    )
-
-
-class EnvironmentProvider(StrEnum):
-    """
-    Backing provider: `sprites`, `cloudflare_containers`, or `worker`.
-    """
-
-    sprites = 'sprites'
-    cloudflare_containers = 'cloudflare_containers'
-    worker = 'worker'
-
-
-class ProvisionEnvironmentProvider(StrEnum):
-    """
-    Providers the control plane can provision on demand. Worker-provided environments are registered out-of-band via the attach endpoint and are never provisioned through create/acquire.
-    """
-
-    sprites = 'sprites'
-
-
-class EnvironmentStatus(StrEnum):
-    """
-    Lifecycle status: `provisioning`, `ready`, `running`, `retained`, `destroying`, `destroyed`, `failed`, or `orphaned`.
-    """
-
-    provisioning = 'provisioning'
-    ready = 'ready'
-    running = 'running'
-    retained = 'retained'
-    destroying = 'destroying'
-    destroyed = 'destroyed'
-    failed = 'failed'
-    orphaned = 'orphaned'
-
-
-class EnvironmentLifetime(StrEnum):
-    """
-    Lifecycle owner for automatic cleanup. `run` environments are destroyed during their owning run's Finalize phase; `lease` environments are reaped after lease expiry; `explicit` environments require an explicit destroy call.
-    """
-
-    run = 'run'
-    lease = 'lease'
-    explicit = 'explicit'
-
-
-class EnvironmentMode(StrEnum):
-    """
-    High-level ownership policy for how Mobius plans to use the environment. `run` is one-shot and auto-cleaned with a run; `agent` and `loop` are persistent environment policies; `manual` is operator controlled.
-    """
-
-    manual = 'manual'
-    run = 'run'
-    agent = 'agent'
-    loop = 'loop'
-
-
-class EnvironmentRetentionPolicy(StrEnum):
-    """
-    Retention behavior: `manual`, `destroy_on_success`, `retain_on_failure`, or `retain_always`.
-    """
-
-    manual = 'manual'
-    destroy_on_success = 'destroy_on_success'
-    retain_on_failure = 'retain_on_failure'
-    retain_always = 'retain_always'
-
-
-class EnvironmentCleanupStatus(StrEnum):
-    """
-    Cleanup outcome: `none`, `pending`, `succeeded`, `failed`, or `skipped`.
-    """
-
-    none = 'none'
-    pending = 'pending'
-    succeeded = 'succeeded'
-    failed = 'failed'
-    skipped = 'skipped'
-
-
-class Environment(BaseModel):
-    """
-    Durable execution environment summary.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Unique environment identifier.')
-    name: str = Field(..., description='Human-readable environment name.')
-    owner: ResourceOwner
-    visibility: ResourceVisibility
-    container: ResourceContainer | None
-    posture: ResourcePosture
-    provider: EnvironmentProvider = Field(
-        ..., description='Backing environment provider.'
-    )
-    status: EnvironmentStatus = Field(
-        ..., description='Current provisioning and lifecycle status.'
-    )
-    lifetime: EnvironmentLifetime = Field(
-        ..., description='How long the environment is expected to live.'
-    )
-    current_worker_session_id: str | None = Field(
-        None,
-        description='Worker session currently attached to this environment, when any.',
-    )
-    tags: TagMap | None = Field(
-        None, description='Optional labels for filtering and organization.'
-    )
-    cleanup_status: EnvironmentCleanupStatus = Field(
-        ..., description='Last cleanup outcome.'
-    )
-    retention_policy: EnvironmentRetentionPolicy = Field(
-        ..., description='Retention behavior after work completes.'
-    )
-    last_seen_at: AwareDatetime | None = Field(
-        None, description='Last time the provider or worker reported the environment.'
-    )
-    created_at: AwareDatetime = Field(
-        ..., description='Time the environment record was created.'
-    )
-    updated_at: AwareDatetime = Field(
-        ..., description='Time the environment record was last updated.'
-    )
-
-
-class EnvironmentListResponse(BaseModel):
-    """
-    Cursor-paginated list of environments.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[Environment] = Field(
-        ..., description='Environments in the current page.'
-    )
-    has_more: bool = Field(..., description='Whether another page is available.')
-    next_cursor: str | None = Field(
-        None, description='Cursor to pass on the next request when `has_more` is true.'
-    )
-
-
-class TemplateId(StrEnum):
-    """
-    V1 supports only coding-default.
-    """
-
-    coding_default = 'coding-default'
-
-
-class CreateEnvironmentRequest(BaseModel):
-    """
-    Request body for creating a managed environment.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str | None = Field(None, description='Human-readable environment name.')
-    provider: ProvisionEnvironmentProvider | None = Field(
-        None, description='Provider to provision.'
-    )
-    owner: ResourceOwner | None = None
-    visibility: ResourceVisibility | None = None
-    template_id: TemplateId | None = Field(
-        None, description='V1 supports only coding-default.'
-    )
-    tags: TagMap | None = Field(
-        None, description='Labels used for filtering, ownership, or cleanup policy.'
-    )
-
-
-class UpdateEnvironmentRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    owner: ResourceOwner | None = None
-    visibility: ResourceVisibility | None = None
-    confirm_audience_expansion: bool = Field(
-        False,
-        description='Required when sharing with the organization, handing custody to the team, or detaching a narrowing container.',
-    )
-    tags: TagMap | None = Field(
-        None, description='Replacement labels; send an empty object to clear all tags.'
     )
 
 
@@ -2564,8 +1882,6 @@ class WorkerSocketClaimedJob(BaseModel):
     )
     provider: str | None = Field(None, description='Present for `llm_generation` jobs.')
     model: str | None = Field(None, description='Present for `llm_generation` jobs.')
-    run_id: str | None = None
-    step_id: str | None = None
     agent_turn_id: str | None = None
     session_id: str | None = None
     tool_call_id: str | None = None
@@ -2795,200 +2111,6 @@ class WorkerSocketErrorFrame(BaseModel):
     error: WorkerSocketProtocolError
 
 
-class WebhookDeliveryStatus(StrEnum):
-    """
-    `pending` — queued, not yet attempted. `processing` — currently being delivered. `delivered` — recipient returned 2xx. `failed` — all retry attempts exhausted.
-    """
-
-    pending = 'pending'
-    processing = 'processing'
-    delivered = 'delivered'
-    failed = 'failed'
-
-
-class Webhook(BaseModel):
-    """
-    An org-level outgoing webhook subscription. When a subscribed event fires, Mobius POSTs the event payload to `url`.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Unique identifier for this webhook.')
-    owner: ResourceOwner
-    visibility: ResourceVisibility
-    container: ResourceContainer | None = None
-    posture: ResourcePosture
-    name: str = Field(..., description='Human-readable name, unique within the org.')
-    url: str = Field(
-        ..., description='The customer endpoint Mobius POSTs event payloads to.'
-    )
-    events: list[str] = Field(
-        ...,
-        description='Subscribed event types. Use dot notation (`run.completed`, `run.failed`) or wildcards (`run.*` for all run events). An empty list subscribes to all event types.',
-    )
-    enabled: bool = Field(
-        ..., description='When false, matching events are not delivered.'
-    )
-    created_by: str | None = Field(
-        None, description='User ID of the principal who created this webhook.'
-    )
-    updated_by: str | None = Field(
-        None, description='User ID of the principal who last updated this webhook.'
-    )
-    tags: TagMap | None = Field(
-        None,
-        description='Free-form labels used for filtering, ownership, or delivery policy.',
-    )
-    secret_version: int | None = Field(
-        None,
-        description='Internal vault version created by this response. Only populated on create and rotate responses.',
-    )
-    signing_secret: str | None = Field(
-        None,
-        description='One-time `whsec_` plus raw-URL-base64 encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; absent on all other reads. Store this value securely on first receipt — it cannot be retrieved again.',
-    )
-    created_at: AwareDatetime = Field(
-        ..., description='Timestamp when this webhook was created.'
-    )
-    updated_at: AwareDatetime = Field(
-        ..., description='Timestamp when this webhook was last updated.'
-    )
-
-
-class WebhookListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[Webhook] = Field(..., description='The list of results for this page.')
-    next_cursor: str | None = Field(
-        None,
-        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
-    )
-    has_more: bool = Field(..., description='Whether additional pages are available.')
-
-
-class WebhookDeliveryRecord(BaseModel):
-    """
-    One delivery record for a webhook event. The daemon claims pending rows, POSTs the payload, and transitions to `delivered` or retries on failure. A delivery reaches `failed` only after exhausting all 10 retry attempts.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Unique identifier for this delivery record.')
-    webhook_id: str = Field(
-        ..., description='ID of the webhook this delivery belongs to.'
-    )
-    run_id: str | None = Field(
-        None, description='Run that triggered the event, when applicable.'
-    )
-    event_type: str = Field(
-        ...,
-        description='The event type that triggered this delivery (e.g. `run.completed`).',
-    )
-    status: WebhookDeliveryStatus = Field(..., description='Current delivery status.')
-    attempts: int = Field(
-        ..., description='Number of delivery attempts made so far. Max 10.'
-    )
-    last_error: str | None = Field(
-        None, description='Error message from the most recent failed attempt.'
-    )
-    created_at: AwareDatetime = Field(
-        ..., description='Timestamp when this delivery was first attempted.'
-    )
-    delivered_at: AwareDatetime | None = Field(
-        None,
-        description='Timestamp of the successful delivery. Absent until delivered.',
-    )
-
-
-class WebhookDeliveryListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[WebhookDeliveryRecord] = Field(
-        ..., description='The list of results for this page.'
-    )
-    next_cursor: str | None = Field(
-        None,
-        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
-    )
-    has_more: bool = Field(..., description='Whether additional pages are available.')
-
-
-class CreateWebhookRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str = Field(..., description='Human-readable name, unique within the org.')
-    url: str | None = Field(
-        None,
-        description='The endpoint Mobius will POST event payloads to. May be left empty at creation time so a candidate URL can be tested via the ping endpoint before it is saved; events do not fire for webhooks with an empty URL.',
-    )
-    events: list[str] | None = Field(
-        None,
-        description='Event types to subscribe to. Use wildcards for broad subscriptions, e.g. `["run.*"]` for all run events. Omit this field or send an empty list to subscribe to all event types.',
-    )
-    enabled: bool | None = Field(
-        None,
-        description='Whether the webhook starts enabled. Defaults to true when omitted.',
-    )
-    tags: TagMap | None = Field(
-        None, description='Initial labels to apply to the webhook.'
-    )
-    owner: ResourceOwner | None = None
-    visibility: ResourceVisibility | None = None
-
-
-class UpdateWebhookRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str | None = Field(None, description='Replacement human-readable name.')
-    url: str | None = Field(None, description='Replacement endpoint URL.')
-    events: list[str] | None = Field(
-        None,
-        description='Replacement event subscriptions. Replaces the entire current list; an empty list subscribes to all event types.',
-    )
-    enabled: bool | None = Field(
-        None,
-        description='Set to false to disable delivery without deleting the webhook.',
-    )
-    tags: TagMap | None = Field(
-        None, description='Replacement labels; send an empty object to clear all tags.'
-    )
-
-
-class PingWebhookRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    url: str | None = Field(
-        None,
-        description="URL to test. When supplied, the ping is sent to this URL instead of the webhook's saved URL — use this to validate a candidate URL before saving it. When omitted, the webhook's current saved URL is used.",
-    )
-
-
-class PingWebhookResult(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    success: bool = Field(
-        ..., description='True if the target responded with a 2xx status code.'
-    )
-    status_code: int | None = Field(
-        None,
-        description='HTTP status code returned by the target. Absent on network error.',
-    )
-    error: str | None = Field(
-        None, description='Error message if the request could not be completed.'
-    )
-    latency_ms: int | None = Field(
-        None, description='Round-trip latency in milliseconds.'
-    )
-
-
 class BillingUsageEvent(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -3010,15 +2132,6 @@ class BillingUsageEvent(BaseModel):
     source_type: str
     source_id: str
     idempotency_key: str
-    run_id: str = Field(
-        ...,
-        description='Run the usage was attributed to. Empty string when the event has no run attribution.',
-    )
-    step_id: str = Field(
-        ...,
-        description='Loop step the usage was attributed to. Empty string when the event has no step attribution.',
-    )
-    step_key: str
     job_id: str = Field(
         ...,
         description='Job the usage was attributed to. Empty string when the event has no job attribution.',
@@ -3077,15 +2190,9 @@ class Scope(StrEnum):
 
 class Category(StrEnum):
     org = 'org'
-    access = 'access'
-    loops = 'loops'
-    runs = 'runs'
     work = 'work'
-    integrations = 'integrations'
-    audit = 'audit'
     billing = 'billing'
     platform = 'platform'
-    actions = 'actions'
 
 
 class Risk1(StrEnum):
@@ -3171,7 +2278,7 @@ class PermissionCatalogResponse(BaseModel):
 
 class Role1(BaseModel):
     """
-    Named bundle of permissions assignable to human or machine principals. Roles let admins grant loop, org, and integration capabilities consistently without editing every user individually.
+    Named bundle of permissions assignable to human or machine principals. Roles let admins grant agent, org, and integration capabilities consistently without editing every user individually.
     """
 
     model_config = ConfigDict(
@@ -3369,7 +2476,7 @@ class InteractionOption(BaseModel):
 
 class InteractionSpec(BaseModel):
     """
-    Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a loop definition) and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
+    Declarative dialog contract for rendering and validating an interaction. Used at both authoring time and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
 
     Allowed combinations:
     * `request_approval` → `confirm`, `select`
@@ -3513,18 +2620,9 @@ class EmailDelivery(BaseModel):
 
 
 class Kind8(StrEnum):
-    run = 'run'
     agent_tool = 'agent_tool'
     http_subscriber = 'http_subscriber'
     none = 'none'
-
-
-class RunConsumer(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    run_id: str
-    signal_name: str
 
 
 class AgentToolConsumer(BaseModel):
@@ -3757,7 +2855,7 @@ class ReviewInteractionRequest(BaseModel):
 
 class CancelInteractionRequest(BaseModel):
     """
-    Optional payload accompanying a cancel request. The reason is recorded on the interaction and forwarded in the cancellation signal so loops can route to a fallback.
+    Optional payload accompanying a cancel request. The reason is recorded on the interaction and forwarded in the cancellation signal so the waiting consumer can route to a fallback.
     """
 
     model_config = ConfigDict(
@@ -3845,7 +2943,6 @@ class AddAgentMembersRequest(BaseModel):
 
 class ResourceType(StrEnum):
     artifact = 'artifact'
-    loop = 'loop'
     session = 'session'
     skill = 'skill'
     table = 'table'
@@ -4193,7 +3290,7 @@ class CreateAgentRequest(BaseModel):
     )
     timeout_seconds: int | None = Field(
         None,
-        description="Per-turn execution timeout in seconds for this agent. Omit or `0` to use the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.",
+        description="Per-turn execution timeout in seconds for this agent. Omit or `0` to use the platform default (600s / 10 minutes); a request's `operation.timeout_seconds` overrides it for that turn.",
         ge=0,
     )
     compaction_policy: SessionCompactionPolicy | None = Field(
@@ -4210,7 +3307,7 @@ class CreateAgentRequest(BaseModel):
     )
     thinking_effort: ThinkingEffort | None = Field(
         None,
-        description='Default reasoning-effort level new sessions and loop agent steps inherit from this agent.',
+        description='Default reasoning-effort level new sessions inherit from this agent.',
     )
     tags: TagMap | None = Field(
         None, description='Initial labels used for filtering, ownership, or automation.'
@@ -4241,9 +3338,9 @@ class Status2(StrEnum):
 
 class StrandedDisposition(StrEnum):
     """
-    What happens to the memory partitions, sessions, and loops of principals who fall outside a narrowed audience.
+    What happens to the memory partitions and sessions of principals who fall outside a narrowed audience.
 
-    `retain` keeps their partitions and sessions, readable only by org admins, and pauses the loops they own that point at this agent rather than leaving them to fail at run time. `delete` additionally erases their private memory partitions, and only an org admin may choose it. A narrowing change that would strand rows and names neither returns `409`.
+    `retain` keeps their partitions and sessions, readable only by org admins. `delete` additionally erases their private memory partitions, and only an org admin may choose it. A narrowing change that would strand rows and names neither returns `409`.
     """
 
     retain = 'retain'
@@ -4288,7 +3385,7 @@ class UpdateAgentRequest(BaseModel):
     )
     tool_presentation: AgentToolPresentation | None = Field(
         None,
-        description='Replacement tool presentation used by loop agent steps and channel replies.',
+        description="Replacement tool presentation used by this agent's turns and channel replies.",
     )
     integration_access: list[AgentIntegrationAccess] | None = Field(
         None,
@@ -4303,7 +3400,7 @@ class UpdateAgentRequest(BaseModel):
     )
     timeout_seconds: int | None = Field(
         None,
-        description="Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.",
+        description="Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (600s / 10 minutes); a request's `operation.timeout_seconds` overrides it for that turn.",
         ge=0,
     )
     status: Status2 | None = Field(
@@ -4347,7 +3444,7 @@ class UpdateAgentRequest(BaseModel):
     )
     stranded_disposition: StrandedDisposition | None = Field(
         None,
-        description='What happens to the memory partitions, sessions, and loops of principals who fall outside a narrowed audience.\n\n`retain` keeps their partitions and sessions, readable only by org admins, and pauses the loops they own that point at this agent rather than leaving them to fail at run time. `delete` additionally erases their private memory partitions, and only an org admin may choose it. A narrowing change that would strand rows and names neither returns `409`.',
+        description='What happens to the memory partitions and sessions of principals who fall outside a narrowed audience.\n\n`retain` keeps their partitions and sessions, readable only by org admins. `delete` additionally erases their private memory partitions, and only an org admin may choose it. A narrowing change that would strand rows and names neither returns `409`.',
     )
 
 
@@ -4442,10 +3539,6 @@ class AgentMemoryEntry(BaseModel):
         ...,
         description='Whether the entry is guaranteed in the memory index and exempt from the memory cap.',
     )
-    source_run_id: str | None = Field(
-        None,
-        description='Identifier of the loop run that last wrote this memory, when known.',
-    )
     entry_id: str = Field(..., description='Identifier of this memory entry.')
     version: int = Field(
         ..., description='Monotonic version, incremented on each update.'
@@ -4511,7 +3604,6 @@ class AgentMemoryChange(BaseModel):
         ge=1,
     )
     reason: AgentMemoryChangeReason
-    source_run_id: str | None = None
     actor_id: str | None = None
     created_at: AwareDatetime
 
@@ -5628,14 +4720,6 @@ class Artifact(BaseModel):
     visibility: ResourceVisibility
     container: ResourceContainer | None = None
     posture: ResourcePosture
-    run_id: str | None = Field(
-        None,
-        description='Loop run that produced this artifact, derived from the trusted worker lease when present.',
-    )
-    step_id: str | None = Field(
-        None,
-        description='Loop step that produced this artifact, derived from the trusted worker lease when present.',
-    )
     name: str = Field(
         ...,
         description='Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or organization-visible space.',
@@ -5671,890 +4755,150 @@ class Artifact(BaseModel):
     )
 
 
-class SchemaVersion1(StrEnum):
+class RoutineKind(StrEnum):
     """
-    Loop authoring schema version. Only schema version 1 is accepted.
-    """
-
-    field_1 = '1'
-
-
-class Concurrency(StrEnum):
-    """
-    Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
+    V1 accepts invoke; notify is reserved and returns unsupported_routine_kind.
     """
 
-    allow = 'allow'
-    queue = 'queue'
-    skip = 'skip'
-    replace = 'replace'
+    invoke = 'invoke'
+    notify = 'notify'
 
 
-class LoopStatus(StrEnum):
+class RoutineSchedule(BaseModel):
     """
-    Loop lifecycle status: `draft`, `active`, `paused`, or `deleted`.
-    """
-
-    draft = 'draft'
-    active = 'active'
-    paused = 'paused'
-    deleted = 'deleted'
-
-
-class RunNameSpec(BaseModel):
-    """
-    Templates for assigning an operator-facing title and optional description to each run. The object form leaves room for additional naming strategies without changing the loop spec shape.
+    Exactly one of at, interval, or cron is required.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    template: str = Field(
-        ...,
-        description='`${{ event.* }}`, `${{ meta.* }}`, and `${{ config.* }}` template rendered as the run title when the run is created. When blank, the run title falls back to the loop name. This property remains required for compatibility, but may be blank when only description_template is configured. Send empty title and description templates in an update to clear the run display configuration.',
-    )
-    description_template: str | None = Field(
-        None,
-        description='Optional `${{ event.* }}`, `${{ meta.* }}`, and `${{ config.* }}` template rendered as secondary descriptive text when the run is created.',
-    )
+    at: AwareDatetime | None = None
+    interval: str | None = Field(None, examples=['24h'])
+    cron: str | None = Field(None, examples=['0 8 * * *'])
+    timezone: str | None = Field(None, examples=['America/New_York'])
+    starts_at: AwareDatetime | None = None
+    ends_at: AwareDatetime | None = None
+    max_occurrences: int | None = Field(None, ge=1)
 
 
-class Source4(StrEnum):
-    """
-    How the repository target is resolved. `static` clones `full_name`; `match` clones the repository the trigger event concerns.
-    """
-
-    static = 'static'
-    match = 'match'
-
-
-class Provider(StrEnum):
-    """
-    Repository provider. GitHub is the only supported provider today.
-    """
-
-    github = 'github'
-
-
-class LoopSpecRepository(BaseModel):
-    """
-    Source repository target attached to a loop spec. A `static` repository clones the named `full_name`. A `match` repository resolves the repository from the run's trigger event (for example the base repository of an opened GitHub pull request) and requires the loop to have an event trigger; pull requests opened from a fork are never cloned. `full_name` is required for `static` repositories and ignored for `match` repositories.
-    """
-
+class RoutineCreateRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    source: Source4 = Field(
-        'static',
-        description='How the repository target is resolved. `static` clones `full_name`; `match` clones the repository the trigger event concerns.',
-    )
-    provider: Provider = Field(
-        'github',
-        description='Repository provider. GitHub is the only supported provider today.',
-    )
-    id: int | str | None = Field(None, description='Provider-specific repository id.')
-    full_name: str | None = Field(
-        None,
-        description='Provider repository full name, e.g. `owner/repo`. Required when `source` is `static`.',
-    )
-    ref: str | None = Field(
-        None,
-        description='Optional branch, tag, or ref to check out. For `static` repositories it pins the checkout; for `match` repositories it overrides the ref derived from the event. Omitted uses the provider default branch.',
-    )
-    private: bool | None = Field(
-        None, description='Whether the provider reports this repository as private.'
-    )
-    push: bool = Field(
-        False,
-        description="Authorize the loop's managed environment to push to this repository. Defaults to `false`: the repository is cloned read-only and a `git push` from inside the environment fails with a permission error. Set `true` to let the environment obtain a write-scoped credential for this repository. Opt in per repository so environments are never write-capable by default.",
-    )
+    session_id: str
+    agent_id: str
+    name: str | None = None
+    instructions: str
+    kind: RoutineKind | None = None
+    schedule: RoutineSchedule
+    per_occurrence_ceiling_milli: int = Field(..., ge=1)
+    daily_ceiling_milli: int = Field(..., ge=1)
 
 
-class LoopSpecInput(BaseModel):
-    """
-    One named input accepted by a loop spec.
-    """
-
+class RoutineUpdateRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: str | None = Field(
-        None, description='JSON-compatible input type expected by authoring tools.'
-    )
-    description: str | None = Field(
-        None, description='Human guidance shown when collecting the input value.'
-    )
-    required: bool | None = Field(
-        None,
-        description='Whether callers must provide this input when starting the loop.',
-    )
-    default: Any | None = Field(
-        None,
-        description='Optional default value for this input. May be any JSON value.',
-    )
+    name: str | None = None
+    instructions: str | None = None
+    schedule: RoutineSchedule | None = None
+    per_occurrence_ceiling_milli: int | None = Field(None, ge=1)
+    daily_ceiling_milli: int | None = Field(None, ge=1)
 
 
-class Kind12(StrEnum):
-    """
-    Trigger mechanism: `http`, `schedule`, `event`, or `manual`.
-    """
-
-    http = 'http'
-    schedule = 'schedule'
-    event = 'event'
-    manual = 'manual'
-
-
-class ConcurrencyPolicy(StrEnum):
-    """
-    Trigger concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
-    """
-
-    allow = 'allow'
-    queue = 'queue'
-    skip = 'skip'
-    replace = 'replace'
-
-
-class HTTPTriggerConfig(BaseModel):
-    """
-    Configuration for `LoopSpec.triggers[]` entries with `kind` set to `http`.
-    """
-
+class Routine(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    http_handle: str | None = Field(
-        None,
-        description='Optional public delivery handle for `POST /v1/triggers/http/{http_handle}`. Omit to let Mobius use the materialized trigger id as the unguessable handle.',
+    id: str
+    org_id: str
+    agent_id: str
+    session_id: str
+    owner_id: str
+    name: str
+    instructions: str | None = Field(
+        None, description='Omitted from administrator metadata-only projections.'
     )
+    kind: RoutineKind
+    schedule: RoutineSchedule
+    timezone: str
+    status: RoutineStatus
+    pause_reason: str | None = None
+    next_fire_at: AwareDatetime | None = None
+    last_fire_at: AwareDatetime | None = None
+    occurrence_count: int
+    completed_at: AwareDatetime | None = None
+    per_occurrence_ceiling_milli: int
+    daily_ceiling_milli: int
+    act_as_user_providers: list[str] | None = None
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
 
 
-class ScheduleTriggerConfig(BaseModel):
-    """
-    Configuration for `LoopSpec.triggers[]` entries with `kind` set to `schedule`. Provide exactly one of `cron` or `interval`; the compiler rejects configs that omit both or set both.
-    """
-
+class RoutineList(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    cron: str | None = Field(
-        None,
-        description='Standard five-field cron expression or descriptor such as `@hourly`.',
-    )
-    interval: str | None = Field(
-        None, description='Go duration string such as `5m`, `1h`, or `24h`.'
-    )
-    timezone: str | None = Field(
-        None,
-        description='IANA time zone for cron schedules, such as `America/New_York`.',
-    )
-
-
-class EventTriggerConfig(BaseModel):
-    """
-    Configuration for `LoopSpec.triggers[]` entries with `kind` set to `event`.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    event_type: str = Field(
-        ...,
-        description='Source-event type or catalog pattern this trigger subscribes to.',
-    )
-    source_id: str | None = Field(
-        None, description='Optional source identifier used to scope event matching.'
-    )
-    condition: str | None = Field(
-        None,
-        description='Optional expr predicate evaluated against the public `{ event, meta }` envelope.',
-    )
-
-
-class Kind13(StrEnum):
-    """
-    Step discriminator value; always `agent`.
-    """
-
-    agent = 'agent'
-
-
-class Kind14(StrEnum):
-    """
-    Step discriminator value; always `action`.
-    """
-
-    action = 'action'
-
-
-class Kind15(StrEnum):
-    """
-    Step discriminator value; always `sleep`.
-    """
-
-    sleep = 'sleep'
-
-
-class Kind16(StrEnum):
-    """
-    Step discriminator value; always `wait_for_event`.
-    """
-
-    wait_for_event = 'wait_for_event'
-
-
-class Kind17(StrEnum):
-    """
-    Step discriminator value; always `interaction`.
-    """
-
-    interaction = 'interaction'
-
-
-class Kind18(StrEnum):
-    """
-    Step discriminator value; always `loop`.
-    """
-
-    loop = 'loop'
-
-
-class Kind19(StrEnum):
-    """
-    Step discriminator value; always `check`.
-    """
-
-    check = 'check'
-
-
-class LoopSpecLimits(BaseModel):
-    """
-    Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; absent or zero means unbounded (plan-level org caps still apply), with one exception — trial-plan runs default to a 100-credit ($1) budget when no budget is set here or on the start request. Paid plans default to unbounded.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    budget_usd: float | None = Field(
-        None,
-        description='Run budget in US dollars (1 credit = $0.01). The budget is a hard limit: the run halts with stop reason `budget_exceeded` at the next checkpoint (step boundary or agent tool iteration) once its metered spend reaches the ceiling. Enforcement granularity is one model call or metered action — a run can overshoot by at most the call in flight. Mutually exclusive with `credit_budget`; values finer than 0.001 credit ($0.00001) are rejected at compile.',
-        ge=0.0,
-    )
-    credit_budget: int | None = Field(
-        None,
-        description='Run budget in whole credits (1 credit = $0.01). Same ceiling semantics as `budget_usd`; set exactly one.',
-        ge=1,
-    )
-    wall_clock_timeout: str | None = Field(
-        None,
-        description='Run wall-clock limit as a Go duration string (e.g. `30m`, `2h`, `90s`). When set, the engine stamps `wall_clock_deadline_at = run.started_at + wall_clock_timeout` and the reaper fails the run (stop reason `wall_clock_exceeded`) after that instant even if a step executor is still grinding. Omit or set to `0` to disable.',
-    )
-    max_agent_turns: int | None = Field(
-        None,
-        description="Run-wide cap on agent turns across all steps. Each agent step execution (including retries and resumed turns) consumes one turn. Breach halts the run with stop reason `turn_limit_reached`. Distinct from a step's `max_turns`, which bounds tool iterations within a single turn.",
-        ge=1,
-    )
-    daily_budget_usd: float | None = Field(
-        None,
-        description='Rolling-24h spend ceiling in US dollars across ALL runs of this loop (the fleet-level counterpart of `budget_usd`). Enforced at run start (new runs are refused while the window is exhausted) and at the platform funding gate (an in-flight run halts at its next platform-funded call with stop reason `budget_exceeded`). Counts platform-billed spend; mutually exclusive with `daily_credit_budget`.',
-        ge=0.0,
-    )
-    daily_credit_budget: int | None = Field(
-        None,
-        description='Rolling-24h loop spend ceiling in whole credits. Same semantics as `daily_budget_usd`; set exactly one.',
-        ge=1,
-    )
-    max_duplicate_tool_calls: int | None = Field(
-        None,
-        description="How many identical tool calls (same tool name and canonicalized arguments) one agent turn tolerates before the turn halts with a `progress_stalled` error — the duplicate-tool-call breaker. The step's retry policy applies; if the run fails from it the stop reason is `progress_stalled` and a `run.progress_stalled` event is emitted on each trip. Omit for the platform default (3).",
-        ge=1,
-    )
-    pause_after_consecutive_failures: int | None = Field(
-        None,
-        description='Loop circuit breaker. After this many consecutive failed runs the loop auto-pauses (status `paused`) and emits a `loop.auto_paused` event, so a bad deploy cannot burn all night at one run per trigger fire. Completed runs reset the streak; cancelled runs are neutral. Omit to disable.',
-        ge=1,
-    )
-
-
-class LoopEnvironmentPolicy(BaseModel):
-    """
-    Automatic managed-environment policy for loop execution. Omit to use the product default: each agent gets a persistent agent-bound environment, while direct environment actions get a run-bound environment. Set `disabled: true` to opt out.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    disabled: bool | None = Field(
-        None, description='Disable automatic environment allocation.'
-    )
-    mode: EnvironmentMode | None = Field(
-        None, description='Environment ownership mode to request.'
-    )
-    environment_id: str | None = Field(
-        None, description='Existing dedicated environment to use for this loop.'
-    )
-    template_id: str | None = Field(
-        None, description='Environment template to use when Mobius creates one.'
-    )
-    provider: EnvironmentProvider | None = Field(
-        None, description='Provider to use when Mobius creates an environment.'
-    )
-    runtime_version: str | None = Field(
-        None,
-        description='Mobius worker runtime version to install when starting the worker.',
-    )
-    auto_start_worker: bool | None = Field(
-        None,
-        description='Whether Mobius should start the managed worker automatically.',
-    )
-    retention_policy: EnvironmentRetentionPolicy | None = Field(
-        None, description='Cleanup behavior after the run or lease ends.'
-    )
-
-
-class Scope2(StrEnum):
-    """
-    Named-session boundary. `auto` and omitted use `loop`. `agent` intentionally shares the named session across loops using the same agent.
-    """
-
-    auto = 'auto'
-    loop = 'loop'
-    agent = 'agent'
-
-
-class LoopAgentSessionPolicy(BaseModel):
-    """
-    Durable conversation-session policy for loop agent steps. Omit to enable the product default: loop-scoped sessions keyed from the triggering conversation when Mobius can identify one, such as a Telegram chat ID.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    scope: Scope2 | None = Field(
-        None,
-        description='Named-session boundary. `auto` and omitted use `loop`. `agent` intentionally shares the named session across loops using the same agent.',
-    )
-    name: str | None = Field(
-        None,
-        description='Optional expression template rendered against `event`, `meta`, `config`, `steps`, `agent`, `loop`, `run`, `source`, and `step`. When omitted, Mobius derives a stable name from the event payload, falling back to the trigger or `default`.',
-    )
-    title: str | None = Field(
-        None,
-        description='Optional expression template for the session display title using the same roots as `name`.',
-    )
-    visibility: ResourceVisibility | None = Field(
-        None, description='Visibility for durable sessions created from this policy.'
-    )
-    compaction_policy: SessionCompactionPolicy | None = Field(
-        None,
-        description='Optional per-session compaction policy merged with server defaults when the session is first created. Existing sessions keep their current compaction policy unless edited through a session-specific operation.',
-    )
-    thinking_effort: ThinkingEffort | None = Field(
-        None,
-        description="Optional reasoning-effort override for this step's session turns. Overrides the agent default. Set as a loop default it applies to every agent step; set on a step it overrides the loop default.",
-    )
-
-
-class Mode4(StrEnum):
-    """
-    Model route mode: `managed` or `worker`.
-    """
-
-    managed = 'managed'
-    worker = 'worker'
-
-
-class LoopModelRoute(BaseModel):
-    """
-    Model-routing override for an agent step.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    mode: Mode4 = Field(..., description='Model route mode: `managed` or `worker`.')
-    environment_id: str | None = Field(
-        None, description='Managed environment to route worker-backed model calls to.'
-    )
-    provider: str | None = Field(
-        None,
-        description='Provider id advertised by a local worker when `mode` is `worker`.',
-    )
-    model: str | None = Field(None, description='Model identifier for this route.')
-
-
-class ExecutionLocation(StrEnum):
-    """
-    Execution location: `managed`, `worker`, or `environment`.
-    """
-
-    managed = 'managed'
-    worker = 'worker'
-    environment = 'environment'
-
-
-class LoopActionStep(BaseModel):
-    """
-    Action step configuration recognised inside `LoopSpec.steps[].config`.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    action_name: str = Field(..., description='Catalog action name to invoke.')
-    execution_location: ExecutionLocation | None = Field(
-        None, description='Execution location: `managed`, `worker`, or `environment`.'
-    )
-    environment_id: str | None = Field(
-        None,
-        description='Managed environment to route this worker-backed action to. When omitted for `execution_location: environment`, Mobius resolves one from `spec.defaults.environment`.',
-    )
-    parameters: dict[str, Any] | None = Field(
-        None,
-        description='Input object passed to the named action. Static nested objects and arrays keep their types; every string leaf supports `${{ ... }}` interpolation over `event`, `meta`, `config`, and prior `steps.<id>.output`. An interpolation that returns an object or array renders compact JSON text; rendered JSON text is not automatically parsed back into a structured value.',
-    )
-
-
-class LoopSleepStep(BaseModel):
-    """
-    Sleep step configuration recognised inside `LoopSpec.steps[].config`.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    duration: str | None = Field(
-        None, description='Go duration string such as `30s`, `5m`, or `2h`.'
-    )
-    until: AwareDatetime | None = Field(
-        None, description='Absolute time to resume the run.'
-    )
-
-
-class LoopWaitForEventStep(BaseModel):
-    """
-    Wait-for-event step configuration recognised inside `LoopSpec.steps[].config`.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    event_type: str = Field(
-        ..., description='Event type or pattern that resumes the waiting step.'
-    )
-    source_id: str | None = Field(
-        None, description='Optional source identifier used to scope event matching.'
-    )
-    match: dict[str, Any] | None = Field(
-        None, description='Structured field match applied to incoming event payloads.'
-    )
-    payload_mapping: dict[str, str] | None = Field(
-        None, description='Optional output mapping evaluated against `{ event, meta }`.'
-    )
-
-
-class Protocol(StrEnum):
-    """
-    Type of response requested from the targets.
-    """
-
-    request_information = 'request_information'
-    request_approval = 'request_approval'
-    request_review = 'request_review'
-
-
-class ResolutionPolicy1(StrEnum):
-    """
-    Whether the first eligible response or every target response resolves the interaction. Omit for `any_of`.
-    """
-
-    any_of = 'any_of'
-    all_of = 'all_of'
-
-
-class LoopInteractionStep(BaseModel):
-    """
-    Interaction step configuration recognised inside `LoopSpec.steps[].config`.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    protocol: Protocol = Field(
-        ..., description='Type of response requested from the targets.'
-    )
-    targets: list[str] = Field(
-        ..., description='User or agent IDs eligible to respond.', min_length=1
-    )
-    prompt: str | None = Field(
-        None,
-        description='Prompt shown to responders. String content supports `${{ ... }}` interpolation.',
-    )
-    resolution_policy: ResolutionPolicy1 | None = Field(
-        None,
-        description='Whether the first eligible response or every target response resolves the interaction. Omit for `any_of`.',
-    )
-    spec: dict[str, Any] | None = Field(
-        None,
-        description='Optional interaction presentation details. String leaves support `${{ ... }}` interpolation.',
-    )
-
-
-class LoopSubLoopStep(BaseModel):
-    """
-    Loop-trigger step configuration recognised inside `LoopSpec.steps[].config`. Triggers another loop in the same org as an independent child run (fire-and-forget). The child run records `parent_run_id`, `parent_loop_id`, and `parent_step_key` so the lineage is visible from the child.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    loop_id: str = Field(
-        ...,
-        description='ID of the loop to trigger, scoped to the same org as the parent loop.',
-    )
-    event: dict[str, Any] | None = Field(
-        None,
-        description="Event object handed to the child run. String leaves render against the parent run before the child starts using `${{ ... }}` expr interpolations over `event`, `meta`, `config`, `steps.<id>.output`, or `steps[0].output`. When omitted the parent's resolved event payload is forwarded.",
-    )
-    config: dict[str, Any] | None = Field(
-        None, description='Optional config object handed to the child run.'
-    )
-    condition: str | None = Field(
-        None,
-        description='Removed legacy field. Use the step-level `if` field for child-loop conditions.',
-    )
-
-
-class OnFail(StrEnum):
-    """
-    Routing when any assertion fails. `fail` stops the run with stop reason `check_failed`. `continue` proceeds with the red verdict recorded. `gate` opens a `request_approval` interaction carrying the failed assertions and evidence; approval resumes the run with the verdict recorded as overridden, rejection stops it with `gate_rejected`.
-    """
-
-    fail = 'fail'
-    continue_ = 'continue'
-    gate = 'gate'
-
-
-class Kind20(StrEnum):
-    """
-    `expr` evaluates a deterministic predicate with the same language as step conditions and event waits. `agent` runs a bounded judge turn returning a strict `{pass, reason}` verdict; its spend counts against the run budget and it consumes one run agent turn.
-    """
-
-    expr = 'expr'
-    agent = 'agent'
-
-
-class LoopCheckAssertion(BaseModel):
-    """
-    One assertion evaluated by a check step.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str = Field(
-        ..., description='Unique assertion name shown on the timeline proof row.'
-    )
-    kind: Kind20 = Field(
-        ...,
-        description='`expr` evaluates a deterministic predicate with the same language as step conditions and event waits. `agent` runs a bounded judge turn returning a strict `{pass, reason}` verdict; its spend counts against the run budget and it consumes one run agent turn.',
-    )
-    expr: str | None = Field(
-        None,
-        description="Predicate for `kind: expr`, evaluated against the run's template environment (`event`, `meta`, `config`, `steps.<id>.output`, and `steps[0].output`). Required for expr assertions.",
-    )
-    agent: str | None = Field(
-        None,
-        description='Judge agent id for `kind: agent`. Omit to use the built-in platform reviewer `mobius-reviewer`. The judge should be a different agent than the one that produced the evidence; the compiler warns when a judge grades its own work.',
-    )
-    prompt: str | None = Field(
-        None,
-        description='Judge instruction for `kind: agent`, rendered with `${{ ... }}` expr interpolation before the cited evidence is appended. Required for agent assertions.',
-    )
-    evidence: list[str] | None = Field(
-        None,
-        description='Step ids whose saved outputs this assertion judges. Each must reference an earlier step. Cited outputs are shown to agent judges and recorded on the verdict.',
-    )
-
-
-class LoopCheckGate(BaseModel):
-    """
-    Approval gate opened when `on_fail: gate` trips.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    targets: list[str] = Field(
-        ...,
-        description='Principals who must respond. String entries may contain template actions resolved against the run.',
-        min_length=1,
-    )
-    prompt: str | None = Field(
-        None,
-        description='Prompt shown to reviewers. Defaults to a generated summary of the failed assertions.',
-    )
-
-
-class LoopRetryPolicy(BaseModel):
-    """
-    Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    max_attempts: int | None = Field(
-        None,
-        description='Total attempts allowed for the step, including the first attempt.',
-        ge=1,
-        le=10,
-    )
-    delay: str | None = Field(
-        None,
-        description='Go duration string such as `30s`, `5m`, or `2h`. Applied between attempts for in-process (synchronous) action retries; worker-executed actions re-queue immediately for the next attempt.',
-    )
-
-
-class OnTimeout(StrEnum):
-    """
-    Timeout behavior; currently only `fail`.
-    """
-
-    fail = 'fail'
-
-
-class LoopTimeoutPolicy(BaseModel):
-    """
-    Timeout behavior for one loop step.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    duration: str | None = Field(
-        None, description='Go duration string such as `30s`, `5m`, or `2h`.'
-    )
-    on_timeout: OnTimeout | None = Field(
-        None, description='Timeout behavior; currently only `fail`.'
-    )
-
-
-class HTTPTriggerDeliveryRequest(BaseModel):
-    """
-    Free-form JSON object delivered to the HTTP trigger. The payload is recorded on the source event and forwarded to the run as the event.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
+    items: list[Routine]
+    has_more: bool
+    next_cursor: str | None = None
 
 
 class Status3(StrEnum):
-    """
-    Acceptance status of the source-event row. The only synchronous success value is `accepted`; processing happens asynchronously after the source event is durable.
-    """
-
-    accepted = 'accepted'
-
-
-class HTTPTriggerDeliveryResult(BaseModel):
-    """
-    Synchronous receipt for an inbound HTTP-trigger delivery. The trigger dispatch and run start happen asynchronously after this response. Clients can poll via `GET /v1/runs?source_event_id=<source_event_id>` to discover the run once the source-event processor reserves it.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    source_event_id: str = Field(
-        ...,
-        description='Durable source-event id (also the `dedup_key` seed). Stable across retries with the same `Idempotency-Key`.',
-    )
-    status: Status3 = Field(
-        ...,
-        description='Acceptance status of the source-event row. The only synchronous success value is `accepted`; processing happens asynchronously after the source event is durable.',
-    )
-    deduped: bool | None = Field(
-        None,
-        description='True when an existing source-event row was returned for the same idempotency key.',
-    )
-
-
-class CancelLoopRunRequest(BaseModel):
-    """
-    Body for the cancellation endpoint. All fields optional.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    reason: str | None = Field(
-        None, description='Human-readable cancellation reason recorded on the run.'
-    )
-
-
-class RecoverLoopRunRequest(BaseModel):
-    """
-    Body for resuming or retrying a failed loop run in place. Limit fields are optional unless the prior failure was caused by that guardrail; in that case the replacement limit must be greater than the amount already consumed by the run.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    reason: str | None = Field(
-        None,
-        description='Human-readable recovery reason recorded on the run event log.',
-    )
-    budget_usd: float | None = Field(
-        None,
-        description='Replacement run budget in US dollars (1 credit = $0.01). Mutually exclusive with `credit_budget`; setting both is a `400`.',
-        ge=0.0,
-    )
-    credit_budget: int | None = Field(
-        None,
-        description='Replacement run budget in whole credits (1 credit = $0.01). Must be greater than `credit_spent`.',
-        ge=1,
-    )
-    max_agent_turns: int | None = Field(
-        None,
-        description='Replacement run-wide agent turn cap. Must be greater than `agent_turns_used`.',
-        ge=1,
-    )
-    wall_clock_extend_seconds: int | None = Field(
-        None,
-        description='Additional wall-clock time, in seconds, granted from the recovery request time. Required when the run stopped on `wall_clock_exceeded`.',
-        ge=1,
-    )
-
-
-class SignalLoopRunRequest(BaseModel):
-    """
-    Body for resuming a suspended loop step.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    step_key: str = Field(
-        ...,
-        description="Step key currently in `suspended` state that should resume. Must match a step declared in the run's loop version spec.",
-    )
-    result: dict[str, Any] | None = Field(
-        None, description="Free-form payload saved as the resumed step's output."
-    )
-
-
-class Type28(StrEnum):
-    """
-    Source category for the run start: `api`, `trigger`, `manual`, or `signal`.
-    """
-
-    api = 'api'
-    trigger = 'trigger'
-    manual = 'manual'
-    signal = 'signal'
-
-
-class LoopRunSource(BaseModel):
-    """
-    Optional attribution for the call that started this run. Triggers and HTTP trigger dispatch populate `trigger_id` and `trigger_fire_id`. API callers usually only set `type` and `id`.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    type: Type28 | None = Field(
-        None,
-        description='Source category for the run start: `api`, `trigger`, `manual`, or `signal`.',
-    )
-    id: str | None = Field(
-        None, description="Identifier within the source type's namespace."
-    )
-    label: str | None = Field(None, description='Display label.')
-    trigger_id: str | None = Field(
-        None, description='Trigger that fired this run, if any.'
-    )
-
-
-class LoopRunStatus(StrEnum):
-    """
-    Run lifecycle state: `queued`, `running`, `suspended`, `completed`, `failed`, or `cancelled`.
-    """
-
-    queued = 'queued'
-    running = 'running'
-    suspended = 'suspended'
+    pending = 'pending'
+    admitted = 'admitted'
     completed = 'completed'
     failed = 'failed'
-    cancelled = 'cancelled'
+    skipped = 'skipped'
+    missed = 'missed'
 
 
-class LoopRunQueueReason(StrEnum):
-    """
-    Why a run is waiting in the queue. `plan_concurrency` means the organization's current plan has no active-run capacity available. `loop_policy` and `trigger_concurrency` mean authored concurrency policy deferred the run.
-    """
-
-    plan_concurrency = 'plan_concurrency'
-    loop_policy = 'loop_policy'
-    trigger_concurrency = 'trigger_concurrency'
-
-
-class LoopRunStopReason(StrEnum):
-    """
-    Why a run stopped. Set exactly once when the run reaches a terminal status; absent on non-terminal runs. `status` carries the lifecycle state and `error_type` classifies the error when one occurred; `stop_reason` classifies the stop itself.
-
-    Grouping: `completed` is the success terminal. `step_failed`, `check_failed`, and `gate_rejected` mean the work failed (an error, a failed verification, or a human rejection at a gate). `budget_exceeded`, `turn_limit_reached`, `wall_clock_exceeded`, `step_limit_reached`, and `progress_stalled` mean a configured guardrail halted the run — the limit worked; the loop did not break. `cancelled` and `replaced` mean somebody (or a concurrency policy) chose to stop it.
-    """
-
-    completed = 'completed'
-    step_failed = 'step_failed'
-    check_failed = 'check_failed'
-    gate_rejected = 'gate_rejected'
-    cancelled = 'cancelled'
-    replaced = 'replaced'
-    wall_clock_exceeded = 'wall_clock_exceeded'
-    budget_exceeded = 'budget_exceeded'
-    turn_limit_reached = 'turn_limit_reached'
-    progress_stalled = 'progress_stalled'
-    step_limit_reached = 'step_limit_reached'
-
-
-class LoopRunStepListResponse(BaseModel):
+class RoutineOccurrence(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    items: list[LoopRunStep] = Field(
-        ..., description='Steps for this run in `seq` order.'
-    )
+    id: str
+    routine_id: str
+    scheduled_at: AwareDatetime
+    intake_at: AwareDatetime
+    lateness_milliseconds: int
+    status: Status3
+    outcome: str | None = None
+    error_code: str | None = None
+    error_message: str | None = None
+    turn_id: str | None = None
+    credits_spent_milli: int
+    transcript_url: str
 
 
-class LoopRunLifecycleFrame(LoopRunEvent):
-    """
-    Durable run lifecycle frame. SSE messages carrying this shape include `id: <sequence>`, and that value is the only cursor clients should persist for `after_sequence` or `Last-Event-ID` resume.
-    """
-
-
-class LoopRunStreamFrame(LoopRunLifecycleFrame):
-    """
-    JSON payload of a single `data:` line on the run event SSE stream. Run stream frames are lifecycle/observability events and are replayable with an SSE `id:`. Agent transcript content is delivered by the referenced session stream.
-    """
-
-
-class LoopRunEventListResponse(BaseModel):
+class RoutineOccurrenceList(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    items: list[LoopRunEvent] = Field(
-        ..., description='Run events in this page, ordered by `sequence` ascending.'
+    items: list[RoutineOccurrence]
+    has_more: bool
+    next_cursor: str | None = None
+
+
+class Status4(StrEnum):
+    pending = 'pending'
+    approved = 'approved'
+    dismissed = 'dismissed'
+    expired = 'expired'
+
+
+class RoutineProposal(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
     )
-    next_sequence: int | None = Field(
-        None,
-        description='Sequence number of the most recent event in `items`; clients can pass this back as `after_sequence` on the next poll.',
-    )
-    has_more: bool | None = Field(
-        None, description='True when more events exist after the returned page.'
-    )
+    id: str
+    session_id: str
+    agent_id: str
+    proposed_to: str
+    status: Status4
+    routine_id: str | None = None
+    expires_at: AwareDatetime
+    payload: dict[str, Any]
 
 
 class SkillRequest(BaseModel):
@@ -6622,7 +4966,6 @@ class BlueprintResourceType(StrEnum):
     action = 'action'
     skill = 'skill'
     agent = 'agent'
-    loop = 'loop'
     table = 'table'
 
 
@@ -6649,7 +4992,7 @@ class BlueprintRef(BaseModel):
     key: str
 
 
-class Type29(StrEnum):
+class Type28(StrEnum):
     """
     Endpoint kind. Defaults to `http`. Immutable after create.
     """
@@ -6690,20 +5033,6 @@ class BlueprintSkillInput(BaseModel):
         description='Tool selectors naming the actions this skill needs. The grant applies once an agent invokes the skill and lasts for the rest of that turn. Empty declares nothing and narrows nothing.',
     )
     tags: TagMap | None = None
-
-
-class Status4(StrEnum):
-    draft = 'draft'
-    active = 'active'
-    paused = 'paused'
-
-
-class SchemaVersion4(StrEnum):
-    """
-    Loop authoring schema version. Only version 1 is accepted.
-    """
-
-    field_1 = '1'
 
 
 class Status5(StrEnum):
@@ -6900,7 +5229,7 @@ class PrincipalState(StrEnum):
 
 class Principal(BaseModel):
     """
-    Non-human identity used by loop, agents, and API keys. A principal makes permissions, delegation, and credential rotation explicit without tying machine access to a human user. The `id` is the stable identity used by credentials, role assignments, and agent execution.
+    Non-human identity used by workers, agents, and API keys. A principal makes permissions, delegation, and credential rotation explicit without tying machine access to a human user. The `id` is the stable identity used by credentials, role assignments, and agent execution.
     """
 
     model_config = ConfigDict(
@@ -7250,7 +5579,7 @@ class TableRowQueryListResponse(BaseModel):
     )
 
 
-class Mode5(StrEnum):
+class Mode4(StrEnum):
     """
     Search mode. `keyword` uses token-prefix matching, `semantic` uses similarity over indexed row text, and `hybrid` combines both.
     """
@@ -7269,7 +5598,7 @@ class SearchRowsRequest(BaseModel):
         description='Search query. Hyphens and other punctuation split terms for keyword matching.',
         min_length=1,
     )
-    mode: Mode5 = Field(
+    mode: Mode4 = Field(
         'keyword',
         description='Search mode. `keyword` uses token-prefix matching, `semantic` uses similarity over indexed row text, and `hybrid` combines both.',
     )
@@ -7475,7 +5804,7 @@ class ActionInvocationContextV1(BaseModel):
 
 class ActionCatalogEntry(BaseModel):
     """
-    One built-in, integration, or custom-backed action available to agents and loop authors.
+    One built-in, integration, or custom-backed action available to agents.
     """
 
     model_config = ConfigDict(
@@ -7542,8 +5871,7 @@ class ActionCatalogEntry(BaseModel):
         description='Resolved request-body contract for an org-owned custom action.',
     )
     execution: ActionExecutionMetadata | None = Field(
-        None,
-        description='Execution locations and worker requirements available to loop authors.',
+        None, description='Execution locations and worker requirements for this action.'
     )
     owner: ResourceOwner | None = Field(
         None, description='Present for an organization-authored custom action.'
@@ -7597,7 +5925,7 @@ class EventCatalogSource(BaseModel):
     )
     readiness: CapabilityReadiness = Field(
         ...,
-        description='Whether this source can start a loop now. `capability` sources are always `ready`. `integration` sources are `ready` only when the org has an active, usable connection for the provider.',
+        description='Whether this source can trigger work now. `capability` sources are always `ready`. `integration` sources are `ready` only when the org has an active, usable connection for the provider.',
     )
     readiness_reason: CapabilityReadinessReason | None = Field(
         None,
@@ -7718,17 +6046,13 @@ class DeliveryChannel(BaseModel):
 
 class Consumer(BaseModel):
     """
-    Polymorphic identifier of what is waiting on this interaction's resolution. Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved org signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Version` and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers.
+    Polymorphic identifier of what is waiting on this interaction's resolution. `http_subscriber` requires `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved org signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Version` and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
     kind: Kind8
-    run: RunConsumer | None = Field(
-        None,
-        description='Run resume target when `kind=run`; null for other consumer kinds.',
-    )
     agent_tool: AgentToolConsumer | None = Field(
         None,
         description='Agent tool continuation target when `kind=agent_tool`; null for other consumer kinds.',
@@ -7744,7 +6068,6 @@ class ConsumerInput(BaseModel):
         extra='forbid',
     )
     kind: Kind8
-    run: RunConsumer | None = None
     agent_tool: AgentToolConsumer | None = None
     http_subscriber: HttpSubscriberConsumerInput | None = None
 
@@ -7773,11 +6096,10 @@ class AgentVisibilityImpact(BaseModel):
     )
     stranded_principals: list[str] | None = Field(
         None,
-        description='Principals who hold a memory partition, a session, or a loop on this agent and fall outside the new audience.',
+        description='Principals who hold a memory partition or a session on this agent and fall outside the new audience.',
     )
     stranded_partitions: int | None = None
     stranded_sessions: int | None = None
-    stranded_loops: int | None = None
     affected_resources: list[AgentVisibilityAffectedResource] = Field(
         ...,
         description='Delegated or contained root resources whose effective audience would grow. Every item requires one matching disposition on the update request; omission aborts the change.',
@@ -7831,7 +6153,7 @@ class AgentToolManifest(BaseModel):
     )
     tools: list[ActionCatalogEntry] = Field(
         ...,
-        description='Catalog entries the agent can invoke. Each entry surfaces to the LLM as its own named tool. Built-in, integration, loop, and custom-HTTP actions are intermingled here.',
+        description='Catalog entries the agent can invoke. Each entry surfaces to the LLM as its own named tool. Built-in, integration, and custom-HTTP actions are intermingled here.',
     )
     groups_resolved: list[ResolvedActionGroup] | None = Field(
         None,
@@ -7848,7 +6170,7 @@ class AgentToolManifest(BaseModel):
 
 class AgentTurn(BaseModel):
     """
-    One attempt of an agent running the agent loop — the unit that produces a transcript. A turn is triggered by a direct send to the session, a loop step (run_id + step_key), or an inbound channel message (channel_exchange_id). Its messages are read via the turn's transcript endpoint.
+    One attempt of an agent working on the session — the unit that produces a transcript. A turn is triggered by a direct send to the session or an inbound channel message (channel_exchange_id). Its messages are read via the turn's transcript endpoint.
     """
 
     model_config = ConfigDict(
@@ -7859,21 +6181,19 @@ class AgentTurn(BaseModel):
     session_id: str = Field(
         ..., description="Session this turn's transcript was appended to."
     )
-    run_id: str | None = Field(
-        None,
-        description='Loop run that triggered this turn. Absent for messaging turns.',
-    )
-    step_key: str | None = Field(
-        None,
-        description='Step key (matches LoopRunStep.step_key, not its id) of the loop step that triggered this turn. Absent for messaging turns.',
-    )
     channel_exchange_id: str | None = Field(
         None,
-        description='Inbound channel exchange that triggered this turn. Absent for loop turns.',
+        description='Inbound channel exchange that triggered this turn. Absent for direct sends.',
+    )
+    deferrable: bool | None = Field(
+        None,
+        description='True for scheduled work that yields admission priority to direct turns.',
+    )
+    routine_name: str | None = Field(
+        None, description="Display-only routine name for a scheduled turn's live state."
     )
     attempt: int = Field(
-        ...,
-        description='1-based attempt number for this run-step; retries create new turns.',
+        ..., description='1-based attempt number; retries create new turns.'
     )
     status: AgentTurnStatus = Field(
         ..., description='Current lifecycle status of the agent turn.'
@@ -7936,8 +6256,6 @@ class SessionTranscriptTurn(BaseModel):
     id: str
     agent_id: str
     session_id: str
-    run_id: str | None = None
-    step_key: str | None = None
     channel_exchange_id: str | None = None
     attempt: int
     status: str = Field(
@@ -8064,442 +6382,6 @@ class SessionNudgeAck(BaseModel):
     )
 
 
-class LoopSpecTrigger(BaseModel):
-    """
-    One trigger declaration inside a loop spec.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    key: str | None = Field(
-        None, description='Stable user-authored trigger key within the spec.'
-    )
-    name: str | None = Field(None, description='Human-readable trigger name.')
-    kind: Kind12 = Field(
-        ..., description='Trigger mechanism: `http`, `schedule`, `event`, or `manual`.'
-    )
-    enabled: bool | None = Field(
-        None,
-        description='Whether this trigger should be materialized for the current runnable definition.',
-    )
-    config: HTTPTriggerConfig | ScheduleTriggerConfig | EventTriggerConfig | None = (
-        Field(
-            None,
-            description='Kind-specific trigger configuration. Use `HTTPTriggerConfig` for `kind: http`, `ScheduleTriggerConfig` for `kind: schedule`, and `EventTriggerConfig` for `kind: event`. Omit for manual triggers.',
-        )
-    )
-    concurrency_policy: ConcurrencyPolicy | None = Field(
-        None,
-        description='Trigger concurrency behavior: `allow`, `queue`, `skip`, or `replace`.',
-    )
-    max_concurrent_runs: int | None = Field(
-        None,
-        description='Maximum number of concurrently active runs for this trigger.',
-        ge=1,
-    )
-
-
-class LoopActionStepSpec(BaseModel):
-    """
-    Action step entry inside `LoopSpec.steps`.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str | None = Field(
-        None,
-        description='Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.',
-    )
-    name: str | None = Field(None, description='Human-readable step name.')
-    if_: str | None = Field(
-        None,
-        alias='if',
-        description='Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.',
-    )
-    kind: Literal['action'] = Field(
-        ..., description='Step discriminator value; always `action`.'
-    )
-    config: LoopActionStep = Field(..., description='Action-step configuration.')
-    retry: LoopRetryPolicy | None = Field(
-        None, description='Retry policy for this step.'
-    )
-    timeout: LoopTimeoutPolicy | None = Field(
-        None, description='Timeout policy for this step.'
-    )
-
-
-class LoopSleepStepSpec(BaseModel):
-    """
-    Sleep step entry inside `LoopSpec.steps`.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str | None = Field(
-        None,
-        description='Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.',
-    )
-    name: str | None = Field(None, description='Human-readable step name.')
-    if_: str | None = Field(
-        None,
-        alias='if',
-        description='Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.',
-    )
-    kind: Literal['sleep'] = Field(
-        ..., description='Step discriminator value; always `sleep`.'
-    )
-    config: LoopSleepStep = Field(..., description='Sleep-step configuration.')
-    retry: LoopRetryPolicy | None = Field(
-        None, description='Retry policy for this step.'
-    )
-    timeout: LoopTimeoutPolicy | None = Field(
-        None, description='Timeout policy for this step.'
-    )
-
-
-class LoopWaitForEventStepSpec(BaseModel):
-    """
-    Wait-for-event step entry inside `LoopSpec.steps`.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str | None = Field(
-        None,
-        description='Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.',
-    )
-    name: str | None = Field(None, description='Human-readable step name.')
-    if_: str | None = Field(
-        None,
-        alias='if',
-        description='Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.',
-    )
-    kind: Literal['wait_for_event'] = Field(
-        ..., description='Step discriminator value; always `wait_for_event`.'
-    )
-    config: LoopWaitForEventStep = Field(
-        ..., description='Wait-for-event step configuration.'
-    )
-    retry: LoopRetryPolicy | None = Field(
-        None, description='Retry policy for this step.'
-    )
-    timeout: LoopTimeoutPolicy | None = Field(
-        None, description='Timeout policy for this step.'
-    )
-
-
-class LoopInteractionStepSpec(BaseModel):
-    """
-    Interaction step entry inside `LoopSpec.steps`.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str | None = Field(
-        None,
-        description='Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.',
-    )
-    name: str | None = Field(None, description='Human-readable step name.')
-    if_: str | None = Field(
-        None,
-        alias='if',
-        description='Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.',
-    )
-    kind: Literal['interaction'] = Field(
-        ..., description='Step discriminator value; always `interaction`.'
-    )
-    config: LoopInteractionStep = Field(
-        ..., description='Interaction-step configuration.'
-    )
-    retry: LoopRetryPolicy | None = Field(
-        None, description='Retry policy for this step.'
-    )
-    timeout: LoopTimeoutPolicy | None = Field(
-        None, description='Timeout policy for this step.'
-    )
-
-
-class LoopSubLoopStepSpec(BaseModel):
-    """
-    Child-loop step entry inside `LoopSpec.steps`.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str | None = Field(
-        None,
-        description='Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.',
-    )
-    name: str | None = Field(None, description='Human-readable step name.')
-    if_: str | None = Field(
-        None,
-        alias='if',
-        description='Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.',
-    )
-    kind: Literal['loop'] = Field(
-        ..., description='Step discriminator value; always `loop`.'
-    )
-    config: LoopSubLoopStep = Field(..., description='Child-loop step configuration.')
-    retry: LoopRetryPolicy | None = Field(
-        None, description='Retry policy for this step.'
-    )
-    timeout: LoopTimeoutPolicy | None = Field(
-        None, description='Timeout policy for this step.'
-    )
-
-
-class LoopSpecDefaults(BaseModel):
-    """
-    Run-level defaults inside the loop spec. Lives at `spec.defaults` in the JSON the engine compiles. The run wall-clock limit moved to `limits.wall_clock_timeout`.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    environment: LoopEnvironmentPolicy | None = Field(
-        None, description='Default managed-environment policy for steps that need one.'
-    )
-    agent_session: LoopAgentSessionPolicy | None = Field(
-        None, description='Default durable session policy for agent steps.'
-    )
-
-
-class LoopAgentStep(BaseModel):
-    """
-    Agent step configuration recognised inside `LoopSpec.steps[].config`.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    agent_id: str | None = Field(
-        None,
-        description="Agent to run for this step. Omit to use the loop's top-level `agent_id`.",
-    )
-    instructions: str = Field(
-        ...,
-        description='Prompt or task instructions rendered before the agent turn starts.',
-    )
-    tool_names: list[str] | None = Field(
-        None,
-        description="Optional per-step tool allow-list. When omitted and `disable_tools` is not true, the agent's full granted tool set is available. Send an empty array to allow no tools.",
-    )
-    disable_tools: bool | None = Field(
-        None,
-        description='Set true to disable granted action and memory tools for this step. When false or omitted, granted tools are available unless `tool_names` narrows the allow-list. Reserved runtime tools such as `invoke_skill` and structured-output submission may still be present when applicable.',
-    )
-    output_schema: dict[str, Any] | None = Field(
-        None,
-        description='JSON Schema the agent should satisfy when returning structured output.',
-    )
-    max_turns: int | None = Field(
-        None,
-        description='Maximum tool iterations allowed within this agent turn.',
-        ge=1,
-    )
-    model_route: LoopModelRoute | None = Field(
-        None, description='Optional model route override for this agent step.'
-    )
-    session: LoopAgentSessionPolicy | None = Field(
-        None,
-        description='Optional durable session policy override for this agent step.',
-    )
-
-
-class LoopCheckStep(BaseModel):
-    """
-    Check step configuration recognised inside `LoopSpec.steps[].config`. A check step evaluates typed assertions over the run's template `event`, `meta`, `config`, `steps.<id>.output`, and `steps[0].output`) — deterministic `expr` predicates, or `agent` judges for everything that isn't deterministic — records a per-assertion verdict with cited evidence, and routes on failure: fail the run (stop reason `check_failed`), continue with the red verdict on the record, or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`). All assertions are evaluated; there is no short-circuit. An assertion that errors (bad expr, judge model failure, unparseable verdict) fails closed — never a silent pass.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    checks: list[LoopCheckAssertion] = Field(
-        ...,
-        description='Assertions evaluated in order; names must be unique.',
-        min_length=1,
-    )
-    on_fail: OnFail = Field(
-        'fail',
-        description='Routing when any assertion fails. `fail` stops the run with stop reason `check_failed`. `continue` proceeds with the red verdict recorded. `gate` opens a `request_approval` interaction carrying the failed assertions and evidence; approval resumes the run with the verdict recorded as overridden, rejection stops it with `gate_rejected`.',
-    )
-    gate: LoopCheckGate | None = Field(
-        None, description='Approval gate configuration used when `on_fail` is `gate`.'
-    )
-
-
-class StartLoopRunRequest(BaseModel):
-    """
-    Body for `POST /v1/loops/{resource_id}/runs`. All fields are optional; an empty body starts a run with an empty event/config envelope and no attribution.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    event: dict[str, Any] | None = Field(
-        None,
-        description='Exact event object that starts the run. Manual/API starts use this object the same way integration, HTTP, and schedule triggers do. Templates reference it via `${{ event.<key> }}`.',
-    )
-    meta: dict[str, Any] | None = Field(
-        None,
-        description='Optional event metadata supplied by the caller. Mobius also adds provenance such as run, loop, source, trigger, and source-event ids.',
-    )
-    config: dict[str, Any] | None = Field(
-        None,
-        description='Optional static or caller-provided configuration for handling the event. Templates reference it via `config.*`.',
-    )
-    source: LoopRunSource | None = Field(
-        None, description='Attribution for the call that starts the run.'
-    )
-    idempotency_key: str | None = Field(
-        None,
-        description='Caller-supplied idempotency key, scoped to the org. Repeat calls with the same `idempotency_key` while the prior run is still non-terminal return the existing run (same `id`). A repeat after the prior run terminated returns `409 Conflict` with code `idempotency_key_conflict` and details containing the existing run id and its terminal status.',
-    )
-    budget_usd: float | None = Field(
-        None,
-        description="Per-run budget override in US dollars (1 credit = $0.01). Overrides the loop spec's `limits` budget for this run only. Mutually exclusive with `credit_budget` — setting both is a `400`. Values finer than 0.001 credit ($0.00001) are rejected. The run halts at the next checkpoint (step boundary or agent tool iteration) once spend reaches the budget; enforcement granularity is one model call or metered action.",
-        ge=0.0,
-    )
-    credit_budget: int | None = Field(
-        None,
-        description='Per-run budget override in whole credits (1 credit = $0.01). Same ceiling semantics as `budget_usd`; set exactly one.',
-        ge=1,
-    )
-
-
-class LoopRun(BaseModel):
-    """
-    One loop run record.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Stable run identifier.')
-    loop_id: str = Field(..., description='Loop this run belongs to.')
-    name: str | None = Field(
-        None, description='Human-readable title for this run.', max_length=160
-    )
-    description: str | None = Field(
-        None, description='Optional secondary description for this run.', max_length=320
-    )
-    loop_name: str | None = Field(
-        None, description='Human-readable name of the loop this run belongs to.'
-    )
-    loop_version_id: str = Field(
-        ..., description='LoopVersion record this run is executing.'
-    )
-    loop_version: int = Field(
-        ..., description='Version number of the LoopVersion this run is executing.'
-    )
-    status: LoopRunStatus = Field(
-        ..., description='Current lifecycle state of this run.'
-    )
-    attempt: int | None = Field(
-        None,
-        description='One-based execution attempt for this run. The original run starts at 1 and increments each time the run is resumed or retried in place.',
-        ge=1,
-    )
-    queue_reason: LoopRunQueueReason | None = Field(
-        None,
-        description='Gate that placed this run in the durable queue. Present only while `status` is `queued`.',
-    )
-    plan_concurrency_limit: int | None = Field(
-        None,
-        description='Org-wide concurrent-run ceiling stamped at run start. Present when the run was evaluated against a plan concurrency limit.',
-    )
-    stop_reason: LoopRunStopReason | None = Field(
-        None, description='Terminal reason recorded when the run stops.'
-    )
-    credit_budget: float | None = Field(
-        None,
-        description="The run's budget ceiling in credits (1 credit = $0.01), with up to 3 decimal places. Resolved at run start from the StartRun override, the loop spec's `limits` block, or the trial-plan default, in that order. Absent when the run is unbounded.",
-    )
-    credit_spent: float | None = Field(
-        None,
-        description="Metered spend attributed to this run so far, in credits (up to 3 decimal places). Incremented atomically with each usage-ledger insert that carries this run's id. Counts all metered work regardless of credential source (BYOK calls count at their rate-card equivalent even though they bill zero credits).",
-    )
-    max_agent_turns: int | None = Field(
-        None,
-        description="Run-wide cap on agent turns across all steps, from the loop spec's `limits.max_agent_turns`. Absent when unbounded.",
-    )
-    agent_turns_used: int | None = Field(
-        None,
-        description='Number of agent turns started for this run so far. Compared against `max_agent_turns` when that cap is set.',
-    )
-    event: dict[str, Any] | None = Field(
-        None,
-        description='Exact safe/canonical event object that started the run, reachable in templates at `event.*`.',
-    )
-    meta: dict[str, Any] | None = Field(
-        None,
-        description='Run and trigger metadata envelope, reachable in templates at `${{ meta.* }}`: `run_id`, `loop_id`, `source`, `trigger`, plus trigger-supplied facts such as `event_type`, `source_event_id`, and `scheduled_at`.',
-    )
-    config: dict[str, Any] | None = Field(
-        None,
-        description='Optional static or caller-provided configuration resolved when the run started, reachable in templates at `config.*`.',
-    )
-    result: dict[str, Any] | None = Field(
-        None,
-        description="Final result payload. When the loop declares an `output:` block this is that block rendered at completion; otherwise it is the run's accumulated step outputs, keyed by step id. Absent until the run terminates successfully.",
-    )
-    source: LoopRunSource | None = Field(
-        None, description='Source that started this run.'
-    )
-    parent_run_id: str | None = Field(
-        None,
-        description='Run that triggered this run via an `loop` step. Present only on child runs; absent for top-level runs.',
-    )
-    parent_loop_id: str | None = Field(
-        None,
-        description='Loop that triggered this run via an `loop` step. Present only on child runs.',
-    )
-    parent_step_key: str | None = Field(
-        None,
-        description="Step key within the parent run's loop that triggered this run. Present only on child runs.",
-    )
-    error_message: str | None = Field(
-        None, description='Human-readable failure summary; populated on `failed` runs.'
-    )
-    error_type: str | None = Field(
-        None, description='Machine-readable failure classification when available.'
-    )
-    wake_at: AwareDatetime | None = Field(
-        None, description='Scheduled wake time for a suspended run.'
-    )
-    wall_clock_deadline_at: AwareDatetime | None = Field(
-        None, description='Deadline after which the loop reaper fails the run.'
-    )
-    started_at: AwareDatetime | None = Field(
-        None, description='Time the engine moved the run to `running`.'
-    )
-    completed_at: AwareDatetime | None = Field(
-        None, description='Time the run reached a terminal status.'
-    )
-    created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
-    updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
-
-
-class LoopRunListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[LoopRun] = Field(..., description='The list of results for this page.')
-    next_cursor: str | None = Field(
-        None,
-        description='Opaque cursor for the next page; absent when no more results.',
-    )
-    has_more: bool | None = Field(
-        None, description='True when more items exist after this page.'
-    )
-
-
 class BlueprintResourceRef(BaseModel):
     """
     A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved within this apply first, then against existing bindings), or by `blueprint_ref` (resolved by key; its namespace is recorded as provenance and is not used for reference resolution in this version).
@@ -8525,7 +6407,7 @@ class BlueprintActionInput(BaseModel):
         ..., description='Blueprint-defined handle other resources use to reference it.'
     )
     name: str
-    type: Type29 | None = Field(
+    type: Type28 | None = Field(
         None, description='Endpoint kind. Defaults to `http`. Immutable after create.'
     )
     endpoint: str | None = Field(None, description='Endpoint URL for http actions.')
@@ -8568,57 +6450,10 @@ class BlueprintAgentInput(BaseModel):
         None, description='Default session-compaction policy inherited by new sessions.'
     )
     thinking_effort: ThinkingEffort | None = Field(
-        None,
-        description='Default reasoning-effort level for sessions and Loop agent steps.',
+        None, description="Default reasoning-effort level for the agent's sessions."
     )
     color: str | None = None
     skills: list[BlueprintResourceRef] | None = None
-    tags: TagMap | None = None
-
-
-class BlueprintLoopInput(BaseModel):
-    """
-    A desired loop. The spec-bearing fields (`steps`, `triggers`, `event`, `config`, `limits`, `output`, `concurrency`, `repositories`, `cleanup`, `defaults`, `run_name`) mirror the loop authoring shape and are compiled by the loop engine. Applied loops default to `draft` unless `status` is set. `default_config`, `settings`, and `tags` configure Loop row state.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    key: str
-    name: str
-    description: str | None = None
-    agent: BlueprintResourceRef | None = None
-    status: Status4 | None = None
-    schema_version: SchemaVersion4 = Field(
-        '1', description='Loop authoring schema version. Only version 1 is accepted.'
-    )
-    steps: list[dict[str, Any]] | None = None
-    triggers: list[dict[str, Any]] | None = None
-    event: dict[str, Any] | None = Field(
-        None,
-        description='Declared event input contract for the run (maps to the loop spec `event`).',
-    )
-    config: dict[str, Any] | None = None
-    limits: dict[str, Any] | None = None
-    output: dict[str, Any] | None = None
-    concurrency: str | None = None
-    repositories: list[dict[str, Any]] | None = None
-    cleanup: list[dict[str, Any]] | None = Field(
-        None,
-        description='Cleanup steps run at the end of the run (maps to the loop spec `cleanup`).',
-    )
-    defaults: dict[str, Any] | None = None
-    run_name: RunNameSpec | None = Field(
-        None,
-        description='Templates for the operator-facing title and description of each run.',
-    )
-    default_config: dict[str, Any] | None = Field(
-        None,
-        description='Default config values used when a run starts without overrides.',
-    )
-    settings: dict[str, Any] | None = Field(
-        None, description='Free-form Loop-level settings consumed by the engine.'
-    )
     tags: TagMap | None = None
 
 
@@ -8744,13 +6579,6 @@ class Interaction(BaseModel):
         extra='forbid',
     )
     id: str = Field(..., description='Unique identifier for this interaction.')
-    run_id: str | None = Field(
-        None, description='Originating loop run when the interaction is run-backed.'
-    )
-    signal_name: str | None = Field(
-        None,
-        description='Signal name used to resume the originating run when run-backed.',
-    )
     created_by: str | None = Field(
         None,
         description='Canonical principal ID of the human or agent that created the interaction; null for legacy/system-created rows.',
@@ -8828,7 +6656,7 @@ class Interaction(BaseModel):
     )
     consumer: Consumer | None = Field(
         None,
-        description="Polymorphic identifier of what is waiting on this interaction's resolution. Replaces the special-cased `run_id`/`signal_name` pair; the latter remain populated when `consumer.kind=run`.",
+        description="Polymorphic identifier of what is waiting on this interaction's resolution.",
     )
     delivery: Delivery | None = Field(
         None,
@@ -8883,9 +6711,9 @@ class InteractionListResponse(BaseModel):
     )
 
 
-class CreateStandaloneInteractionRequest(BaseModel):
+class CreateInteractionRequest(BaseModel):
     """
-    Creates a standalone interaction. Completion records the response but does not deliver a loop signal.
+    Creates an interaction. `consumer` names what is waiting on its resolution; when omitted, completion records the response and nothing else acts on it.
     """
 
     model_config = ConfigDict(
@@ -8931,74 +6759,7 @@ class CreateStandaloneInteractionRequest(BaseModel):
     )
     consumer: ConsumerInput | None = Field(
         None,
-        description="Polymorphic identifier of what is waiting on this interaction's resolution. When omitted on a run-backed create request, the server derives a `kind=run` consumer from `run_id` and `signal_name`.",
-    )
-    delivery: Delivery | None = Field(
-        None, description='Optional per-interaction delivery override.'
-    )
-    expires_at: AwareDatetime | None = Field(
-        None,
-        description='Timestamp after which this interaction expires if not responded to.',
-    )
-
-
-class CreateRunBackedInteractionRequest(BaseModel):
-    """
-    Creates an interaction linked to a loop run for audit. The server derives a `kind=run` consumer from `run_id` and `signal_name`.
-
-    This is an audit-only link: creating an interaction here does not suspend the run, and resolving it does not by itself resume a run. A run only blocks on, and resumes from, human input when the loop definition declares an interaction step — that step creates the interaction and registers the matching wait atomically. Use this endpoint to record a human decision against a run, not to drive run control flow.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    run_id: str = Field(
-        ..., description='ID of the loop run associated with this interaction.'
-    )
-    signal_name: str = Field(
-        ..., description='Legacy signal name recorded with the run association.'
-    )
-    target_user_ids: list[str] = Field(
-        ...,
-        description='Resolved user IDs to target directly. At least one target is required. Agents use their agent principal IDs.',
-        min_length=1,
-    )
-    kind: InteractionKind = Field(..., description='Protocol kind.')
-    title: str = Field(
-        ..., description='Short non-empty title shown to the responder.', min_length=1
-    )
-    description: str | None = Field(
-        None, description='Optional longer responder-facing detail or instructions.'
-    )
-    subject: InteractionReference | None = Field(
-        None, description='Primary work item or artifact the interaction is about.'
-    )
-    references: list[InteractionReference] | None = Field(
-        None, description='Supporting links and related entities.'
-    )
-    context: dict[str, Any] | None = Field(
-        None,
-        description='Additional key-value context surfaced in the UI alongside the title and description.',
-    )
-    tags: TagMap | None = None
-    properties: dict[str, Any] | None = Field(
-        None, description='Free-form structured metadata to attach to the interaction.'
-    )
-    spec: InteractionSpec | None = Field(
-        None,
-        description='Response controls and validation rules rendered to the recipient.',
-    )
-    require_all: bool | None = Field(
-        None,
-        description='When true, all target users must respond before the interaction is considered complete. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code.',
-    )
-    resolution_policy: ResolutionPolicy | None = Field(
-        None,
-        description='Declarative resolution rule. When supplied the policy evaluator drives completion.',
-    )
-    consumer: ConsumerInput | None = Field(
-        None,
-        description="Polymorphic identifier of what is waiting on this interaction's resolution. When omitted on a run-backed create request, the server derives a `kind=run` consumer from `run_id` and `signal_name`.",
+        description="Polymorphic identifier of what is waiting on this interaction's resolution.",
     )
     delivery: Delivery | None = Field(
         None, description='Optional per-interaction delivery override.'
@@ -9013,66 +6774,6 @@ class InteractionUpsertFrame(Interaction):
     event_type: Literal['interaction.upsert']
 
 
-class LoopAgentStepSpec(BaseModel):
-    """
-    Agent step entry inside `LoopSpec.steps`.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str | None = Field(
-        None,
-        description='Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.',
-    )
-    name: str | None = Field(None, description='Human-readable step name.')
-    if_: str | None = Field(
-        None,
-        alias='if',
-        description='Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.',
-    )
-    kind: Literal['agent'] = Field(
-        ..., description='Step discriminator value; always `agent`.'
-    )
-    config: LoopAgentStep = Field(..., description='Agent-step configuration.')
-    retry: LoopRetryPolicy | None = Field(
-        None, description='Retry policy for this step.'
-    )
-    timeout: LoopTimeoutPolicy | None = Field(
-        None, description='Timeout policy for this step.'
-    )
-
-
-class LoopCheckStepSpec(BaseModel):
-    """
-    Check step entry inside `LoopSpec.steps`.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str | None = Field(
-        None,
-        description='Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.',
-    )
-    name: str | None = Field(None, description='Human-readable step name.')
-    if_: str | None = Field(
-        None,
-        alias='if',
-        description='Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.',
-    )
-    kind: Literal['check'] = Field(
-        ..., description='Step discriminator value; always `check`.'
-    )
-    config: LoopCheckStep = Field(..., description='Check-step configuration.')
-    retry: LoopRetryPolicy | None = Field(
-        None, description='Retry policy for this step.'
-    )
-    timeout: LoopTimeoutPolicy | None = Field(
-        None, description='Timeout policy for this step.'
-    )
-
-
 class BlueprintResources(BaseModel):
     """
     The desired resources grouped by type. All groups are optional.
@@ -9084,45 +6785,7 @@ class BlueprintResources(BaseModel):
     actions: list[BlueprintActionInput] | None = None
     skills: list[BlueprintSkillInput] | None = None
     agents: list[BlueprintAgentInput] | None = None
-    loops: list[BlueprintLoopInput] | None = None
     tables: list[BlueprintTableInput] | None = None
-
-
-class CreateInteractionRequest(
-    RootModel[CreateStandaloneInteractionRequest | CreateRunBackedInteractionRequest]
-):
-    root: CreateStandaloneInteractionRequest | CreateRunBackedInteractionRequest = (
-        Field(
-            ...,
-            description='Creates an interaction directly. Use the standalone variant with no loop-run side effect, or the run-backed variant that requires both `run_id` and `signal_name` so completion can resume the run. For worker/job usage, prefer the job-scoped route so the server can derive the owning run from the claimed job context.',
-        )
-    )
-
-
-class LoopStep(
-    RootModel[
-        LoopAgentStepSpec
-        | LoopActionStepSpec
-        | LoopSleepStepSpec
-        | LoopWaitForEventStepSpec
-        | LoopInteractionStepSpec
-        | LoopSubLoopStepSpec
-        | LoopCheckStepSpec
-    ]
-):
-    root: (
-        LoopAgentStepSpec
-        | LoopActionStepSpec
-        | LoopSleepStepSpec
-        | LoopWaitForEventStepSpec
-        | LoopInteractionStepSpec
-        | LoopSubLoopStepSpec
-        | LoopCheckStepSpec
-    ) = Field(
-        ...,
-        description='User-authored loop step, discriminated by `kind`.',
-        discriminator='kind',
-    )
 
 
 class ApplyBlueprintRequest(BaseModel):
@@ -9150,246 +6813,6 @@ class ApplyBlueprintRequest(BaseModel):
     )
     mode: BlueprintApplyMode | None = None
     resources: BlueprintResources
-
-
-class Loop(BaseModel):
-    """
-    A loop and its current authored definition. Updating any authoring field creates an internal revision and makes it runnable immediately.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Stable loop identifier.')
-    owner: ResourceOwner
-    visibility: ResourceVisibility
-    container: ResourceContainer | None = None
-    posture: ResourcePosture
-    name: str = Field(..., description='Human-readable display name.')
-    description: str | None = Field(
-        None, description="Markdown description of the loop's purpose."
-    )
-    status: LoopStatus = Field(
-        ...,
-        description='Current loop lifecycle status: `draft`, `active`, `paused`, or `deleted`.',
-    )
-    agent_id: str | None = Field(
-        None,
-        description='Agent container associated with this loop. Agent steps use it when they do not pin `config.agent_id`; it never owns the loop.',
-    )
-    schema_version: SchemaVersion1 = Field(
-        '1',
-        description='Loop authoring schema version. Only schema version 1 is accepted.',
-    )
-    event: dict[str, LoopSpecInput] | None = Field(
-        None, description='Declared event fields for this loop.'
-    )
-    config: dict[str, LoopSpecInput] | None = Field(
-        None, description='Declared run config fields for this loop.'
-    )
-    concurrency: Concurrency | None = Field(
-        None,
-        description='Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.',
-    )
-    triggers: list[LoopSpecTrigger] | None = Field(
-        None, description='Authored trigger declarations for this loop.'
-    )
-    repositories: list[LoopSpecRepository] | None = Field(
-        None, description='Source repositories the loop targets.'
-    )
-    steps: list[LoopStep] | None = Field(
-        None,
-        description='Steps use kind agent, action, sleep, wait_for_event, interaction, loop, or check; action inputs use config.parameters; if is a predicate.\n\nEach item has `kind`, `config`, and optional `id`, `name`, `if`, `retry`, and `timeout`. Valid kinds are `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, and `check`. Required config: `agent.instructions`; `action.action_name`; `sleep.duration` or `sleep.until`; `wait_for_event.event_type`; `interaction.protocol` plus `interaction.targets`; `loop.loop_id`; or `check.checks`. Action inputs belong in `config.parameters`; `config.execution_location` is `managed`, `worker`, or `environment`. `if` is a bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`. String leaves interpolate expr values with `${{ ... }}`.',
-    )
-    output: dict[str, Any] | None = Field(
-        None, description='Declared run result contract.'
-    )
-    cleanup: list[dict[str, Any]] | None = Field(
-        None,
-        description='Cleanup steps or policies evaluated after normal step execution.',
-    )
-    limits: LoopSpecLimits | None = Field(
-        None, description='Run guardrails such as budget, timeout, and turn limits.'
-    )
-    defaults: LoopSpecDefaults | None = Field(
-        None,
-        description='Run-level defaults applied when individual steps omit a policy.',
-    )
-    run_name: RunNameSpec | None = Field(
-        None,
-        description='Optional templates for generating an operator-facing title and description for each run.',
-    )
-    default_config: dict[str, Any] | None = Field(
-        None,
-        description='Default config values used when a run is started without overrides.',
-    )
-    settings: dict[str, Any] | None = Field(
-        None, description='Free-form loop-level settings consumed by the engine.'
-    )
-    tags: TagMap | None = Field(
-        None,
-        description='Free-form labels used for filtering, ownership, or automation.',
-    )
-    last_run_at: AwareDatetime | None = Field(
-        None, description='Timestamp of the most recent run start, if any.'
-    )
-    created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
-    updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
-
-
-class LoopListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[Loop] = Field(..., description='The list of results for this page.')
-    next_cursor: str | None = Field(
-        None,
-        description='Opaque cursor for the next page; absent when no more results.',
-    )
-    has_more: bool | None = Field(
-        None, description='True when more items exist after this page.'
-    )
-
-
-class CreateLoopRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str = Field(..., description='Human-readable display name.')
-    description: str | None = Field(
-        None, description="Markdown description of the loop's purpose."
-    )
-    agent_id: str | None = Field(
-        None,
-        description='Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`.',
-    )
-    owner: ResourceOwner | None = None
-    visibility: ResourceVisibility | None = None
-    schema_version: SchemaVersion1 = Field(
-        '1',
-        description='Loop authoring schema version. Only schema version 1 is accepted.',
-    )
-    event: dict[str, LoopSpecInput] | None = Field(
-        None, description='Declared event fields for this loop.'
-    )
-    config: dict[str, LoopSpecInput] | None = Field(
-        None, description='Declared run config fields for this loop.'
-    )
-    concurrency: Concurrency | None = Field(
-        None,
-        description='Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.',
-    )
-    triggers: list[LoopSpecTrigger] | None = Field(
-        None, description='Authored trigger declarations for this loop.'
-    )
-    repositories: list[LoopSpecRepository] | None = Field(
-        None, description='Source repositories the loop targets.'
-    )
-    steps: list[LoopStep] | None = Field(
-        None,
-        description='Steps use kind agent, action, sleep, wait_for_event, interaction, loop, or check; action inputs use config.parameters; if is a predicate.\n\nEach item has `kind`, `config`, and optional `id`, `name`, `if`, `retry`, and `timeout`. Valid kinds are `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, and `check`. Required config: `agent.instructions`; `action.action_name`; `sleep.duration` or `sleep.until`; `wait_for_event.event_type`; `interaction.protocol` plus `interaction.targets`; `loop.loop_id`; or `check.checks`. Action inputs belong in `config.parameters`; `config.execution_location` is `managed`, `worker`, or `environment`. `if` is a bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`. String leaves interpolate expr values with `${{ ... }}`.',
-    )
-    output: dict[str, Any] | None = Field(
-        None, description='Declared run result contract.'
-    )
-    cleanup: list[dict[str, Any]] | None = Field(
-        None,
-        description='Cleanup steps or policies evaluated after normal step execution.',
-    )
-    limits: LoopSpecLimits | None = Field(
-        None, description='Run guardrails such as budget, timeout, and turn limits.'
-    )
-    defaults: LoopSpecDefaults | None = Field(
-        None,
-        description='Run-level defaults applied when individual steps omit a policy.',
-    )
-    run_name: RunNameSpec | None = Field(
-        None,
-        description='Optional templates for generating an operator-facing title and description for each run.',
-    )
-    default_config: dict[str, Any] | None = Field(
-        None,
-        description='Default config values used when a run is started without overrides.',
-    )
-    settings: dict[str, Any] | None = Field(
-        None, description='Free-form loop-level settings consumed by the engine.'
-    )
-    tags: TagMap | None = Field(
-        None,
-        description='Free-form labels used for filtering, ownership, or automation.',
-    )
-
-
-class UpdateLoopRequest(BaseModel):
-    """
-    Partial update of loop metadata and/or authoring fields. Authoring changes become runnable immediately.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str | None = Field(None, description='Human-readable display name.')
-    description: str | None = Field(
-        None, description="Markdown description of the loop's purpose."
-    )
-    status: LoopStatus | None = Field(
-        None, description='Replacement lifecycle status for the loop.'
-    )
-    agent_id: str | None = Field(
-        None,
-        description='Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`.',
-    )
-    schema_version: SchemaVersion1 | None = Field(
-        '1',
-        description='Loop authoring schema version. Only schema version 1 is accepted.',
-    )
-    event: dict[str, LoopSpecInput] | None = Field(
-        None, description='Declared event fields for this loop.'
-    )
-    config: dict[str, LoopSpecInput] | None = Field(
-        None, description='Declared run config fields for this loop.'
-    )
-    concurrency: Concurrency | None = Field(
-        None,
-        description='Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.',
-    )
-    triggers: list[LoopSpecTrigger] | None = Field(
-        None, description='Replacement authored trigger declarations.'
-    )
-    repositories: list[LoopSpecRepository] | None = Field(
-        None, description='Replacement source repositories the loop targets.'
-    )
-    steps: list[LoopStep] | None = Field(
-        None,
-        description='Steps use kind agent, action, sleep, wait_for_event, interaction, loop, or check; action inputs use config.parameters; if is a predicate.\n\nEach item has `kind`, `config`, and optional `id`, `name`, `if`, `retry`, and `timeout`. Valid kinds are `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, and `check`. Required config: `agent.instructions`; `action.action_name`; `sleep.duration` or `sleep.until`; `wait_for_event.event_type`; `interaction.protocol` plus `interaction.targets`; `loop.loop_id`; or `check.checks`. Action inputs belong in `config.parameters`; `config.execution_location` is `managed`, `worker`, or `environment`. `if` is a bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`. String leaves interpolate expr values with `${{ ... }}`.',
-    )
-    output: dict[str, Any] | None = Field(
-        None, description='Replacement run result contract.'
-    )
-    cleanup: list[dict[str, Any]] | None = Field(
-        None, description='Replacement cleanup steps or policies.'
-    )
-    limits: LoopSpecLimits | None = Field(
-        None,
-        description='Replacement run guardrails such as budget, timeout, and turn limits.',
-    )
-    defaults: LoopSpecDefaults | None = Field(
-        None, description='Replacement run-level defaults.'
-    )
-    run_name: RunNameSpec | None = Field(
-        None,
-        description='Replacement templates for generating an operator-facing title and description for each run.',
-    )
-    default_config: dict[str, Any] | None = Field(
-        None,
-        description='Default config values used when a run is started without overrides.',
-    )
-    settings: dict[str, Any] | None = Field(
-        None, description='Free-form loop-level settings consumed by the engine.'
-    )
-    tags: TagMap | None = Field(
-        None, description='Replacement labels; send an empty object to clear all tags.'
-    )
 
 
 class SessionToolResultBlock(BaseModel):
@@ -9546,9 +6969,6 @@ class SessionMessagePreviewFrame(BaseModel):
     session_id: str = Field(..., description='Session this preview belongs to.')
     agent_id: str | None = Field(
         None, description='Agent container executing the parent session, when known.'
-    )
-    run_id: str | None = Field(
-        None, description='Loop run that produced the preview, when applicable.'
     )
     turn_id: str = Field(..., description='Agent turn that produced the preview.')
     live_sequence: int | None = Field(

@@ -33,7 +33,6 @@ def test_list_encodes_every_filter() -> None:
     client = _client_with(handler)
     client.list_action_invocations(
         ListActionInvocationsOptions(
-            run_id="run_1",
             job_id="job_1",
             environment_id="env_1",
             action_name="crm.sync",
@@ -51,7 +50,6 @@ def test_list_encodes_every_filter() -> None:
 
     assert seen == [
         {
-            "run_id": "run_1",
             "job_id": "job_1",
             "environment_id": "env_1",
             "action_name": "crm.sync",

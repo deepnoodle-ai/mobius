@@ -48,13 +48,11 @@ class WorkerConfig:
 class ActionContext:
     job_id: str
     worker_instance_id: str
-    run_id: str | None = None
     session_id: str | None = None
     agent_turn_id: str | None = None
     tool_call_id: str | None = None
     attempt: int = 1
     queue: str | None = None
-    step_id: str | None = None
     action: str | None = None
 
     def emit_event(self, _type: str, _payload: dict[str, Any]) -> None:
@@ -72,7 +70,6 @@ class GenerationJob:
     spec: dict[str, Any]
     provider: str | None = None
     model: str | None = None
-    run_id: str | None = None
     session_id: str | None = None
     agent_turn_id: str | None = None
     tool_call_id: str | None = None
@@ -343,13 +340,11 @@ class Worker:
         ctx = ActionContext(
             job_id=job.id,
             worker_instance_id=self.config.worker_instance_id or "",
-            run_id=job.run_id,
             session_id=job.session_id,
             agent_turn_id=job.agent_turn_id,
             tool_call_id=job.tool_call_id,
             attempt=job.claim_attempt,
             queue=job.queue,
-            step_id=job.step_id,
             action=job.action_name,
         )
         try:

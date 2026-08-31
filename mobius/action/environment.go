@@ -82,8 +82,6 @@ const (
 type environmentContext interface {
 	EnvironmentID() string
 	MobiusClient() *mobius.Client
-	RunID() string
-	StepName() string
 }
 
 type environmentLeaseContext interface {

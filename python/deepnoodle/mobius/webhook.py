@@ -20,8 +20,6 @@ from .signing import (
 
 WEBHOOK_EVENT_TYPE_HEADER = "X-Mobius-Event-Type"
 
-WEBHOOK_EVENT_RUN_COMPLETED = "run.completed"
-WEBHOOK_EVENT_RUN_FAILED = "run.failed"
 WEBHOOK_EVENT_PING = "ping"
 
 _SYNTHETIC_WEBHOOK_USER_AGENT = "mobius-sdk-webhook-delivery/1"

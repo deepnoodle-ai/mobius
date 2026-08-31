@@ -19,7 +19,7 @@ func TestAuthStatusReportsSavedCredentialAfterInjection(t *testing.T) {
 	unsetEnv(t, "MOBIUS_API_URL")
 	t.Setenv("MOBIUS_CONFIG_DIR", t.TempDir())
 	resetActiveAuth(t)
-	srv := newAuthProbeServer(t, "mbc_saved", "/v1/loops", http.StatusOK)
+	srv := newAuthProbeServer(t, "mbc_saved", "/v1/agents", http.StatusOK)
 	defer srv.Close()
 
 	err := authstore.Save(&authstore.Credential{
@@ -47,7 +47,7 @@ func TestAuthStatusReportsSavedCredentialAfterInjection(t *testing.T) {
 	if strings.Contains(result.Stdout, "MOBIUS_API_KEY environment variable") {
 		t.Fatalf("stdout incorrectly reported synthetic env var:\n%s", result.Stdout)
 	}
-	if !strings.Contains(result.Stdout, "Auth check: GET /v1/loops -> HTTP 200") {
+	if !strings.Contains(result.Stdout, "Auth check: GET /v1/agents -> HTTP 200") {
 		t.Fatalf("stdout missing auth check:\n%s", result.Stdout)
 	}
 	if !strings.Contains(result.Stdout, "Authenticated: yes (browser-based CLI credential verified)") {
@@ -56,7 +56,7 @@ func TestAuthStatusReportsSavedCredentialAfterInjection(t *testing.T) {
 }
 
 func TestAuthStatusReportsRealAPIKeyEnv(t *testing.T) {
-	srv := newAuthProbeServer(t, "mbx_env", "/v1/loops", http.StatusOK)
+	srv := newAuthProbeServer(t, "mbx_env", "/v1/agents", http.StatusOK)
 	defer srv.Close()
 	t.Setenv("MOBIUS_API_KEY", "mbx_env")
 	t.Setenv("MOBIUS_API_URL", srv.URL)
@@ -82,7 +82,7 @@ func TestAuthStatusReportsRealAPIKeyEnv(t *testing.T) {
 	if !strings.Contains(result.Stdout, "Auth source: MOBIUS_API_KEY environment variable") {
 		t.Fatalf("stdout missing env auth source:\n%s", result.Stdout)
 	}
-	if !strings.Contains(result.Stdout, "Auth check: GET /v1/loops -> HTTP 200") {
+	if !strings.Contains(result.Stdout, "Auth check: GET /v1/agents -> HTTP 200") {
 		t.Fatalf("stdout missing auth check:\n%s", result.Stdout)
 	}
 	if !strings.Contains(result.Stdout, "Authenticated: yes (raw API key verified)") {
@@ -91,7 +91,7 @@ func TestAuthStatusReportsRealAPIKeyEnv(t *testing.T) {
 }
 
 func TestAuthStatusReportsRejectedCredential(t *testing.T) {
-	srv := newAuthProbeServer(t, "mbx_env", "/v1/loops", http.StatusUnauthorized)
+	srv := newAuthProbeServer(t, "mbx_env", "/v1/agents", http.StatusUnauthorized)
 	defer srv.Close()
 	t.Setenv("MOBIUS_API_KEY", "mbx_env")
 	t.Setenv("MOBIUS_API_URL", srv.URL)
@@ -102,7 +102,7 @@ func TestAuthStatusReportsRejectedCredential(t *testing.T) {
 	if !result.Success() {
 		t.Fatalf("auth status failed: %v\nstderr: %s", result.Err, result.Stderr)
 	}
-	if !strings.Contains(result.Stdout, "Auth check: GET /v1/loops -> HTTP 401") {
+	if !strings.Contains(result.Stdout, "Auth check: GET /v1/agents -> HTTP 401") {
 		t.Fatalf("stdout missing rejected auth check:\n%s", result.Stdout)
 	}
 	if !strings.Contains(result.Stdout, "Authenticated: no (raw API key rejected)") {
@@ -111,7 +111,7 @@ func TestAuthStatusReportsRejectedCredential(t *testing.T) {
 }
 
 func TestAuthStatusReportsOrgScopeForRawAPIKey(t *testing.T) {
-	srv := newAuthProbeServer(t, "mbx_env", "/v1/loops", http.StatusOK)
+	srv := newAuthProbeServer(t, "mbx_env", "/v1/agents", http.StatusOK)
 	defer srv.Close()
 	t.Setenv("MOBIUS_API_KEY", "mbx_env")
 	t.Setenv("MOBIUS_API_URL", srv.URL)
@@ -132,7 +132,7 @@ func TestAuthStatusReportsUserScopeForBrowserCredential(t *testing.T) {
 	unsetEnv(t, "MOBIUS_API_URL")
 	t.Setenv("MOBIUS_CONFIG_DIR", t.TempDir())
 	resetActiveAuth(t)
-	srv := newAuthProbeServer(t, "mbc_saved", "/v1/loops", http.StatusOK)
+	srv := newAuthProbeServer(t, "mbc_saved", "/v1/agents", http.StatusOK)
 	defer srv.Close()
 
 	if err := authstore.Save(&authstore.Credential{
@@ -154,8 +154,8 @@ func TestAuthStatusReportsUserScopeForBrowserCredential(t *testing.T) {
 }
 
 func TestAuthProbePathIsOrgScoped(t *testing.T) {
-	if got := authProbePath("mbx_env"); got != "/v1/loops" {
-		t.Fatalf("authProbePath() = %q, want /v1/loops", got)
+	if got := authProbePath(); got != "/v1/agents" {
+		t.Fatalf("authProbePath() = %q, want /v1/agents", got)
 	}
 }
 
@@ -257,13 +257,13 @@ func TestProfileFlagOverridesDefaultProfile(t *testing.T) {
 		t.Fatalf("save local profile: %v", err)
 	}
 
-	result := newApp().Test(t, cli.TestArgs("loops", "list", "--profile", "local"))
+	result := newApp().Test(t, cli.TestArgs("agents", "list", "--profile", "local"))
 	if !result.Success() {
-		t.Fatalf("loops list --profile local failed: %v\nstderr: %s", result.Err, result.Stderr)
+		t.Fatalf("agents list --profile local failed: %v\nstderr: %s", result.Err, result.Stderr)
 	}
 	select {
 	case got := <-localHits:
-		if got != "GET /v1/loops Bearer mbx_local" {
+		if got != "GET /v1/agents Bearer mbx_local" {
 			t.Fatalf("local server saw %q, want local profile request", got)
 		}
 	default:
@@ -286,14 +286,14 @@ func TestGeneratedCommandUsesCustomAPIURL(t *testing.T) {
 	defer srv.Close()
 
 	result := newApp().Test(t,
-		cli.TestArgs("loops", "list", "--api-url", srv.URL, "--api-key", "mbx_test"),
+		cli.TestArgs("agents", "list", "--api-url", srv.URL, "--api-key", "mbx_test"),
 		cli.TestEnv("MOBIUS_CONFIG_DIR", t.TempDir()),
 	)
 	if !result.Success() {
-		t.Fatalf("loops list failed: %v\nstderr: %s", result.Err, result.Stderr)
+		t.Fatalf("agents list failed: %v\nstderr: %s", result.Err, result.Stderr)
 	}
-	if got := <-seen; got != "GET /v1/loops Bearer mbx_test" {
-		t.Fatalf("request = %q, want custom server loops request", got)
+	if got := <-seen; got != "GET /v1/agents Bearer mbx_test" {
+		t.Fatalf("request = %q, want custom server agents request", got)
 	}
 }
 

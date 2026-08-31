@@ -297,14 +297,9 @@ func (c *Client) GetSession(ctx context.Context, sessionID string) (*api.Session
 	return resp.JSON200, nil
 }
 
-// CancelSession cancels the active direct turn. Force additionally cancels
-// loop-owned turns and should be reserved for recovery.
-func (c *Client) CancelSession(ctx context.Context, sessionID string, force bool) (*api.Session, error) {
-	params := &api.CancelSessionParams{}
-	if force {
-		params.Force = &force
-	}
-	resp, err := c.ac.CancelSessionWithResponse(ctx, api.SessionIdParam(sessionID), params)
+// CancelSession cancels the session's active turn.
+func (c *Client) CancelSession(ctx context.Context, sessionID string) (*api.Session, error) {
+	resp, err := c.ac.CancelSessionWithResponse(ctx, api.SessionIdParam(sessionID))
 	if err != nil {
 		return nil, fmt.Errorf("mobius: cancel session: %w", err)
 	}

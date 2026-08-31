@@ -317,7 +317,6 @@ func (e AgentAudienceResourceDispositionAction) Valid() bool {
 // Defines values for AgentAudienceResourceDispositionResourceType.
 const (
 	AgentAudienceResourceDispositionResourceTypeArtifact AgentAudienceResourceDispositionResourceType = "artifact"
-	AgentAudienceResourceDispositionResourceTypeLoop     AgentAudienceResourceDispositionResourceType = "loop"
 	AgentAudienceResourceDispositionResourceTypeSession  AgentAudienceResourceDispositionResourceType = "session"
 	AgentAudienceResourceDispositionResourceTypeSkill    AgentAudienceResourceDispositionResourceType = "skill"
 	AgentAudienceResourceDispositionResourceTypeTable    AgentAudienceResourceDispositionResourceType = "table"
@@ -327,8 +326,6 @@ const (
 func (e AgentAudienceResourceDispositionResourceType) Valid() bool {
 	switch e {
 	case AgentAudienceResourceDispositionResourceTypeArtifact:
-		return true
-	case AgentAudienceResourceDispositionResourceTypeLoop:
 		return true
 	case AgentAudienceResourceDispositionResourceTypeSession:
 		return true
@@ -686,7 +683,6 @@ func (e AgentVisibilityAffectedResourceResourceClass) Valid() bool {
 // Defines values for AgentVisibilityAffectedResourceResourceType.
 const (
 	AgentVisibilityAffectedResourceResourceTypeArtifact AgentVisibilityAffectedResourceResourceType = "artifact"
-	AgentVisibilityAffectedResourceResourceTypeLoop     AgentVisibilityAffectedResourceResourceType = "loop"
 	AgentVisibilityAffectedResourceResourceTypeSession  AgentVisibilityAffectedResourceResourceType = "session"
 	AgentVisibilityAffectedResourceResourceTypeSkill    AgentVisibilityAffectedResourceResourceType = "skill"
 	AgentVisibilityAffectedResourceResourceTypeTable    AgentVisibilityAffectedResourceResourceType = "table"
@@ -696,8 +692,6 @@ const (
 func (e AgentVisibilityAffectedResourceResourceType) Valid() bool {
 	switch e {
 	case AgentVisibilityAffectedResourceResourceTypeArtifact:
-		return true
-	case AgentVisibilityAffectedResourceResourceTypeLoop:
 		return true
 	case AgentVisibilityAffectedResourceResourceTypeSession:
 		return true
@@ -839,47 +833,10 @@ func (e BlueprintDeleteResultStatus) Valid() bool {
 	}
 }
 
-// Defines values for BlueprintLoopInputSchemaVersion.
-const (
-	BlueprintLoopInputSchemaVersionN1 BlueprintLoopInputSchemaVersion = "1"
-)
-
-// Valid indicates whether the value is a known member of the BlueprintLoopInputSchemaVersion enum.
-func (e BlueprintLoopInputSchemaVersion) Valid() bool {
-	switch e {
-	case BlueprintLoopInputSchemaVersionN1:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for BlueprintLoopInputStatus.
-const (
-	BlueprintLoopInputStatusActive BlueprintLoopInputStatus = "active"
-	BlueprintLoopInputStatusDraft  BlueprintLoopInputStatus = "draft"
-	BlueprintLoopInputStatusPaused BlueprintLoopInputStatus = "paused"
-)
-
-// Valid indicates whether the value is a known member of the BlueprintLoopInputStatus enum.
-func (e BlueprintLoopInputStatus) Valid() bool {
-	switch e {
-	case BlueprintLoopInputStatusActive:
-		return true
-	case BlueprintLoopInputStatusDraft:
-		return true
-	case BlueprintLoopInputStatusPaused:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for BlueprintResourceType.
 const (
 	BlueprintResourceTypeAction BlueprintResourceType = "action"
 	BlueprintResourceTypeAgent  BlueprintResourceType = "agent"
-	BlueprintResourceTypeLoop   BlueprintResourceType = "loop"
 	BlueprintResourceTypeSkill  BlueprintResourceType = "skill"
 	BlueprintResourceTypeTable  BlueprintResourceType = "table"
 )
@@ -890,8 +847,6 @@ func (e BlueprintResourceType) Valid() bool {
 	case BlueprintResourceTypeAction:
 		return true
 	case BlueprintResourceTypeAgent:
-		return true
-	case BlueprintResourceTypeLoop:
 		return true
 	case BlueprintResourceTypeSkill:
 		return true
@@ -1012,7 +967,6 @@ const (
 	ConsumerKindAgentTool      ConsumerKind = "agent_tool"
 	ConsumerKindHttpSubscriber ConsumerKind = "http_subscriber"
 	ConsumerKindNone           ConsumerKind = "none"
-	ConsumerKindRun            ConsumerKind = "run"
 )
 
 // Valid indicates whether the value is a known member of the ConsumerKind enum.
@@ -1024,8 +978,6 @@ func (e ConsumerKind) Valid() bool {
 		return true
 	case ConsumerKindNone:
 		return true
-	case ConsumerKindRun:
-		return true
 	default:
 		return false
 	}
@@ -1036,7 +988,6 @@ const (
 	ConsumerInputKindAgentTool      ConsumerInputKind = "agent_tool"
 	ConsumerInputKindHttpSubscriber ConsumerInputKind = "http_subscriber"
 	ConsumerInputKindNone           ConsumerInputKind = "none"
-	ConsumerInputKindRun            ConsumerInputKind = "run"
 )
 
 // Valid indicates whether the value is a known member of the ConsumerInputKind enum.
@@ -1047,8 +998,6 @@ func (e ConsumerInputKind) Valid() bool {
 	case ConsumerInputKindHttpSubscriber:
 		return true
 	case ConsumerInputKindNone:
-		return true
-	case ConsumerInputKindRun:
 		return true
 	default:
 		return false
@@ -1115,60 +1064,6 @@ func (e CreateArtifactRequestConvert) Valid() bool {
 	}
 }
 
-// Defines values for CreateEnvironmentRequestTemplateId.
-const (
-	CreateEnvironmentRequestTemplateIdCodingDefault CreateEnvironmentRequestTemplateId = "coding-default"
-)
-
-// Valid indicates whether the value is a known member of the CreateEnvironmentRequestTemplateId enum.
-func (e CreateEnvironmentRequestTemplateId) Valid() bool {
-	switch e {
-	case CreateEnvironmentRequestTemplateIdCodingDefault:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for CreateLoopRequestConcurrency.
-const (
-	CreateLoopRequestConcurrencyAllow   CreateLoopRequestConcurrency = "allow"
-	CreateLoopRequestConcurrencyQueue   CreateLoopRequestConcurrency = "queue"
-	CreateLoopRequestConcurrencyReplace CreateLoopRequestConcurrency = "replace"
-	CreateLoopRequestConcurrencySkip    CreateLoopRequestConcurrency = "skip"
-)
-
-// Valid indicates whether the value is a known member of the CreateLoopRequestConcurrency enum.
-func (e CreateLoopRequestConcurrency) Valid() bool {
-	switch e {
-	case CreateLoopRequestConcurrencyAllow:
-		return true
-	case CreateLoopRequestConcurrencyQueue:
-		return true
-	case CreateLoopRequestConcurrencyReplace:
-		return true
-	case CreateLoopRequestConcurrencySkip:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for CreateLoopRequestSchemaVersion.
-const (
-	CreateLoopRequestSchemaVersionN1 CreateLoopRequestSchemaVersion = "1"
-)
-
-// Valid indicates whether the value is a known member of the CreateLoopRequestSchemaVersion enum.
-func (e CreateLoopRequestSchemaVersion) Valid() bool {
-	switch e {
-	case CreateLoopRequestSchemaVersionN1:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for CreateSessionRequestMode.
 const (
 	CreateSessionRequestModeContinue         CreateSessionRequestMode = "continue"
@@ -1202,159 +1097,6 @@ func (e DeliveryChannelKind) Valid() bool {
 	case DeliveryChannelKindEmail:
 		return true
 	case DeliveryChannelKindInboxOnly:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for EnvironmentCleanupStatus.
-const (
-	EnvironmentCleanupStatusFailed    EnvironmentCleanupStatus = "failed"
-	EnvironmentCleanupStatusNone      EnvironmentCleanupStatus = "none"
-	EnvironmentCleanupStatusPending   EnvironmentCleanupStatus = "pending"
-	EnvironmentCleanupStatusSkipped   EnvironmentCleanupStatus = "skipped"
-	EnvironmentCleanupStatusSucceeded EnvironmentCleanupStatus = "succeeded"
-)
-
-// Valid indicates whether the value is a known member of the EnvironmentCleanupStatus enum.
-func (e EnvironmentCleanupStatus) Valid() bool {
-	switch e {
-	case EnvironmentCleanupStatusFailed:
-		return true
-	case EnvironmentCleanupStatusNone:
-		return true
-	case EnvironmentCleanupStatusPending:
-		return true
-	case EnvironmentCleanupStatusSkipped:
-		return true
-	case EnvironmentCleanupStatusSucceeded:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for EnvironmentLifetime.
-const (
-	EnvironmentLifetimeExplicit EnvironmentLifetime = "explicit"
-	EnvironmentLifetimeLease    EnvironmentLifetime = "lease"
-	EnvironmentLifetimeRun      EnvironmentLifetime = "run"
-)
-
-// Valid indicates whether the value is a known member of the EnvironmentLifetime enum.
-func (e EnvironmentLifetime) Valid() bool {
-	switch e {
-	case EnvironmentLifetimeExplicit:
-		return true
-	case EnvironmentLifetimeLease:
-		return true
-	case EnvironmentLifetimeRun:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for EnvironmentMode.
-const (
-	EnvironmentModeAgent  EnvironmentMode = "agent"
-	EnvironmentModeLoop   EnvironmentMode = "loop"
-	EnvironmentModeManual EnvironmentMode = "manual"
-	EnvironmentModeRun    EnvironmentMode = "run"
-)
-
-// Valid indicates whether the value is a known member of the EnvironmentMode enum.
-func (e EnvironmentMode) Valid() bool {
-	switch e {
-	case EnvironmentModeAgent:
-		return true
-	case EnvironmentModeLoop:
-		return true
-	case EnvironmentModeManual:
-		return true
-	case EnvironmentModeRun:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for EnvironmentProvider.
-const (
-	EnvironmentProviderCloudflareContainers EnvironmentProvider = "cloudflare_containers"
-	EnvironmentProviderSprites              EnvironmentProvider = "sprites"
-	EnvironmentProviderWorker               EnvironmentProvider = "worker"
-)
-
-// Valid indicates whether the value is a known member of the EnvironmentProvider enum.
-func (e EnvironmentProvider) Valid() bool {
-	switch e {
-	case EnvironmentProviderCloudflareContainers:
-		return true
-	case EnvironmentProviderSprites:
-		return true
-	case EnvironmentProviderWorker:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for EnvironmentRetentionPolicy.
-const (
-	EnvironmentRetentionPolicyDestroyOnSuccess EnvironmentRetentionPolicy = "destroy_on_success"
-	EnvironmentRetentionPolicyManual           EnvironmentRetentionPolicy = "manual"
-	EnvironmentRetentionPolicyRetainAlways     EnvironmentRetentionPolicy = "retain_always"
-	EnvironmentRetentionPolicyRetainOnFailure  EnvironmentRetentionPolicy = "retain_on_failure"
-)
-
-// Valid indicates whether the value is a known member of the EnvironmentRetentionPolicy enum.
-func (e EnvironmentRetentionPolicy) Valid() bool {
-	switch e {
-	case EnvironmentRetentionPolicyDestroyOnSuccess:
-		return true
-	case EnvironmentRetentionPolicyManual:
-		return true
-	case EnvironmentRetentionPolicyRetainAlways:
-		return true
-	case EnvironmentRetentionPolicyRetainOnFailure:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for EnvironmentStatus.
-const (
-	EnvironmentStatusDestroyed    EnvironmentStatus = "destroyed"
-	EnvironmentStatusDestroying   EnvironmentStatus = "destroying"
-	EnvironmentStatusFailed       EnvironmentStatus = "failed"
-	EnvironmentStatusOrphaned     EnvironmentStatus = "orphaned"
-	EnvironmentStatusProvisioning EnvironmentStatus = "provisioning"
-	EnvironmentStatusReady        EnvironmentStatus = "ready"
-	EnvironmentStatusRetained     EnvironmentStatus = "retained"
-	EnvironmentStatusRunning      EnvironmentStatus = "running"
-)
-
-// Valid indicates whether the value is a known member of the EnvironmentStatus enum.
-func (e EnvironmentStatus) Valid() bool {
-	switch e {
-	case EnvironmentStatusDestroyed:
-		return true
-	case EnvironmentStatusDestroying:
-		return true
-	case EnvironmentStatusFailed:
-		return true
-	case EnvironmentStatusOrphaned:
-		return true
-	case EnvironmentStatusProvisioning:
-		return true
-	case EnvironmentStatusReady:
-		return true
-	case EnvironmentStatusRetained:
-		return true
-	case EnvironmentStatusRunning:
 		return true
 	default:
 		return false
@@ -1406,21 +1148,6 @@ const (
 func (e GenerationDeltaFrameEventType) Valid() bool {
 	switch e {
 	case GenerationDeltaFrameEventTypeGenerationDelta:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for HTTPTriggerDeliveryResultStatus.
-const (
-	HTTPTriggerDeliveryResultStatusAccepted HTTPTriggerDeliveryResultStatus = "accepted"
-)
-
-// Valid indicates whether the value is a known member of the HTTPTriggerDeliveryResultStatus enum.
-func (e HTTPTriggerDeliveryResultStatus) Valid() bool {
-	switch e {
-	case HTTPTriggerDeliveryResultStatusAccepted:
 		return true
 	default:
 		return false
@@ -1637,615 +1364,6 @@ func (e InvokeSessionSpecMode) Valid() bool {
 	}
 }
 
-// Defines values for LoopConcurrency.
-const (
-	LoopConcurrencyAllow   LoopConcurrency = "allow"
-	LoopConcurrencyQueue   LoopConcurrency = "queue"
-	LoopConcurrencyReplace LoopConcurrency = "replace"
-	LoopConcurrencySkip    LoopConcurrency = "skip"
-)
-
-// Valid indicates whether the value is a known member of the LoopConcurrency enum.
-func (e LoopConcurrency) Valid() bool {
-	switch e {
-	case LoopConcurrencyAllow:
-		return true
-	case LoopConcurrencyQueue:
-		return true
-	case LoopConcurrencyReplace:
-		return true
-	case LoopConcurrencySkip:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopSchemaVersion.
-const (
-	LoopSchemaVersionN1 LoopSchemaVersion = "1"
-)
-
-// Valid indicates whether the value is a known member of the LoopSchemaVersion enum.
-func (e LoopSchemaVersion) Valid() bool {
-	switch e {
-	case LoopSchemaVersionN1:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopActionStepExecutionLocation.
-const (
-	LoopActionStepExecutionLocationEnvironment LoopActionStepExecutionLocation = "environment"
-	LoopActionStepExecutionLocationManaged     LoopActionStepExecutionLocation = "managed"
-	LoopActionStepExecutionLocationWorker      LoopActionStepExecutionLocation = "worker"
-)
-
-// Valid indicates whether the value is a known member of the LoopActionStepExecutionLocation enum.
-func (e LoopActionStepExecutionLocation) Valid() bool {
-	switch e {
-	case LoopActionStepExecutionLocationEnvironment:
-		return true
-	case LoopActionStepExecutionLocationManaged:
-		return true
-	case LoopActionStepExecutionLocationWorker:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopActionStepSpecKind.
-const (
-	LoopActionStepSpecKindAction LoopActionStepSpecKind = "action"
-)
-
-// Valid indicates whether the value is a known member of the LoopActionStepSpecKind enum.
-func (e LoopActionStepSpecKind) Valid() bool {
-	switch e {
-	case LoopActionStepSpecKindAction:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopAgentSessionPolicyScope.
-const (
-	LoopAgentSessionPolicyScopeAgent LoopAgentSessionPolicyScope = "agent"
-	LoopAgentSessionPolicyScopeAuto  LoopAgentSessionPolicyScope = "auto"
-	LoopAgentSessionPolicyScopeLoop  LoopAgentSessionPolicyScope = "loop"
-)
-
-// Valid indicates whether the value is a known member of the LoopAgentSessionPolicyScope enum.
-func (e LoopAgentSessionPolicyScope) Valid() bool {
-	switch e {
-	case LoopAgentSessionPolicyScopeAgent:
-		return true
-	case LoopAgentSessionPolicyScopeAuto:
-		return true
-	case LoopAgentSessionPolicyScopeLoop:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopAgentStepSpecKind.
-const (
-	LoopAgentStepSpecKindAgent LoopAgentStepSpecKind = "agent"
-)
-
-// Valid indicates whether the value is a known member of the LoopAgentStepSpecKind enum.
-func (e LoopAgentStepSpecKind) Valid() bool {
-	switch e {
-	case LoopAgentStepSpecKindAgent:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopCheckAssertionKind.
-const (
-	LoopCheckAssertionKindAgent LoopCheckAssertionKind = "agent"
-	LoopCheckAssertionKindExpr  LoopCheckAssertionKind = "expr"
-)
-
-// Valid indicates whether the value is a known member of the LoopCheckAssertionKind enum.
-func (e LoopCheckAssertionKind) Valid() bool {
-	switch e {
-	case LoopCheckAssertionKindAgent:
-		return true
-	case LoopCheckAssertionKindExpr:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopCheckStepOnFail.
-const (
-	LoopCheckStepOnFailContinue LoopCheckStepOnFail = "continue"
-	LoopCheckStepOnFailFail     LoopCheckStepOnFail = "fail"
-	LoopCheckStepOnFailGate     LoopCheckStepOnFail = "gate"
-)
-
-// Valid indicates whether the value is a known member of the LoopCheckStepOnFail enum.
-func (e LoopCheckStepOnFail) Valid() bool {
-	switch e {
-	case LoopCheckStepOnFailContinue:
-		return true
-	case LoopCheckStepOnFailFail:
-		return true
-	case LoopCheckStepOnFailGate:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopCheckStepSpecKind.
-const (
-	LoopCheckStepSpecKindCheck LoopCheckStepSpecKind = "check"
-)
-
-// Valid indicates whether the value is a known member of the LoopCheckStepSpecKind enum.
-func (e LoopCheckStepSpecKind) Valid() bool {
-	switch e {
-	case LoopCheckStepSpecKindCheck:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopInteractionStepProtocol.
-const (
-	LoopInteractionStepProtocolRequestApproval    LoopInteractionStepProtocol = "request_approval"
-	LoopInteractionStepProtocolRequestInformation LoopInteractionStepProtocol = "request_information"
-	LoopInteractionStepProtocolRequestReview      LoopInteractionStepProtocol = "request_review"
-)
-
-// Valid indicates whether the value is a known member of the LoopInteractionStepProtocol enum.
-func (e LoopInteractionStepProtocol) Valid() bool {
-	switch e {
-	case LoopInteractionStepProtocolRequestApproval:
-		return true
-	case LoopInteractionStepProtocolRequestInformation:
-		return true
-	case LoopInteractionStepProtocolRequestReview:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopInteractionStepResolutionPolicy.
-const (
-	LoopInteractionStepResolutionPolicyAllOf LoopInteractionStepResolutionPolicy = "all_of"
-	LoopInteractionStepResolutionPolicyAnyOf LoopInteractionStepResolutionPolicy = "any_of"
-)
-
-// Valid indicates whether the value is a known member of the LoopInteractionStepResolutionPolicy enum.
-func (e LoopInteractionStepResolutionPolicy) Valid() bool {
-	switch e {
-	case LoopInteractionStepResolutionPolicyAllOf:
-		return true
-	case LoopInteractionStepResolutionPolicyAnyOf:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopInteractionStepSpecKind.
-const (
-	LoopInteractionStepSpecKindInteraction LoopInteractionStepSpecKind = "interaction"
-)
-
-// Valid indicates whether the value is a known member of the LoopInteractionStepSpecKind enum.
-func (e LoopInteractionStepSpecKind) Valid() bool {
-	switch e {
-	case LoopInteractionStepSpecKindInteraction:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopModelRouteMode.
-const (
-	LoopModelRouteModeManaged LoopModelRouteMode = "managed"
-	LoopModelRouteModeWorker  LoopModelRouteMode = "worker"
-)
-
-// Valid indicates whether the value is a known member of the LoopModelRouteMode enum.
-func (e LoopModelRouteMode) Valid() bool {
-	switch e {
-	case LoopModelRouteModeManaged:
-		return true
-	case LoopModelRouteModeWorker:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopRunQueueReason.
-const (
-	LoopRunQueueReasonLoopPolicy         LoopRunQueueReason = "loop_policy"
-	LoopRunQueueReasonPlanConcurrency    LoopRunQueueReason = "plan_concurrency"
-	LoopRunQueueReasonTriggerConcurrency LoopRunQueueReason = "trigger_concurrency"
-)
-
-// Valid indicates whether the value is a known member of the LoopRunQueueReason enum.
-func (e LoopRunQueueReason) Valid() bool {
-	switch e {
-	case LoopRunQueueReasonLoopPolicy:
-		return true
-	case LoopRunQueueReasonPlanConcurrency:
-		return true
-	case LoopRunQueueReasonTriggerConcurrency:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopRunSourceType.
-const (
-	LoopRunSourceTypeApi     LoopRunSourceType = "api"
-	LoopRunSourceTypeManual  LoopRunSourceType = "manual"
-	LoopRunSourceTypeSignal  LoopRunSourceType = "signal"
-	LoopRunSourceTypeTrigger LoopRunSourceType = "trigger"
-)
-
-// Valid indicates whether the value is a known member of the LoopRunSourceType enum.
-func (e LoopRunSourceType) Valid() bool {
-	switch e {
-	case LoopRunSourceTypeApi:
-		return true
-	case LoopRunSourceTypeManual:
-		return true
-	case LoopRunSourceTypeSignal:
-		return true
-	case LoopRunSourceTypeTrigger:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopRunStatus.
-const (
-	LoopRunStatusCancelled LoopRunStatus = "cancelled"
-	LoopRunStatusCompleted LoopRunStatus = "completed"
-	LoopRunStatusFailed    LoopRunStatus = "failed"
-	LoopRunStatusQueued    LoopRunStatus = "queued"
-	LoopRunStatusRunning   LoopRunStatus = "running"
-	LoopRunStatusSuspended LoopRunStatus = "suspended"
-)
-
-// Valid indicates whether the value is a known member of the LoopRunStatus enum.
-func (e LoopRunStatus) Valid() bool {
-	switch e {
-	case LoopRunStatusCancelled:
-		return true
-	case LoopRunStatusCompleted:
-		return true
-	case LoopRunStatusFailed:
-		return true
-	case LoopRunStatusQueued:
-		return true
-	case LoopRunStatusRunning:
-		return true
-	case LoopRunStatusSuspended:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopRunStepVerdict.
-const (
-	LoopRunStepVerdictFail LoopRunStepVerdict = "fail"
-	LoopRunStepVerdictPass LoopRunStepVerdict = "pass"
-)
-
-// Valid indicates whether the value is a known member of the LoopRunStepVerdict enum.
-func (e LoopRunStepVerdict) Valid() bool {
-	switch e {
-	case LoopRunStepVerdictFail:
-		return true
-	case LoopRunStepVerdictPass:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopRunStepKind.
-const (
-	LoopRunStepKindAction       LoopRunStepKind = "action"
-	LoopRunStepKindAgent        LoopRunStepKind = "agent"
-	LoopRunStepKindCheck        LoopRunStepKind = "check"
-	LoopRunStepKindCleanup      LoopRunStepKind = "cleanup"
-	LoopRunStepKindInteraction  LoopRunStepKind = "interaction"
-	LoopRunStepKindLoop         LoopRunStepKind = "loop"
-	LoopRunStepKindSleep        LoopRunStepKind = "sleep"
-	LoopRunStepKindWaitForEvent LoopRunStepKind = "wait_for_event"
-)
-
-// Valid indicates whether the value is a known member of the LoopRunStepKind enum.
-func (e LoopRunStepKind) Valid() bool {
-	switch e {
-	case LoopRunStepKindAction:
-		return true
-	case LoopRunStepKindAgent:
-		return true
-	case LoopRunStepKindCheck:
-		return true
-	case LoopRunStepKindCleanup:
-		return true
-	case LoopRunStepKindInteraction:
-		return true
-	case LoopRunStepKindLoop:
-		return true
-	case LoopRunStepKindSleep:
-		return true
-	case LoopRunStepKindWaitForEvent:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopRunStepStatus.
-const (
-	LoopRunStepStatusCancelled LoopRunStepStatus = "cancelled"
-	LoopRunStepStatusCompleted LoopRunStepStatus = "completed"
-	LoopRunStepStatusFailed    LoopRunStepStatus = "failed"
-	LoopRunStepStatusPending   LoopRunStepStatus = "pending"
-	LoopRunStepStatusRunning   LoopRunStepStatus = "running"
-	LoopRunStepStatusSkipped   LoopRunStepStatus = "skipped"
-	LoopRunStepStatusSuspended LoopRunStepStatus = "suspended"
-)
-
-// Valid indicates whether the value is a known member of the LoopRunStepStatus enum.
-func (e LoopRunStepStatus) Valid() bool {
-	switch e {
-	case LoopRunStepStatusCancelled:
-		return true
-	case LoopRunStepStatusCompleted:
-		return true
-	case LoopRunStepStatusFailed:
-		return true
-	case LoopRunStepStatusPending:
-		return true
-	case LoopRunStepStatusRunning:
-		return true
-	case LoopRunStepStatusSkipped:
-		return true
-	case LoopRunStepStatusSuspended:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopRunStopReason.
-const (
-	LoopRunStopReasonBudgetExceeded    LoopRunStopReason = "budget_exceeded"
-	LoopRunStopReasonCancelled         LoopRunStopReason = "cancelled"
-	LoopRunStopReasonCheckFailed       LoopRunStopReason = "check_failed"
-	LoopRunStopReasonCompleted         LoopRunStopReason = "completed"
-	LoopRunStopReasonGateRejected      LoopRunStopReason = "gate_rejected"
-	LoopRunStopReasonProgressStalled   LoopRunStopReason = "progress_stalled"
-	LoopRunStopReasonReplaced          LoopRunStopReason = "replaced"
-	LoopRunStopReasonStepFailed        LoopRunStopReason = "step_failed"
-	LoopRunStopReasonStepLimitReached  LoopRunStopReason = "step_limit_reached"
-	LoopRunStopReasonTurnLimitReached  LoopRunStopReason = "turn_limit_reached"
-	LoopRunStopReasonWallClockExceeded LoopRunStopReason = "wall_clock_exceeded"
-)
-
-// Valid indicates whether the value is a known member of the LoopRunStopReason enum.
-func (e LoopRunStopReason) Valid() bool {
-	switch e {
-	case LoopRunStopReasonBudgetExceeded:
-		return true
-	case LoopRunStopReasonCancelled:
-		return true
-	case LoopRunStopReasonCheckFailed:
-		return true
-	case LoopRunStopReasonCompleted:
-		return true
-	case LoopRunStopReasonGateRejected:
-		return true
-	case LoopRunStopReasonProgressStalled:
-		return true
-	case LoopRunStopReasonReplaced:
-		return true
-	case LoopRunStopReasonStepFailed:
-		return true
-	case LoopRunStopReasonStepLimitReached:
-		return true
-	case LoopRunStopReasonTurnLimitReached:
-		return true
-	case LoopRunStopReasonWallClockExceeded:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopSleepStepSpecKind.
-const (
-	LoopSleepStepSpecKindSleep LoopSleepStepSpecKind = "sleep"
-)
-
-// Valid indicates whether the value is a known member of the LoopSleepStepSpecKind enum.
-func (e LoopSleepStepSpecKind) Valid() bool {
-	switch e {
-	case LoopSleepStepSpecKindSleep:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopSpecRepositoryProvider.
-const (
-	LoopSpecRepositoryProviderGithub LoopSpecRepositoryProvider = "github"
-)
-
-// Valid indicates whether the value is a known member of the LoopSpecRepositoryProvider enum.
-func (e LoopSpecRepositoryProvider) Valid() bool {
-	switch e {
-	case LoopSpecRepositoryProviderGithub:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopSpecRepositorySource.
-const (
-	LoopSpecRepositorySourceMatch  LoopSpecRepositorySource = "match"
-	LoopSpecRepositorySourceStatic LoopSpecRepositorySource = "static"
-)
-
-// Valid indicates whether the value is a known member of the LoopSpecRepositorySource enum.
-func (e LoopSpecRepositorySource) Valid() bool {
-	switch e {
-	case LoopSpecRepositorySourceMatch:
-		return true
-	case LoopSpecRepositorySourceStatic:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopSpecTriggerConcurrencyPolicy.
-const (
-	LoopSpecTriggerConcurrencyPolicyAllow   LoopSpecTriggerConcurrencyPolicy = "allow"
-	LoopSpecTriggerConcurrencyPolicyQueue   LoopSpecTriggerConcurrencyPolicy = "queue"
-	LoopSpecTriggerConcurrencyPolicyReplace LoopSpecTriggerConcurrencyPolicy = "replace"
-	LoopSpecTriggerConcurrencyPolicySkip    LoopSpecTriggerConcurrencyPolicy = "skip"
-)
-
-// Valid indicates whether the value is a known member of the LoopSpecTriggerConcurrencyPolicy enum.
-func (e LoopSpecTriggerConcurrencyPolicy) Valid() bool {
-	switch e {
-	case LoopSpecTriggerConcurrencyPolicyAllow:
-		return true
-	case LoopSpecTriggerConcurrencyPolicyQueue:
-		return true
-	case LoopSpecTriggerConcurrencyPolicyReplace:
-		return true
-	case LoopSpecTriggerConcurrencyPolicySkip:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopSpecTriggerKind.
-const (
-	LoopSpecTriggerKindEvent    LoopSpecTriggerKind = "event"
-	LoopSpecTriggerKindHttp     LoopSpecTriggerKind = "http"
-	LoopSpecTriggerKindManual   LoopSpecTriggerKind = "manual"
-	LoopSpecTriggerKindSchedule LoopSpecTriggerKind = "schedule"
-)
-
-// Valid indicates whether the value is a known member of the LoopSpecTriggerKind enum.
-func (e LoopSpecTriggerKind) Valid() bool {
-	switch e {
-	case LoopSpecTriggerKindEvent:
-		return true
-	case LoopSpecTriggerKindHttp:
-		return true
-	case LoopSpecTriggerKindManual:
-		return true
-	case LoopSpecTriggerKindSchedule:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopStatus.
-const (
-	LoopStatusActive  LoopStatus = "active"
-	LoopStatusDeleted LoopStatus = "deleted"
-	LoopStatusDraft   LoopStatus = "draft"
-	LoopStatusPaused  LoopStatus = "paused"
-)
-
-// Valid indicates whether the value is a known member of the LoopStatus enum.
-func (e LoopStatus) Valid() bool {
-	switch e {
-	case LoopStatusActive:
-		return true
-	case LoopStatusDeleted:
-		return true
-	case LoopStatusDraft:
-		return true
-	case LoopStatusPaused:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopSubLoopStepSpecKind.
-const (
-	LoopSubLoopStepSpecKindLoop LoopSubLoopStepSpecKind = "loop"
-)
-
-// Valid indicates whether the value is a known member of the LoopSubLoopStepSpecKind enum.
-func (e LoopSubLoopStepSpecKind) Valid() bool {
-	switch e {
-	case LoopSubLoopStepSpecKindLoop:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopTimeoutPolicyOnTimeout.
-const (
-	LoopTimeoutPolicyOnTimeoutFail LoopTimeoutPolicyOnTimeout = "fail"
-)
-
-// Valid indicates whether the value is a known member of the LoopTimeoutPolicyOnTimeout enum.
-func (e LoopTimeoutPolicyOnTimeout) Valid() bool {
-	switch e {
-	case LoopTimeoutPolicyOnTimeoutFail:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopWaitForEventStepSpecKind.
-const (
-	LoopWaitForEventStepSpecKindWaitForEvent LoopWaitForEventStepSpecKind = "wait_for_event"
-)
-
-// Valid indicates whether the value is a known member of the LoopWaitForEventStepSpecKind enum.
-func (e LoopWaitForEventStepSpecKind) Valid() bool {
-	switch e {
-	case LoopWaitForEventStepSpecKindWaitForEvent:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for MemoryContextMode.
 const (
 	MemoryContextModeFull  MemoryContextMode = "full"
@@ -2410,38 +1528,20 @@ func (e ModelProviderGroupSource) Valid() bool {
 
 // Defines values for PermissionDefinitionCategory.
 const (
-	PermissionDefinitionCategoryAccess       PermissionDefinitionCategory = "access"
-	PermissionDefinitionCategoryActions      PermissionDefinitionCategory = "actions"
-	PermissionDefinitionCategoryAudit        PermissionDefinitionCategory = "audit"
-	PermissionDefinitionCategoryBilling      PermissionDefinitionCategory = "billing"
-	PermissionDefinitionCategoryIntegrations PermissionDefinitionCategory = "integrations"
-	PermissionDefinitionCategoryLoops        PermissionDefinitionCategory = "loops"
-	PermissionDefinitionCategoryOrg          PermissionDefinitionCategory = "org"
-	PermissionDefinitionCategoryPlatform     PermissionDefinitionCategory = "platform"
-	PermissionDefinitionCategoryRuns         PermissionDefinitionCategory = "runs"
-	PermissionDefinitionCategoryWork         PermissionDefinitionCategory = "work"
+	PermissionDefinitionCategoryBilling  PermissionDefinitionCategory = "billing"
+	PermissionDefinitionCategoryOrg      PermissionDefinitionCategory = "org"
+	PermissionDefinitionCategoryPlatform PermissionDefinitionCategory = "platform"
+	PermissionDefinitionCategoryWork     PermissionDefinitionCategory = "work"
 )
 
 // Valid indicates whether the value is a known member of the PermissionDefinitionCategory enum.
 func (e PermissionDefinitionCategory) Valid() bool {
 	switch e {
-	case PermissionDefinitionCategoryAccess:
-		return true
-	case PermissionDefinitionCategoryActions:
-		return true
-	case PermissionDefinitionCategoryAudit:
-		return true
 	case PermissionDefinitionCategoryBilling:
-		return true
-	case PermissionDefinitionCategoryIntegrations:
-		return true
-	case PermissionDefinitionCategoryLoops:
 		return true
 	case PermissionDefinitionCategoryOrg:
 		return true
 	case PermissionDefinitionCategoryPlatform:
-		return true
-	case PermissionDefinitionCategoryRuns:
 		return true
 	case PermissionDefinitionCategoryWork:
 		return true
@@ -2576,21 +1676,6 @@ func (e PrincipalState) Valid() bool {
 	case PrincipalStateDeleted:
 		return true
 	case PrincipalStateDisabled:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ProvisionEnvironmentProvider.
-const (
-	ProvisionEnvironmentProviderSprites ProvisionEnvironmentProvider = "sprites"
-)
-
-// Valid indicates whether the value is a known member of the ProvisionEnvironmentProvider enum.
-func (e ProvisionEnvironmentProvider) Valid() bool {
-	switch e {
-	case ProvisionEnvironmentProviderSprites:
 		return true
 	default:
 		return false
@@ -2747,18 +1832,96 @@ func (e ReviewInteractionRequestAction) Valid() bool {
 	}
 }
 
-// Defines values for RunResumedPayloadRecoveryAction.
+// Defines values for RoutineKind.
 const (
-	RunResumedPayloadRecoveryActionResume RunResumedPayloadRecoveryAction = "resume"
-	RunResumedPayloadRecoveryActionRetry  RunResumedPayloadRecoveryAction = "retry"
+	RoutineKindInvoke RoutineKind = "invoke"
+	RoutineKindNotify RoutineKind = "notify"
 )
 
-// Valid indicates whether the value is a known member of the RunResumedPayloadRecoveryAction enum.
-func (e RunResumedPayloadRecoveryAction) Valid() bool {
+// Valid indicates whether the value is a known member of the RoutineKind enum.
+func (e RoutineKind) Valid() bool {
 	switch e {
-	case RunResumedPayloadRecoveryActionResume:
+	case RoutineKindInvoke:
 		return true
-	case RunResumedPayloadRecoveryActionRetry:
+	case RoutineKindNotify:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RoutineOccurrenceStatus.
+const (
+	RoutineOccurrenceStatusAdmitted  RoutineOccurrenceStatus = "admitted"
+	RoutineOccurrenceStatusCompleted RoutineOccurrenceStatus = "completed"
+	RoutineOccurrenceStatusFailed    RoutineOccurrenceStatus = "failed"
+	RoutineOccurrenceStatusMissed    RoutineOccurrenceStatus = "missed"
+	RoutineOccurrenceStatusPending   RoutineOccurrenceStatus = "pending"
+	RoutineOccurrenceStatusSkipped   RoutineOccurrenceStatus = "skipped"
+)
+
+// Valid indicates whether the value is a known member of the RoutineOccurrenceStatus enum.
+func (e RoutineOccurrenceStatus) Valid() bool {
+	switch e {
+	case RoutineOccurrenceStatusAdmitted:
+		return true
+	case RoutineOccurrenceStatusCompleted:
+		return true
+	case RoutineOccurrenceStatusFailed:
+		return true
+	case RoutineOccurrenceStatusMissed:
+		return true
+	case RoutineOccurrenceStatusPending:
+		return true
+	case RoutineOccurrenceStatusSkipped:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RoutineProposalStatus.
+const (
+	RoutineProposalStatusApproved  RoutineProposalStatus = "approved"
+	RoutineProposalStatusDismissed RoutineProposalStatus = "dismissed"
+	RoutineProposalStatusExpired   RoutineProposalStatus = "expired"
+	RoutineProposalStatusPending   RoutineProposalStatus = "pending"
+)
+
+// Valid indicates whether the value is a known member of the RoutineProposalStatus enum.
+func (e RoutineProposalStatus) Valid() bool {
+	switch e {
+	case RoutineProposalStatusApproved:
+		return true
+	case RoutineProposalStatusDismissed:
+		return true
+	case RoutineProposalStatusExpired:
+		return true
+	case RoutineProposalStatusPending:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RoutineStatus.
+const (
+	RoutineStatusActive    RoutineStatus = "active"
+	RoutineStatusCancelled RoutineStatus = "cancelled"
+	RoutineStatusCompleted RoutineStatus = "completed"
+	RoutineStatusPaused    RoutineStatus = "paused"
+)
+
+// Valid indicates whether the value is a known member of the RoutineStatus enum.
+func (e RoutineStatus) Valid() bool {
+	switch e {
+	case RoutineStatusActive:
+		return true
+	case RoutineStatusCancelled:
+		return true
+	case RoutineStatusCompleted:
+		return true
+	case RoutineStatusPaused:
 		return true
 	default:
 		return false
@@ -3018,7 +2181,6 @@ func (e SessionNudgeStatus) Valid() bool {
 const (
 	SessionOriginApi         SessionOrigin = "api"
 	SessionOriginInteraction SessionOrigin = "interaction"
-	SessionOriginLoop        SessionOrigin = "loop"
 	SessionOriginManual      SessionOrigin = "manual"
 )
 
@@ -3028,8 +2190,6 @@ func (e SessionOrigin) Valid() bool {
 	case SessionOriginApi:
 		return true
 	case SessionOriginInteraction:
-		return true
-	case SessionOriginLoop:
 		return true
 	case SessionOriginManual:
 		return true
@@ -3107,15 +2267,12 @@ func (e SessionRetentionPolicyMode) Valid() bool {
 // Defines values for SessionScope.
 const (
 	SessionScopeAgent SessionScope = "agent"
-	SessionScopeLoop  SessionScope = "loop"
 )
 
 // Valid indicates whether the value is a known member of the SessionScope enum.
 func (e SessionScope) Valid() bool {
 	switch e {
 	case SessionScopeAgent:
-		return true
-	case SessionScopeLoop:
 		return true
 	default:
 		return false
@@ -3251,45 +2408,6 @@ func (e StartTurnRequestRole) Valid() bool {
 	}
 }
 
-// Defines values for StepRetriedPayloadRecoveryAction.
-const (
-	StepRetriedPayloadRecoveryActionResume StepRetriedPayloadRecoveryAction = "resume"
-	StepRetriedPayloadRecoveryActionRetry  StepRetriedPayloadRecoveryAction = "retry"
-)
-
-// Valid indicates whether the value is a known member of the StepRetriedPayloadRecoveryAction enum.
-func (e StepRetriedPayloadRecoveryAction) Valid() bool {
-	switch e {
-	case StepRetriedPayloadRecoveryActionResume:
-		return true
-	case StepRetriedPayloadRecoveryActionRetry:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for StepRetriedPayloadRetryScope.
-const (
-	StepRetriedPayloadRetryScopeRunRecovery StepRetriedPayloadRetryScope = "run_recovery"
-	StepRetriedPayloadRetryScopeStepPolicy  StepRetriedPayloadRetryScope = "step_policy"
-	StepRetriedPayloadRetryScopeTransient   StepRetriedPayloadRetryScope = "transient"
-)
-
-// Valid indicates whether the value is a known member of the StepRetriedPayloadRetryScope enum.
-func (e StepRetriedPayloadRetryScope) Valid() bool {
-	switch e {
-	case StepRetriedPayloadRetryScopeRunRecovery:
-		return true
-	case StepRetriedPayloadRetryScopeStepPolicy:
-		return true
-	case StepRetriedPayloadRetryScopeTransient:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for StreamEndFrameEventType.
 const (
 	StreamEndFrameEventTypeStreamEnd StreamEndFrameEventType = "stream.end"
@@ -3413,69 +2531,6 @@ func (e UpdateAgentRequestStrandedDisposition) Valid() bool {
 	case UpdateAgentRequestStrandedDispositionDelete:
 		return true
 	case UpdateAgentRequestStrandedDispositionRetain:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for UpdateLoopRequestConcurrency.
-const (
-	UpdateLoopRequestConcurrencyAllow   UpdateLoopRequestConcurrency = "allow"
-	UpdateLoopRequestConcurrencyQueue   UpdateLoopRequestConcurrency = "queue"
-	UpdateLoopRequestConcurrencyReplace UpdateLoopRequestConcurrency = "replace"
-	UpdateLoopRequestConcurrencySkip    UpdateLoopRequestConcurrency = "skip"
-)
-
-// Valid indicates whether the value is a known member of the UpdateLoopRequestConcurrency enum.
-func (e UpdateLoopRequestConcurrency) Valid() bool {
-	switch e {
-	case UpdateLoopRequestConcurrencyAllow:
-		return true
-	case UpdateLoopRequestConcurrencyQueue:
-		return true
-	case UpdateLoopRequestConcurrencyReplace:
-		return true
-	case UpdateLoopRequestConcurrencySkip:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for UpdateLoopRequestSchemaVersion.
-const (
-	UpdateLoopRequestSchemaVersionN1 UpdateLoopRequestSchemaVersion = "1"
-)
-
-// Valid indicates whether the value is a known member of the UpdateLoopRequestSchemaVersion enum.
-func (e UpdateLoopRequestSchemaVersion) Valid() bool {
-	switch e {
-	case UpdateLoopRequestSchemaVersionN1:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for WebhookDeliveryStatus.
-const (
-	WebhookDeliveryStatusDelivered  WebhookDeliveryStatus = "delivered"
-	WebhookDeliveryStatusFailed     WebhookDeliveryStatus = "failed"
-	WebhookDeliveryStatusPending    WebhookDeliveryStatus = "pending"
-	WebhookDeliveryStatusProcessing WebhookDeliveryStatus = "processing"
-)
-
-// Valid indicates whether the value is a known member of the WebhookDeliveryStatus enum.
-func (e WebhookDeliveryStatus) Valid() bool {
-	switch e {
-	case WebhookDeliveryStatusDelivered:
-		return true
-	case WebhookDeliveryStatusFailed:
-		return true
-	case WebhookDeliveryStatusPending:
-		return true
-	case WebhookDeliveryStatusProcessing:
 		return true
 	default:
 		return false
@@ -3893,33 +2948,12 @@ func (e ListActionInvocationsParamsDefinitionScope) Valid() bool {
 	}
 }
 
-// Defines values for ListLoopsParamsStatus.
-const (
-	ListLoopsParamsStatusActive ListLoopsParamsStatus = "active"
-	ListLoopsParamsStatusDraft  ListLoopsParamsStatus = "draft"
-	ListLoopsParamsStatusPaused ListLoopsParamsStatus = "paused"
-)
-
-// Valid indicates whether the value is a known member of the ListLoopsParamsStatus enum.
-func (e ListLoopsParamsStatus) Valid() bool {
-	switch e {
-	case ListLoopsParamsStatusActive:
-		return true
-	case ListLoopsParamsStatusDraft:
-		return true
-	case ListLoopsParamsStatusPaused:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for UpdateResourceOwnershipParamsResourceType.
 const (
 	UpdateResourceOwnershipParamsResourceTypeAction      UpdateResourceOwnershipParamsResourceType = "action"
 	UpdateResourceOwnershipParamsResourceTypeArtifact    UpdateResourceOwnershipParamsResourceType = "artifact"
 	UpdateResourceOwnershipParamsResourceTypeEnvironment UpdateResourceOwnershipParamsResourceType = "environment"
-	UpdateResourceOwnershipParamsResourceTypeLoop        UpdateResourceOwnershipParamsResourceType = "loop"
+	UpdateResourceOwnershipParamsResourceTypeRoutine     UpdateResourceOwnershipParamsResourceType = "routine"
 	UpdateResourceOwnershipParamsResourceTypeSecret      UpdateResourceOwnershipParamsResourceType = "secret"
 	UpdateResourceOwnershipParamsResourceTypeSession     UpdateResourceOwnershipParamsResourceType = "session"
 	UpdateResourceOwnershipParamsResourceTypeSkill       UpdateResourceOwnershipParamsResourceType = "skill"
@@ -3936,7 +2970,7 @@ func (e UpdateResourceOwnershipParamsResourceType) Valid() bool {
 		return true
 	case UpdateResourceOwnershipParamsResourceTypeEnvironment:
 		return true
-	case UpdateResourceOwnershipParamsResourceTypeLoop:
+	case UpdateResourceOwnershipParamsResourceTypeRoutine:
 		return true
 	case UpdateResourceOwnershipParamsResourceTypeSecret:
 		return true
@@ -4007,7 +3041,7 @@ func (e ListSessionTurnsParamsOrder) Valid() bool {
 	}
 }
 
-// APIKey Stored API credential metadata for loop and service access. The raw secret is never returned here; use this object to list, audit, expire, or identify keys by prefix without exposing tokens.
+// APIKey Stored API credential metadata for agent and service access. The raw secret is never returned here; use this object to list, audit, expire, or identify keys by prefix without exposing tokens.
 type APIKey struct {
 	// CreatedAt Timestamp when this key was created.
 	CreatedAt time.Time `json:"created_at"`
@@ -4094,7 +3128,7 @@ type APIKeyListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// Action Org-owned custom action definition callable by loops and agents.
+// Action Org-owned custom action definition agents can call as a tool.
 type Action struct {
 	// Annotations Response hints that describe the safe-use properties of the action. Response annotations are forward-compatible so the server can add response-only hints without breaking strict clients.
 	Annotations *ActionAnnotations `json:"annotations,omitempty"`
@@ -4120,10 +3154,10 @@ type Action struct {
 	// InputSchema JSON Schema describing expected input parameters.
 	InputSchema *map[string]interface{} `json:"input_schema,omitempty"`
 
-	// InvocationFormat Outbound request-body contract for an HTTP action. `legacy` sends the unversioned `{run_id, step_key, parameters}` body. `signed_context_v1` sends a versioned envelope whose org, action, actor, and origin claims are derived by Mobius and covered by the existing HMAC signature. Worker-backed actions must use `legacy`.
+	// InvocationFormat Outbound request-body contract for an HTTP action. `legacy` sends the unversioned `{step_key, parameters}` body. `signed_context_v1` sends a versioned envelope whose org, action, actor, and origin claims are derived by Mobius and covered by the existing HMAC signature. Worker-backed actions must use `legacy`.
 	InvocationFormat ActionInvocationFormat `json:"invocation_format"`
 
-	// Name Stable identifier used in loop definitions.
+	// Name Stable identifier the action is called by.
 	Name string `json:"name"`
 
 	// OutputSchema JSON Schema describing the expected output shape.
@@ -4176,15 +3210,7 @@ type ActionAnnotationsRequest struct {
 	ReadOnly *bool `json:"read_only,omitempty"`
 }
 
-// ActionCalledPayload defines model for ActionCalledPayload.
-type ActionCalledPayload struct {
-	Action               *string                 `json:"action,omitempty"`
-	Parameters           *map[string]interface{} `json:"parameters,omitempty"`
-	Step                 *string                 `json:"step,omitempty"`
-	AdditionalProperties map[string]interface{}  `json:"-"`
-}
-
-// ActionCatalogEntry One built-in, integration, or custom-backed action available to agents and loop authors.
+// ActionCatalogEntry One built-in, integration, or custom-backed action available to agents.
 type ActionCatalogEntry struct {
 	// Annotations Response hints that describe the safe-use properties of the action. Response annotations are forward-compatible so the server can add response-only hints without breaking strict clients.
 	Annotations ActionAnnotations `json:"annotations"`
@@ -4204,7 +3230,7 @@ type ActionCatalogEntry struct {
 	// EndpointUrl Endpoint URL (populated for endpoint_kind: http actions only).
 	EndpointUrl *string `json:"endpoint_url,omitempty"`
 
-	// Execution Execution-location metadata surfaced to loop authors and action pickers.
+	// Execution Execution-location metadata surfaced to action pickers.
 	Execution *ActionExecutionMetadata `json:"execution,omitempty"`
 
 	// Id Stable resource identifier. Present for an organization-authored custom action.
@@ -4268,18 +3294,10 @@ type ActionCatalogListResponse struct {
 	Items []ActionCatalogEntry `json:"items"`
 }
 
-// ActionCompletedPayload defines model for ActionCompletedPayload.
-type ActionCompletedPayload struct {
-	Action               *string                 `json:"action,omitempty"`
-	Result               *map[string]interface{} `json:"result,omitempty"`
-	Step                 *string                 `json:"step,omitempty"`
-	AdditionalProperties map[string]interface{}  `json:"-"`
-}
-
 // ActionEndpointKind Backing kind for a custom action. `http` actions POST to a registered endpoint. `worker` actions dispatch jobs to connected workers that advertise the registered action name.
 type ActionEndpointKind string
 
-// ActionExecutionMetadata Execution-location metadata surfaced to loop authors and action pickers.
+// ActionExecutionMetadata Execution-location metadata surfaced to action pickers.
 type ActionExecutionMetadata struct {
 	// DefaultLocation Default execution location: `managed`, `worker`, or `environment`.
 	DefaultLocation ActionExecutionMetadataDefaultLocation `json:"default_location"`
@@ -4299,15 +3317,6 @@ type ActionExecutionMetadataDefaultLocation string
 
 // ActionExecutionMetadataSupportedLocations Execution location: `managed`, `worker`, or `environment`.
 type ActionExecutionMetadataSupportedLocations string
-
-// ActionFailedPayload defines model for ActionFailedPayload.
-type ActionFailedPayload struct {
-	Action               *string                `json:"action,omitempty"`
-	Error                *string                `json:"error,omitempty"`
-	ErrorType            *string                `json:"error_type,omitempty"`
-	Step                 *string                `json:"step,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
 
 // ActionInvocationEntry Per-invocation telemetry record for one action execution.
 type ActionInvocationEntry struct {
@@ -4359,14 +3368,11 @@ type ActionInvocationEntry struct {
 	// Id Unique identifier for this invocation record.
 	Id string `json:"id"`
 
-	// InvocationFormat Outbound request-body contract for an HTTP action. `legacy` sends the unversioned `{run_id, step_key, parameters}` body. `signed_context_v1` sends a versioned envelope whose org, action, actor, and origin claims are derived by Mobius and covered by the existing HMAC signature. Worker-backed actions must use `legacy`.
+	// InvocationFormat Outbound request-body contract for an HTTP action. `legacy` sends the unversioned `{step_key, parameters}` body. `signed_context_v1` sends a versioned envelope whose org, action, actor, and origin claims are derived by Mobius and covered by the existing HMAC signature. Worker-backed actions must use `legacy`.
 	InvocationFormat *ActionInvocationFormat `json:"invocation_format,omitempty"`
 
 	// JobId Job that triggered this invocation, if job-backed.
 	JobId *string `json:"job_id,omitempty"`
-
-	// LoopId Loop definition correlated with this invocation, when applicable.
-	LoopId *string `json:"loop_id,omitempty"`
 
 	// OutputSummary Truncated or summarized action output for audit purposes.
 	OutputSummary *map[string]interface{} `json:"output_summary,omitempty"`
@@ -4377,9 +3383,6 @@ type ActionInvocationEntry struct {
 	// RetryCount Number of retry attempts before this terminal status was reached.
 	RetryCount int `json:"retry_count"`
 
-	// RunId Loop run that triggered this invocation, if run-backed.
-	RunId *string `json:"run_id,omitempty"`
-
 	// SchemaVersion Signed request-envelope schema version, when applicable.
 	SchemaVersion *int `json:"schema_version,omitempty"`
 
@@ -4389,7 +3392,7 @@ type ActionInvocationEntry struct {
 	// SessionId Agent session correlated with this invocation, when applicable.
 	SessionId *string `json:"session_id,omitempty"`
 
-	// Source Invocation source ("loop", "direct", etc.).
+	// Source The job origin that produced this invocation: `agent_tool_call`, `loop_action_step`, `direct_action_invoke`, or `server_internal`.
 	Source string `json:"source"`
 
 	// StartedAt Timestamp when this invocation started.
@@ -4398,7 +3401,7 @@ type ActionInvocationEntry struct {
 	// Status Terminal invocation status ("success", "failed", etc.).
 	Status string `json:"status"`
 
-	// StepName Loop step name that triggered this invocation.
+	// StepName Name of the step that triggered this invocation.
 	StepName *string `json:"step_name,omitempty"`
 
 	// ToolCallId Provider tool-call ID correlated with this invocation, when applicable.
@@ -4411,7 +3414,7 @@ type ActionInvocationEntryActorPrincipalType string
 // ActionInvocationEntryDefinitionScope Scope that owned the selected action definition.
 type ActionInvocationEntryDefinitionScope string
 
-// ActionInvocationFormat Outbound request-body contract for an HTTP action. `legacy` sends the unversioned `{run_id, step_key, parameters}` body. `signed_context_v1` sends a versioned envelope whose org, action, actor, and origin claims are derived by Mobius and covered by the existing HMAC signature. Worker-backed actions must use `legacy`.
+// ActionInvocationFormat Outbound request-body contract for an HTTP action. `legacy` sends the unversioned `{step_key, parameters}` body. `signed_context_v1` sends a versioned envelope whose org, action, actor, and origin claims are derived by Mobius and covered by the existing HMAC signature. Worker-backed actions must use `legacy`.
 type ActionInvocationFormat string
 
 // ActionInvocationListResponse Paginated list of action invocation telemetry records.
@@ -4437,9 +3440,6 @@ type ActionInvocationResult struct {
 	// Output Action output. Present when status is "completed".
 	Output *map[string]interface{} `json:"output,omitempty"`
 
-	// RunId Loop run ID. Present when an asynchronous run was created.
-	RunId *string `json:"run_id,omitempty"`
-
 	// Status Invocation status: `active`, `completed`, or `failed`.
 	Status ActionInvocationResultStatus `json:"status"`
 }
@@ -4461,21 +3461,6 @@ type ActionPermissionGroup struct {
 // ActionPermissionGroupSource defines model for ActionPermissionGroup.Source.
 type ActionPermissionGroupSource string
 
-// ActionResultPayload defines model for ActionResultPayload.
-type ActionResultPayload struct {
-	Action               *string                 `json:"action,omitempty"`
-	Result               *map[string]interface{} `json:"result,omitempty"`
-	AdditionalProperties map[string]interface{}  `json:"-"`
-}
-
-// ActionRetriedPayload defines model for ActionRetriedPayload.
-type ActionRetriedPayload struct {
-	Action               *string                `json:"action,omitempty"`
-	Attempt              *int                   `json:"attempt,omitempty"`
-	MaxAttempts          *int                   `json:"max_attempts,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-
 // ActionSelector One entry in an agent's tool grant. Selectors are expanded against the live action catalog at every build, so `platform: gmail` keeps meaning "every Gmail action" as the catalog grows.
 type ActionSelector struct {
 	// Selector The selector value, read according to `selector_type`. Ignored for `wildcard`.
@@ -4494,7 +3479,7 @@ type AddAgentMembersRequest struct {
 	PrincipalIds []string `json:"principal_ids"`
 }
 
-// Agent AI actor identity. An agent IS a principal (its permissions are role grants on that principal); agents are useful when loops need a named actor with instructions, configuration, and session presence.
+// Agent AI actor identity. An agent IS a principal (its permissions are role grants on that principal) with instructions, configuration, and session presence.
 type Agent struct {
 	// Color Display color for this agent in UI surfaces. One of the Mantine color palette keys (e.g. `indigo`, `teal`, `grape`); empty string falls back to a hash-derived color.
 	Color *string `json:"color,omitempty"`
@@ -4535,7 +3520,7 @@ type Agent struct {
 	// Model Model identifier for agents. Accepts any id returned by `GET /v1/catalog/models` (including slash-bearing OpenRouter catalog ids), optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default.
 	Model *string `json:"model,omitempty"`
 
-	// ModelRoute Default model route used by built-in messaging and by loop agent steps that do not override the route.
+	// ModelRoute Default model route used by built-in messaging and by any turn that does not override the route.
 	ModelRoute *AgentModelRoute `json:"model_route,omitempty"`
 
 	// Name Mutable unique name within the org. Free-form human-readable label; use `id` for stable references and job targeting.
@@ -4559,10 +3544,10 @@ type Agent struct {
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
 
-	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
+	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session, or the provider's own default when nothing sets a level.
 	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
 
-	// TimeoutSeconds Execution timeout, in seconds, for a single turn of this agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A loop step's own timeout overrides this for that step.
+	// TimeoutSeconds Execution timeout, in seconds, for a single turn of this agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A request's `operation.timeout_seconds` overrides this for that turn.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 
 	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
@@ -4702,8 +3687,7 @@ type AgentMemoryChange struct {
 	Operation     AgentMemoryChangeOperation `json:"operation"`
 
 	// Reason Why an entry changed. `remembered` is a run writing memory, `api` a direct write, `soft_cap` an eviction. `promoted` and `promotion_reverted` are the two halves of the explicit, attributed promotion act — the only path from a person's private partition into the agent's shared layer, and its undo.
-	Reason      AgentMemoryChangeReason `json:"reason"`
-	SourceRunId *string                 `json:"source_run_id,omitempty"`
+	Reason AgentMemoryChangeReason `json:"reason"`
 
 	// UserId User principal ID for the changed private partition; empty for shared memory.
 	UserId string `json:"user_id"`
@@ -4752,9 +3736,6 @@ type AgentMemoryEntry struct {
 
 	// Pinned Whether the entry is guaranteed in the memory index and exempt from the memory cap.
 	Pinned bool `json:"pinned"`
-
-	// SourceRunId Identifier of the loop run that last wrote this memory, when known.
-	SourceRunId *string `json:"source_run_id,omitempty"`
 
 	// Summary Short one-line summary shown in the agent's memory index.
 	Summary *string `json:"summary,omitempty"`
@@ -4839,7 +3820,7 @@ type AgentMessagingBinding struct {
 	// Mentions Whether channel/group mentions activate the agent.
 	Mentions bool `json:"mentions"`
 
-	// ModelRoute Default model route used by built-in messaging and by loop agent steps that do not override the route.
+	// ModelRoute Default model route used by built-in messaging and by any turn that does not override the route.
 	ModelRoute *AgentModelRoute `json:"model_route,omitempty"`
 
 	// Provider Provider supported by built-in agent messaging: `slack`, `telegram`, or `linear` (Linear agent sessions).
@@ -4887,7 +3868,7 @@ type AgentMessagingBindingRequest struct {
 	// Mentions Respond when the agent is @-mentioned.
 	Mentions *bool `json:"mentions,omitempty"`
 
-	// ModelRoute Default model route used by built-in messaging and by loop agent steps that do not override the route.
+	// ModelRoute Default model route used by built-in messaging and by any turn that does not override the route.
 	ModelRoute *AgentModelRoute `json:"model_route,omitempty"`
 
 	// Provider Provider supported by built-in agent messaging: `slack`, `telegram`, or `linear` (Linear agent sessions).
@@ -4912,7 +3893,7 @@ type AgentMessagingProvider string
 // AgentMessagingReplyMode Reply mode for built-in messaging; currently `auto`.
 type AgentMessagingReplyMode string
 
-// AgentModelRoute Default model route used by built-in messaging and by loop agent steps that do not override the route.
+// AgentModelRoute Default model route used by built-in messaging and by any turn that does not override the route.
 type AgentModelRoute struct {
 	// EnvironmentId Environment to use for worker-backed model calls.
 	EnvironmentId *string `json:"environment_id,omitempty"`
@@ -4965,7 +3946,7 @@ type AgentToolManifest struct {
 	// Skills Skills assigned to this agent, as resolved for this manifest. See each entry's `active` property for which one's grant was applied.
 	Skills []SkillManifestEntry `json:"skills"`
 
-	// Tools Catalog entries the agent can invoke. Each entry surfaces to the LLM as its own named tool. Built-in, integration, loop, and custom-HTTP actions are intermingled here.
+	// Tools Catalog entries the agent can invoke. Each entry surfaces to the LLM as its own named tool. Built-in, integration, and custom-HTTP actions are intermingled here.
 	Tools []ActionCatalogEntry `json:"tools"`
 
 	// Warnings Non-fatal issues encountered while resolving the manifest.
@@ -4977,15 +3958,15 @@ type AgentToolManifest struct {
 // The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise.
 type AgentToolPresentation string
 
-// AgentTurn One attempt of an agent running the agent loop — the unit that produces a transcript. A turn is triggered by a direct send to the session, a loop step (run_id + step_key), or an inbound channel message (channel_exchange_id). Its messages are read via the turn's transcript endpoint.
+// AgentTurn One attempt of an agent working on the session — the unit that produces a transcript. A turn is triggered by a direct send to the session or an inbound channel message (channel_exchange_id). Its messages are read via the turn's transcript endpoint.
 type AgentTurn struct {
 	// AgentId Agent that ran this turn.
 	AgentId string `json:"agent_id"`
 
-	// Attempt 1-based attempt number for this run-step; retries create new turns.
+	// Attempt 1-based attempt number; retries create new turns.
 	Attempt int `json:"attempt"`
 
-	// ChannelExchangeId Inbound channel exchange that triggered this turn. Absent for loop turns.
+	// ChannelExchangeId Inbound channel exchange that triggered this turn. Absent for direct sends.
 	ChannelExchangeId *string `json:"channel_exchange_id,omitempty"`
 
 	// CompletedAt When the turn reached a terminal status.
@@ -4993,6 +3974,9 @@ type AgentTurn struct {
 
 	// CreatedAt Time the turn was created.
 	CreatedAt time.Time `json:"created_at"`
+
+	// Deferrable True for scheduled work that yields admission priority to direct turns.
+	Deferrable *bool `json:"deferrable,omitempty"`
 
 	// EffectiveTimeoutSeconds Authoritative active-execution budget selected for the turn.
 	EffectiveTimeoutSeconds *int64 `json:"effective_timeout_seconds,omitempty"`
@@ -5015,8 +3999,8 @@ type AgentTurn struct {
 	// OutputSource Provenance of a completed turn's structured `output`: `tool` when the agent submitted it through the reserved `mobius_submit_output` tool, or `text` when Mobius accepted a schema-valid final message as a fallback.
 	OutputSource *AgentTurnOutputSource `json:"output_source,omitempty"`
 
-	// RunId Loop run that triggered this turn. Absent for messaging turns.
-	RunId *string `json:"run_id,omitempty"`
+	// RoutineName Display-only routine name for a scheduled turn's live state.
+	RoutineName *string `json:"routine_name,omitempty"`
 
 	// Seq Per-session ordering hint (cosmetic; turns are ordered by creation time).
 	Seq *int `json:"seq,omitempty"`
@@ -5026,9 +4010,6 @@ type AgentTurn struct {
 
 	// Status Agent turn lifecycle status: `queued`, `running`, `waiting`, `completed`, `failed`, or `cancelled`.
 	Status AgentTurnStatus `json:"status"`
-
-	// StepKey Step key (matches LoopRunStep.step_key, not its id) of the loop step that triggered this turn. Absent for messaging turns.
-	StepKey *string `json:"step_key,omitempty"`
 
 	// UpdatedAt Time the turn was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
@@ -5142,10 +4123,9 @@ type AgentVisibilityImpact struct {
 
 	// SharedEntryCount How many shared-layer memory entries the change republishes or restricts.
 	SharedEntryCount   int  `json:"shared_entry_count"`
-	StrandedLoops      *int `json:"stranded_loops,omitempty"`
 	StrandedPartitions *int `json:"stranded_partitions,omitempty"`
 
-	// StrandedPrincipals Principals who hold a memory partition, a session, or a loop on this agent and fall outside the new audience.
+	// StrandedPrincipals Principals who hold a memory partition or a session on this agent and fall outside the new audience.
 	StrandedPrincipals *[]string `json:"stranded_principals,omitempty"`
 	StrandedSessions   *int      `json:"stranded_sessions,omitempty"`
 
@@ -5254,17 +4234,11 @@ type Artifact struct {
 	// Posture Employee-facing effective ownership and audience posture for the current caller.
 	Posture ResourcePosture `json:"posture"`
 
-	// RunId Loop run that produced this artifact, derived from the trusted worker lease when present.
-	RunId *string `json:"run_id,omitempty"`
-
 	// Sha256 SHA-256 digest of the artifact content, when available.
 	Sha256 *string `json:"sha256,omitempty"`
 
 	// SizeBytes Artifact content size in bytes.
 	SizeBytes int64 `json:"size_bytes"`
-
-	// StepId Loop step that produced this artifact, derived from the trusted worker lease when present.
-	StepId *string `json:"step_id,omitempty"`
 
 	// UpdatedAt Time the artifact metadata was last updated.
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
@@ -5285,15 +4259,6 @@ type ArtifactConversionSummary struct {
 
 // ArtifactConversionSummaryState defines model for ArtifactConversionSummary.State.
 type ArtifactConversionSummaryState string
-
-// ArtifactCreatedPayload defines model for ArtifactCreatedPayload.
-type ArtifactCreatedPayload struct {
-	ArtifactId           *string                `json:"artifact_id,omitempty"`
-	ContentType          *string                `json:"content_type,omitempty"`
-	Name                 *string                `json:"name,omitempty"`
-	Step                 *string                `json:"step,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
 
 // ArtifactListResponse defines model for ArtifactListResponse.
 type ArtifactListResponse struct {
@@ -5373,16 +4338,9 @@ type BillingUsageEvent struct {
 	Provider    string    `json:"provider"`
 	RawQuantity int64     `json:"raw_quantity"`
 	RecordedAt  time.Time `json:"recorded_at"`
-
-	// RunId Run the usage was attributed to. Empty string when the event has no run attribution.
-	RunId      string `json:"run_id"`
-	SourceId   string `json:"source_id"`
-	SourceType string `json:"source_type"`
-
-	// StepId Loop step the usage was attributed to. Empty string when the event has no step attribution.
-	StepId      string `json:"step_id"`
-	StepKey     string `json:"step_key"`
-	ZeroCredits bool   `json:"zero_credits"`
+	SourceId    string    `json:"source_id"`
+	SourceType  string    `json:"source_type"`
+	ZeroCredits bool      `json:"zero_credits"`
 }
 
 // BillingUsageEventListResponse defines model for BillingUsageEventListResponse.
@@ -5448,7 +4406,7 @@ type BlueprintAgentInput struct {
 	Key              string                   `json:"key"`
 	Model            *string                  `json:"model,omitempty"`
 
-	// ModelRoute Default model route used by built-in messaging and by loop agent steps that do not override the route.
+	// ModelRoute Default model route used by built-in messaging and by any turn that does not override the route.
 	ModelRoute *AgentModelRoute        `json:"model_route,omitempty"`
 	Name       string                  `json:"name"`
 	Skills     *[]BlueprintResourceRef `json:"skills,omitempty"`
@@ -5460,7 +4418,7 @@ type BlueprintAgentInput struct {
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
 
-	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
+	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session, or the provider's own default when nothing sets a level.
 	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
 
 	// TimeoutSeconds Per-turn execution timeout; `0` uses the platform default.
@@ -5545,51 +4503,6 @@ type BlueprintDeleteResult struct {
 // BlueprintDeleteResultStatus defines model for BlueprintDeleteResult.Status.
 type BlueprintDeleteResultStatus string
 
-// BlueprintLoopInput A desired loop. The spec-bearing fields (`steps`, `triggers`, `event`, `config`, `limits`, `output`, `concurrency`, `repositories`, `cleanup`, `defaults`, `run_name`) mirror the loop authoring shape and are compiled by the loop engine. Applied loops default to `draft` unless `status` is set. `default_config`, `settings`, and `tags` configure Loop row state.
-type BlueprintLoopInput struct {
-	// Agent A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved within this apply first, then against existing bindings), or by `blueprint_ref` (resolved by key; its namespace is recorded as provenance and is not used for reference resolution in this version).
-	Agent *BlueprintResourceRef `json:"agent,omitempty"`
-
-	// Cleanup Cleanup steps run at the end of the run (maps to the loop spec `cleanup`).
-	Cleanup     *[]map[string]interface{} `json:"cleanup,omitempty"`
-	Concurrency *string                   `json:"concurrency,omitempty"`
-	Config      *map[string]interface{}   `json:"config,omitempty"`
-
-	// DefaultConfig Default config values used when a run starts without overrides.
-	DefaultConfig *map[string]interface{} `json:"default_config,omitempty"`
-	Defaults      *map[string]interface{} `json:"defaults,omitempty"`
-	Description   *string                 `json:"description,omitempty"`
-
-	// Event Declared event input contract for the run (maps to the loop spec `event`).
-	Event        *map[string]interface{}   `json:"event,omitempty"`
-	Key          string                    `json:"key"`
-	Limits       *map[string]interface{}   `json:"limits,omitempty"`
-	Name         string                    `json:"name"`
-	Output       *map[string]interface{}   `json:"output,omitempty"`
-	Repositories *[]map[string]interface{} `json:"repositories,omitempty"`
-
-	// RunName Templates for assigning an operator-facing title and optional description to each run. The object form leaves room for additional naming strategies without changing the loop spec shape.
-	RunName *RunNameSpec `json:"run_name,omitempty"`
-
-	// SchemaVersion Loop authoring schema version. Only version 1 is accepted.
-	SchemaVersion *BlueprintLoopInputSchemaVersion `json:"schema_version,omitempty"`
-
-	// Settings Free-form Loop-level settings consumed by the engine.
-	Settings *map[string]interface{}   `json:"settings,omitempty"`
-	Status   *BlueprintLoopInputStatus `json:"status,omitempty"`
-	Steps    *[]map[string]interface{} `json:"steps,omitempty"`
-
-	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
-	Tags     *TagMap                   `json:"tags,omitempty"`
-	Triggers *[]map[string]interface{} `json:"triggers,omitempty"`
-}
-
-// BlueprintLoopInputSchemaVersion Loop authoring schema version. Only version 1 is accepted.
-type BlueprintLoopInputSchemaVersion string
-
-// BlueprintLoopInputStatus defines model for BlueprintLoopInput.Status.
-type BlueprintLoopInputStatus string
-
 // BlueprintRef A namespaced blueprint key reference.
 type BlueprintRef struct {
 	Key       string  `json:"key"`
@@ -5615,7 +4528,6 @@ type BlueprintResourceType string
 type BlueprintResources struct {
 	Actions *[]BlueprintActionInput `json:"actions,omitempty"`
 	Agents  *[]BlueprintAgentInput  `json:"agents,omitempty"`
-	Loops   *[]BlueprintLoopInput   `json:"loops,omitempty"`
 	Skills  *[]BlueprintSkillInput  `json:"skills,omitempty"`
 	Tables  *[]BlueprintTableInput  `json:"tables,omitempty"`
 }
@@ -5649,15 +4561,6 @@ type BlueprintTableInput struct {
 	Schema TableSchema `json:"schema"`
 }
 
-// BudgetExceededPayload defines model for BudgetExceededPayload.
-type BudgetExceededPayload struct {
-	CreditBudget         *float32               `json:"credit_budget,omitempty"`
-	CreditSpent          *float32               `json:"credit_spent,omitempty"`
-	PercentUsed          *int                   `json:"percent_used,omitempty"`
-	Step                 *string                `json:"step,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-
 // BulkInsertRowsRequest defines model for BulkInsertRowsRequest.
 type BulkInsertRowsRequest struct {
 	// Rows Row data objects to validate and insert.
@@ -5673,15 +4576,9 @@ type BulkInsertRowsResult struct {
 	Items []TableRow `json:"items"`
 }
 
-// CancelInteractionRequest Optional payload accompanying a cancel request. The reason is recorded on the interaction and forwarded in the cancellation signal so loops can route to a fallback.
+// CancelInteractionRequest Optional payload accompanying a cancel request. The reason is recorded on the interaction and forwarded in the cancellation signal so the waiting consumer can route to a fallback.
 type CancelInteractionRequest struct {
 	// Reason Free-text reason recorded on the interaction.
-	Reason *string `json:"reason,omitempty"`
-}
-
-// CancelLoopRunRequest Body for the cancellation endpoint. All fields optional.
-type CancelLoopRunRequest struct {
-	// Reason Human-readable cancellation reason recorded on the run.
 	Reason *string `json:"reason,omitempty"`
 }
 
@@ -5704,15 +4601,6 @@ type ChannelContext struct {
 
 	// WorkspaceId Provider workspace/team identifier.
 	WorkspaceId *string `json:"workspace_id,omitempty"`
-}
-
-// CheckVerdictPayload defines model for CheckVerdictPayload.
-type CheckVerdictPayload struct {
-	Failed               *[]string              `json:"failed,omitempty"`
-	OnFail               *string                `json:"on_fail,omitempty"`
-	Step                 *string                `json:"step,omitempty"`
-	Verdict              *string                `json:"verdict,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
 // ColumnDef One typed column in a table schema.
@@ -5815,7 +4703,7 @@ type CompactionStartedPayload struct {
 // CompactionTrigger What started a compaction pass. `auto` is the threshold-gated pass that runs after a turn commits; `append` is the threshold-gated pass that runs inline on a message append; `manual` is an explicit compact request.
 type CompactionTrigger string
 
-// Consumer Polymorphic identifier of what is waiting on this interaction's resolution. Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved org signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Version` and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers.
+// Consumer Polymorphic identifier of what is waiting on this interaction's resolution. `http_subscriber` requires `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved org signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Version` and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers.
 type Consumer struct {
 	// AgentTool Agent tool continuation target when `kind=agent_tool`; null for other consumer kinds.
 	AgentTool *AgentToolConsumer `json:"agent_tool,omitempty"`
@@ -5823,9 +4711,6 @@ type Consumer struct {
 	// HttpSubscriber HTTP callback target when `kind=http_subscriber`; null for other consumer kinds.
 	HttpSubscriber *HttpSubscriberConsumer `json:"http_subscriber,omitempty"`
 	Kind           ConsumerKind            `json:"kind"`
-
-	// Run Run resume target when `kind=run`; null for other consumer kinds.
-	Run *RunConsumer `json:"run,omitempty"`
 }
 
 // ConsumerKind defines model for Consumer.Kind.
@@ -5836,7 +4721,6 @@ type ConsumerInput struct {
 	AgentTool      *AgentToolConsumer           `json:"agent_tool,omitempty"`
 	HttpSubscriber *HttpSubscriberConsumerInput `json:"http_subscriber,omitempty"`
 	Kind           ConsumerInputKind            `json:"kind"`
-	Run            *RunConsumer                 `json:"run,omitempty"`
 }
 
 // ConsumerInputKind defines model for ConsumerInput.Kind.
@@ -5845,7 +4729,7 @@ type ConsumerInputKind string
 // ContextIncludeParam defines model for ContextIncludeParam.
 type ContextIncludeParam string
 
-// CreateAPIKeyRequest Request shape for creating an organization API key. Pass `principal_id` to bind the key to an existing machine principal — the key authenticates as that principal, and permissions are managed by assigning roles to the principal rather than to the key. Omit `principal_id` to mint a key that acts directly with the chosen system `role` instead.
+// CreateAPIKeyRequest Request shape for creating an organization API key. Pass `principal_id` to bind the key to an existing machine principal — the key authenticates as that principal, and permissions are managed by assigning roles to the principal rather than to the key. Omit `principal_id` to bind the key to the permanent organization principal; the chosen system `role` is stored as the credential scope.
 type CreateAPIKeyRequest struct {
 	// AllowUnassignedPrincipal Allow minting a key for a principal with no role assignments. The resulting key cannot access org resources until a role is assigned. Omit this for normal onboarding so a missing assignment fails with `principal_has_no_roles`. Only applicable when `principal_id` is set.
 	AllowUnassignedPrincipal *bool `json:"allow_unassigned_principal,omitempty"`
@@ -5856,10 +4740,10 @@ type CreateAPIKeyRequest struct {
 	// Name Human-readable label, unique within the organization.
 	Name string `json:"name"`
 
-	// PrincipalId Principal this key authenticates as. Omit to create a system-role key not bound to any principal.
+	// PrincipalId Principal this key authenticates as. Omit to use the permanent organization principal with the requested role as a mandatory scope.
 	PrincipalId *string `json:"principal_id,omitempty"`
 
-	// Role System role the key acts as when `principal_id` is omitted, applied org-wide. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org administration without billing; lower roles narrow to build/run, run-only, or read-only. Ignored when `principal_id` is set.
+	// Role Mandatory scope role when `principal_id` is omitted. The permanent organization principal holds Owner, and this credential scope can only narrow it. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org administration without billing; lower roles narrow to build/run, run-only, or read-only. Ignored when `principal_id` is set.
 	Role *CreateAPIKeyRequestRole `json:"role,omitempty"`
 
 	// ScopeRoleId Optional role whose permissions cap this key below its principal's full grants. Only applicable when `principal_id` is set.
@@ -5869,10 +4753,10 @@ type CreateAPIKeyRequest struct {
 	Tags *TagMap `json:"tags,omitempty"`
 }
 
-// CreateAPIKeyRequestRole System role the key acts as when `principal_id` is omitted, applied org-wide. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org administration without billing; lower roles narrow to build/run, run-only, or read-only. Ignored when `principal_id` is set.
+// CreateAPIKeyRequestRole Mandatory scope role when `principal_id` is omitted. The permanent organization principal holds Owner, and this credential scope can only narrow it. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org administration without billing; lower roles narrow to build/run, run-only, or read-only. Ignored when `principal_id` is set.
 type CreateAPIKeyRequestRole string
 
-// CreateActionRequest Registers an org-owned custom action callable from loops and agents.
+// CreateActionRequest Registers an org-owned custom action agents can call as a tool.
 type CreateActionRequest struct {
 	// Annotations Request hints that describe the safe-use properties of the action. Used by the engine and tooling to decide retry behavior, dry-run eligibility, etc. Unknown request properties are rejected.
 	Annotations *ActionAnnotationsRequest `json:"annotations,omitempty"`
@@ -5892,7 +4776,7 @@ type CreateActionRequest struct {
 	// InvocationFormat Request-body contract for HTTP invocations. Omit to preserve the legacy body. `signed_context_v1` is valid only with `endpoint_kind: http`.
 	InvocationFormat *ActionInvocationFormat `json:"invocation_format,omitempty"`
 
-	// Name Identifier used in loop step definitions. Lowercase alphanumeric + hyphens, e.g. "send-email". Must be unique within the org. Cannot start with "mobius." (reserved prefix).
+	// Name Identifier agents and direct invocations call the action by. Lowercase alphanumeric + hyphens, e.g. "send-email". Must be unique within the org. Cannot start with "mobius." (reserved prefix).
 	Name string `json:"name"`
 
 	// OutputSchema JSON Schema describing the expected output shape.
@@ -5945,7 +4829,7 @@ type CreateAgentRequest struct {
 	// Model Model identifier for agents. Any id from `GET /v1/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default.
 	Model *string `json:"model,omitempty"`
 
-	// ModelRoute Default model route used by built-in messaging and by loop agent steps that do not override the route.
+	// ModelRoute Default model route used by built-in messaging and by any turn that does not override the route.
 	ModelRoute *AgentModelRoute `json:"model_route,omitempty"`
 
 	// Name Unique name for this agent. Free-form human-readable label, 1-63 characters.
@@ -5960,10 +4844,10 @@ type CreateAgentRequest struct {
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
 
-	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
+	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session, or the provider's own default when nothing sets a level.
 	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
 
-	// TimeoutSeconds Per-turn execution timeout in seconds for this agent. Omit or `0` to use the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.
+	// TimeoutSeconds Per-turn execution timeout in seconds for this agent. Omit or `0` to use the platform default (600s / 10 minutes); a request's `operation.timeout_seconds` overrides it for that turn.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 
 	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
@@ -6014,105 +4898,68 @@ type CreateArtifactRequest struct {
 // CreateArtifactRequestConvert When "true" and the uploaded file is DOCX, XLSX, or PPTX, extract a Markdown rendition asynchronously for model delivery. Ignored for other file types.
 type CreateArtifactRequestConvert string
 
-// CreateEnvironmentRequest Request body for creating a managed environment.
-type CreateEnvironmentRequest struct {
-	// Name Human-readable environment name.
-	Name *string `json:"name,omitempty"`
-
-	// Owner The human or team responsible for this resource.
-	Owner *ResourceOwner `json:"owner,omitempty"`
-
-	// Provider Providers the control plane can provision on demand. Worker-provided environments are registered out-of-band via the attach endpoint and are never provisioned through create/acquire.
-	Provider *ProvisionEnvironmentProvider `json:"provider,omitempty"`
-
-	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
-	Tags *TagMap `json:"tags,omitempty"`
-
-	// TemplateId V1 supports only coding-default.
-	TemplateId *CreateEnvironmentRequestTemplateId `json:"template_id,omitempty"`
-
-	// Visibility Who the custodian chose to share the resource with.
-	Visibility *ResourceVisibility `json:"visibility,omitempty"`
-}
-
-// CreateEnvironmentRequestTemplateId V1 supports only coding-default.
-type CreateEnvironmentRequestTemplateId string
-
-// CreateInteractionRequest Creates an interaction directly. Use the standalone variant with no loop-run side effect, or the run-backed variant that requires both `run_id` and `signal_name` so completion can resume the run. For worker/job usage, prefer the job-scoped route so the server can derive the owning run from the claimed job context.
+// CreateInteractionRequest Creates an interaction. `consumer` names what is waiting on its resolution; when omitted, completion records the response and nothing else acts on it.
 type CreateInteractionRequest struct {
-	union json.RawMessage
-}
+	Consumer *ConsumerInput `json:"consumer,omitempty"`
 
-// CreateLoopRequest defines model for CreateLoopRequest.
-type CreateLoopRequest struct {
-	// AgentId Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`.
-	AgentId *string `json:"agent_id,omitempty"`
+	// Context Additional key-value context surfaced in the UI alongside the title and description.
+	Context *map[string]interface{} `json:"context,omitempty"`
 
-	// Cleanup Cleanup steps or policies evaluated after normal step execution.
-	Cleanup *[]map[string]interface{} `json:"cleanup,omitempty"`
+	// Delivery Optional per-interaction delivery override. When absent, each participant is notified via the app inbox only.
+	Delivery *Delivery `json:"delivery,omitempty"`
 
-	// Concurrency Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
-	Concurrency *CreateLoopRequestConcurrency `json:"concurrency,omitempty"`
-
-	// Config Declared run config fields for this loop.
-	Config *map[string]LoopSpecInput `json:"config,omitempty"`
-
-	// DefaultConfig Default config values used when a run is started without overrides.
-	DefaultConfig *map[string]interface{} `json:"default_config,omitempty"`
-
-	// Defaults Run-level defaults inside the loop spec. Lives at `spec.defaults` in the JSON the engine compiles. The run wall-clock limit moved to `limits.wall_clock_timeout`.
-	Defaults *LoopSpecDefaults `json:"defaults,omitempty"`
-
-	// Description Markdown description of the loop's purpose.
+	// Description Optional longer responder-facing detail or instructions.
 	Description *string `json:"description,omitempty"`
 
-	// Event Declared event fields for this loop.
-	Event *map[string]LoopSpecInput `json:"event,omitempty"`
+	// ExpiresAt Timestamp after which this interaction expires if not responded to.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
 
-	// Limits Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; absent or zero means unbounded (plan-level org caps still apply), with one exception — trial-plan runs default to a 100-credit ($1) budget when no budget is set here or on the start request. Paid plans default to unbounded.
-	Limits *LoopSpecLimits `json:"limits,omitempty"`
-
-	// Name Human-readable display name.
-	Name string `json:"name"`
-
-	// Output Declared run result contract.
-	Output *map[string]interface{} `json:"output,omitempty"`
-
-	// Owner The human or team responsible for this resource.
-	Owner *ResourceOwner `json:"owner,omitempty"`
-
-	// Repositories Source repositories the loop targets.
-	Repositories *[]LoopSpecRepository `json:"repositories,omitempty"`
-
-	// RunName Templates for assigning an operator-facing title and optional description to each run. The object form leaves room for additional naming strategies without changing the loop spec shape.
-	RunName *RunNameSpec `json:"run_name,omitempty"`
-
-	// SchemaVersion Loop authoring schema version. Only schema version 1 is accepted.
-	SchemaVersion *CreateLoopRequestSchemaVersion `json:"schema_version,omitempty"`
-
-	// Settings Free-form loop-level settings consumed by the engine.
-	Settings *map[string]interface{} `json:"settings,omitempty"`
-
-	// Steps Steps use kind agent, action, sleep, wait_for_event, interaction, loop, or check; action inputs use config.parameters; if is a predicate.
+	// Kind Protocol kind of the interaction:
+	// * `request_information` — a data-collection protocol with structured
+	// or free-form input
+	// * `request_approval` — a decision protocol (yes/no, optionally
+	// yes/no/defer)
+	// * `request_review` — a judgment protocol that evaluates supplied
+	// material
+	// * `assign_work` — assigned work performed by a user or agent, which
+	// submits the result. Pair it with `resolution_policy.review` when the
+	// result must be accepted before the interaction resolves.
 	//
-	// Each item has `kind`, `config`, and optional `id`, `name`, `if`, `retry`, and `timeout`. Valid kinds are `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, and `check`. Required config: `agent.instructions`; `action.action_name`; `sleep.duration` or `sleep.until`; `wait_for_event.event_type`; `interaction.protocol` plus `interaction.targets`; `loop.loop_id`; or `check.checks`. Action inputs belong in `config.parameters`; `config.execution_location` is `managed`, `worker`, or `environment`. `if` is a bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`. String leaves interpolate expr values with `${{ ... }}`.
-	Steps *[]LoopStep `json:"steps,omitempty"`
+	// The first three are *answered*; `assign_work` is *worked*. Kind does not by itself decide when an interaction closes — the resolution policy does.
+	Kind InteractionKind `json:"kind"`
+
+	// Properties Free-form structured metadata to attach to the interaction.
+	Properties *map[string]interface{} `json:"properties,omitempty"`
+
+	// References Supporting links and related entities.
+	References *[]InteractionReference `json:"references,omitempty"`
+
+	// RequireAll When true, all target users must respond before the interaction is considered complete. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code.
+	RequireAll *bool `json:"require_all,omitempty"`
+
+	// ResolutionPolicy Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome, and whether that outcome needs acceptance before it is final.
+	ResolutionPolicy *ResolutionPolicy `json:"resolution_policy,omitempty"`
+
+	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
+	//
+	// Allowed combinations:
+	// * `request_approval` → `confirm`, `select`
+	// * `request_review` → `select`, `input`
+	// * `request_information` → `select`, `multi_select`, `input`
+	Spec *InteractionSpec `json:"spec,omitempty"`
+
+	// Subject Pointer to the work item, artifact, external ticket, or Mobius entity this interaction is about.
+	Subject *InteractionReference `json:"subject,omitempty"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
 
-	// Triggers Authored trigger declarations for this loop.
-	Triggers *[]LoopSpecTrigger `json:"triggers,omitempty"`
+	// TargetUserIds Resolved user IDs to target directly. At least one target is required — every interaction needs someone who can answer it, even when a machine consumer is waiting on the outcome. Agents use their agent principal IDs.
+	TargetUserIds []string `json:"target_user_ids"`
 
-	// Visibility Who the custodian chose to share the resource with.
-	Visibility *ResourceVisibility `json:"visibility,omitempty"`
+	// Title Short non-empty title shown to the responder.
+	Title string `json:"title"`
 }
-
-// CreateLoopRequestConcurrency Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
-type CreateLoopRequestConcurrency string
-
-// CreateLoopRequestSchemaVersion Loop authoring schema version. Only schema version 1 is accepted.
-type CreateLoopRequestSchemaVersion string
 
 // CreatePrincipalRequest defines model for CreatePrincipalRequest.
 type CreatePrincipalRequest struct {
@@ -6169,77 +5016,6 @@ type CreateRoleRequest struct {
 	Tags *TagMap `json:"tags,omitempty"`
 }
 
-// CreateRunBackedInteractionRequest Creates an interaction linked to a loop run for audit. The server derives a `kind=run` consumer from `run_id` and `signal_name`.
-//
-// This is an audit-only link: creating an interaction here does not suspend the run, and resolving it does not by itself resume a run. A run only blocks on, and resumes from, human input when the loop definition declares an interaction step — that step creates the interaction and registers the matching wait atomically. Use this endpoint to record a human decision against a run, not to drive run control flow.
-type CreateRunBackedInteractionRequest struct {
-	Consumer *ConsumerInput `json:"consumer,omitempty"`
-
-	// Context Additional key-value context surfaced in the UI alongside the title and description.
-	Context *map[string]interface{} `json:"context,omitempty"`
-
-	// Delivery Optional per-interaction delivery override. When absent, each participant is notified via the app inbox only.
-	Delivery *Delivery `json:"delivery,omitempty"`
-
-	// Description Optional longer responder-facing detail or instructions.
-	Description *string `json:"description,omitempty"`
-
-	// ExpiresAt Timestamp after which this interaction expires if not responded to.
-	ExpiresAt *time.Time `json:"expires_at,omitempty"`
-
-	// Kind Protocol kind of the interaction:
-	// * `request_information` — a data-collection protocol with structured
-	// or free-form input
-	// * `request_approval` — a decision protocol (yes/no, optionally
-	// yes/no/defer)
-	// * `request_review` — a judgment protocol that evaluates supplied
-	// material
-	// * `assign_work` — assigned work performed by a user or agent, which
-	// submits the result. Pair it with `resolution_policy.review` when the
-	// result must be accepted before the interaction resolves.
-	//
-	// The first three are *answered*; `assign_work` is *worked*. Kind does not by itself decide when an interaction closes — the resolution policy does.
-	Kind InteractionKind `json:"kind"`
-
-	// Properties Free-form structured metadata to attach to the interaction.
-	Properties *map[string]interface{} `json:"properties,omitempty"`
-
-	// References Supporting links and related entities.
-	References *[]InteractionReference `json:"references,omitempty"`
-
-	// RequireAll When true, all target users must respond before the interaction is considered complete. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code.
-	RequireAll *bool `json:"require_all,omitempty"`
-
-	// ResolutionPolicy Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome, and whether that outcome needs acceptance before it is final.
-	ResolutionPolicy *ResolutionPolicy `json:"resolution_policy,omitempty"`
-
-	// RunId ID of the loop run associated with this interaction.
-	RunId string `json:"run_id"`
-
-	// SignalName Legacy signal name recorded with the run association.
-	SignalName string `json:"signal_name"`
-
-	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a loop definition) and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
-	//
-	// Allowed combinations:
-	// * `request_approval` → `confirm`, `select`
-	// * `request_review` → `select`, `input`
-	// * `request_information` → `select`, `multi_select`, `input`
-	Spec *InteractionSpec `json:"spec,omitempty"`
-
-	// Subject Pointer to the work item, artifact, external ticket, or Mobius entity this interaction is about.
-	Subject *InteractionReference `json:"subject,omitempty"`
-
-	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
-	Tags *TagMap `json:"tags,omitempty"`
-
-	// TargetUserIds Resolved user IDs to target directly. At least one target is required. Agents use their agent principal IDs.
-	TargetUserIds []string `json:"target_user_ids"`
-
-	// Title Short non-empty title shown to the responder.
-	Title string `json:"title"`
-}
-
 // CreateSessionAttachmentRequest defines model for CreateSessionAttachmentRequest.
 type CreateSessionAttachmentRequest struct {
 	// File The document or image bytes. Multipart parts may arrive in any order.
@@ -6283,7 +5059,7 @@ type CreateSessionRequest struct {
 	// SessionKey Stable key identifying the conversation within the agent.
 	SessionKey *string `json:"session_key,omitempty"`
 
-	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
+	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session, or the provider's own default when nothing sets a level.
 	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
 
 	// Title Human-friendly session title.
@@ -6295,69 +5071,6 @@ type CreateSessionRequest struct {
 
 // CreateSessionRequestMode `continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.
 type CreateSessionRequestMode string
-
-// CreateStandaloneInteractionRequest Creates a standalone interaction. Completion records the response but does not deliver a loop signal.
-type CreateStandaloneInteractionRequest struct {
-	Consumer *ConsumerInput `json:"consumer,omitempty"`
-
-	// Context Additional key-value context surfaced in the UI alongside the title and description.
-	Context *map[string]interface{} `json:"context,omitempty"`
-
-	// Delivery Optional per-interaction delivery override. When absent, each participant is notified via the app inbox only.
-	Delivery *Delivery `json:"delivery,omitempty"`
-
-	// Description Optional longer responder-facing detail or instructions.
-	Description *string `json:"description,omitempty"`
-
-	// ExpiresAt Timestamp after which this interaction expires if not responded to.
-	ExpiresAt *time.Time `json:"expires_at,omitempty"`
-
-	// Kind Protocol kind of the interaction:
-	// * `request_information` — a data-collection protocol with structured
-	// or free-form input
-	// * `request_approval` — a decision protocol (yes/no, optionally
-	// yes/no/defer)
-	// * `request_review` — a judgment protocol that evaluates supplied
-	// material
-	// * `assign_work` — assigned work performed by a user or agent, which
-	// submits the result. Pair it with `resolution_policy.review` when the
-	// result must be accepted before the interaction resolves.
-	//
-	// The first three are *answered*; `assign_work` is *worked*. Kind does not by itself decide when an interaction closes — the resolution policy does.
-	Kind InteractionKind `json:"kind"`
-
-	// Properties Free-form structured metadata to attach to the interaction.
-	Properties *map[string]interface{} `json:"properties,omitempty"`
-
-	// References Supporting links and related entities.
-	References *[]InteractionReference `json:"references,omitempty"`
-
-	// RequireAll When true, all target users must respond before the interaction is considered complete. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code.
-	RequireAll *bool `json:"require_all,omitempty"`
-
-	// ResolutionPolicy Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome, and whether that outcome needs acceptance before it is final.
-	ResolutionPolicy *ResolutionPolicy `json:"resolution_policy,omitempty"`
-
-	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a loop definition) and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
-	//
-	// Allowed combinations:
-	// * `request_approval` → `confirm`, `select`
-	// * `request_review` → `select`, `input`
-	// * `request_information` → `select`, `multi_select`, `input`
-	Spec *InteractionSpec `json:"spec,omitempty"`
-
-	// Subject Pointer to the work item, artifact, external ticket, or Mobius entity this interaction is about.
-	Subject *InteractionReference `json:"subject,omitempty"`
-
-	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
-	Tags *TagMap `json:"tags,omitempty"`
-
-	// TargetUserIds Resolved user IDs to target directly. At least one target is required — every interaction needs someone who can answer it, even when a machine consumer is waiting on the outcome. Agents use their agent principal IDs.
-	TargetUserIds []string `json:"target_user_ids"`
-
-	// Title Short non-empty title shown to the responder.
-	Title string `json:"title"`
-}
 
 // CreateTableRequest defines model for CreateTableRequest.
 type CreateTableRequest struct {
@@ -6375,30 +5088,6 @@ type CreateTableRequest struct {
 
 	// Schema Column definition for a virtual table. Each table has exactly one required string identity column and may nominate one optional string secondary key column.
 	Schema TableSchema `json:"schema"`
-
-	// Visibility Who the custodian chose to share the resource with.
-	Visibility *ResourceVisibility `json:"visibility,omitempty"`
-}
-
-// CreateWebhookRequest defines model for CreateWebhookRequest.
-type CreateWebhookRequest struct {
-	// Enabled Whether the webhook starts enabled. Defaults to true when omitted.
-	Enabled *bool `json:"enabled,omitempty"`
-
-	// Events Event types to subscribe to. Use wildcards for broad subscriptions, e.g. `["run.*"]` for all run events. Omit this field or send an empty list to subscribe to all event types.
-	Events *[]string `json:"events,omitempty"`
-
-	// Name Human-readable name, unique within the org.
-	Name string `json:"name"`
-
-	// Owner The human or team responsible for this resource.
-	Owner *ResourceOwner `json:"owner,omitempty"`
-
-	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
-	Tags *TagMap `json:"tags,omitempty"`
-
-	// Url The endpoint Mobius will POST event payloads to. May be left empty at creation time so a candidate URL can be tested via the ping endpoint before it is saved; events do not fire for webhooks with an empty URL.
-	Url *string `json:"url,omitempty"`
 
 	// Visibility Who the custodian chose to share the resource with.
 	Visibility *ResourceVisibility `json:"visibility,omitempty"`
@@ -6424,92 +5113,11 @@ type EmailDelivery struct {
 	To []openapi_types.Email `json:"to"`
 }
 
-// Environment Durable execution environment summary.
-type Environment struct {
-	// CleanupStatus Cleanup outcome: `none`, `pending`, `succeeded`, `failed`, or `skipped`.
-	CleanupStatus EnvironmentCleanupStatus `json:"cleanup_status"`
-
-	// Container The agent that contains this resource and may further narrow who can reach it.
-	Container *ResourceContainer `json:"container"`
-
-	// CreatedAt Time the environment record was created.
-	CreatedAt time.Time `json:"created_at"`
-
-	// CurrentWorkerSessionId Worker session currently attached to this environment, when any.
-	CurrentWorkerSessionId *string `json:"current_worker_session_id,omitempty"`
-
-	// Id Unique environment identifier.
-	Id string `json:"id"`
-
-	// LastSeenAt Last time the provider or worker reported the environment.
-	LastSeenAt *time.Time `json:"last_seen_at,omitempty"`
-
-	// Lifetime Lifecycle owner for automatic cleanup. `run` environments are destroyed during their owning run's Finalize phase; `lease` environments are reaped after lease expiry; `explicit` environments require an explicit destroy call.
-	Lifetime EnvironmentLifetime `json:"lifetime"`
-
-	// Name Human-readable environment name.
-	Name string `json:"name"`
-
-	// Owner The human or team responsible for this resource.
-	Owner ResourceOwner `json:"owner"`
-
-	// Posture Employee-facing effective ownership and audience posture for the current caller.
-	Posture ResourcePosture `json:"posture"`
-
-	// Provider Backing provider: `sprites`, `cloudflare_containers`, or `worker`.
-	Provider EnvironmentProvider `json:"provider"`
-
-	// RetentionPolicy Retention behavior: `manual`, `destroy_on_success`, `retain_on_failure`, or `retain_always`.
-	RetentionPolicy EnvironmentRetentionPolicy `json:"retention_policy"`
-
-	// Status Lifecycle status: `provisioning`, `ready`, `running`, `retained`, `destroying`, `destroyed`, `failed`, or `orphaned`.
-	Status EnvironmentStatus `json:"status"`
-
-	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
-	Tags *TagMap `json:"tags,omitempty"`
-
-	// UpdatedAt Time the environment record was last updated.
-	UpdatedAt time.Time `json:"updated_at"`
-
-	// Visibility Who the custodian chose to share the resource with.
-	Visibility ResourceVisibility `json:"visibility"`
-}
-
-// EnvironmentCleanupStatus Cleanup outcome: `none`, `pending`, `succeeded`, `failed`, or `skipped`.
-type EnvironmentCleanupStatus string
-
-// EnvironmentLifetime Lifecycle owner for automatic cleanup. `run` environments are destroyed during their owning run's Finalize phase; `lease` environments are reaped after lease expiry; `explicit` environments require an explicit destroy call.
-type EnvironmentLifetime string
-
-// EnvironmentListResponse Cursor-paginated list of environments.
-type EnvironmentListResponse struct {
-	// HasMore Whether another page is available.
-	HasMore bool `json:"has_more"`
-
-	// Items Environments in the current page.
-	Items []Environment `json:"items"`
-
-	// NextCursor Cursor to pass on the next request when `has_more` is true.
-	NextCursor *string `json:"next_cursor,omitempty"`
-}
-
-// EnvironmentMode High-level ownership policy for how Mobius plans to use the environment. `run` is one-shot and auto-cleaned with a run; `agent` and `loop` are persistent environment policies; `manual` is operator controlled.
-type EnvironmentMode string
-
-// EnvironmentProvider Backing provider: `sprites`, `cloudflare_containers`, or `worker`.
-type EnvironmentProvider string
-
-// EnvironmentRetentionPolicy Retention behavior: `manual`, `destroy_on_success`, `retain_on_failure`, or `retain_always`.
-type EnvironmentRetentionPolicy string
-
-// EnvironmentStatus Lifecycle status: `provisioning`, `ready`, `running`, `retained`, `destroying`, `destroyed`, `failed`, or `orphaned`.
-type EnvironmentStatus string
-
 // ErrorResponse Standard error envelope returned by API endpoints.
 type ErrorResponse struct {
 	// Error Error detail.
 	Error struct {
-		// Code Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `loop_paused`, `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family.
+		// Code Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family.
 		Code string `json:"code"`
 
 		// Details Optional structured details specific to a `code`. Endpoints that set this document the per-code shape inline. Absent for codes whose `code` + `message` are sufficient.
@@ -6583,19 +5191,7 @@ type EventCatalogSource struct {
 // EventCatalogSourceKind `integration` for provider event sources; `capability` for built-in Mobius platform event sources.
 type EventCatalogSourceKind string
 
-// EventTriggerConfig Configuration for `LoopSpec.triggers[]` entries with `kind` set to `event`.
-type EventTriggerConfig struct {
-	// Condition Optional expr predicate evaluated against the public `{ event, meta }` envelope.
-	Condition *string `json:"condition,omitempty"`
-
-	// EventType Source-event type or catalog pattern this trigger subscribes to.
-	EventType string `json:"event_type"`
-
-	// SourceId Optional source identifier used to scope event matching.
-	SourceId *string `json:"source_id,omitempty"`
-}
-
-// GenerationDeltaFrame Live-only token preview frame that can appear on run and session SSE streams. It is not persisted, does not carry an SSE `id:`, and cannot be replayed with `after_sequence` or `Last-Event-ID`.
+// GenerationDeltaFrame Live-only token preview frame that can appear on session SSE streams. It is not persisted, does not carry an SSE `id:`, and cannot be replayed with `after_sequence` or `Last-Event-ID`.
 type GenerationDeltaFrame struct {
 	// Delta Token preview payload. Normal answer text arrives as `{ "text": "..." }`; summarized reasoning/thinking arrives as `{ "type": "thinking", "thinking": "..." }`.
 	Delta map[string]interface{} `json:"delta"`
@@ -6613,7 +5209,6 @@ type GenerationDeltaFrame struct {
 
 	// Model Model producing the generation, e.g. `claude-sonnet-4-6`.
 	Model                *string                `json:"model,omitempty"`
-	RunId                *string                `json:"run_id,omitempty"`
 	SessionId            *string                `json:"session_id,omitempty"`
 	ToolCallId           *string                `json:"tool_call_id,omitempty"`
 	TurnId               *string                `json:"turn_id,omitempty"`
@@ -6623,33 +5218,6 @@ type GenerationDeltaFrame struct {
 
 // GenerationDeltaFrameEventType defines model for GenerationDeltaFrame.EventType.
 type GenerationDeltaFrameEventType string
-
-// GenericEventPayload Event-type-specific payload for less common event types.
-type GenericEventPayload map[string]interface{}
-
-// HTTPTriggerConfig Configuration for `LoopSpec.triggers[]` entries with `kind` set to `http`.
-type HTTPTriggerConfig struct {
-	// HttpHandle Optional public delivery handle for `POST /v1/triggers/http/{http_handle}`. Omit to let Mobius use the materialized trigger id as the unguessable handle.
-	HttpHandle *string `json:"http_handle,omitempty"`
-}
-
-// HTTPTriggerDeliveryRequest Free-form JSON object delivered to the HTTP trigger. The payload is recorded on the source event and forwarded to the run as the event.
-type HTTPTriggerDeliveryRequest map[string]interface{}
-
-// HTTPTriggerDeliveryResult Synchronous receipt for an inbound HTTP-trigger delivery. The trigger dispatch and run start happen asynchronously after this response. Clients can poll via `GET /v1/runs?source_event_id=<source_event_id>` to discover the run once the source-event processor reserves it.
-type HTTPTriggerDeliveryResult struct {
-	// Deduped True when an existing source-event row was returned for the same idempotency key.
-	Deduped *bool `json:"deduped,omitempty"`
-
-	// SourceEventId Durable source-event id (also the `dedup_key` seed). Stable across retries with the same `Idempotency-Key`.
-	SourceEventId string `json:"source_event_id"`
-
-	// Status Acceptance status of the source-event row. The only synchronous success value is `accepted`; processing happens asynchronously after the source event is durable.
-	Status HTTPTriggerDeliveryResultStatus `json:"status"`
-}
-
-// HTTPTriggerDeliveryResultStatus Acceptance status of the source-event row. The only synchronous success value is `accepted`; processing happens asynchronously after the source event is durable.
-type HTTPTriggerDeliveryResultStatus string
 
 // HttpSubscriberConsumer defines model for HttpSubscriberConsumer.
 type HttpSubscriberConsumer struct {
@@ -6701,7 +5269,7 @@ type Interaction struct {
 	// CompletedAt Timestamp when the interaction received a terminal response.
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
 
-	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution. Replaces the special-cased `run_id`/`signal_name` pair; the latter remain populated when `consumer.kind=run`.
+	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution.
 	Consumer *Consumer `json:"consumer,omitempty"`
 
 	// Container The agent that contains this resource and may further narrow who can reach it.
@@ -6787,13 +5355,7 @@ type Interaction struct {
 	// Reviewer Principal whose accept or send-back was recorded last; null until a review decision is made. Distinct from `responder`, which names whoever submitted the work.
 	Reviewer *InteractionResponder `json:"reviewer,omitempty"`
 
-	// RunId Originating loop run when the interaction is run-backed.
-	RunId *string `json:"run_id,omitempty"`
-
-	// SignalName Signal name used to resume the originating run when run-backed.
-	SignalName *string `json:"signal_name,omitempty"`
-
-	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a loop definition) and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
+	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
 	//
 	// Allowed combinations:
 	// * `request_approval` → `confirm`, `select`
@@ -6931,14 +5493,6 @@ type InteractionReference struct {
 // InteractionReferenceKind defines model for InteractionReference.Kind.
 type InteractionReferenceKind string
 
-// InteractionRespondedPayload defines model for InteractionRespondedPayload.
-type InteractionRespondedPayload struct {
-	InteractionId        *string                 `json:"interaction_id,omitempty"`
-	Responder            *map[string]interface{} `json:"responder,omitempty"`
-	Response             *map[string]interface{} `json:"response,omitempty"`
-	AdditionalProperties map[string]interface{}  `json:"-"`
-}
-
 // InteractionResponder Identifies the principal who answered an interaction. Agents answer through their agent principal ID.
 type InteractionResponder struct {
 	// UserId Responder user ID.
@@ -6983,7 +5537,7 @@ type InteractionResponseResponseKind string
 // InteractionResponseState Lifecycle state for this response row.
 type InteractionResponseState string
 
-// InteractionSpec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a loop definition) and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
+// InteractionSpec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
 //
 // Allowed combinations:
 // * `request_approval` → `confirm`, `select`
@@ -7035,7 +5589,7 @@ type InteractionUpsertFrame struct {
 	// CompletedAt Timestamp when the interaction received a terminal response.
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
 
-	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution. Replaces the special-cased `run_id`/`signal_name` pair; the latter remain populated when `consumer.kind=run`.
+	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution.
 	Consumer *Consumer `json:"consumer,omitempty"`
 
 	// Container The agent that contains this resource and may further narrow who can reach it.
@@ -7122,13 +5676,7 @@ type InteractionUpsertFrame struct {
 	// Reviewer Principal whose accept or send-back was recorded last; null until a review decision is made. Distinct from `responder`, which names whoever submitted the work.
 	Reviewer *InteractionResponder `json:"reviewer,omitempty"`
 
-	// RunId Originating loop run when the interaction is run-backed.
-	RunId *string `json:"run_id,omitempty"`
-
-	// SignalName Signal name used to resume the originating run when run-backed.
-	SignalName *string `json:"signal_name,omitempty"`
-
-	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a loop definition) and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
+	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
 	//
 	// Allowed combinations:
 	// * `request_approval` → `confirm`, `select`
@@ -7268,7 +5816,7 @@ type InvokeSessionSpec struct {
 	// SessionKey Stable key identifying the conversation within the agent.
 	SessionKey *string `json:"session_key,omitempty"`
 
-	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
+	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session, or the provider's own default when nothing sets a level.
 	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
 
 	// Title Human-friendly title for a newly created session.
@@ -7280,968 +5828,6 @@ type InvokeSessionSpec struct {
 
 // InvokeSessionSpecMode `continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.
 type InvokeSessionSpecMode string
-
-// LimitReachedPayload defines model for LimitReachedPayload.
-type LimitReachedPayload struct {
-	Limit                *int                   `json:"limit,omitempty"`
-	LimitKind            *string                `json:"limit_kind,omitempty"`
-	Step                 *string                `json:"step,omitempty"`
-	Used                 *int                   `json:"used,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-
-// Loop A loop and its current authored definition. Updating any authoring field creates an internal revision and makes it runnable immediately.
-type Loop struct {
-	// AgentId Agent container associated with this loop. Agent steps use it when they do not pin `config.agent_id`; it never owns the loop.
-	AgentId *string `json:"agent_id,omitempty"`
-
-	// Cleanup Cleanup steps or policies evaluated after normal step execution.
-	Cleanup *[]map[string]interface{} `json:"cleanup,omitempty"`
-
-	// Concurrency Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
-	Concurrency *LoopConcurrency `json:"concurrency,omitempty"`
-
-	// Config Declared run config fields for this loop.
-	Config *map[string]LoopSpecInput `json:"config,omitempty"`
-
-	// Container The agent that contains this resource and may further narrow who can reach it.
-	Container *ResourceContainer `json:"container,omitempty"`
-
-	// CreatedAt Record creation timestamp.
-	CreatedAt time.Time `json:"created_at"`
-
-	// DefaultConfig Default config values used when a run is started without overrides.
-	DefaultConfig *map[string]interface{} `json:"default_config,omitempty"`
-
-	// Defaults Run-level defaults inside the loop spec. Lives at `spec.defaults` in the JSON the engine compiles. The run wall-clock limit moved to `limits.wall_clock_timeout`.
-	Defaults *LoopSpecDefaults `json:"defaults,omitempty"`
-
-	// Description Markdown description of the loop's purpose.
-	Description *string `json:"description,omitempty"`
-
-	// Event Declared event fields for this loop.
-	Event *map[string]LoopSpecInput `json:"event,omitempty"`
-
-	// Id Stable loop identifier.
-	Id string `json:"id"`
-
-	// LastRunAt Timestamp of the most recent run start, if any.
-	LastRunAt *time.Time `json:"last_run_at,omitempty"`
-
-	// Limits Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; absent or zero means unbounded (plan-level org caps still apply), with one exception — trial-plan runs default to a 100-credit ($1) budget when no budget is set here or on the start request. Paid plans default to unbounded.
-	Limits *LoopSpecLimits `json:"limits,omitempty"`
-
-	// Name Human-readable display name.
-	Name string `json:"name"`
-
-	// Output Declared run result contract.
-	Output *map[string]interface{} `json:"output,omitempty"`
-
-	// Owner The human or team responsible for this resource.
-	Owner ResourceOwner `json:"owner"`
-
-	// Posture Employee-facing effective ownership and audience posture for the current caller.
-	Posture ResourcePosture `json:"posture"`
-
-	// Repositories Source repositories the loop targets.
-	Repositories *[]LoopSpecRepository `json:"repositories,omitempty"`
-
-	// RunName Templates for assigning an operator-facing title and optional description to each run. The object form leaves room for additional naming strategies without changing the loop spec shape.
-	RunName *RunNameSpec `json:"run_name,omitempty"`
-
-	// SchemaVersion Loop authoring schema version. Only schema version 1 is accepted.
-	SchemaVersion *LoopSchemaVersion `json:"schema_version,omitempty"`
-
-	// Settings Free-form loop-level settings consumed by the engine.
-	Settings *map[string]interface{} `json:"settings,omitempty"`
-
-	// Status Loop lifecycle status: `draft`, `active`, `paused`, or `deleted`.
-	Status LoopStatus `json:"status"`
-
-	// Steps Steps use kind agent, action, sleep, wait_for_event, interaction, loop, or check; action inputs use config.parameters; if is a predicate.
-	//
-	// Each item has `kind`, `config`, and optional `id`, `name`, `if`, `retry`, and `timeout`. Valid kinds are `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, and `check`. Required config: `agent.instructions`; `action.action_name`; `sleep.duration` or `sleep.until`; `wait_for_event.event_type`; `interaction.protocol` plus `interaction.targets`; `loop.loop_id`; or `check.checks`. Action inputs belong in `config.parameters`; `config.execution_location` is `managed`, `worker`, or `environment`. `if` is a bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`. String leaves interpolate expr values with `${{ ... }}`.
-	Steps *[]LoopStep `json:"steps,omitempty"`
-
-	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
-	Tags *TagMap `json:"tags,omitempty"`
-
-	// Triggers Authored trigger declarations for this loop.
-	Triggers *[]LoopSpecTrigger `json:"triggers,omitempty"`
-
-	// UpdatedAt Last update timestamp.
-	UpdatedAt time.Time `json:"updated_at"`
-
-	// Visibility Who the custodian chose to share the resource with.
-	Visibility ResourceVisibility `json:"visibility"`
-}
-
-// LoopConcurrency Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
-type LoopConcurrency string
-
-// LoopSchemaVersion Loop authoring schema version. Only schema version 1 is accepted.
-type LoopSchemaVersion string
-
-// LoopActionStep Action step configuration recognised inside `LoopSpec.steps[].config`.
-type LoopActionStep struct {
-	// ActionName Catalog action name to invoke.
-	ActionName string `json:"action_name"`
-
-	// EnvironmentId Managed environment to route this worker-backed action to. When omitted for `execution_location: environment`, Mobius resolves one from `spec.defaults.environment`.
-	EnvironmentId *string `json:"environment_id,omitempty"`
-
-	// ExecutionLocation Execution location: `managed`, `worker`, or `environment`.
-	ExecutionLocation *LoopActionStepExecutionLocation `json:"execution_location,omitempty"`
-
-	// Parameters Input object passed to the named action. Static nested objects and arrays keep their types; every string leaf supports `${{ ... }}` interpolation over `event`, `meta`, `config`, and prior `steps.<id>.output`. An interpolation that returns an object or array renders compact JSON text; rendered JSON text is not automatically parsed back into a structured value.
-	Parameters *map[string]interface{} `json:"parameters,omitempty"`
-}
-
-// LoopActionStepExecutionLocation Execution location: `managed`, `worker`, or `environment`.
-type LoopActionStepExecutionLocation string
-
-// LoopActionStepSpec Action step entry inside `LoopSpec.steps`.
-type LoopActionStepSpec struct {
-	// Config Action step configuration recognised inside `LoopSpec.steps[].config`.
-	Config LoopActionStep `json:"config"`
-
-	// Id Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.
-	Id *string `json:"id,omitempty"`
-
-	// If Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.
-	If *string `json:"if,omitempty"`
-
-	// Kind Step discriminator value; always `action`.
-	Kind LoopActionStepSpecKind `json:"kind"`
-
-	// Name Human-readable step name.
-	Name *string `json:"name,omitempty"`
-
-	// Retry Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts.
-	Retry *LoopRetryPolicy `json:"retry,omitempty"`
-
-	// Timeout Timeout behavior for one loop step.
-	Timeout *LoopTimeoutPolicy `json:"timeout,omitempty"`
-}
-
-// LoopActionStepSpecKind Step discriminator value; always `action`.
-type LoopActionStepSpecKind string
-
-// LoopAgentSessionPolicy Durable conversation-session policy for loop agent steps. Omit to enable the product default: loop-scoped sessions keyed from the triggering conversation when Mobius can identify one, such as a Telegram chat ID.
-type LoopAgentSessionPolicy struct {
-	// CompactionPolicy Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values.
-	CompactionPolicy *SessionCompactionPolicy `json:"compaction_policy,omitempty"`
-
-	// Name Optional expression template rendered against `event`, `meta`, `config`, `steps`, `agent`, `loop`, `run`, `source`, and `step`. When omitted, Mobius derives a stable name from the event payload, falling back to the trigger or `default`.
-	Name *string `json:"name,omitempty"`
-
-	// Scope Named-session boundary. `auto` and omitted use `loop`. `agent` intentionally shares the named session across loops using the same agent.
-	Scope *LoopAgentSessionPolicyScope `json:"scope,omitempty"`
-
-	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
-	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
-
-	// Title Optional expression template for the session display title using the same roots as `name`.
-	Title *string `json:"title,omitempty"`
-
-	// Visibility Who the custodian chose to share the resource with.
-	Visibility *ResourceVisibility `json:"visibility,omitempty"`
-}
-
-// LoopAgentSessionPolicyScope Named-session boundary. `auto` and omitted use `loop`. `agent` intentionally shares the named session across loops using the same agent.
-type LoopAgentSessionPolicyScope string
-
-// LoopAgentStep Agent step configuration recognised inside `LoopSpec.steps[].config`.
-type LoopAgentStep struct {
-	// AgentId Agent to run for this step. Omit to use the loop's top-level `agent_id`.
-	AgentId *string `json:"agent_id,omitempty"`
-
-	// DisableTools Set true to disable granted action and memory tools for this step. When false or omitted, granted tools are available unless `tool_names` narrows the allow-list. Reserved runtime tools such as `invoke_skill` and structured-output submission may still be present when applicable.
-	DisableTools *bool `json:"disable_tools,omitempty"`
-
-	// Instructions Prompt or task instructions rendered before the agent turn starts.
-	Instructions string `json:"instructions"`
-
-	// MaxTurns Maximum tool iterations allowed within this agent turn.
-	MaxTurns *int `json:"max_turns,omitempty"`
-
-	// ModelRoute Model-routing override for an agent step.
-	ModelRoute *LoopModelRoute `json:"model_route,omitempty"`
-
-	// OutputSchema JSON Schema the agent should satisfy when returning structured output.
-	OutputSchema *map[string]interface{} `json:"output_schema,omitempty"`
-
-	// Session Durable conversation-session policy for loop agent steps. Omit to enable the product default: loop-scoped sessions keyed from the triggering conversation when Mobius can identify one, such as a Telegram chat ID.
-	Session *LoopAgentSessionPolicy `json:"session,omitempty"`
-
-	// ToolNames Optional per-step tool allow-list. When omitted and `disable_tools` is not true, the agent's full granted tool set is available. Send an empty array to allow no tools.
-	ToolNames *[]string `json:"tool_names,omitempty"`
-}
-
-// LoopAgentStepSpec Agent step entry inside `LoopSpec.steps`.
-type LoopAgentStepSpec struct {
-	// Config Agent step configuration recognised inside `LoopSpec.steps[].config`.
-	Config LoopAgentStep `json:"config"`
-
-	// Id Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.
-	Id *string `json:"id,omitempty"`
-
-	// If Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.
-	If *string `json:"if,omitempty"`
-
-	// Kind Step discriminator value; always `agent`.
-	Kind LoopAgentStepSpecKind `json:"kind"`
-
-	// Name Human-readable step name.
-	Name *string `json:"name,omitempty"`
-
-	// Retry Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts.
-	Retry *LoopRetryPolicy `json:"retry,omitempty"`
-
-	// Timeout Timeout behavior for one loop step.
-	Timeout *LoopTimeoutPolicy `json:"timeout,omitempty"`
-}
-
-// LoopAgentStepSpecKind Step discriminator value; always `agent`.
-type LoopAgentStepSpecKind string
-
-// LoopCheckAssertion One assertion evaluated by a check step.
-type LoopCheckAssertion struct {
-	// Agent Judge agent id for `kind: agent`. Omit to use the built-in platform reviewer `mobius-reviewer`. The judge should be a different agent than the one that produced the evidence; the compiler warns when a judge grades its own work.
-	Agent *string `json:"agent,omitempty"`
-
-	// Evidence Step ids whose saved outputs this assertion judges. Each must reference an earlier step. Cited outputs are shown to agent judges and recorded on the verdict.
-	Evidence *[]string `json:"evidence,omitempty"`
-
-	// Expr Predicate for `kind: expr`, evaluated against the run's template environment (`event`, `meta`, `config`, `steps.<id>.output`, and `steps[0].output`). Required for expr assertions.
-	Expr *string `json:"expr,omitempty"`
-
-	// Kind `expr` evaluates a deterministic predicate with the same language as step conditions and event waits. `agent` runs a bounded judge turn returning a strict `{pass, reason}` verdict; its spend counts against the run budget and it consumes one run agent turn.
-	Kind LoopCheckAssertionKind `json:"kind"`
-
-	// Name Unique assertion name shown on the timeline proof row.
-	Name string `json:"name"`
-
-	// Prompt Judge instruction for `kind: agent`, rendered with `${{ ... }}` expr interpolation before the cited evidence is appended. Required for agent assertions.
-	Prompt *string `json:"prompt,omitempty"`
-}
-
-// LoopCheckAssertionKind `expr` evaluates a deterministic predicate with the same language as step conditions and event waits. `agent` runs a bounded judge turn returning a strict `{pass, reason}` verdict; its spend counts against the run budget and it consumes one run agent turn.
-type LoopCheckAssertionKind string
-
-// LoopCheckGate Approval gate opened when `on_fail: gate` trips.
-type LoopCheckGate struct {
-	// Prompt Prompt shown to reviewers. Defaults to a generated summary of the failed assertions.
-	Prompt *string `json:"prompt,omitempty"`
-
-	// Targets Principals who must respond. String entries may contain template actions resolved against the run.
-	Targets []string `json:"targets"`
-}
-
-// LoopCheckStep Check step configuration recognised inside `LoopSpec.steps[].config`. A check step evaluates typed assertions over the run's template `event`, `meta`, `config`, `steps.<id>.output`, and `steps[0].output`) — deterministic `expr` predicates, or `agent` judges for everything that isn't deterministic — records a per-assertion verdict with cited evidence, and routes on failure: fail the run (stop reason `check_failed`), continue with the red verdict on the record, or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`). All assertions are evaluated; there is no short-circuit. An assertion that errors (bad expr, judge model failure, unparseable verdict) fails closed — never a silent pass.
-type LoopCheckStep struct {
-	// Checks Assertions evaluated in order; names must be unique.
-	Checks []LoopCheckAssertion `json:"checks"`
-
-	// Gate Approval gate opened when `on_fail: gate` trips.
-	Gate *LoopCheckGate `json:"gate,omitempty"`
-
-	// OnFail Routing when any assertion fails. `fail` stops the run with stop reason `check_failed`. `continue` proceeds with the red verdict recorded. `gate` opens a `request_approval` interaction carrying the failed assertions and evidence; approval resumes the run with the verdict recorded as overridden, rejection stops it with `gate_rejected`.
-	OnFail *LoopCheckStepOnFail `json:"on_fail,omitempty"`
-}
-
-// LoopCheckStepOnFail Routing when any assertion fails. `fail` stops the run with stop reason `check_failed`. `continue` proceeds with the red verdict recorded. `gate` opens a `request_approval` interaction carrying the failed assertions and evidence; approval resumes the run with the verdict recorded as overridden, rejection stops it with `gate_rejected`.
-type LoopCheckStepOnFail string
-
-// LoopCheckStepSpec Check step entry inside `LoopSpec.steps`.
-type LoopCheckStepSpec struct {
-	// Config Check step configuration recognised inside `LoopSpec.steps[].config`. A check step evaluates typed assertions over the run's template `event`, `meta`, `config`, `steps.<id>.output`, and `steps[0].output`) — deterministic `expr` predicates, or `agent` judges for everything that isn't deterministic — records a per-assertion verdict with cited evidence, and routes on failure: fail the run (stop reason `check_failed`), continue with the red verdict on the record, or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`). All assertions are evaluated; there is no short-circuit. An assertion that errors (bad expr, judge model failure, unparseable verdict) fails closed — never a silent pass.
-	Config LoopCheckStep `json:"config"`
-
-	// Id Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.
-	Id *string `json:"id,omitempty"`
-
-	// If Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.
-	If *string `json:"if,omitempty"`
-
-	// Kind Step discriminator value; always `check`.
-	Kind LoopCheckStepSpecKind `json:"kind"`
-
-	// Name Human-readable step name.
-	Name *string `json:"name,omitempty"`
-
-	// Retry Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts.
-	Retry *LoopRetryPolicy `json:"retry,omitempty"`
-
-	// Timeout Timeout behavior for one loop step.
-	Timeout *LoopTimeoutPolicy `json:"timeout,omitempty"`
-}
-
-// LoopCheckStepSpecKind Step discriminator value; always `check`.
-type LoopCheckStepSpecKind string
-
-// LoopEnvironmentPolicy Automatic managed-environment policy for loop execution. Omit to use the product default: each agent gets a persistent agent-bound environment, while direct environment actions get a run-bound environment. Set `disabled: true` to opt out.
-type LoopEnvironmentPolicy struct {
-	// AutoStartWorker Whether Mobius should start the managed worker automatically.
-	AutoStartWorker *bool `json:"auto_start_worker,omitempty"`
-
-	// Disabled Disable automatic environment allocation.
-	Disabled *bool `json:"disabled,omitempty"`
-
-	// EnvironmentId Existing dedicated environment to use for this loop.
-	EnvironmentId *string `json:"environment_id,omitempty"`
-
-	// Mode High-level ownership policy for how Mobius plans to use the environment. `run` is one-shot and auto-cleaned with a run; `agent` and `loop` are persistent environment policies; `manual` is operator controlled.
-	Mode *EnvironmentMode `json:"mode,omitempty"`
-
-	// Provider Backing provider: `sprites`, `cloudflare_containers`, or `worker`.
-	Provider *EnvironmentProvider `json:"provider,omitempty"`
-
-	// RetentionPolicy Retention behavior: `manual`, `destroy_on_success`, `retain_on_failure`, or `retain_always`.
-	RetentionPolicy *EnvironmentRetentionPolicy `json:"retention_policy,omitempty"`
-
-	// RuntimeVersion Mobius worker runtime version to install when starting the worker.
-	RuntimeVersion *string `json:"runtime_version,omitempty"`
-
-	// TemplateId Environment template to use when Mobius creates one.
-	TemplateId *string `json:"template_id,omitempty"`
-}
-
-// LoopInteractionStep Interaction step configuration recognised inside `LoopSpec.steps[].config`.
-type LoopInteractionStep struct {
-	// Prompt Prompt shown to responders. String content supports `${{ ... }}` interpolation.
-	Prompt *string `json:"prompt,omitempty"`
-
-	// Protocol Type of response requested from the targets.
-	Protocol LoopInteractionStepProtocol `json:"protocol"`
-
-	// ResolutionPolicy Whether the first eligible response or every target response resolves the interaction. Omit for `any_of`.
-	ResolutionPolicy *LoopInteractionStepResolutionPolicy `json:"resolution_policy,omitempty"`
-
-	// Spec Optional interaction presentation details. String leaves support `${{ ... }}` interpolation.
-	Spec *map[string]interface{} `json:"spec,omitempty"`
-
-	// Targets User or agent IDs eligible to respond.
-	Targets []string `json:"targets"`
-}
-
-// LoopInteractionStepProtocol Type of response requested from the targets.
-type LoopInteractionStepProtocol string
-
-// LoopInteractionStepResolutionPolicy Whether the first eligible response or every target response resolves the interaction. Omit for `any_of`.
-type LoopInteractionStepResolutionPolicy string
-
-// LoopInteractionStepSpec Interaction step entry inside `LoopSpec.steps`.
-type LoopInteractionStepSpec struct {
-	// Config Interaction step configuration recognised inside `LoopSpec.steps[].config`.
-	Config LoopInteractionStep `json:"config"`
-
-	// Id Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.
-	Id *string `json:"id,omitempty"`
-
-	// If Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.
-	If *string `json:"if,omitempty"`
-
-	// Kind Step discriminator value; always `interaction`.
-	Kind LoopInteractionStepSpecKind `json:"kind"`
-
-	// Name Human-readable step name.
-	Name *string `json:"name,omitempty"`
-
-	// Retry Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts.
-	Retry *LoopRetryPolicy `json:"retry,omitempty"`
-
-	// Timeout Timeout behavior for one loop step.
-	Timeout *LoopTimeoutPolicy `json:"timeout,omitempty"`
-}
-
-// LoopInteractionStepSpecKind Step discriminator value; always `interaction`.
-type LoopInteractionStepSpecKind string
-
-// LoopListResponse defines model for LoopListResponse.
-type LoopListResponse struct {
-	// HasMore True when more items exist after this page.
-	HasMore *bool `json:"has_more,omitempty"`
-
-	// Items The list of results for this page.
-	Items []Loop `json:"items"`
-
-	// NextCursor Opaque cursor for the next page; absent when no more results.
-	NextCursor *string `json:"next_cursor,omitempty"`
-}
-
-// LoopModelRoute Model-routing override for an agent step.
-type LoopModelRoute struct {
-	// EnvironmentId Managed environment to route worker-backed model calls to.
-	EnvironmentId *string `json:"environment_id,omitempty"`
-
-	// Mode Model route mode: `managed` or `worker`.
-	Mode LoopModelRouteMode `json:"mode"`
-
-	// Model Model identifier for this route.
-	Model *string `json:"model,omitempty"`
-
-	// Provider Provider id advertised by a local worker when `mode` is `worker`.
-	Provider *string `json:"provider,omitempty"`
-}
-
-// LoopModelRouteMode Model route mode: `managed` or `worker`.
-type LoopModelRouteMode string
-
-// LoopRetryPolicy Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts.
-type LoopRetryPolicy struct {
-	// Delay Go duration string such as `30s`, `5m`, or `2h`. Applied between attempts for in-process (synchronous) action retries; worker-executed actions re-queue immediately for the next attempt.
-	Delay *string `json:"delay,omitempty"`
-
-	// MaxAttempts Total attempts allowed for the step, including the first attempt.
-	MaxAttempts *int `json:"max_attempts,omitempty"`
-}
-
-// LoopRun One loop run record.
-type LoopRun struct {
-	// AgentTurnsUsed Number of agent turns started for this run so far. Compared against `max_agent_turns` when that cap is set.
-	AgentTurnsUsed *int `json:"agent_turns_used,omitempty"`
-
-	// Attempt One-based execution attempt for this run. The original run starts at 1 and increments each time the run is resumed or retried in place.
-	Attempt *int `json:"attempt,omitempty"`
-
-	// CompletedAt Time the run reached a terminal status.
-	CompletedAt *time.Time `json:"completed_at,omitempty"`
-
-	// Config Optional static or caller-provided configuration resolved when the run started, reachable in templates at `config.*`.
-	Config *map[string]interface{} `json:"config,omitempty"`
-
-	// CreatedAt Record creation timestamp.
-	CreatedAt time.Time `json:"created_at"`
-
-	// CreditBudget The run's budget ceiling in credits (1 credit = $0.01), with up to 3 decimal places. Resolved at run start from the StartRun override, the loop spec's `limits` block, or the trial-plan default, in that order. Absent when the run is unbounded.
-	CreditBudget *float64 `json:"credit_budget,omitempty"`
-
-	// CreditSpent Metered spend attributed to this run so far, in credits (up to 3 decimal places). Incremented atomically with each usage-ledger insert that carries this run's id. Counts all metered work regardless of credential source (BYOK calls count at their rate-card equivalent even though they bill zero credits).
-	CreditSpent *float64 `json:"credit_spent,omitempty"`
-
-	// Description Optional secondary description for this run.
-	Description *string `json:"description,omitempty"`
-
-	// ErrorMessage Human-readable failure summary; populated on `failed` runs.
-	ErrorMessage *string `json:"error_message,omitempty"`
-
-	// ErrorType Machine-readable failure classification when available.
-	ErrorType *string `json:"error_type,omitempty"`
-
-	// Event Exact safe/canonical event object that started the run, reachable in templates at `event.*`.
-	Event *map[string]interface{} `json:"event,omitempty"`
-
-	// Id Stable run identifier.
-	Id string `json:"id"`
-
-	// LoopId Loop this run belongs to.
-	LoopId string `json:"loop_id"`
-
-	// LoopName Human-readable name of the loop this run belongs to.
-	LoopName *string `json:"loop_name,omitempty"`
-
-	// LoopVersion Version number of the LoopVersion this run is executing.
-	LoopVersion int `json:"loop_version"`
-
-	// LoopVersionId LoopVersion record this run is executing.
-	LoopVersionId string `json:"loop_version_id"`
-
-	// MaxAgentTurns Run-wide cap on agent turns across all steps, from the loop spec's `limits.max_agent_turns`. Absent when unbounded.
-	MaxAgentTurns *int `json:"max_agent_turns,omitempty"`
-
-	// Meta Run and trigger metadata envelope, reachable in templates at `${{ meta.* }}`: `run_id`, `loop_id`, `source`, `trigger`, plus trigger-supplied facts such as `event_type`, `source_event_id`, and `scheduled_at`.
-	Meta *map[string]interface{} `json:"meta,omitempty"`
-
-	// Name Human-readable title for this run.
-	Name *string `json:"name,omitempty"`
-
-	// ParentLoopId Loop that triggered this run via an `loop` step. Present only on child runs.
-	ParentLoopId *string `json:"parent_loop_id,omitempty"`
-
-	// ParentRunId Run that triggered this run via an `loop` step. Present only on child runs; absent for top-level runs.
-	ParentRunId *string `json:"parent_run_id,omitempty"`
-
-	// ParentStepKey Step key within the parent run's loop that triggered this run. Present only on child runs.
-	ParentStepKey *string `json:"parent_step_key,omitempty"`
-
-	// PlanConcurrencyLimit Org-wide concurrent-run ceiling stamped at run start. Present when the run was evaluated against a plan concurrency limit.
-	PlanConcurrencyLimit *int `json:"plan_concurrency_limit,omitempty"`
-
-	// QueueReason Why a run is waiting in the queue. `plan_concurrency` means the organization's current plan has no active-run capacity available. `loop_policy` and `trigger_concurrency` mean authored concurrency policy deferred the run.
-	QueueReason *LoopRunQueueReason `json:"queue_reason,omitempty"`
-
-	// Result Final result payload. When the loop declares an `output:` block this is that block rendered at completion; otherwise it is the run's accumulated step outputs, keyed by step id. Absent until the run terminates successfully.
-	Result *map[string]interface{} `json:"result,omitempty"`
-
-	// Source Optional attribution for the call that started this run. Triggers and HTTP trigger dispatch populate `trigger_id` and `trigger_fire_id`. API callers usually only set `type` and `id`.
-	Source *LoopRunSource `json:"source,omitempty"`
-
-	// StartedAt Time the engine moved the run to `running`.
-	StartedAt *time.Time `json:"started_at,omitempty"`
-
-	// Status Run lifecycle state: `queued`, `running`, `suspended`, `completed`, `failed`, or `cancelled`.
-	Status LoopRunStatus `json:"status"`
-
-	// StopReason Why a run stopped. Set exactly once when the run reaches a terminal status; absent on non-terminal runs. `status` carries the lifecycle state and `error_type` classifies the error when one occurred; `stop_reason` classifies the stop itself.
-	//
-	// Grouping: `completed` is the success terminal. `step_failed`, `check_failed`, and `gate_rejected` mean the work failed (an error, a failed verification, or a human rejection at a gate). `budget_exceeded`, `turn_limit_reached`, `wall_clock_exceeded`, `step_limit_reached`, and `progress_stalled` mean a configured guardrail halted the run — the limit worked; the loop did not break. `cancelled` and `replaced` mean somebody (or a concurrency policy) chose to stop it.
-	StopReason *LoopRunStopReason `json:"stop_reason,omitempty"`
-
-	// UpdatedAt Last update timestamp.
-	UpdatedAt time.Time `json:"updated_at"`
-
-	// WakeAt Scheduled wake time for a suspended run.
-	WakeAt *time.Time `json:"wake_at,omitempty"`
-
-	// WallClockDeadlineAt Deadline after which the loop reaper fails the run.
-	WallClockDeadlineAt *time.Time `json:"wall_clock_deadline_at,omitempty"`
-}
-
-// LoopRunEvent One durable event emitted while a loop run progresses.
-type LoopRunEvent struct {
-	// CreatedAt Server timestamp when the event was recorded.
-	CreatedAt time.Time `json:"created_at"`
-
-	// EventType Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`).
-	//
-	// Guardrail events: `run.budget_exceeded` fires when the budget halts the run at a checkpoint (payload: `credit_budget`, `credit_spent`, `percent_used`, plus the `step` it halted before). Metered spend is recorded in the billing ledger and denormalized onto the run's `credit_spent`; it is not represented as a timeline event.
-	EventType string `json:"event_type"`
-
-	// Id Stable event identifier.
-	Id string `json:"id"`
-
-	// Payload Typed payloads for common durable run event types. The containing `LoopRunEvent.event_type` selects the payload shape; payload objects do not duplicate that discriminator because some payloads use fields such as `event_type` for their own lifecycle data (for example, the external matcher recorded by `wait.opened`).
-	Payload *RunEventPayload `json:"payload,omitempty"`
-
-	// RunId Run this event belongs to.
-	RunId string `json:"run_id"`
-
-	// Sequence Monotonic per-run sequence number used for ordering and resume.
-	Sequence int64 `json:"sequence"`
-
-	// StepId ID of the step this event belongs to, when applicable.
-	StepId *string `json:"step_id,omitempty"`
-
-	// StepKey Legacy alias for the loop step ID this event belongs to, when applicable.
-	StepKey *string `json:"step_key,omitempty"`
-}
-
-// LoopRunEventListResponse defines model for LoopRunEventListResponse.
-type LoopRunEventListResponse struct {
-	// HasMore True when more events exist after the returned page.
-	HasMore *bool `json:"has_more,omitempty"`
-
-	// Items Run events in this page, ordered by `sequence` ascending.
-	Items []LoopRunEvent `json:"items"`
-
-	// NextSequence Sequence number of the most recent event in `items`; clients can pass this back as `after_sequence` on the next poll.
-	NextSequence *int64 `json:"next_sequence,omitempty"`
-}
-
-// LoopRunLifecycleFrame One durable event emitted while a loop run progresses.
-type LoopRunLifecycleFrame = LoopRunEvent
-
-// LoopRunListResponse defines model for LoopRunListResponse.
-type LoopRunListResponse struct {
-	// HasMore True when more items exist after this page.
-	HasMore *bool `json:"has_more,omitempty"`
-
-	// Items The list of results for this page.
-	Items []LoopRun `json:"items"`
-
-	// NextCursor Opaque cursor for the next page; absent when no more results.
-	NextCursor *string `json:"next_cursor,omitempty"`
-}
-
-// LoopRunQueueReason Why a run is waiting in the queue. `plan_concurrency` means the organization's current plan has no active-run capacity available. `loop_policy` and `trigger_concurrency` mean authored concurrency policy deferred the run.
-type LoopRunQueueReason string
-
-// LoopRunSource Optional attribution for the call that started this run. Triggers and HTTP trigger dispatch populate `trigger_id` and `trigger_fire_id`. API callers usually only set `type` and `id`.
-type LoopRunSource struct {
-	// Id Identifier within the source type's namespace.
-	Id *string `json:"id,omitempty"`
-
-	// Label Display label.
-	Label *string `json:"label,omitempty"`
-
-	// TriggerId Trigger that fired this run, if any.
-	TriggerId *string `json:"trigger_id,omitempty"`
-
-	// Type Source category for the run start: `api`, `trigger`, `manual`, or `signal`.
-	Type *LoopRunSourceType `json:"type,omitempty"`
-}
-
-// LoopRunSourceType Source category for the run start: `api`, `trigger`, `manual`, or `signal`.
-type LoopRunSourceType string
-
-// LoopRunStatus Run lifecycle state: `queued`, `running`, `suspended`, `completed`, `failed`, or `cancelled`.
-type LoopRunStatus string
-
-// LoopRunStep One execution step inside a loop run.
-type LoopRunStep struct {
-	// AgentId Agent that executed this step, for `agent`-kind steps.
-	AgentId *string `json:"agent_id,omitempty"`
-
-	// AgentTurnId Most recent AgentTurn this step ran (its latest attempt), for `agent`-kind steps. Resolves to the step's messages within the session via their `turn_id`.
-	AgentTurnId *string `json:"agent_turn_id,omitempty"`
-
-	// Attempt Number of times this step has been attempted.
-	Attempt int `json:"attempt"`
-
-	// CompletedAt Time the step reached a terminal status; null until the step completes.
-	CompletedAt *time.Time `json:"completed_at,omitempty"`
-
-	// CreatedAt Record creation timestamp.
-	CreatedAt time.Time `json:"created_at"`
-
-	// ErrorMessage Human-readable error message populated on failure.
-	ErrorMessage *string `json:"error_message,omitempty"`
-
-	// ErrorType Machine-readable error code populated on failure.
-	ErrorType *string `json:"error_type,omitempty"`
-
-	// Id Stable step identifier.
-	Id string `json:"id"`
-
-	// Inputs Resolved inputs passed into the step, after template rendering.
-	Inputs *map[string]interface{} `json:"inputs,omitempty"`
-
-	// JobId Worker job that executed this step, when applicable.
-	JobId *string `json:"job_id,omitempty"`
-
-	// Kind Step type: `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, `check`, or system-materialized `cleanup`. `cleanup` appears in run step listings for terminal cleanup work but cannot be authored in a `LoopSpec`.
-	Kind LoopRunStepKind `json:"kind"`
-
-	// Parameters Authored step parameters, before template rendering.
-	Parameters *map[string]interface{} `json:"parameters,omitempty"`
-
-	// Result Step output (shape varies by kind); absent until completion. Downstream step templates reach this value at `${{ steps.<id>.output }}` or `${{ steps[0].output }}`.
-	Result interface{} `json:"result,omitempty"`
-
-	// RunId Run this step belongs to.
-	RunId string `json:"run_id"`
-
-	// Seq Zero-indexed ordinal of this step within its run.
-	Seq int64 `json:"seq"`
-
-	// SessionId Session the agent ran in, for `agent`-kind steps. Present once the step has started a turn; links the step to its conversation so the UI can open the transcript with this step's messages highlighted.
-	SessionId *string `json:"session_id,omitempty"`
-
-	// StartedAt Time the step entered `running`; null until the step starts.
-	StartedAt *time.Time `json:"started_at,omitempty"`
-
-	// Status Step lifecycle state: `pending`, `running`, `suspended`, `completed`, `failed`, `skipped`, or `cancelled`.
-	Status LoopRunStepStatus `json:"status"`
-
-	// StepKey Stable key for this step within its loop version.
-	StepKey string `json:"step_key"`
-
-	// StepName Display name from the authored spec, when present.
-	StepName *string `json:"step_name,omitempty"`
-
-	// UpdatedAt Last update timestamp.
-	UpdatedAt time.Time `json:"updated_at"`
-
-	// Verdict Check outcome for `check`-kind steps: `pass` or `fail`; absent on every other kind. A failed check routed `on_fail: continue` completes the step with `verdict: fail` — status and verdict are separate axes (the step did its job: it checked).
-	Verdict *LoopRunStepVerdict `json:"verdict,omitempty"`
-
-	// VerdictDetail Verdict document for `check`-kind steps: `verdict`, `on_fail`, `checks` (per-assertion results — name, kind, pass, expr or judge reason, judge identity, evidence refs), `failed` (red assertion names), and `overridden_by` / `gate` records when an approval gate resolved the verdict.
-	VerdictDetail *map[string]interface{} `json:"verdict_detail,omitempty"`
-
-	// WaitId Wait record this step is suspended on, when applicable.
-	WaitId *string `json:"wait_id,omitempty"`
-}
-
-// LoopRunStepVerdict Check outcome for `check`-kind steps: `pass` or `fail`; absent on every other kind. A failed check routed `on_fail: continue` completes the step with `verdict: fail` — status and verdict are separate axes (the step did its job: it checked).
-type LoopRunStepVerdict string
-
-// LoopRunStepKind Step type: `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, `check`, or system-materialized `cleanup`. `cleanup` appears in run step listings for terminal cleanup work but cannot be authored in a `LoopSpec`.
-type LoopRunStepKind string
-
-// LoopRunStepListResponse defines model for LoopRunStepListResponse.
-type LoopRunStepListResponse struct {
-	// Items Steps for this run in `seq` order.
-	Items []LoopRunStep `json:"items"`
-}
-
-// LoopRunStepStatus Step lifecycle state: `pending`, `running`, `suspended`, `completed`, `failed`, `skipped`, or `cancelled`.
-type LoopRunStepStatus string
-
-// LoopRunStopReason Why a run stopped. Set exactly once when the run reaches a terminal status; absent on non-terminal runs. `status` carries the lifecycle state and `error_type` classifies the error when one occurred; `stop_reason` classifies the stop itself.
-//
-// Grouping: `completed` is the success terminal. `step_failed`, `check_failed`, and `gate_rejected` mean the work failed (an error, a failed verification, or a human rejection at a gate). `budget_exceeded`, `turn_limit_reached`, `wall_clock_exceeded`, `step_limit_reached`, and `progress_stalled` mean a configured guardrail halted the run — the limit worked; the loop did not break. `cancelled` and `replaced` mean somebody (or a concurrency policy) chose to stop it.
-type LoopRunStopReason string
-
-// LoopRunStreamFrame Durable run lifecycle frame. SSE messages carrying this shape include `id: <sequence>`, and that value is the only cursor clients should persist for `after_sequence` or `Last-Event-ID` resume.
-type LoopRunStreamFrame = LoopRunLifecycleFrame
-
-// LoopSleepStep Sleep step configuration recognised inside `LoopSpec.steps[].config`.
-type LoopSleepStep struct {
-	// Duration Go duration string such as `30s`, `5m`, or `2h`.
-	Duration *string `json:"duration,omitempty"`
-
-	// Until Absolute time to resume the run.
-	Until *time.Time `json:"until,omitempty"`
-}
-
-// LoopSleepStepSpec Sleep step entry inside `LoopSpec.steps`.
-type LoopSleepStepSpec struct {
-	// Config Sleep step configuration recognised inside `LoopSpec.steps[].config`.
-	Config LoopSleepStep `json:"config"`
-
-	// Id Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.
-	Id *string `json:"id,omitempty"`
-
-	// If Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.
-	If *string `json:"if,omitempty"`
-
-	// Kind Step discriminator value; always `sleep`.
-	Kind LoopSleepStepSpecKind `json:"kind"`
-
-	// Name Human-readable step name.
-	Name *string `json:"name,omitempty"`
-
-	// Retry Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts.
-	Retry *LoopRetryPolicy `json:"retry,omitempty"`
-
-	// Timeout Timeout behavior for one loop step.
-	Timeout *LoopTimeoutPolicy `json:"timeout,omitempty"`
-}
-
-// LoopSleepStepSpecKind Step discriminator value; always `sleep`.
-type LoopSleepStepSpecKind string
-
-// LoopSpecDefaults Run-level defaults inside the loop spec. Lives at `spec.defaults` in the JSON the engine compiles. The run wall-clock limit moved to `limits.wall_clock_timeout`.
-type LoopSpecDefaults struct {
-	// AgentSession Durable conversation-session policy for loop agent steps. Omit to enable the product default: loop-scoped sessions keyed from the triggering conversation when Mobius can identify one, such as a Telegram chat ID.
-	AgentSession *LoopAgentSessionPolicy `json:"agent_session,omitempty"`
-
-	// Environment Automatic managed-environment policy for loop execution. Omit to use the product default: each agent gets a persistent agent-bound environment, while direct environment actions get a run-bound environment. Set `disabled: true` to opt out.
-	Environment *LoopEnvironmentPolicy `json:"environment,omitempty"`
-}
-
-// LoopSpecInput One named input accepted by a loop spec.
-type LoopSpecInput struct {
-	// Default Optional default value for this input. May be any JSON value.
-	Default interface{} `json:"default,omitempty"`
-
-	// Description Human guidance shown when collecting the input value.
-	Description *string `json:"description,omitempty"`
-
-	// Required Whether callers must provide this input when starting the loop.
-	Required *bool `json:"required,omitempty"`
-
-	// Type JSON-compatible input type expected by authoring tools.
-	Type *string `json:"type,omitempty"`
-}
-
-// LoopSpecLimits Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; absent or zero means unbounded (plan-level org caps still apply), with one exception — trial-plan runs default to a 100-credit ($1) budget when no budget is set here or on the start request. Paid plans default to unbounded.
-type LoopSpecLimits struct {
-	// BudgetUsd Run budget in US dollars (1 credit = $0.01). The budget is a hard limit: the run halts with stop reason `budget_exceeded` at the next checkpoint (step boundary or agent tool iteration) once its metered spend reaches the ceiling. Enforcement granularity is one model call or metered action — a run can overshoot by at most the call in flight. Mutually exclusive with `credit_budget`; values finer than 0.001 credit ($0.00001) are rejected at compile.
-	BudgetUsd *float64 `json:"budget_usd,omitempty"`
-
-	// CreditBudget Run budget in whole credits (1 credit = $0.01). Same ceiling semantics as `budget_usd`; set exactly one.
-	CreditBudget *int64 `json:"credit_budget,omitempty"`
-
-	// DailyBudgetUsd Rolling-24h spend ceiling in US dollars across ALL runs of this loop (the fleet-level counterpart of `budget_usd`). Enforced at run start (new runs are refused while the window is exhausted) and at the platform funding gate (an in-flight run halts at its next platform-funded call with stop reason `budget_exceeded`). Counts platform-billed spend; mutually exclusive with `daily_credit_budget`.
-	DailyBudgetUsd *float64 `json:"daily_budget_usd,omitempty"`
-
-	// DailyCreditBudget Rolling-24h loop spend ceiling in whole credits. Same semantics as `daily_budget_usd`; set exactly one.
-	DailyCreditBudget *int64 `json:"daily_credit_budget,omitempty"`
-
-	// MaxAgentTurns Run-wide cap on agent turns across all steps. Each agent step execution (including retries and resumed turns) consumes one turn. Breach halts the run with stop reason `turn_limit_reached`. Distinct from a step's `max_turns`, which bounds tool iterations within a single turn.
-	MaxAgentTurns *int `json:"max_agent_turns,omitempty"`
-
-	// MaxDuplicateToolCalls How many identical tool calls (same tool name and canonicalized arguments) one agent turn tolerates before the turn halts with a `progress_stalled` error — the duplicate-tool-call breaker. The step's retry policy applies; if the run fails from it the stop reason is `progress_stalled` and a `run.progress_stalled` event is emitted on each trip. Omit for the platform default (3).
-	MaxDuplicateToolCalls *int `json:"max_duplicate_tool_calls,omitempty"`
-
-	// PauseAfterConsecutiveFailures Loop circuit breaker. After this many consecutive failed runs the loop auto-pauses (status `paused`) and emits a `loop.auto_paused` event, so a bad deploy cannot burn all night at one run per trigger fire. Completed runs reset the streak; cancelled runs are neutral. Omit to disable.
-	PauseAfterConsecutiveFailures *int `json:"pause_after_consecutive_failures,omitempty"`
-
-	// WallClockTimeout Run wall-clock limit as a Go duration string (e.g. `30m`, `2h`, `90s`). When set, the engine stamps `wall_clock_deadline_at = run.started_at + wall_clock_timeout` and the reaper fails the run (stop reason `wall_clock_exceeded`) after that instant even if a step executor is still grinding. Omit or set to `0` to disable.
-	WallClockTimeout *string `json:"wall_clock_timeout,omitempty"`
-}
-
-// LoopSpecRepository Source repository target attached to a loop spec. A `static` repository clones the named `full_name`. A `match` repository resolves the repository from the run's trigger event (for example the base repository of an opened GitHub pull request) and requires the loop to have an event trigger; pull requests opened from a fork are never cloned. `full_name` is required for `static` repositories and ignored for `match` repositories.
-type LoopSpecRepository struct {
-	// FullName Provider repository full name, e.g. `owner/repo`. Required when `source` is `static`.
-	FullName *string `json:"full_name,omitempty"`
-
-	// Id Provider-specific repository id.
-	Id *LoopSpecRepository_Id `json:"id,omitempty"`
-
-	// Private Whether the provider reports this repository as private.
-	Private *bool `json:"private,omitempty"`
-
-	// Provider Repository provider. GitHub is the only supported provider today.
-	Provider *LoopSpecRepositoryProvider `json:"provider,omitempty"`
-
-	// Push Authorize the loop's managed environment to push to this repository. Defaults to `false`: the repository is cloned read-only and a `git push` from inside the environment fails with a permission error. Set `true` to let the environment obtain a write-scoped credential for this repository. Opt in per repository so environments are never write-capable by default.
-	Push *bool `json:"push,omitempty"`
-
-	// Ref Optional branch, tag, or ref to check out. For `static` repositories it pins the checkout; for `match` repositories it overrides the ref derived from the event. Omitted uses the provider default branch.
-	Ref *string `json:"ref,omitempty"`
-
-	// Source How the repository target is resolved. `static` clones `full_name`; `match` clones the repository the trigger event concerns.
-	Source *LoopSpecRepositorySource `json:"source,omitempty"`
-}
-
-// LoopSpecRepositoryId0 defines model for .
-type LoopSpecRepositoryId0 = int64
-
-// LoopSpecRepositoryId1 defines model for .
-type LoopSpecRepositoryId1 = string
-
-// LoopSpecRepository_Id Provider-specific repository id.
-type LoopSpecRepository_Id struct {
-	union json.RawMessage
-}
-
-// LoopSpecRepositoryProvider Repository provider. GitHub is the only supported provider today.
-type LoopSpecRepositoryProvider string
-
-// LoopSpecRepositorySource How the repository target is resolved. `static` clones `full_name`; `match` clones the repository the trigger event concerns.
-type LoopSpecRepositorySource string
-
-// LoopSpecTrigger One trigger declaration inside a loop spec.
-type LoopSpecTrigger struct {
-	// ConcurrencyPolicy Trigger concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
-	ConcurrencyPolicy *LoopSpecTriggerConcurrencyPolicy `json:"concurrency_policy,omitempty"`
-
-	// Config Kind-specific trigger configuration. Use `HTTPTriggerConfig` for `kind: http`, `ScheduleTriggerConfig` for `kind: schedule`, and `EventTriggerConfig` for `kind: event`. Omit for manual triggers.
-	Config *LoopSpecTrigger_Config `json:"config,omitempty"`
-
-	// Enabled Whether this trigger should be materialized for the current runnable definition.
-	Enabled *bool `json:"enabled,omitempty"`
-
-	// Key Stable user-authored trigger key within the spec.
-	Key *string `json:"key,omitempty"`
-
-	// Kind Trigger mechanism: `http`, `schedule`, `event`, or `manual`.
-	Kind LoopSpecTriggerKind `json:"kind"`
-
-	// MaxConcurrentRuns Maximum number of concurrently active runs for this trigger.
-	MaxConcurrentRuns *int `json:"max_concurrent_runs,omitempty"`
-
-	// Name Human-readable trigger name.
-	Name *string `json:"name,omitempty"`
-}
-
-// LoopSpecTriggerConcurrencyPolicy Trigger concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
-type LoopSpecTriggerConcurrencyPolicy string
-
-// LoopSpecTrigger_Config Kind-specific trigger configuration. Use `HTTPTriggerConfig` for `kind: http`, `ScheduleTriggerConfig` for `kind: schedule`, and `EventTriggerConfig` for `kind: event`. Omit for manual triggers.
-type LoopSpecTrigger_Config struct {
-	union json.RawMessage
-}
-
-// LoopSpecTriggerKind Trigger mechanism: `http`, `schedule`, `event`, or `manual`.
-type LoopSpecTriggerKind string
-
-// LoopStatus Loop lifecycle status: `draft`, `active`, `paused`, or `deleted`.
-type LoopStatus string
-
-// LoopStep User-authored loop step, discriminated by `kind`.
-type LoopStep struct {
-	union json.RawMessage
-}
-
-// LoopSubLoopStep Loop-trigger step configuration recognised inside `LoopSpec.steps[].config`. Triggers another loop in the same org as an independent child run (fire-and-forget). The child run records `parent_run_id`, `parent_loop_id`, and `parent_step_key` so the lineage is visible from the child.
-type LoopSubLoopStep struct {
-	// Condition Removed legacy field. Use the step-level `if` field for child-loop conditions.
-	Condition *string `json:"condition,omitempty"`
-
-	// Config Optional config object handed to the child run.
-	Config *map[string]interface{} `json:"config,omitempty"`
-
-	// Event Event object handed to the child run. String leaves render against the parent run before the child starts using `${{ ... }}` expr interpolations over `event`, `meta`, `config`, `steps.<id>.output`, or `steps[0].output`. When omitted the parent's resolved event payload is forwarded.
-	Event *map[string]interface{} `json:"event,omitempty"`
-
-	// LoopId ID of the loop to trigger, scoped to the same org as the parent loop.
-	LoopId string `json:"loop_id"`
-}
-
-// LoopSubLoopStepSpec Child-loop step entry inside `LoopSpec.steps`.
-type LoopSubLoopStepSpec struct {
-	// Config Loop-trigger step configuration recognised inside `LoopSpec.steps[].config`. Triggers another loop in the same org as an independent child run (fire-and-forget). The child run records `parent_run_id`, `parent_loop_id`, and `parent_step_key` so the lineage is visible from the child.
-	Config LoopSubLoopStep `json:"config"`
-
-	// Id Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.
-	Id *string `json:"id,omitempty"`
-
-	// If Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.
-	If *string `json:"if,omitempty"`
-
-	// Kind Step discriminator value; always `loop`.
-	Kind LoopSubLoopStepSpecKind `json:"kind"`
-
-	// Name Human-readable step name.
-	Name *string `json:"name,omitempty"`
-
-	// Retry Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts.
-	Retry *LoopRetryPolicy `json:"retry,omitempty"`
-
-	// Timeout Timeout behavior for one loop step.
-	Timeout *LoopTimeoutPolicy `json:"timeout,omitempty"`
-}
-
-// LoopSubLoopStepSpecKind Step discriminator value; always `loop`.
-type LoopSubLoopStepSpecKind string
-
-// LoopTimeoutPolicy Timeout behavior for one loop step.
-type LoopTimeoutPolicy struct {
-	// Duration Go duration string such as `30s`, `5m`, or `2h`.
-	Duration *string `json:"duration,omitempty"`
-
-	// OnTimeout Timeout behavior; currently only `fail`.
-	OnTimeout *LoopTimeoutPolicyOnTimeout `json:"on_timeout,omitempty"`
-}
-
-// LoopTimeoutPolicyOnTimeout Timeout behavior; currently only `fail`.
-type LoopTimeoutPolicyOnTimeout string
-
-// LoopWaitForEventStep Wait-for-event step configuration recognised inside `LoopSpec.steps[].config`.
-type LoopWaitForEventStep struct {
-	// EventType Event type or pattern that resumes the waiting step.
-	EventType string `json:"event_type"`
-
-	// Match Structured field match applied to incoming event payloads.
-	Match *map[string]interface{} `json:"match,omitempty"`
-
-	// PayloadMapping Optional output mapping evaluated against `{ event, meta }`.
-	PayloadMapping *map[string]string `json:"payload_mapping,omitempty"`
-
-	// SourceId Optional source identifier used to scope event matching.
-	SourceId *string `json:"source_id,omitempty"`
-}
-
-// LoopWaitForEventStepSpec Wait-for-event step entry inside `LoopSpec.steps`.
-type LoopWaitForEventStepSpec struct {
-	// Config Wait-for-event step configuration recognised inside `LoopSpec.steps[].config`.
-	Config LoopWaitForEventStep `json:"config"`
-
-	// Id Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.
-	Id *string `json:"id,omitempty"`
-
-	// If Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.
-	If *string `json:"if,omitempty"`
-
-	// Kind Step discriminator value; always `wait_for_event`.
-	Kind LoopWaitForEventStepSpecKind `json:"kind"`
-
-	// Name Human-readable step name.
-	Name *string `json:"name,omitempty"`
-
-	// Retry Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts.
-	Retry *LoopRetryPolicy `json:"retry,omitempty"`
-
-	// Timeout Timeout behavior for one loop step.
-	Timeout *LoopTimeoutPolicy `json:"timeout,omitempty"`
-}
-
-// LoopWaitForEventStepSpecKind Step discriminator value; always `wait_for_event`.
-type LoopWaitForEventStepSpecKind string
 
 // MemoryContextMode Automatic memory delivery mode for agent turns.
 type MemoryContextMode string
@@ -8483,28 +6069,7 @@ type PermissionPreset struct {
 // PermissionPresetScope defines model for PermissionPreset.Scope.
 type PermissionPresetScope string
 
-// PingWebhookRequest defines model for PingWebhookRequest.
-type PingWebhookRequest struct {
-	// Url URL to test. When supplied, the ping is sent to this URL instead of the webhook's saved URL — use this to validate a candidate URL before saving it. When omitted, the webhook's current saved URL is used.
-	Url *string `json:"url,omitempty"`
-}
-
-// PingWebhookResult defines model for PingWebhookResult.
-type PingWebhookResult struct {
-	// Error Error message if the request could not be completed.
-	Error *string `json:"error,omitempty"`
-
-	// LatencyMs Round-trip latency in milliseconds.
-	LatencyMs *int `json:"latency_ms,omitempty"`
-
-	// StatusCode HTTP status code returned by the target. Absent on network error.
-	StatusCode *int `json:"status_code,omitempty"`
-
-	// Success True if the target responded with a 2xx status code.
-	Success bool `json:"success"`
-}
-
-// Principal Non-human identity used by loop, agents, and API keys. A principal makes permissions, delegation, and credential rotation explicit without tying machine access to a human user. The `id` is the stable identity used by credentials, role assignments, and agent execution.
+// Principal Non-human identity used by workers, agents, and API keys. A principal makes permissions, delegation, and credential rotation explicit without tying machine access to a human user. The `id` is the stable identity used by credentials, role assignments, and agent execution.
 type Principal struct {
 	// CreatedAt Timestamp when this principal was created.
 	CreatedAt time.Time `json:"created_at"`
@@ -8555,15 +6120,6 @@ type PrincipalListResponse struct {
 // PrincipalState Canonical business-lifecycle state. `active` allows authentication and job claims; `disabled` is a reversible kill switch that blocks them but preserves the record and its assignments; `deleted` is the retained archived state used for audit, attribution, and history.
 type PrincipalState string
 
-// ProgressStalledPayload defines model for ProgressStalledPayload.
-type ProgressStalledPayload struct {
-	DuplicateCalls       *int                   `json:"duplicate_calls,omitempty"`
-	Limit                *int                   `json:"limit,omitempty"`
-	Step                 *string                `json:"step,omitempty"`
-	Tool                 *string                `json:"tool,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-
 // PromoteAgentMemoryEntryRequest defines model for PromoteAgentMemoryEntryRequest.
 type PromoteAgentMemoryEntryRequest struct {
 	// Replace Allow overwriting a shared entry that already holds this key. Without it a collision is a `409`, so a promotion never silently rewrites what the group already knows.
@@ -8572,9 +6128,6 @@ type PromoteAgentMemoryEntryRequest struct {
 	// UserId The private partition the entry is copied out of. Required: promotion always has an owner, and the shared layer is not a source.
 	UserId string `json:"user_id"`
 }
-
-// ProvisionEnvironmentProvider Providers the control plane can provision on demand. Worker-provided environments are registered out-of-band via the attach endpoint and are never provisioned through create/acquire.
-type ProvisionEnvironmentProvider string
 
 // PutOAuthReturnOriginsRequest Full-replace body for the organization's OAuth return-origin allowlist. Each entry must be an exact HTTPS origin; entries are normalized and de-duplicated. At most 20 origins are accepted.
 type PutOAuthReturnOriginsRequest struct {
@@ -8605,24 +6158,6 @@ type QueryRowsRequest struct {
 
 // QueryRowsRequestSortOrder Sort direction for this field: `asc` or `desc`.
 type QueryRowsRequestSortOrder string
-
-// RecoverLoopRunRequest Body for resuming or retrying a failed loop run in place. Limit fields are optional unless the prior failure was caused by that guardrail; in that case the replacement limit must be greater than the amount already consumed by the run.
-type RecoverLoopRunRequest struct {
-	// BudgetUsd Replacement run budget in US dollars (1 credit = $0.01). Mutually exclusive with `credit_budget`; setting both is a `400`.
-	BudgetUsd *float64 `json:"budget_usd,omitempty"`
-
-	// CreditBudget Replacement run budget in whole credits (1 credit = $0.01). Must be greater than `credit_spent`.
-	CreditBudget *int64 `json:"credit_budget,omitempty"`
-
-	// MaxAgentTurns Replacement run-wide agent turn cap. Must be greater than `agent_turns_used`.
-	MaxAgentTurns *int `json:"max_agent_turns,omitempty"`
-
-	// Reason Human-readable recovery reason recorded on the run event log.
-	Reason *string `json:"reason,omitempty"`
-
-	// WallClockExtendSeconds Additional wall-clock time, in seconds, granted from the recovery request time. Required when the run stopped on `wall_clock_exceeded`.
-	WallClockExtendSeconds *int `json:"wall_clock_extend_seconds,omitempty"`
-}
 
 // ReplaceAgentMembersRequest defines model for ReplaceAgentMembersRequest.
 type ReplaceAgentMembersRequest struct {
@@ -8760,7 +6295,7 @@ type ReviewPolicy struct {
 	ReviewerUserIds *[]string `json:"reviewer_user_ids,omitempty"`
 }
 
-// Role Named bundle of permissions assignable to human or machine principals. Roles let admins grant loop, org, and integration capabilities consistently without editing every user individually.
+// Role Named bundle of permissions assignable to human or machine principals. Roles let admins grant agent, org, and integration capabilities consistently without editing every user individually.
 type Role struct {
 	// CreatedAt Timestamp when this role was created.
 	CreatedAt time.Time `json:"created_at"`
@@ -8835,65 +6370,127 @@ type RotateSecretResult struct {
 	SigningSecret string `json:"signing_secret"`
 }
 
-// RunCancelledPayload defines model for RunCancelledPayload.
-type RunCancelledPayload struct {
-	Reason               *string                `json:"reason,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
+// Routine defines model for Routine.
+type Routine struct {
+	ActAsUserProviders *[]string  `json:"act_as_user_providers,omitempty"`
+	AgentId            string     `json:"agent_id"`
+	CompletedAt        *time.Time `json:"completed_at,omitempty"`
+	CreatedAt          time.Time  `json:"created_at"`
+	DailyCeilingMilli  int64      `json:"daily_ceiling_milli"`
+	Id                 string     `json:"id"`
+
+	// Instructions Omitted from administrator metadata-only projections.
+	Instructions *string `json:"instructions,omitempty"`
+
+	// Kind V1 accepts invoke; notify is reserved and returns unsupported_routine_kind.
+	Kind                      RoutineKind `json:"kind"`
+	LastFireAt                *time.Time  `json:"last_fire_at,omitempty"`
+	Name                      string      `json:"name"`
+	NextFireAt                *time.Time  `json:"next_fire_at,omitempty"`
+	OccurrenceCount           int         `json:"occurrence_count"`
+	OrgId                     string      `json:"org_id"`
+	OwnerId                   string      `json:"owner_id"`
+	PauseReason               *string     `json:"pause_reason,omitempty"`
+	PerOccurrenceCeilingMilli int64       `json:"per_occurrence_ceiling_milli"`
+
+	// Schedule Exactly one of at, interval, or cron is required.
+	Schedule  RoutineSchedule `json:"schedule"`
+	SessionId string          `json:"session_id"`
+	Status    RoutineStatus   `json:"status"`
+	Timezone  string          `json:"timezone"`
+	UpdatedAt time.Time       `json:"updated_at"`
 }
 
-// RunCompletedPayload defines model for RunCompletedPayload.
-type RunCompletedPayload struct {
-	Output               *map[string]interface{} `json:"output,omitempty"`
-	AdditionalProperties map[string]interface{}  `json:"-"`
+// RoutineCreateRequest defines model for RoutineCreateRequest.
+type RoutineCreateRequest struct {
+	AgentId           string `json:"agent_id"`
+	DailyCeilingMilli int64  `json:"daily_ceiling_milli"`
+	Instructions      string `json:"instructions"`
+
+	// Kind V1 accepts invoke; notify is reserved and returns unsupported_routine_kind.
+	Kind                      *RoutineKind `json:"kind,omitempty"`
+	Name                      *string      `json:"name,omitempty"`
+	PerOccurrenceCeilingMilli int64        `json:"per_occurrence_ceiling_milli"`
+
+	// Schedule Exactly one of at, interval, or cron is required.
+	Schedule  RoutineSchedule `json:"schedule"`
+	SessionId string          `json:"session_id"`
 }
 
-// RunConsumer defines model for RunConsumer.
-type RunConsumer struct {
-	RunId      string `json:"run_id"`
-	SignalName string `json:"signal_name"`
+// RoutineKind V1 accepts invoke; notify is reserved and returns unsupported_routine_kind.
+type RoutineKind string
+
+// RoutineList defines model for RoutineList.
+type RoutineList struct {
+	HasMore    bool      `json:"has_more"`
+	Items      []Routine `json:"items"`
+	NextCursor *string   `json:"next_cursor,omitempty"`
 }
 
-// RunEventPayload Typed payloads for common durable run event types. The containing `LoopRunEvent.event_type` selects the payload shape; payload objects do not duplicate that discriminator because some payloads use fields such as `event_type` for their own lifecycle data (for example, the external matcher recorded by `wait.opened`).
-type RunEventPayload struct {
-	union json.RawMessage
+// RoutineOccurrence defines model for RoutineOccurrence.
+type RoutineOccurrence struct {
+	CreditsSpentMilli    int64                   `json:"credits_spent_milli"`
+	ErrorCode            *string                 `json:"error_code,omitempty"`
+	ErrorMessage         *string                 `json:"error_message,omitempty"`
+	Id                   string                  `json:"id"`
+	IntakeAt             time.Time               `json:"intake_at"`
+	LatenessMilliseconds int64                   `json:"lateness_milliseconds"`
+	Outcome              *string                 `json:"outcome,omitempty"`
+	RoutineId            string                  `json:"routine_id"`
+	ScheduledAt          time.Time               `json:"scheduled_at"`
+	Status               RoutineOccurrenceStatus `json:"status"`
+	TranscriptUrl        string                  `json:"transcript_url"`
+	TurnId               *string                 `json:"turn_id,omitempty"`
 }
 
-// RunFailedPayload defines model for RunFailedPayload.
-type RunFailedPayload struct {
-	Error                *string                `json:"error,omitempty"`
-	ErrorType            *string                `json:"error_type,omitempty"`
-	Step                 *string                `json:"step,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
+// RoutineOccurrenceStatus defines model for RoutineOccurrence.Status.
+type RoutineOccurrenceStatus string
+
+// RoutineOccurrenceList defines model for RoutineOccurrenceList.
+type RoutineOccurrenceList struct {
+	HasMore    bool                `json:"has_more"`
+	Items      []RoutineOccurrence `json:"items"`
+	NextCursor *string             `json:"next_cursor,omitempty"`
 }
 
-// RunNameSpec Templates for assigning an operator-facing title and optional description to each run. The object form leaves room for additional naming strategies without changing the loop spec shape.
-type RunNameSpec struct {
-	// DescriptionTemplate Optional `${{ event.* }}`, `${{ meta.* }}`, and `${{ config.* }}` template rendered as secondary descriptive text when the run is created.
-	DescriptionTemplate *string `json:"description_template,omitempty"`
-
-	// Template `${{ event.* }}`, `${{ meta.* }}`, and `${{ config.* }}` template rendered as the run title when the run is created. When blank, the run title falls back to the loop name. This property remains required for compatibility, but may be blank when only description_template is configured. Send empty title and description templates in an update to clear the run display configuration.
-	Template string `json:"template"`
+// RoutineProposal defines model for RoutineProposal.
+type RoutineProposal struct {
+	AgentId    string                 `json:"agent_id"`
+	ExpiresAt  time.Time              `json:"expires_at"`
+	Id         string                 `json:"id"`
+	Payload    map[string]interface{} `json:"payload"`
+	ProposedTo string                 `json:"proposed_to"`
+	RoutineId  *string                `json:"routine_id,omitempty"`
+	SessionId  string                 `json:"session_id"`
+	Status     RoutineProposalStatus  `json:"status"`
 }
 
-// RunResumedPayload defines model for RunResumedPayload.
-type RunResumedPayload struct {
-	Attempt              *int                             `json:"attempt,omitempty"`
-	Reason               *string                          `json:"reason,omitempty"`
-	RecoveryAction       *RunResumedPayloadRecoveryAction `json:"recovery_action,omitempty"`
-	Step                 *string                          `json:"step,omitempty"`
-	AdditionalProperties map[string]interface{}           `json:"-"`
+// RoutineProposalStatus defines model for RoutineProposal.Status.
+type RoutineProposalStatus string
+
+// RoutineSchedule Exactly one of at, interval, or cron is required.
+type RoutineSchedule struct {
+	At             *time.Time `json:"at,omitempty"`
+	Cron           *string    `json:"cron,omitempty"`
+	EndsAt         *time.Time `json:"ends_at,omitempty"`
+	Interval       *string    `json:"interval,omitempty"`
+	MaxOccurrences *int       `json:"max_occurrences,omitempty"`
+	StartsAt       *time.Time `json:"starts_at,omitempty"`
+	Timezone       *string    `json:"timezone,omitempty"`
 }
 
-// RunResumedPayloadRecoveryAction defines model for RunResumedPayload.RecoveryAction.
-type RunResumedPayloadRecoveryAction string
+// RoutineStatus defines model for RoutineStatus.
+type RoutineStatus string
 
-// RunStartedPayload defines model for RunStartedPayload.
-type RunStartedPayload struct {
-	LoopId               *string                `json:"loop_id,omitempty"`
-	LoopVersionId        *string                `json:"loop_version_id,omitempty"`
-	SourceEventId        *string                `json:"source_event_id,omitempty"`
-	TriggerId            *string                `json:"trigger_id,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
+// RoutineUpdateRequest defines model for RoutineUpdateRequest.
+type RoutineUpdateRequest struct {
+	DailyCeilingMilli         *int64  `json:"daily_ceiling_milli,omitempty"`
+	Instructions              *string `json:"instructions,omitempty"`
+	Name                      *string `json:"name,omitempty"`
+	PerOccurrenceCeilingMilli *int64  `json:"per_occurrence_ceiling_milli,omitempty"`
+
+	// Schedule Exactly one of at, interval, or cron is required.
+	Schedule *RoutineSchedule `json:"schedule,omitempty"`
 }
 
 // RuntimeContext Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on first use, material change, or after compaction removes its prior value from the active model window. Omitting a name leaves its last value standing; send an explicit value such as `none` to clear application state. Names must be unique within the request. Content is limited to 8,192 UTF-8 bytes per item and 16,384 bytes total.
@@ -8932,18 +6529,6 @@ type SaveAgentMemoryEntryRequest struct {
 
 	// UserId User principal ID for private memory. It must identify a current human member of this organization. Omit or send empty for shared memory.
 	UserId *string `json:"user_id,omitempty"`
-}
-
-// ScheduleTriggerConfig Configuration for `LoopSpec.triggers[]` entries with `kind` set to `schedule`. Provide exactly one of `cron` or `interval`; the compiler rejects configs that omit both or set both.
-type ScheduleTriggerConfig struct {
-	// Cron Standard five-field cron expression or descriptor such as `@hourly`.
-	Cron *string `json:"cron,omitempty"`
-
-	// Interval Go duration string such as `5m`, `1h`, or `24h`.
-	Interval *string `json:"interval,omitempty"`
-
-	// Timezone IANA time zone for cron schedules, such as `America/New_York`.
-	Timezone *string `json:"timezone,omitempty"`
 }
 
 // SearchRowsRequest defines model for SearchRowsRequest.
@@ -9030,7 +6615,10 @@ type Session struct {
 	// ModelProvider Provider for the recorded `model`.
 	ModelProvider *string `json:"model_provider,omitempty"`
 
-	// Origin Surface that created the session: `manual`, `api`, `loop`, or `interaction`.
+	// NextRoutineFireAt Earliest next fire among the caller's active routines in this conversation.
+	NextRoutineFireAt *time.Time `json:"next_routine_fire_at,omitempty"`
+
+	// Origin Surface that created the session: `manual`, `api`, or `interaction`.
 	Origin SessionOrigin `json:"origin"`
 
 	// Owner The human or team responsible for this resource.
@@ -9044,7 +6632,7 @@ type Session struct {
 	// `ttl_seconds` is required when `mode` is `bounded` and ignored for `standard`; the server validates this (a `oneOf` encoding was dropped because it only produced untyped union codegen without adding runtime enforcement in the generated Go/TypeScript clients).
 	Retention *SessionRetentionPolicy `json:"retention,omitempty"`
 
-	// Scope Boundary used to resolve named sessions: `agent` or `loop`.
+	// Scope Boundary used to resolve named sessions.
 	Scope SessionScope `json:"scope"`
 
 	// ScopeName Deprecated legacy alias of `session_key`. Kept for compatibility while clients migrate to the canonical conversation-key field.
@@ -9060,7 +6648,7 @@ type Session struct {
 	// Status Durable conversation session status: `active`, `archived`, or `deleted`.
 	Status SessionStatus `json:"status"`
 
-	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
+	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session, or the provider's own default when nothing sets a level.
 	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
 
 	// Title Human-readable session title.
@@ -9071,6 +6659,9 @@ type Session struct {
 
 	// TokenOutputTotal Lifetime output-token total reported for this session.
 	TokenOutputTotal int `json:"token_output_total"`
+
+	// UnreadScheduledResult True when the routine owner has not opened this conversation since its latest admitted scheduled result settled.
+	UnreadScheduledResult *bool `json:"unread_scheduled_result,omitempty"`
 
 	// UpdatedAt Last update timestamp.
 	UpdatedAt time.Time `json:"updated_at"`
@@ -9358,9 +6949,6 @@ type SessionMessagePreviewFrame struct {
 	// Role Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
 	Role SessionMessageRole `json:"role"`
 
-	// RunId Loop run that produced the preview, when applicable.
-	RunId *string `json:"run_id,omitempty"`
-
 	// SessionId Session this preview belongs to.
 	SessionId string `json:"session_id"`
 
@@ -9418,7 +7006,7 @@ type SessionNudgeAck struct {
 	// Status Durable nudge queue lifecycle status.
 	Status SessionNudgeStatus `json:"status"`
 
-	// Turn One attempt of an agent running the agent loop — the unit that produces a transcript. A turn is triggered by a direct send to the session, a loop step (run_id + step_key), or an inbound channel message (channel_exchange_id). Its messages are read via the turn's transcript endpoint.
+	// Turn One attempt of an agent working on the session — the unit that produces a transcript. A turn is triggered by a direct send to the session or an inbound channel message (channel_exchange_id). Its messages are read via the turn's transcript endpoint.
 	Turn AgentTurn `json:"turn"`
 
 	// WokeTurn True when wake interrupted a waiting tool and requeued this turn.
@@ -9448,7 +7036,7 @@ type SessionNudgeTurn struct {
 	Status AgentTurnStatus `json:"status"`
 }
 
-// SessionOrigin Surface that created the session: `manual`, `api`, `loop`, or `interaction`.
+// SessionOrigin Surface that created the session: `manual`, `api`, or `interaction`.
 type SessionOrigin string
 
 // SessionReminderBlock Host-managed runtime context returned only when the request explicitly includes caller-supplied context.
@@ -9506,7 +7094,7 @@ type SessionRetentionPolicy struct {
 // SessionRetentionPolicyMode `standard` (default) retains the session indefinitely. `bounded` expires the session after it has been idle for `ttl_seconds`.
 type SessionRetentionPolicyMode string
 
-// SessionScope Boundary used to resolve named sessions: `agent` or `loop`.
+// SessionScope Boundary used to resolve named sessions.
 type SessionScope string
 
 // SessionStatus Durable conversation session status: `active`, `archived`, or `deleted`.
@@ -9659,13 +7247,11 @@ type SessionTranscriptTurn struct {
 
 	// OutputSource Provenance of a completed turn's structured `output`: `tool` when the agent submitted it through the reserved `mobius_submit_output` tool, or `text` when Mobius accepted a schema-valid final message as a fallback.
 	OutputSource *AgentTurnOutputSource `json:"output_source,omitempty"`
-	RunId        *string                `json:"run_id,omitempty"`
 	Seq          *int                   `json:"seq,omitempty"`
 	SessionId    string                 `json:"session_id"`
 
 	// Status Known AgentTurn status; unknown values must be preserved.
 	Status    string    `json:"status"`
-	StepKey   *string   `json:"step_key,omitempty"`
 	UpdatedAt time.Time `json:"updated_at"`
 
 	// Usage Aggregate token accounting for one completed turn, summed over every LLM call the turn made. It is a usage report, not a bill — see the billing usage events for charged amounts.
@@ -9706,15 +7292,6 @@ type SessionUserMessagePayload struct {
 // SetBlueprintProtectionRequest defines model for SetBlueprintProtectionRequest.
 type SetBlueprintProtectionRequest struct {
 	Protected bool `json:"protected"`
-}
-
-// SignalLoopRunRequest Body for resuming a suspended loop step.
-type SignalLoopRunRequest struct {
-	// Result Free-form payload saved as the resumed step's output.
-	Result *map[string]interface{} `json:"result,omitempty"`
-
-	// StepKey Step key currently in `suspended` state that should resume. Must match a step declared in the run's loop version spec.
-	StepKey string `json:"step_key"`
 }
 
 // Skill Reusable instruction bundle assignable to agents.
@@ -9848,30 +7425,6 @@ type SkillRequest struct {
 	Visibility *ResourceVisibility `json:"visibility,omitempty"`
 }
 
-// StartLoopRunRequest Body for `POST /v1/loops/{resource_id}/runs`. All fields are optional; an empty body starts a run with an empty event/config envelope and no attribution.
-type StartLoopRunRequest struct {
-	// BudgetUsd Per-run budget override in US dollars (1 credit = $0.01). Overrides the loop spec's `limits` budget for this run only. Mutually exclusive with `credit_budget` — setting both is a `400`. Values finer than 0.001 credit ($0.00001) are rejected. The run halts at the next checkpoint (step boundary or agent tool iteration) once spend reaches the budget; enforcement granularity is one model call or metered action.
-	BudgetUsd *float64 `json:"budget_usd,omitempty"`
-
-	// Config Optional static or caller-provided configuration for handling the event. Templates reference it via `config.*`.
-	Config *map[string]interface{} `json:"config,omitempty"`
-
-	// CreditBudget Per-run budget override in whole credits (1 credit = $0.01). Same ceiling semantics as `budget_usd`; set exactly one.
-	CreditBudget *int64 `json:"credit_budget,omitempty"`
-
-	// Event Exact event object that starts the run. Manual/API starts use this object the same way integration, HTTP, and schedule triggers do. Templates reference it via `${{ event.<key> }}`.
-	Event *map[string]interface{} `json:"event,omitempty"`
-
-	// IdempotencyKey Caller-supplied idempotency key, scoped to the org. Repeat calls with the same `idempotency_key` while the prior run is still non-terminal return the existing run (same `id`). A repeat after the prior run terminated returns `409 Conflict` with code `idempotency_key_conflict` and details containing the existing run id and its terminal status.
-	IdempotencyKey *string `json:"idempotency_key,omitempty"`
-
-	// Meta Optional event metadata supplied by the caller. Mobius also adds provenance such as run, loop, source, trigger, and source-event ids.
-	Meta *map[string]interface{} `json:"meta,omitempty"`
-
-	// Source Optional attribution for the call that started this run. Triggers and HTTP trigger dispatch populate `trigger_id` and `trigger_fire_id`. API callers usually only set `type` and `id`.
-	Source *LoopRunSource `json:"source,omitempty"`
-}
-
 // StartTurnRequest Caller input that starts an agent turn in a session. `operation.timeout_seconds` must be at least one and takes precedence for this admitted turn.
 type StartTurnRequest struct {
 	// Content Ordered content blocks for the input message. Canonical documents use `{ "type": "document", "source": { "type": "base64", "media_type": "application/pdf", "data": "..." }, "title": "report.pdf" }` or a URL source. Mobius also translates supported OpenAI `input_file` and Chat Completions `file` blocks at ingestion.
@@ -9900,67 +7453,6 @@ type StartTurnRequest struct {
 
 // StartTurnRequestRole Role of the input message. A turn carries caller input, so only `user` is accepted; defaults to `user` when omitted.
 type StartTurnRequestRole string
-
-// StepCompletedPayload defines model for StepCompletedPayload.
-type StepCompletedPayload struct {
-	Output               *map[string]interface{} `json:"output,omitempty"`
-	Step                 *string                 `json:"step,omitempty"`
-	AdditionalProperties map[string]interface{}  `json:"-"`
-}
-
-// StepFailedPayload defines model for StepFailedPayload.
-type StepFailedPayload struct {
-	Error                *string                `json:"error,omitempty"`
-	ErrorType            *string                `json:"error_type,omitempty"`
-	Step                 *string                `json:"step,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-
-// StepResumedPayload defines model for StepResumedPayload.
-type StepResumedPayload struct {
-	Kind                 *string                `json:"kind,omitempty"`
-	Step                 *string                `json:"step,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-
-// StepRetriedPayload defines model for StepRetriedPayload.
-type StepRetriedPayload struct {
-	Attempt     *int    `json:"attempt,omitempty"`
-	Error       *string `json:"error,omitempty"`
-	ErrorType   *string `json:"error_type,omitempty"`
-	Kind        *string `json:"kind,omitempty"`
-	MaxAttempts *int    `json:"max_attempts,omitempty"`
-
-	// RecoveryAction Operator intent for a `run_recovery` retry. Named consistently with `RunResumedPayload.recovery_action`.
-	RecoveryAction *StepRetriedPayloadRecoveryAction `json:"recovery_action,omitempty"`
-
-	// RetryScope Retry source. `step_policy` means the authored step retry policy was consumed, `transient` means Mobius retried a transient provider failure before spending step retry budget, and `run_recovery` means an operator resumed or retried a failed run in place.
-	RetryScope           *StepRetriedPayloadRetryScope `json:"retry_scope,omitempty"`
-	Step                 *string                       `json:"step,omitempty"`
-	AdditionalProperties map[string]interface{}        `json:"-"`
-}
-
-// StepRetriedPayloadRecoveryAction Operator intent for a `run_recovery` retry. Named consistently with `RunResumedPayload.recovery_action`.
-type StepRetriedPayloadRecoveryAction string
-
-// StepRetriedPayloadRetryScope Retry source. `step_policy` means the authored step retry policy was consumed, `transient` means Mobius retried a transient provider failure before spending step retry budget, and `run_recovery` means an operator resumed or retried a failed run in place.
-type StepRetriedPayloadRetryScope string
-
-// StepSkippedPayload defines model for StepSkippedPayload.
-type StepSkippedPayload struct {
-	Kind                 *string                `json:"kind,omitempty"`
-	Reason               *string                `json:"reason,omitempty"`
-	Step                 *string                `json:"step,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-
-// StepStartedPayload defines model for StepStartedPayload.
-type StepStartedPayload struct {
-	AgentId              *string                `json:"agent_id,omitempty"`
-	Kind                 *string                `json:"kind,omitempty"`
-	Step                 *string                `json:"step,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
 
 // StreamEndFrame Final envelope on a deliberate session-stream close. An idle close means no non-terminal turn remains; a rotate close asks the client to reconnect immediately with the same durable transcript cursor.
 type StreamEndFrame struct {
@@ -10148,7 +7640,7 @@ type TableStats struct {
 // TagMap Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 type TagMap map[string]string
 
-// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
+// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session, or the provider's own default when nothing sets a level.
 type ThinkingEffort string
 
 // ToolCallPayload Payload of a live-only `tool.call` frame — an in-flight preview that a tool was invoked during the active turn. Never persisted and carries no sequence: the durable record of the call is the `tool_use` content block of the assistant message, delivered as an `agent.message` event when the turn commits.
@@ -10196,7 +7688,7 @@ type TurnAck struct {
 	// Session Durable conversation transcript owned by an agent.
 	Session Session `json:"session"`
 
-	// Turn One attempt of an agent running the agent loop — the unit that produces a transcript. A turn is triggered by a direct send to the session, a loop step (run_id + step_key), or an inbound channel message (channel_exchange_id). Its messages are read via the turn's transcript endpoint.
+	// Turn One attempt of an agent working on the session — the unit that produces a transcript. A turn is triggered by a direct send to the session or an inbound channel message (channel_exchange_id). Its messages are read via the turn's transcript endpoint.
 	Turn        AgentTurn                 `json:"turn"`
 	UserMessage *SessionTranscriptMessage `json:"user_message,omitempty"`
 }
@@ -10247,13 +7739,11 @@ type TurnUpsertFrame struct {
 
 	// OutputSource Provenance of a completed turn's structured `output`: `tool` when the agent submitted it through the reserved `mobius_submit_output` tool, or `text` when Mobius accepted a schema-valid final message as a fallback.
 	OutputSource *AgentTurnOutputSource `json:"output_source,omitempty"`
-	RunId        *string                `json:"run_id,omitempty"`
 	Seq          *int                   `json:"seq,omitempty"`
 	SessionId    string                 `json:"session_id"`
 
 	// Status Known AgentTurn status; unknown values must be preserved.
 	Status    string    `json:"status"`
-	StepKey   *string   `json:"step_key,omitempty"`
 	UpdatedAt time.Time `json:"updated_at"`
 
 	// Usage Aggregate token accounting for one completed turn, summed over every LLM call the turn made. It is a usage report, not a bill — see the billing usage events for charged amounts.
@@ -10334,7 +7824,7 @@ type UpdateAgentRequest struct {
 	// Model Replacement model identifier for agents (any id from `GET /v1/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id).
 	Model *string `json:"model,omitempty"`
 
-	// ModelRoute Default model route used by built-in messaging and by loop agent steps that do not override the route.
+	// ModelRoute Default model route used by built-in messaging and by any turn that does not override the route.
 	ModelRoute *AgentModelRoute `json:"model_route,omitempty"`
 
 	// Name Free-form human-readable label, 1-63 characters; must be unique within the org.
@@ -10343,9 +7833,9 @@ type UpdateAgentRequest struct {
 	// Status Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent.
 	Status *UpdateAgentRequestStatus `json:"status,omitempty"`
 
-	// StrandedDisposition What happens to the memory partitions, sessions, and loops of principals who fall outside a narrowed audience.
+	// StrandedDisposition What happens to the memory partitions and sessions of principals who fall outside a narrowed audience.
 	//
-	// `retain` keeps their partitions and sessions, readable only by org admins, and pauses the loops they own that point at this agent rather than leaving them to fail at run time. `delete` additionally erases their private memory partitions, and only an org admin may choose it. A narrowing change that would strand rows and names neither returns `409`.
+	// `retain` keeps their partitions and sessions, readable only by org admins. `delete` additionally erases their private memory partitions, and only an org admin may choose it. A narrowing change that would strand rows and names neither returns `409`.
 	StrandedDisposition *UpdateAgentRequestStrandedDisposition `json:"stranded_disposition,omitempty"`
 
 	// SystemPrompt Replacement system prompt for agents.
@@ -10354,10 +7844,10 @@ type UpdateAgentRequest struct {
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
 
-	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
+	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session, or the provider's own default when nothing sets a level.
 	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
 
-	// TimeoutSeconds Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.
+	// TimeoutSeconds Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (600s / 10 minutes); a request's `operation.timeout_seconds` overrides it for that turn.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 
 	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
@@ -10381,93 +7871,10 @@ type UpdateAgentRequest struct {
 // UpdateAgentRequestStatus Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent.
 type UpdateAgentRequestStatus string
 
-// UpdateAgentRequestStrandedDisposition What happens to the memory partitions, sessions, and loops of principals who fall outside a narrowed audience.
+// UpdateAgentRequestStrandedDisposition What happens to the memory partitions and sessions of principals who fall outside a narrowed audience.
 //
-// `retain` keeps their partitions and sessions, readable only by org admins, and pauses the loops they own that point at this agent rather than leaving them to fail at run time. `delete` additionally erases their private memory partitions, and only an org admin may choose it. A narrowing change that would strand rows and names neither returns `409`.
+// `retain` keeps their partitions and sessions, readable only by org admins. `delete` additionally erases their private memory partitions, and only an org admin may choose it. A narrowing change that would strand rows and names neither returns `409`.
 type UpdateAgentRequestStrandedDisposition string
-
-// UpdateEnvironmentRequest defines model for UpdateEnvironmentRequest.
-type UpdateEnvironmentRequest struct {
-	// ConfirmAudienceExpansion Required when sharing with the organization, handing custody to the team, or detaching a narrowing container.
-	ConfirmAudienceExpansion *bool `json:"confirm_audience_expansion,omitempty"`
-
-	// Owner The human or team responsible for this resource.
-	Owner *ResourceOwner `json:"owner,omitempty"`
-
-	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
-	Tags *TagMap `json:"tags,omitempty"`
-
-	// Visibility Who the custodian chose to share the resource with.
-	Visibility *ResourceVisibility `json:"visibility,omitempty"`
-}
-
-// UpdateLoopRequest Partial update of loop metadata and/or authoring fields. Authoring changes become runnable immediately.
-type UpdateLoopRequest struct {
-	// AgentId Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`.
-	AgentId *string `json:"agent_id,omitempty"`
-
-	// Cleanup Replacement cleanup steps or policies.
-	Cleanup *[]map[string]interface{} `json:"cleanup,omitempty"`
-
-	// Concurrency Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
-	Concurrency *UpdateLoopRequestConcurrency `json:"concurrency,omitempty"`
-
-	// Config Declared run config fields for this loop.
-	Config *map[string]LoopSpecInput `json:"config,omitempty"`
-
-	// DefaultConfig Default config values used when a run is started without overrides.
-	DefaultConfig *map[string]interface{} `json:"default_config,omitempty"`
-
-	// Defaults Run-level defaults inside the loop spec. Lives at `spec.defaults` in the JSON the engine compiles. The run wall-clock limit moved to `limits.wall_clock_timeout`.
-	Defaults *LoopSpecDefaults `json:"defaults,omitempty"`
-
-	// Description Markdown description of the loop's purpose.
-	Description *string `json:"description,omitempty"`
-
-	// Event Declared event fields for this loop.
-	Event *map[string]LoopSpecInput `json:"event,omitempty"`
-
-	// Limits Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; absent or zero means unbounded (plan-level org caps still apply), with one exception — trial-plan runs default to a 100-credit ($1) budget when no budget is set here or on the start request. Paid plans default to unbounded.
-	Limits *LoopSpecLimits `json:"limits,omitempty"`
-
-	// Name Human-readable display name.
-	Name *string `json:"name,omitempty"`
-
-	// Output Replacement run result contract.
-	Output *map[string]interface{} `json:"output,omitempty"`
-
-	// Repositories Replacement source repositories the loop targets.
-	Repositories *[]LoopSpecRepository `json:"repositories,omitempty"`
-
-	// RunName Templates for assigning an operator-facing title and optional description to each run. The object form leaves room for additional naming strategies without changing the loop spec shape.
-	RunName *RunNameSpec `json:"run_name,omitempty"`
-
-	// SchemaVersion Loop authoring schema version. Only schema version 1 is accepted.
-	SchemaVersion *UpdateLoopRequestSchemaVersion `json:"schema_version,omitempty"`
-
-	// Settings Free-form loop-level settings consumed by the engine.
-	Settings *map[string]interface{} `json:"settings,omitempty"`
-
-	// Status Loop lifecycle status: `draft`, `active`, `paused`, or `deleted`.
-	Status *LoopStatus `json:"status,omitempty"`
-
-	// Steps Steps use kind agent, action, sleep, wait_for_event, interaction, loop, or check; action inputs use config.parameters; if is a predicate.
-	//
-	// Each item has `kind`, `config`, and optional `id`, `name`, `if`, `retry`, and `timeout`. Valid kinds are `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, and `check`. Required config: `agent.instructions`; `action.action_name`; `sleep.duration` or `sleep.until`; `wait_for_event.event_type`; `interaction.protocol` plus `interaction.targets`; `loop.loop_id`; or `check.checks`. Action inputs belong in `config.parameters`; `config.execution_location` is `managed`, `worker`, or `environment`. `if` is a bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`. String leaves interpolate expr values with `${{ ... }}`.
-	Steps *[]LoopStep `json:"steps,omitempty"`
-
-	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
-	Tags *TagMap `json:"tags,omitempty"`
-
-	// Triggers Replacement authored trigger declarations.
-	Triggers *[]LoopSpecTrigger `json:"triggers,omitempty"`
-}
-
-// UpdateLoopRequestConcurrency Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
-type UpdateLoopRequestConcurrency string
-
-// UpdateLoopRequestSchemaVersion Loop authoring schema version. Only schema version 1 is accepted.
-type UpdateLoopRequestSchemaVersion string
 
 // UpdateMemoryContextPolicy Replacement automatic memory delivery policy. Send an empty object to clear the stored override and restore the bounded index default. Otherwise `mode` is required (`index`, `full`, or `off`) and `max_bytes` is optional.
 type UpdateMemoryContextPolicy struct {
@@ -10528,7 +7935,7 @@ type UpdateSessionRequest struct {
 	// Status Durable conversation session status: `active`, `archived`, or `deleted`.
 	Status *SessionStatus `json:"status,omitempty"`
 
-	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
+	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session, or the provider's own default when nothing sets a level.
 	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
 
 	// Title Human-readable session title.
@@ -10550,24 +7957,6 @@ type UpdateTableRequest struct {
 	Schema *TableSchema `json:"schema,omitempty"`
 }
 
-// UpdateWebhookRequest defines model for UpdateWebhookRequest.
-type UpdateWebhookRequest struct {
-	// Enabled Set to false to disable delivery without deleting the webhook.
-	Enabled *bool `json:"enabled,omitempty"`
-
-	// Events Replacement event subscriptions. Replaces the entire current list; an empty list subscribes to all event types.
-	Events *[]string `json:"events,omitempty"`
-
-	// Name Replacement human-readable name.
-	Name *string `json:"name,omitempty"`
-
-	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
-	Tags *TagMap `json:"tags,omitempty"`
-
-	// Url Replacement endpoint URL.
-	Url *string `json:"url,omitempty"`
-}
-
 // UpsertRowRequest defines model for UpsertRowRequest.
 type UpsertRowRequest struct {
 	// Data Fields to create or merge into the row. Must include the table's identity column.
@@ -10581,152 +7970,6 @@ type UpsertRowResult struct {
 
 	// Row One stored row in a table.
 	Row TableRow `json:"row"`
-}
-
-// WaitPayload defines model for WaitPayload.
-type WaitPayload struct {
-	Deadline *time.Time `json:"deadline,omitempty"`
-
-	// EventType Source event type or pattern this wait is listening for.
-	EventType *string `json:"event_type,omitempty"`
-
-	// ExpiresAt Wall-clock expiry for the wait, when bounded.
-	ExpiresAt *time.Time `json:"expires_at,omitempty"`
-
-	// Match Optional matcher fields required on the source event.
-	Match *map[string]interface{} `json:"match,omitempty"`
-
-	// SourceId Optional source identifier that scopes event matching.
-	SourceId             *string                 `json:"source_id,omitempty"`
-	Step                 *string                 `json:"step,omitempty"`
-	Subject              *map[string]interface{} `json:"subject,omitempty"`
-	WaitId               *string                 `json:"wait_id,omitempty"`
-	WaitKind             *string                 `json:"wait_kind,omitempty"`
-	AdditionalProperties map[string]interface{}  `json:"-"`
-}
-
-// WaitResumedPayload defines model for WaitResumedPayload.
-type WaitResumedPayload struct {
-	Payload              *map[string]interface{} `json:"payload,omitempty"`
-	Step                 *string                 `json:"step,omitempty"`
-	WaitId               *string                 `json:"wait_id,omitempty"`
-	AdditionalProperties map[string]interface{}  `json:"-"`
-}
-
-// WaitTimedOutPayload defines model for WaitTimedOutPayload.
-type WaitTimedOutPayload struct {
-	Reason               *string                `json:"reason,omitempty"`
-	Step                 *string                `json:"step,omitempty"`
-	WaitId               *string                `json:"wait_id,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-
-// Webhook An org-level outgoing webhook subscription. When a subscribed event fires, Mobius POSTs the event payload to `url`.
-type Webhook struct {
-	// Container The agent that contains this resource and may further narrow who can reach it.
-	Container *ResourceContainer `json:"container,omitempty"`
-
-	// CreatedAt Timestamp when this webhook was created.
-	CreatedAt time.Time `json:"created_at"`
-
-	// CreatedBy User ID of the principal who created this webhook.
-	CreatedBy *string `json:"created_by,omitempty"`
-
-	// Enabled When false, matching events are not delivered.
-	Enabled bool `json:"enabled"`
-
-	// Events Subscribed event types. Use dot notation (`run.completed`, `run.failed`) or wildcards (`run.*` for all run events). An empty list subscribes to all event types.
-	Events []string `json:"events"`
-
-	// Id Unique identifier for this webhook.
-	Id string `json:"id"`
-
-	// Name Human-readable name, unique within the org.
-	Name string `json:"name"`
-
-	// Owner The human or team responsible for this resource.
-	Owner ResourceOwner `json:"owner"`
-
-	// Posture Employee-facing effective ownership and audience posture for the current caller.
-	Posture ResourcePosture `json:"posture"`
-
-	// SecretVersion Internal vault version created by this response. Only populated on create and rotate responses.
-	SecretVersion *int64 `json:"secret_version,omitempty"`
-
-	// SigningSecret One-time `whsec_` plus raw-URL-base64 encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; absent on all other reads. Store this value securely on first receipt — it cannot be retrieved again.
-	SigningSecret *string `json:"signing_secret,omitempty"`
-
-	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
-	Tags *TagMap `json:"tags,omitempty"`
-
-	// UpdatedAt Timestamp when this webhook was last updated.
-	UpdatedAt time.Time `json:"updated_at"`
-
-	// UpdatedBy User ID of the principal who last updated this webhook.
-	UpdatedBy *string `json:"updated_by,omitempty"`
-
-	// Url The customer endpoint Mobius POSTs event payloads to.
-	Url string `json:"url"`
-
-	// Visibility Who the custodian chose to share the resource with.
-	Visibility ResourceVisibility `json:"visibility"`
-}
-
-// WebhookDeliveryListResponse defines model for WebhookDeliveryListResponse.
-type WebhookDeliveryListResponse struct {
-	// HasMore Whether additional pages are available.
-	HasMore bool `json:"has_more"`
-
-	// Items The list of results for this page.
-	Items []WebhookDeliveryRecord `json:"items"`
-
-	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
-	NextCursor *string `json:"next_cursor,omitempty"`
-}
-
-// WebhookDeliveryRecord One delivery record for a webhook event. The daemon claims pending rows, POSTs the payload, and transitions to `delivered` or retries on failure. A delivery reaches `failed` only after exhausting all 10 retry attempts.
-type WebhookDeliveryRecord struct {
-	// Attempts Number of delivery attempts made so far. Max 10.
-	Attempts int `json:"attempts"`
-
-	// CreatedAt Timestamp when this delivery was first attempted.
-	CreatedAt time.Time `json:"created_at"`
-
-	// DeliveredAt Timestamp of the successful delivery. Absent until delivered.
-	DeliveredAt *time.Time `json:"delivered_at,omitempty"`
-
-	// EventType The event type that triggered this delivery (e.g. `run.completed`).
-	EventType string `json:"event_type"`
-
-	// Id Unique identifier for this delivery record.
-	Id string `json:"id"`
-
-	// LastError Error message from the most recent failed attempt.
-	LastError *string `json:"last_error,omitempty"`
-
-	// RunId Run that triggered the event, when applicable.
-	RunId *string `json:"run_id,omitempty"`
-
-	// Status `pending` — queued, not yet attempted. `processing` — currently being delivered. `delivered` — recipient returned 2xx. `failed` — all retry attempts exhausted.
-	Status WebhookDeliveryStatus `json:"status"`
-
-	// WebhookId ID of the webhook this delivery belongs to.
-	WebhookId string `json:"webhook_id"`
-}
-
-// WebhookDeliveryStatus `pending` — queued, not yet attempted. `processing` — currently being delivered. `delivered` — recipient returned 2xx. `failed` — all retry attempts exhausted.
-type WebhookDeliveryStatus string
-
-// WebhookListResponse defines model for WebhookListResponse.
-type WebhookListResponse struct {
-	// HasMore Whether additional pages are available.
-	HasMore bool `json:"has_more"`
-
-	// Items The list of results for this page.
-	Items []Webhook `json:"items"`
-
-	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
-	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
 // WorkerModelCatalogItem One exact local model route available through online workers.
@@ -10798,12 +8041,10 @@ type WorkerSocketClaimedJob struct {
 	// Provider Present for `llm_generation` jobs.
 	Provider  *string `json:"provider,omitempty"`
 	Queue     string  `json:"queue"`
-	RunId     *string `json:"run_id,omitempty"`
 	SessionId *string `json:"session_id,omitempty"`
 
 	// Spec Worker-specific action or generation payload. For `kind=llm_generation`, this object follows `WorkerSocketLLMGenerationSpec`.
 	Spec       map[string]interface{} `json:"spec"`
-	StepId     *string                `json:"step_id,omitempty"`
 	ToolCallId *string                `json:"tool_call_id,omitempty"`
 }
 
@@ -11133,9 +8374,6 @@ type BeforeSequenceParam = int64
 // CursorParam defines model for CursorParam.
 type CursorParam = string
 
-// EnvironmentIDParam defines model for EnvironmentIDParam.
-type EnvironmentIDParam = string
-
 // IDParam defines model for IDParam.
 type IDParam = string
 
@@ -11156,6 +8394,12 @@ type NudgeIdParam = string
 
 // OrderParam defines model for OrderParam.
 type OrderParam string
+
+// RoutineID defines model for RoutineID.
+type RoutineID = string
+
+// RoutineProposalID defines model for RoutineProposalID.
+type RoutineProposalID = string
 
 // SessionIdParam defines model for SessionIdParam.
 type SessionIdParam = string
@@ -11200,9 +8444,6 @@ type ListActionInvocationsParams struct {
 
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
-
-	// RunId Filter to invocations from a specific loop run.
-	RunId *string `form:"run_id,omitempty" json:"run_id,omitempty"`
 
 	// JobId Filter to invocations from a specific job.
 	JobId *string `form:"job_id,omitempty" json:"job_id,omitempty"`
@@ -11315,12 +8556,6 @@ type ListAPIKeysParams struct {
 
 // ListArtifactsParams defines parameters for ListArtifacts.
 type ListArtifactsParams struct {
-	// RunId Filter to artifacts produced by this loop run.
-	RunId *string `form:"run_id,omitempty" json:"run_id,omitempty"`
-
-	// StepId Filter to artifacts produced by this run step.
-	StepId *string `form:"step_id,omitempty" json:"step_id,omitempty"`
-
 	// Mime Mime prefix filter (e.g. `image/`)
 	Mime *string `form:"mime,omitempty" json:"mime,omitempty"`
 
@@ -11363,9 +8598,6 @@ type ListBillingUsageEventsParams struct {
 	// SourceId Filter to one source identifier.
 	SourceId *string `form:"source_id,omitempty" json:"source_id,omitempty"`
 
-	// RunId Filter to usage attributed to one run.
-	RunId *string `form:"run_id,omitempty" json:"run_id,omitempty"`
-
 	// JobId Filter to usage attributed to one job.
 	JobId *string `form:"job_id,omitempty" json:"job_id,omitempty"`
 
@@ -11403,27 +8635,6 @@ type SetBlueprintProtectionParams struct {
 	Namespace *string `form:"namespace,omitempty" json:"namespace,omitempty"`
 }
 
-// ListEnvironmentsParams defines parameters for ListEnvironments.
-type ListEnvironmentsParams struct {
-	// Cursor Cursor for pagination (opaque string from previous response)
-	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
-
-	// Limit Maximum number of items to return
-	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
-
-	// Status Filter by environment lifecycle status.
-	Status *EnvironmentStatus `form:"status,omitempty" json:"status,omitempty"`
-
-	// RunId Filter to environments created for the given run.
-	RunId *string `form:"run_id,omitempty" json:"run_id,omitempty"`
-
-	// IncludeDestroyed Include destroyed environments in the result. By default destroyed rows are excluded; set this to true (or pass status=destroyed) to see them.
-	IncludeDestroyed *bool `form:"include_destroyed,omitempty" json:"include_destroyed,omitempty"`
-
-	// DestroyedSince Narrow destroyed rows to those torn down at or after this timestamp. Composes with `status=destroyed` to fetch a "recently destroyed" tombstone window (e.g. last hour). Non-destroyed rows are unaffected when this is combined with the default (no-status) view.
-	DestroyedSince *time.Time `form:"destroyed_since,omitempty" json:"destroyed_since,omitempty"`
-}
-
 // ListInteractionsParams defines parameters for ListInteractions.
 type ListInteractionsParams struct {
 	// Status Filter by status
@@ -11431,9 +8642,6 @@ type ListInteractionsParams struct {
 
 	// Kind Filter by interaction protocol kind
 	Kind *InteractionKind `form:"kind,omitempty" json:"kind,omitempty"`
-
-	// RunId Filter by originating run ID
-	RunId *string `form:"run_id,omitempty" json:"run_id,omitempty"`
 
 	// SessionId Filter to interactions raised by an agent tool call (`consumer.kind=agent_tool`) whose invocation is a turn of the given chat session. Lets a chat surface the pending interactions opened by its own agent tool calls.
 	SessionId *string `form:"session_id,omitempty" json:"session_id,omitempty"`
@@ -11450,24 +8658,6 @@ type ListInteractionsParams struct {
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
-
-// ListLoopsParams defines parameters for ListLoops.
-type ListLoopsParams struct {
-	// Status Filter by lifecycle status. Omit to return the normal loop list, or pass a visible status to filter to it exactly.
-	Status *ListLoopsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
-
-	// AgentId Return only loops associated with this agent.
-	AgentId *string `form:"agent_id,omitempty" json:"agent_id,omitempty"`
-
-	// Cursor Opaque pagination cursor from a prior response.
-	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
-
-	// Limit Maximum number of items to return.
-	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
-}
-
-// ListLoopsParamsStatus defines parameters for ListLoops.
-type ListLoopsParamsStatus string
 
 // ListPrincipalsParams defines parameters for ListPrincipals.
 type ListPrincipalsParams struct {
@@ -11502,34 +8692,11 @@ type ListRolesParams struct {
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
 }
 
-// ListRunsParams defines parameters for ListRuns.
-type ListRunsParams struct {
-	// Status Filter to one status.
-	Status *LoopRunStatus `form:"status,omitempty" json:"status,omitempty"`
-
-	// LoopId Filter to one loop's runs.
-	LoopId *string `form:"loop_id,omitempty" json:"loop_id,omitempty"`
-
-	// SourceEventId Filter to runs originating from a single source event. Pass the `source_event_id` returned by the HTTP-trigger delivery endpoint to discover the run it started.
-	SourceEventId *string `form:"source_event_id,omitempty" json:"source_event_id,omitempty"`
-
-	// Cursor Opaque pagination cursor from a prior response.
-	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
-
-	// Limit Maximum number of items to return.
-	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
-}
-
-// ListRunEventsParams defines parameters for ListRunEvents.
-type ListRunEventsParams struct {
-	// AfterSequence Return events with sequence > after_sequence.
-	AfterSequence *int64 `form:"after_sequence,omitempty" json:"after_sequence,omitempty"`
-
-	// Limit Maximum number of items to return
-	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
-
-	// LastEventID SSE reconnect cursor. The browser EventSource API replays the last event's `id` in this header on automatic reconnect; the server resumes the stream after that sequence number. When both this header and the `after_sequence` query parameter are supplied, the larger sequence wins, so an explicit `after_sequence` never rewinds a live reconnect. Ignored for non-streaming (JSON) requests.
-	LastEventID *LastEventIDParam `json:"Last-Event-ID,omitempty"`
+// ListRoutinesParams defines parameters for ListRoutines.
+type ListRoutinesParams struct {
+	OwnerId   *string `form:"owner_id,omitempty" json:"owner_id,omitempty"`
+	AgentId   *string `form:"agent_id,omitempty" json:"agent_id,omitempty"`
+	SessionId *string `form:"session_id,omitempty" json:"session_id,omitempty"`
 }
 
 // ListSessionsParams defines parameters for ListSessions.
@@ -11569,12 +8736,6 @@ type ListSessionsParams struct {
 type CreateSessionAttachmentParams struct {
 	// IdempotencyKey Optional retry key, scoped to this session and caller. An identical retry returns the original attachment. Reusing the key with different file bytes, filename, or MIME hint is rejected with a conflict.
 	IdempotencyKey *string `json:"Idempotency-Key,omitempty"`
-}
-
-// CancelSessionParams defines parameters for CancelSession.
-type CancelSessionParams struct {
-	// Force When true, also cancel loop-owned turns to unlock a wedged session. Use only for recovery; the owning run may be left inconsistent.
-	Force *bool `form:"force,omitempty" json:"force,omitempty"`
 }
 
 // ListSessionMessagesParams defines parameters for ListSessionMessages.
@@ -11682,18 +8843,6 @@ type ListTablesParams struct {
 	Name *TableNameQueryParam `form:"name,omitempty" json:"name,omitempty"`
 }
 
-// DeliverHTTPTriggerParams defines parameters for DeliverHTTPTrigger.
-type DeliverHTTPTriggerParams struct {
-	// IdempotencyKey Optional idempotency key (also accepted via the X-Idempotency-Key header).
-	IdempotencyKey *string `form:"idempotency_key,omitempty" json:"idempotency_key,omitempty"`
-
-	// XIdempotencyKey Alternative to the `idempotency_key` query parameter. When both are present the query parameter wins. Repeats with the same key return the same `source_event_id` (resolve the run via `source_event_id`) without enqueuing a duplicate.
-	XIdempotencyKey *string `json:"X-Idempotency-Key,omitempty"`
-
-	// XMobiusSignature HMAC-SHA256 signature of the raw request body under the trigger's signing secret, formatted as `sha256=<hex>`. Required only when the HTTP trigger has a signing secret configured; unsigned deliveries are accepted for triggers without one.
-	XMobiusSignature *string `json:"X-Mobius-Signature,omitempty"`
-}
-
 // ListTurnMessagesParams defines parameters for ListTurnMessages.
 type ListTurnMessagesParams struct {
 	// AfterSequence Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this value. Pass the `next_sequence` from the previous response to fetch the next page.
@@ -11704,27 +8853,6 @@ type ListTurnMessagesParams struct {
 
 	// Include Set to `context` to include caller-supplied runtime context rows whose model-visible names begin with `app-`. Platform-owned runtime context remains hidden.
 	Include *ContextIncludeParam `form:"include,omitempty" json:"include,omitempty"`
-}
-
-// ListWebhooksParams defines parameters for ListWebhooks.
-type ListWebhooksParams struct {
-	// Enabled Filter by enabled/disabled state.
-	Enabled *bool `form:"enabled,omitempty" json:"enabled,omitempty"`
-
-	// Cursor Opaque pagination cursor returned from the previous response.
-	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
-
-	// Limit Maximum number of results to return per page.
-	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
-}
-
-// ListWebhookDeliveriesParams defines parameters for ListWebhookDeliveries.
-type ListWebhookDeliveriesParams struct {
-	// Cursor Opaque pagination cursor returned from the previous response.
-	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
-
-	// Limit Maximum number of results to return per page.
-	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
 // CreateActionJSONRequestBody defines body for CreateAction for application/json ContentType.
@@ -11775,12 +8903,6 @@ type ApplyBlueprintJSONRequestBody = ApplyBlueprintRequest
 // SetBlueprintProtectionJSONRequestBody defines body for SetBlueprintProtection for application/json ContentType.
 type SetBlueprintProtectionJSONRequestBody = SetBlueprintProtectionRequest
 
-// CreateEnvironmentJSONRequestBody defines body for CreateEnvironment for application/json ContentType.
-type CreateEnvironmentJSONRequestBody = CreateEnvironmentRequest
-
-// UpdateEnvironmentJSONRequestBody defines body for UpdateEnvironment for application/json ContentType.
-type UpdateEnvironmentJSONRequestBody = UpdateEnvironmentRequest
-
 // CreateInteractionJSONRequestBody defines body for CreateInteraction for application/json ContentType.
 type CreateInteractionJSONRequestBody = CreateInteractionRequest
 
@@ -11792,15 +8914,6 @@ type RespondToInteractionJSONRequestBody = RespondToInteractionRequest
 
 // ReviewInteractionJSONRequestBody defines body for ReviewInteraction for application/json ContentType.
 type ReviewInteractionJSONRequestBody = ReviewInteractionRequest
-
-// CreateLoopJSONRequestBody defines body for CreateLoop for application/json ContentType.
-type CreateLoopJSONRequestBody = CreateLoopRequest
-
-// UpdateLoopJSONRequestBody defines body for UpdateLoop for application/json ContentType.
-type UpdateLoopJSONRequestBody = UpdateLoopRequest
-
-// StartRunJSONRequestBody defines body for StartRun for application/json ContentType.
-type StartRunJSONRequestBody = StartLoopRunRequest
 
 // ReplaceOAuthReturnOriginsJSONRequestBody defines body for ReplaceOAuthReturnOrigins for application/json ContentType.
 type ReplaceOAuthReturnOriginsJSONRequestBody = PutOAuthReturnOriginsRequest
@@ -11823,17 +8936,11 @@ type CreateRoleJSONRequestBody = CreateRoleRequest
 // UpdateRoleJSONRequestBody defines body for UpdateRole for application/json ContentType.
 type UpdateRoleJSONRequestBody = UpdateRoleRequest
 
-// CancelRunJSONRequestBody defines body for CancelRun for application/json ContentType.
-type CancelRunJSONRequestBody = CancelLoopRunRequest
+// CreateRoutineJSONRequestBody defines body for CreateRoutine for application/json ContentType.
+type CreateRoutineJSONRequestBody = RoutineCreateRequest
 
-// ResumeRunJSONRequestBody defines body for ResumeRun for application/json ContentType.
-type ResumeRunJSONRequestBody = RecoverLoopRunRequest
-
-// RetryRunJSONRequestBody defines body for RetryRun for application/json ContentType.
-type RetryRunJSONRequestBody = RecoverLoopRunRequest
-
-// SignalRunJSONRequestBody defines body for SignalRun for application/json ContentType.
-type SignalRunJSONRequestBody = SignalLoopRunRequest
+// UpdateRoutineJSONRequestBody defines body for UpdateRoutine for application/json ContentType.
+type UpdateRoutineJSONRequestBody = RoutineUpdateRequest
 
 // CreateSessionJSONRequestBody defines body for CreateSession for application/json ContentType.
 type CreateSessionJSONRequestBody = CreateSessionRequest
@@ -11885,18 +8992,6 @@ type SearchTableRowsJSONRequestBody = SearchRowsRequest
 
 // UpsertTableRowJSONRequestBody defines body for UpsertTableRow for application/json ContentType.
 type UpsertTableRowJSONRequestBody = UpsertRowRequest
-
-// DeliverHTTPTriggerJSONRequestBody defines body for DeliverHTTPTrigger for application/json ContentType.
-type DeliverHTTPTriggerJSONRequestBody = HTTPTriggerDeliveryRequest
-
-// CreateWebhookJSONRequestBody defines body for CreateWebhook for application/json ContentType.
-type CreateWebhookJSONRequestBody = CreateWebhookRequest
-
-// UpdateWebhookJSONRequestBody defines body for UpdateWebhook for application/json ContentType.
-type UpdateWebhookJSONRequestBody = UpdateWebhookRequest
-
-// PingWebhookJSONRequestBody defines body for PingWebhook for application/json ContentType.
-type PingWebhookJSONRequestBody = PingWebhookRequest
 
 // Getter for additional properties for ActionAnnotations. Returns the specified
 // element and whether it was found
@@ -11984,496 +9079,6 @@ func (a ActionAnnotations) MarshalJSON() ([]byte, error) {
 		object["read_only"], err = json.Marshal(a.ReadOnly)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'read_only': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for ActionCalledPayload. Returns the specified
-// element and whether it was found
-func (a ActionCalledPayload) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for ActionCalledPayload
-func (a *ActionCalledPayload) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for ActionCalledPayload to handle AdditionalProperties
-func (a *ActionCalledPayload) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["action"]; found {
-		err = json.Unmarshal(raw, &a.Action)
-		if err != nil {
-			return fmt.Errorf("error reading 'action': %w", err)
-		}
-		delete(object, "action")
-	}
-
-	if raw, found := object["parameters"]; found {
-		err = json.Unmarshal(raw, &a.Parameters)
-		if err != nil {
-			return fmt.Errorf("error reading 'parameters': %w", err)
-		}
-		delete(object, "parameters")
-	}
-
-	if raw, found := object["step"]; found {
-		err = json.Unmarshal(raw, &a.Step)
-		if err != nil {
-			return fmt.Errorf("error reading 'step': %w", err)
-		}
-		delete(object, "step")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for ActionCalledPayload to handle AdditionalProperties
-func (a ActionCalledPayload) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Action != nil {
-		object["action"], err = json.Marshal(a.Action)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'action': %w", err)
-		}
-	}
-
-	if a.Parameters != nil {
-		object["parameters"], err = json.Marshal(a.Parameters)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'parameters': %w", err)
-		}
-	}
-
-	if a.Step != nil {
-		object["step"], err = json.Marshal(a.Step)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'step': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for ActionCompletedPayload. Returns the specified
-// element and whether it was found
-func (a ActionCompletedPayload) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for ActionCompletedPayload
-func (a *ActionCompletedPayload) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for ActionCompletedPayload to handle AdditionalProperties
-func (a *ActionCompletedPayload) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["action"]; found {
-		err = json.Unmarshal(raw, &a.Action)
-		if err != nil {
-			return fmt.Errorf("error reading 'action': %w", err)
-		}
-		delete(object, "action")
-	}
-
-	if raw, found := object["result"]; found {
-		err = json.Unmarshal(raw, &a.Result)
-		if err != nil {
-			return fmt.Errorf("error reading 'result': %w", err)
-		}
-		delete(object, "result")
-	}
-
-	if raw, found := object["step"]; found {
-		err = json.Unmarshal(raw, &a.Step)
-		if err != nil {
-			return fmt.Errorf("error reading 'step': %w", err)
-		}
-		delete(object, "step")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for ActionCompletedPayload to handle AdditionalProperties
-func (a ActionCompletedPayload) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Action != nil {
-		object["action"], err = json.Marshal(a.Action)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'action': %w", err)
-		}
-	}
-
-	if a.Result != nil {
-		object["result"], err = json.Marshal(a.Result)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'result': %w", err)
-		}
-	}
-
-	if a.Step != nil {
-		object["step"], err = json.Marshal(a.Step)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'step': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for ActionFailedPayload. Returns the specified
-// element and whether it was found
-func (a ActionFailedPayload) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for ActionFailedPayload
-func (a *ActionFailedPayload) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for ActionFailedPayload to handle AdditionalProperties
-func (a *ActionFailedPayload) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["action"]; found {
-		err = json.Unmarshal(raw, &a.Action)
-		if err != nil {
-			return fmt.Errorf("error reading 'action': %w", err)
-		}
-		delete(object, "action")
-	}
-
-	if raw, found := object["error"]; found {
-		err = json.Unmarshal(raw, &a.Error)
-		if err != nil {
-			return fmt.Errorf("error reading 'error': %w", err)
-		}
-		delete(object, "error")
-	}
-
-	if raw, found := object["error_type"]; found {
-		err = json.Unmarshal(raw, &a.ErrorType)
-		if err != nil {
-			return fmt.Errorf("error reading 'error_type': %w", err)
-		}
-		delete(object, "error_type")
-	}
-
-	if raw, found := object["step"]; found {
-		err = json.Unmarshal(raw, &a.Step)
-		if err != nil {
-			return fmt.Errorf("error reading 'step': %w", err)
-		}
-		delete(object, "step")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for ActionFailedPayload to handle AdditionalProperties
-func (a ActionFailedPayload) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Action != nil {
-		object["action"], err = json.Marshal(a.Action)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'action': %w", err)
-		}
-	}
-
-	if a.Error != nil {
-		object["error"], err = json.Marshal(a.Error)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'error': %w", err)
-		}
-	}
-
-	if a.ErrorType != nil {
-		object["error_type"], err = json.Marshal(a.ErrorType)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'error_type': %w", err)
-		}
-	}
-
-	if a.Step != nil {
-		object["step"], err = json.Marshal(a.Step)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'step': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for ActionResultPayload. Returns the specified
-// element and whether it was found
-func (a ActionResultPayload) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for ActionResultPayload
-func (a *ActionResultPayload) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for ActionResultPayload to handle AdditionalProperties
-func (a *ActionResultPayload) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["action"]; found {
-		err = json.Unmarshal(raw, &a.Action)
-		if err != nil {
-			return fmt.Errorf("error reading 'action': %w", err)
-		}
-		delete(object, "action")
-	}
-
-	if raw, found := object["result"]; found {
-		err = json.Unmarshal(raw, &a.Result)
-		if err != nil {
-			return fmt.Errorf("error reading 'result': %w", err)
-		}
-		delete(object, "result")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for ActionResultPayload to handle AdditionalProperties
-func (a ActionResultPayload) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Action != nil {
-		object["action"], err = json.Marshal(a.Action)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'action': %w", err)
-		}
-	}
-
-	if a.Result != nil {
-		object["result"], err = json.Marshal(a.Result)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'result': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for ActionRetriedPayload. Returns the specified
-// element and whether it was found
-func (a ActionRetriedPayload) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for ActionRetriedPayload
-func (a *ActionRetriedPayload) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for ActionRetriedPayload to handle AdditionalProperties
-func (a *ActionRetriedPayload) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["action"]; found {
-		err = json.Unmarshal(raw, &a.Action)
-		if err != nil {
-			return fmt.Errorf("error reading 'action': %w", err)
-		}
-		delete(object, "action")
-	}
-
-	if raw, found := object["attempt"]; found {
-		err = json.Unmarshal(raw, &a.Attempt)
-		if err != nil {
-			return fmt.Errorf("error reading 'attempt': %w", err)
-		}
-		delete(object, "attempt")
-	}
-
-	if raw, found := object["max_attempts"]; found {
-		err = json.Unmarshal(raw, &a.MaxAttempts)
-		if err != nil {
-			return fmt.Errorf("error reading 'max_attempts': %w", err)
-		}
-		delete(object, "max_attempts")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for ActionRetriedPayload to handle AdditionalProperties
-func (a ActionRetriedPayload) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Action != nil {
-		object["action"], err = json.Marshal(a.Action)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'action': %w", err)
-		}
-	}
-
-	if a.Attempt != nil {
-		object["attempt"], err = json.Marshal(a.Attempt)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'attempt': %w", err)
-		}
-	}
-
-	if a.MaxAttempts != nil {
-		object["max_attempts"], err = json.Marshal(a.MaxAttempts)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'max_attempts': %w", err)
 		}
 	}
 
@@ -12739,345 +9344,6 @@ func (a AgentTurnUsage) MarshalJSON() ([]byte, error) {
 		object["reasoning_tokens"], err = json.Marshal(a.ReasoningTokens)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'reasoning_tokens': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for ArtifactCreatedPayload. Returns the specified
-// element and whether it was found
-func (a ArtifactCreatedPayload) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for ArtifactCreatedPayload
-func (a *ArtifactCreatedPayload) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for ArtifactCreatedPayload to handle AdditionalProperties
-func (a *ArtifactCreatedPayload) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["artifact_id"]; found {
-		err = json.Unmarshal(raw, &a.ArtifactId)
-		if err != nil {
-			return fmt.Errorf("error reading 'artifact_id': %w", err)
-		}
-		delete(object, "artifact_id")
-	}
-
-	if raw, found := object["content_type"]; found {
-		err = json.Unmarshal(raw, &a.ContentType)
-		if err != nil {
-			return fmt.Errorf("error reading 'content_type': %w", err)
-		}
-		delete(object, "content_type")
-	}
-
-	if raw, found := object["name"]; found {
-		err = json.Unmarshal(raw, &a.Name)
-		if err != nil {
-			return fmt.Errorf("error reading 'name': %w", err)
-		}
-		delete(object, "name")
-	}
-
-	if raw, found := object["step"]; found {
-		err = json.Unmarshal(raw, &a.Step)
-		if err != nil {
-			return fmt.Errorf("error reading 'step': %w", err)
-		}
-		delete(object, "step")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for ArtifactCreatedPayload to handle AdditionalProperties
-func (a ArtifactCreatedPayload) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.ArtifactId != nil {
-		object["artifact_id"], err = json.Marshal(a.ArtifactId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'artifact_id': %w", err)
-		}
-	}
-
-	if a.ContentType != nil {
-		object["content_type"], err = json.Marshal(a.ContentType)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'content_type': %w", err)
-		}
-	}
-
-	if a.Name != nil {
-		object["name"], err = json.Marshal(a.Name)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'name': %w", err)
-		}
-	}
-
-	if a.Step != nil {
-		object["step"], err = json.Marshal(a.Step)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'step': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for BudgetExceededPayload. Returns the specified
-// element and whether it was found
-func (a BudgetExceededPayload) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for BudgetExceededPayload
-func (a *BudgetExceededPayload) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for BudgetExceededPayload to handle AdditionalProperties
-func (a *BudgetExceededPayload) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["credit_budget"]; found {
-		err = json.Unmarshal(raw, &a.CreditBudget)
-		if err != nil {
-			return fmt.Errorf("error reading 'credit_budget': %w", err)
-		}
-		delete(object, "credit_budget")
-	}
-
-	if raw, found := object["credit_spent"]; found {
-		err = json.Unmarshal(raw, &a.CreditSpent)
-		if err != nil {
-			return fmt.Errorf("error reading 'credit_spent': %w", err)
-		}
-		delete(object, "credit_spent")
-	}
-
-	if raw, found := object["percent_used"]; found {
-		err = json.Unmarshal(raw, &a.PercentUsed)
-		if err != nil {
-			return fmt.Errorf("error reading 'percent_used': %w", err)
-		}
-		delete(object, "percent_used")
-	}
-
-	if raw, found := object["step"]; found {
-		err = json.Unmarshal(raw, &a.Step)
-		if err != nil {
-			return fmt.Errorf("error reading 'step': %w", err)
-		}
-		delete(object, "step")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for BudgetExceededPayload to handle AdditionalProperties
-func (a BudgetExceededPayload) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.CreditBudget != nil {
-		object["credit_budget"], err = json.Marshal(a.CreditBudget)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'credit_budget': %w", err)
-		}
-	}
-
-	if a.CreditSpent != nil {
-		object["credit_spent"], err = json.Marshal(a.CreditSpent)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'credit_spent': %w", err)
-		}
-	}
-
-	if a.PercentUsed != nil {
-		object["percent_used"], err = json.Marshal(a.PercentUsed)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'percent_used': %w", err)
-		}
-	}
-
-	if a.Step != nil {
-		object["step"], err = json.Marshal(a.Step)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'step': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for CheckVerdictPayload. Returns the specified
-// element and whether it was found
-func (a CheckVerdictPayload) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for CheckVerdictPayload
-func (a *CheckVerdictPayload) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for CheckVerdictPayload to handle AdditionalProperties
-func (a *CheckVerdictPayload) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["failed"]; found {
-		err = json.Unmarshal(raw, &a.Failed)
-		if err != nil {
-			return fmt.Errorf("error reading 'failed': %w", err)
-		}
-		delete(object, "failed")
-	}
-
-	if raw, found := object["on_fail"]; found {
-		err = json.Unmarshal(raw, &a.OnFail)
-		if err != nil {
-			return fmt.Errorf("error reading 'on_fail': %w", err)
-		}
-		delete(object, "on_fail")
-	}
-
-	if raw, found := object["step"]; found {
-		err = json.Unmarshal(raw, &a.Step)
-		if err != nil {
-			return fmt.Errorf("error reading 'step': %w", err)
-		}
-		delete(object, "step")
-	}
-
-	if raw, found := object["verdict"]; found {
-		err = json.Unmarshal(raw, &a.Verdict)
-		if err != nil {
-			return fmt.Errorf("error reading 'verdict': %w", err)
-		}
-		delete(object, "verdict")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for CheckVerdictPayload to handle AdditionalProperties
-func (a CheckVerdictPayload) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Failed != nil {
-		object["failed"], err = json.Marshal(a.Failed)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'failed': %w", err)
-		}
-	}
-
-	if a.OnFail != nil {
-		object["on_fail"], err = json.Marshal(a.OnFail)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'on_fail': %w", err)
-		}
-	}
-
-	if a.Step != nil {
-		object["step"], err = json.Marshal(a.Step)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'step': %w", err)
-		}
-	}
-
-	if a.Verdict != nil {
-		object["verdict"], err = json.Marshal(a.Verdict)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'verdict': %w", err)
 		}
 	}
 
@@ -13615,14 +9881,6 @@ func (a *GenerationDeltaFrame) UnmarshalJSON(b []byte) error {
 		delete(object, "model")
 	}
 
-	if raw, found := object["run_id"]; found {
-		err = json.Unmarshal(raw, &a.RunId)
-		if err != nil {
-			return fmt.Errorf("error reading 'run_id': %w", err)
-		}
-		delete(object, "run_id")
-	}
-
 	if raw, found := object["session_id"]; found {
 		err = json.Unmarshal(raw, &a.SessionId)
 		if err != nil {
@@ -13721,13 +9979,6 @@ func (a GenerationDeltaFrame) MarshalJSON() ([]byte, error) {
 		}
 	}
 
-	if a.RunId != nil {
-		object["run_id"], err = json.Marshal(a.RunId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'run_id': %w", err)
-		}
-	}
-
 	if a.SessionId != nil {
 		object["session_id"], err = json.Marshal(a.SessionId)
 		if err != nil {
@@ -13753,217 +10004,6 @@ func (a GenerationDeltaFrame) MarshalJSON() ([]byte, error) {
 		object["worker_id"], err = json.Marshal(a.WorkerId)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'worker_id': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for InteractionRespondedPayload. Returns the specified
-// element and whether it was found
-func (a InteractionRespondedPayload) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for InteractionRespondedPayload
-func (a *InteractionRespondedPayload) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for InteractionRespondedPayload to handle AdditionalProperties
-func (a *InteractionRespondedPayload) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["interaction_id"]; found {
-		err = json.Unmarshal(raw, &a.InteractionId)
-		if err != nil {
-			return fmt.Errorf("error reading 'interaction_id': %w", err)
-		}
-		delete(object, "interaction_id")
-	}
-
-	if raw, found := object["responder"]; found {
-		err = json.Unmarshal(raw, &a.Responder)
-		if err != nil {
-			return fmt.Errorf("error reading 'responder': %w", err)
-		}
-		delete(object, "responder")
-	}
-
-	if raw, found := object["response"]; found {
-		err = json.Unmarshal(raw, &a.Response)
-		if err != nil {
-			return fmt.Errorf("error reading 'response': %w", err)
-		}
-		delete(object, "response")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for InteractionRespondedPayload to handle AdditionalProperties
-func (a InteractionRespondedPayload) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.InteractionId != nil {
-		object["interaction_id"], err = json.Marshal(a.InteractionId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'interaction_id': %w", err)
-		}
-	}
-
-	if a.Responder != nil {
-		object["responder"], err = json.Marshal(a.Responder)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'responder': %w", err)
-		}
-	}
-
-	if a.Response != nil {
-		object["response"], err = json.Marshal(a.Response)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'response': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for LimitReachedPayload. Returns the specified
-// element and whether it was found
-func (a LimitReachedPayload) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for LimitReachedPayload
-func (a *LimitReachedPayload) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for LimitReachedPayload to handle AdditionalProperties
-func (a *LimitReachedPayload) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["limit"]; found {
-		err = json.Unmarshal(raw, &a.Limit)
-		if err != nil {
-			return fmt.Errorf("error reading 'limit': %w", err)
-		}
-		delete(object, "limit")
-	}
-
-	if raw, found := object["limit_kind"]; found {
-		err = json.Unmarshal(raw, &a.LimitKind)
-		if err != nil {
-			return fmt.Errorf("error reading 'limit_kind': %w", err)
-		}
-		delete(object, "limit_kind")
-	}
-
-	if raw, found := object["step"]; found {
-		err = json.Unmarshal(raw, &a.Step)
-		if err != nil {
-			return fmt.Errorf("error reading 'step': %w", err)
-		}
-		delete(object, "step")
-	}
-
-	if raw, found := object["used"]; found {
-		err = json.Unmarshal(raw, &a.Used)
-		if err != nil {
-			return fmt.Errorf("error reading 'used': %w", err)
-		}
-		delete(object, "used")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for LimitReachedPayload to handle AdditionalProperties
-func (a LimitReachedPayload) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Limit != nil {
-		object["limit"], err = json.Marshal(a.Limit)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'limit': %w", err)
-		}
-	}
-
-	if a.LimitKind != nil {
-		object["limit_kind"], err = json.Marshal(a.LimitKind)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'limit_kind': %w", err)
-		}
-	}
-
-	if a.Step != nil {
-		object["step"], err = json.Marshal(a.Step)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'step': %w", err)
-		}
-	}
-
-	if a.Used != nil {
-		object["used"], err = json.Marshal(a.Used)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'used': %w", err)
 		}
 	}
 
@@ -14070,579 +10110,6 @@ func (a NudgeEventPayload) MarshalJSON() ([]byte, error) {
 	object["turn_id"], err = json.Marshal(a.TurnId)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'turn_id': %w", err)
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for ProgressStalledPayload. Returns the specified
-// element and whether it was found
-func (a ProgressStalledPayload) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for ProgressStalledPayload
-func (a *ProgressStalledPayload) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for ProgressStalledPayload to handle AdditionalProperties
-func (a *ProgressStalledPayload) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["duplicate_calls"]; found {
-		err = json.Unmarshal(raw, &a.DuplicateCalls)
-		if err != nil {
-			return fmt.Errorf("error reading 'duplicate_calls': %w", err)
-		}
-		delete(object, "duplicate_calls")
-	}
-
-	if raw, found := object["limit"]; found {
-		err = json.Unmarshal(raw, &a.Limit)
-		if err != nil {
-			return fmt.Errorf("error reading 'limit': %w", err)
-		}
-		delete(object, "limit")
-	}
-
-	if raw, found := object["step"]; found {
-		err = json.Unmarshal(raw, &a.Step)
-		if err != nil {
-			return fmt.Errorf("error reading 'step': %w", err)
-		}
-		delete(object, "step")
-	}
-
-	if raw, found := object["tool"]; found {
-		err = json.Unmarshal(raw, &a.Tool)
-		if err != nil {
-			return fmt.Errorf("error reading 'tool': %w", err)
-		}
-		delete(object, "tool")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for ProgressStalledPayload to handle AdditionalProperties
-func (a ProgressStalledPayload) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.DuplicateCalls != nil {
-		object["duplicate_calls"], err = json.Marshal(a.DuplicateCalls)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'duplicate_calls': %w", err)
-		}
-	}
-
-	if a.Limit != nil {
-		object["limit"], err = json.Marshal(a.Limit)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'limit': %w", err)
-		}
-	}
-
-	if a.Step != nil {
-		object["step"], err = json.Marshal(a.Step)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'step': %w", err)
-		}
-	}
-
-	if a.Tool != nil {
-		object["tool"], err = json.Marshal(a.Tool)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'tool': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for RunCancelledPayload. Returns the specified
-// element and whether it was found
-func (a RunCancelledPayload) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for RunCancelledPayload
-func (a *RunCancelledPayload) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for RunCancelledPayload to handle AdditionalProperties
-func (a *RunCancelledPayload) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["reason"]; found {
-		err = json.Unmarshal(raw, &a.Reason)
-		if err != nil {
-			return fmt.Errorf("error reading 'reason': %w", err)
-		}
-		delete(object, "reason")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for RunCancelledPayload to handle AdditionalProperties
-func (a RunCancelledPayload) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Reason != nil {
-		object["reason"], err = json.Marshal(a.Reason)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'reason': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for RunCompletedPayload. Returns the specified
-// element and whether it was found
-func (a RunCompletedPayload) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for RunCompletedPayload
-func (a *RunCompletedPayload) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for RunCompletedPayload to handle AdditionalProperties
-func (a *RunCompletedPayload) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["output"]; found {
-		err = json.Unmarshal(raw, &a.Output)
-		if err != nil {
-			return fmt.Errorf("error reading 'output': %w", err)
-		}
-		delete(object, "output")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for RunCompletedPayload to handle AdditionalProperties
-func (a RunCompletedPayload) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Output != nil {
-		object["output"], err = json.Marshal(a.Output)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'output': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for RunFailedPayload. Returns the specified
-// element and whether it was found
-func (a RunFailedPayload) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for RunFailedPayload
-func (a *RunFailedPayload) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for RunFailedPayload to handle AdditionalProperties
-func (a *RunFailedPayload) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["error"]; found {
-		err = json.Unmarshal(raw, &a.Error)
-		if err != nil {
-			return fmt.Errorf("error reading 'error': %w", err)
-		}
-		delete(object, "error")
-	}
-
-	if raw, found := object["error_type"]; found {
-		err = json.Unmarshal(raw, &a.ErrorType)
-		if err != nil {
-			return fmt.Errorf("error reading 'error_type': %w", err)
-		}
-		delete(object, "error_type")
-	}
-
-	if raw, found := object["step"]; found {
-		err = json.Unmarshal(raw, &a.Step)
-		if err != nil {
-			return fmt.Errorf("error reading 'step': %w", err)
-		}
-		delete(object, "step")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for RunFailedPayload to handle AdditionalProperties
-func (a RunFailedPayload) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Error != nil {
-		object["error"], err = json.Marshal(a.Error)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'error': %w", err)
-		}
-	}
-
-	if a.ErrorType != nil {
-		object["error_type"], err = json.Marshal(a.ErrorType)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'error_type': %w", err)
-		}
-	}
-
-	if a.Step != nil {
-		object["step"], err = json.Marshal(a.Step)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'step': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for RunResumedPayload. Returns the specified
-// element and whether it was found
-func (a RunResumedPayload) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for RunResumedPayload
-func (a *RunResumedPayload) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for RunResumedPayload to handle AdditionalProperties
-func (a *RunResumedPayload) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["attempt"]; found {
-		err = json.Unmarshal(raw, &a.Attempt)
-		if err != nil {
-			return fmt.Errorf("error reading 'attempt': %w", err)
-		}
-		delete(object, "attempt")
-	}
-
-	if raw, found := object["reason"]; found {
-		err = json.Unmarshal(raw, &a.Reason)
-		if err != nil {
-			return fmt.Errorf("error reading 'reason': %w", err)
-		}
-		delete(object, "reason")
-	}
-
-	if raw, found := object["recovery_action"]; found {
-		err = json.Unmarshal(raw, &a.RecoveryAction)
-		if err != nil {
-			return fmt.Errorf("error reading 'recovery_action': %w", err)
-		}
-		delete(object, "recovery_action")
-	}
-
-	if raw, found := object["step"]; found {
-		err = json.Unmarshal(raw, &a.Step)
-		if err != nil {
-			return fmt.Errorf("error reading 'step': %w", err)
-		}
-		delete(object, "step")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for RunResumedPayload to handle AdditionalProperties
-func (a RunResumedPayload) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Attempt != nil {
-		object["attempt"], err = json.Marshal(a.Attempt)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'attempt': %w", err)
-		}
-	}
-
-	if a.Reason != nil {
-		object["reason"], err = json.Marshal(a.Reason)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'reason': %w", err)
-		}
-	}
-
-	if a.RecoveryAction != nil {
-		object["recovery_action"], err = json.Marshal(a.RecoveryAction)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'recovery_action': %w", err)
-		}
-	}
-
-	if a.Step != nil {
-		object["step"], err = json.Marshal(a.Step)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'step': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for RunStartedPayload. Returns the specified
-// element and whether it was found
-func (a RunStartedPayload) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for RunStartedPayload
-func (a *RunStartedPayload) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for RunStartedPayload to handle AdditionalProperties
-func (a *RunStartedPayload) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["loop_id"]; found {
-		err = json.Unmarshal(raw, &a.LoopId)
-		if err != nil {
-			return fmt.Errorf("error reading 'loop_id': %w", err)
-		}
-		delete(object, "loop_id")
-	}
-
-	if raw, found := object["loop_version_id"]; found {
-		err = json.Unmarshal(raw, &a.LoopVersionId)
-		if err != nil {
-			return fmt.Errorf("error reading 'loop_version_id': %w", err)
-		}
-		delete(object, "loop_version_id")
-	}
-
-	if raw, found := object["source_event_id"]; found {
-		err = json.Unmarshal(raw, &a.SourceEventId)
-		if err != nil {
-			return fmt.Errorf("error reading 'source_event_id': %w", err)
-		}
-		delete(object, "source_event_id")
-	}
-
-	if raw, found := object["trigger_id"]; found {
-		err = json.Unmarshal(raw, &a.TriggerId)
-		if err != nil {
-			return fmt.Errorf("error reading 'trigger_id': %w", err)
-		}
-		delete(object, "trigger_id")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for RunStartedPayload to handle AdditionalProperties
-func (a RunStartedPayload) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.LoopId != nil {
-		object["loop_id"], err = json.Marshal(a.LoopId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'loop_id': %w", err)
-		}
-	}
-
-	if a.LoopVersionId != nil {
-		object["loop_version_id"], err = json.Marshal(a.LoopVersionId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'loop_version_id': %w", err)
-		}
-	}
-
-	if a.SourceEventId != nil {
-		object["source_event_id"], err = json.Marshal(a.SourceEventId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'source_event_id': %w", err)
-		}
-	}
-
-	if a.TriggerId != nil {
-		object["trigger_id"], err = json.Marshal(a.TriggerId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'trigger_id': %w", err)
-		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -15313,14 +10780,6 @@ func (a *SessionMessagePreviewFrame) UnmarshalJSON(b []byte) error {
 		delete(object, "role")
 	}
 
-	if raw, found := object["run_id"]; found {
-		err = json.Unmarshal(raw, &a.RunId)
-		if err != nil {
-			return fmt.Errorf("error reading 'run_id': %w", err)
-		}
-		delete(object, "run_id")
-	}
-
 	if raw, found := object["session_id"]; found {
 		err = json.Unmarshal(raw, &a.SessionId)
 		if err != nil {
@@ -15409,13 +10868,6 @@ func (a SessionMessagePreviewFrame) MarshalJSON() ([]byte, error) {
 	object["role"], err = json.Marshal(a.Role)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'role': %w", err)
-	}
-
-	if a.RunId != nil {
-		object["run_id"], err = json.Marshal(a.RunId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'run_id': %w", err)
-		}
 	}
 
 	object["session_id"], err = json.Marshal(a.SessionId)
@@ -16098,639 +11550,6 @@ func (a SessionUserMessagePayload) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
-// Getter for additional properties for StepCompletedPayload. Returns the specified
-// element and whether it was found
-func (a StepCompletedPayload) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for StepCompletedPayload
-func (a *StepCompletedPayload) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for StepCompletedPayload to handle AdditionalProperties
-func (a *StepCompletedPayload) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["output"]; found {
-		err = json.Unmarshal(raw, &a.Output)
-		if err != nil {
-			return fmt.Errorf("error reading 'output': %w", err)
-		}
-		delete(object, "output")
-	}
-
-	if raw, found := object["step"]; found {
-		err = json.Unmarshal(raw, &a.Step)
-		if err != nil {
-			return fmt.Errorf("error reading 'step': %w", err)
-		}
-		delete(object, "step")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for StepCompletedPayload to handle AdditionalProperties
-func (a StepCompletedPayload) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Output != nil {
-		object["output"], err = json.Marshal(a.Output)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'output': %w", err)
-		}
-	}
-
-	if a.Step != nil {
-		object["step"], err = json.Marshal(a.Step)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'step': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for StepFailedPayload. Returns the specified
-// element and whether it was found
-func (a StepFailedPayload) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for StepFailedPayload
-func (a *StepFailedPayload) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for StepFailedPayload to handle AdditionalProperties
-func (a *StepFailedPayload) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["error"]; found {
-		err = json.Unmarshal(raw, &a.Error)
-		if err != nil {
-			return fmt.Errorf("error reading 'error': %w", err)
-		}
-		delete(object, "error")
-	}
-
-	if raw, found := object["error_type"]; found {
-		err = json.Unmarshal(raw, &a.ErrorType)
-		if err != nil {
-			return fmt.Errorf("error reading 'error_type': %w", err)
-		}
-		delete(object, "error_type")
-	}
-
-	if raw, found := object["step"]; found {
-		err = json.Unmarshal(raw, &a.Step)
-		if err != nil {
-			return fmt.Errorf("error reading 'step': %w", err)
-		}
-		delete(object, "step")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for StepFailedPayload to handle AdditionalProperties
-func (a StepFailedPayload) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Error != nil {
-		object["error"], err = json.Marshal(a.Error)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'error': %w", err)
-		}
-	}
-
-	if a.ErrorType != nil {
-		object["error_type"], err = json.Marshal(a.ErrorType)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'error_type': %w", err)
-		}
-	}
-
-	if a.Step != nil {
-		object["step"], err = json.Marshal(a.Step)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'step': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for StepResumedPayload. Returns the specified
-// element and whether it was found
-func (a StepResumedPayload) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for StepResumedPayload
-func (a *StepResumedPayload) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for StepResumedPayload to handle AdditionalProperties
-func (a *StepResumedPayload) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["kind"]; found {
-		err = json.Unmarshal(raw, &a.Kind)
-		if err != nil {
-			return fmt.Errorf("error reading 'kind': %w", err)
-		}
-		delete(object, "kind")
-	}
-
-	if raw, found := object["step"]; found {
-		err = json.Unmarshal(raw, &a.Step)
-		if err != nil {
-			return fmt.Errorf("error reading 'step': %w", err)
-		}
-		delete(object, "step")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for StepResumedPayload to handle AdditionalProperties
-func (a StepResumedPayload) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Kind != nil {
-		object["kind"], err = json.Marshal(a.Kind)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'kind': %w", err)
-		}
-	}
-
-	if a.Step != nil {
-		object["step"], err = json.Marshal(a.Step)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'step': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for StepRetriedPayload. Returns the specified
-// element and whether it was found
-func (a StepRetriedPayload) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for StepRetriedPayload
-func (a *StepRetriedPayload) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for StepRetriedPayload to handle AdditionalProperties
-func (a *StepRetriedPayload) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["attempt"]; found {
-		err = json.Unmarshal(raw, &a.Attempt)
-		if err != nil {
-			return fmt.Errorf("error reading 'attempt': %w", err)
-		}
-		delete(object, "attempt")
-	}
-
-	if raw, found := object["error"]; found {
-		err = json.Unmarshal(raw, &a.Error)
-		if err != nil {
-			return fmt.Errorf("error reading 'error': %w", err)
-		}
-		delete(object, "error")
-	}
-
-	if raw, found := object["error_type"]; found {
-		err = json.Unmarshal(raw, &a.ErrorType)
-		if err != nil {
-			return fmt.Errorf("error reading 'error_type': %w", err)
-		}
-		delete(object, "error_type")
-	}
-
-	if raw, found := object["kind"]; found {
-		err = json.Unmarshal(raw, &a.Kind)
-		if err != nil {
-			return fmt.Errorf("error reading 'kind': %w", err)
-		}
-		delete(object, "kind")
-	}
-
-	if raw, found := object["max_attempts"]; found {
-		err = json.Unmarshal(raw, &a.MaxAttempts)
-		if err != nil {
-			return fmt.Errorf("error reading 'max_attempts': %w", err)
-		}
-		delete(object, "max_attempts")
-	}
-
-	if raw, found := object["recovery_action"]; found {
-		err = json.Unmarshal(raw, &a.RecoveryAction)
-		if err != nil {
-			return fmt.Errorf("error reading 'recovery_action': %w", err)
-		}
-		delete(object, "recovery_action")
-	}
-
-	if raw, found := object["retry_scope"]; found {
-		err = json.Unmarshal(raw, &a.RetryScope)
-		if err != nil {
-			return fmt.Errorf("error reading 'retry_scope': %w", err)
-		}
-		delete(object, "retry_scope")
-	}
-
-	if raw, found := object["step"]; found {
-		err = json.Unmarshal(raw, &a.Step)
-		if err != nil {
-			return fmt.Errorf("error reading 'step': %w", err)
-		}
-		delete(object, "step")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for StepRetriedPayload to handle AdditionalProperties
-func (a StepRetriedPayload) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Attempt != nil {
-		object["attempt"], err = json.Marshal(a.Attempt)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'attempt': %w", err)
-		}
-	}
-
-	if a.Error != nil {
-		object["error"], err = json.Marshal(a.Error)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'error': %w", err)
-		}
-	}
-
-	if a.ErrorType != nil {
-		object["error_type"], err = json.Marshal(a.ErrorType)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'error_type': %w", err)
-		}
-	}
-
-	if a.Kind != nil {
-		object["kind"], err = json.Marshal(a.Kind)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'kind': %w", err)
-		}
-	}
-
-	if a.MaxAttempts != nil {
-		object["max_attempts"], err = json.Marshal(a.MaxAttempts)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'max_attempts': %w", err)
-		}
-	}
-
-	if a.RecoveryAction != nil {
-		object["recovery_action"], err = json.Marshal(a.RecoveryAction)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'recovery_action': %w", err)
-		}
-	}
-
-	if a.RetryScope != nil {
-		object["retry_scope"], err = json.Marshal(a.RetryScope)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'retry_scope': %w", err)
-		}
-	}
-
-	if a.Step != nil {
-		object["step"], err = json.Marshal(a.Step)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'step': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for StepSkippedPayload. Returns the specified
-// element and whether it was found
-func (a StepSkippedPayload) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for StepSkippedPayload
-func (a *StepSkippedPayload) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for StepSkippedPayload to handle AdditionalProperties
-func (a *StepSkippedPayload) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["kind"]; found {
-		err = json.Unmarshal(raw, &a.Kind)
-		if err != nil {
-			return fmt.Errorf("error reading 'kind': %w", err)
-		}
-		delete(object, "kind")
-	}
-
-	if raw, found := object["reason"]; found {
-		err = json.Unmarshal(raw, &a.Reason)
-		if err != nil {
-			return fmt.Errorf("error reading 'reason': %w", err)
-		}
-		delete(object, "reason")
-	}
-
-	if raw, found := object["step"]; found {
-		err = json.Unmarshal(raw, &a.Step)
-		if err != nil {
-			return fmt.Errorf("error reading 'step': %w", err)
-		}
-		delete(object, "step")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for StepSkippedPayload to handle AdditionalProperties
-func (a StepSkippedPayload) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Kind != nil {
-		object["kind"], err = json.Marshal(a.Kind)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'kind': %w", err)
-		}
-	}
-
-	if a.Reason != nil {
-		object["reason"], err = json.Marshal(a.Reason)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'reason': %w", err)
-		}
-	}
-
-	if a.Step != nil {
-		object["step"], err = json.Marshal(a.Step)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'step': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for StepStartedPayload. Returns the specified
-// element and whether it was found
-func (a StepStartedPayload) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for StepStartedPayload
-func (a *StepStartedPayload) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for StepStartedPayload to handle AdditionalProperties
-func (a *StepStartedPayload) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["agent_id"]; found {
-		err = json.Unmarshal(raw, &a.AgentId)
-		if err != nil {
-			return fmt.Errorf("error reading 'agent_id': %w", err)
-		}
-		delete(object, "agent_id")
-	}
-
-	if raw, found := object["kind"]; found {
-		err = json.Unmarshal(raw, &a.Kind)
-		if err != nil {
-			return fmt.Errorf("error reading 'kind': %w", err)
-		}
-		delete(object, "kind")
-	}
-
-	if raw, found := object["step"]; found {
-		err = json.Unmarshal(raw, &a.Step)
-		if err != nil {
-			return fmt.Errorf("error reading 'step': %w", err)
-		}
-		delete(object, "step")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for StepStartedPayload to handle AdditionalProperties
-func (a StepStartedPayload) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.AgentId != nil {
-		object["agent_id"], err = json.Marshal(a.AgentId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'agent_id': %w", err)
-		}
-	}
-
-	if a.Kind != nil {
-		object["kind"], err = json.Marshal(a.Kind)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'kind': %w", err)
-		}
-	}
-
-	if a.Step != nil {
-		object["step"], err = json.Marshal(a.Step)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'step': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
 // Getter for additional properties for ToolCallPayload. Returns the specified
 // element and whether it was found
 func (a ToolCallPayload) Get(fieldName string) (value interface{}, found bool) {
@@ -17349,452 +12168,6 @@ func (a TurnWaitingPayload) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
-// Getter for additional properties for WaitPayload. Returns the specified
-// element and whether it was found
-func (a WaitPayload) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for WaitPayload
-func (a *WaitPayload) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for WaitPayload to handle AdditionalProperties
-func (a *WaitPayload) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["deadline"]; found {
-		err = json.Unmarshal(raw, &a.Deadline)
-		if err != nil {
-			return fmt.Errorf("error reading 'deadline': %w", err)
-		}
-		delete(object, "deadline")
-	}
-
-	if raw, found := object["event_type"]; found {
-		err = json.Unmarshal(raw, &a.EventType)
-		if err != nil {
-			return fmt.Errorf("error reading 'event_type': %w", err)
-		}
-		delete(object, "event_type")
-	}
-
-	if raw, found := object["expires_at"]; found {
-		err = json.Unmarshal(raw, &a.ExpiresAt)
-		if err != nil {
-			return fmt.Errorf("error reading 'expires_at': %w", err)
-		}
-		delete(object, "expires_at")
-	}
-
-	if raw, found := object["match"]; found {
-		err = json.Unmarshal(raw, &a.Match)
-		if err != nil {
-			return fmt.Errorf("error reading 'match': %w", err)
-		}
-		delete(object, "match")
-	}
-
-	if raw, found := object["source_id"]; found {
-		err = json.Unmarshal(raw, &a.SourceId)
-		if err != nil {
-			return fmt.Errorf("error reading 'source_id': %w", err)
-		}
-		delete(object, "source_id")
-	}
-
-	if raw, found := object["step"]; found {
-		err = json.Unmarshal(raw, &a.Step)
-		if err != nil {
-			return fmt.Errorf("error reading 'step': %w", err)
-		}
-		delete(object, "step")
-	}
-
-	if raw, found := object["subject"]; found {
-		err = json.Unmarshal(raw, &a.Subject)
-		if err != nil {
-			return fmt.Errorf("error reading 'subject': %w", err)
-		}
-		delete(object, "subject")
-	}
-
-	if raw, found := object["wait_id"]; found {
-		err = json.Unmarshal(raw, &a.WaitId)
-		if err != nil {
-			return fmt.Errorf("error reading 'wait_id': %w", err)
-		}
-		delete(object, "wait_id")
-	}
-
-	if raw, found := object["wait_kind"]; found {
-		err = json.Unmarshal(raw, &a.WaitKind)
-		if err != nil {
-			return fmt.Errorf("error reading 'wait_kind': %w", err)
-		}
-		delete(object, "wait_kind")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for WaitPayload to handle AdditionalProperties
-func (a WaitPayload) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Deadline != nil {
-		object["deadline"], err = json.Marshal(a.Deadline)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'deadline': %w", err)
-		}
-	}
-
-	if a.EventType != nil {
-		object["event_type"], err = json.Marshal(a.EventType)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'event_type': %w", err)
-		}
-	}
-
-	if a.ExpiresAt != nil {
-		object["expires_at"], err = json.Marshal(a.ExpiresAt)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'expires_at': %w", err)
-		}
-	}
-
-	if a.Match != nil {
-		object["match"], err = json.Marshal(a.Match)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'match': %w", err)
-		}
-	}
-
-	if a.SourceId != nil {
-		object["source_id"], err = json.Marshal(a.SourceId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'source_id': %w", err)
-		}
-	}
-
-	if a.Step != nil {
-		object["step"], err = json.Marshal(a.Step)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'step': %w", err)
-		}
-	}
-
-	if a.Subject != nil {
-		object["subject"], err = json.Marshal(a.Subject)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'subject': %w", err)
-		}
-	}
-
-	if a.WaitId != nil {
-		object["wait_id"], err = json.Marshal(a.WaitId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'wait_id': %w", err)
-		}
-	}
-
-	if a.WaitKind != nil {
-		object["wait_kind"], err = json.Marshal(a.WaitKind)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'wait_kind': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for WaitResumedPayload. Returns the specified
-// element and whether it was found
-func (a WaitResumedPayload) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for WaitResumedPayload
-func (a *WaitResumedPayload) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for WaitResumedPayload to handle AdditionalProperties
-func (a *WaitResumedPayload) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["payload"]; found {
-		err = json.Unmarshal(raw, &a.Payload)
-		if err != nil {
-			return fmt.Errorf("error reading 'payload': %w", err)
-		}
-		delete(object, "payload")
-	}
-
-	if raw, found := object["step"]; found {
-		err = json.Unmarshal(raw, &a.Step)
-		if err != nil {
-			return fmt.Errorf("error reading 'step': %w", err)
-		}
-		delete(object, "step")
-	}
-
-	if raw, found := object["wait_id"]; found {
-		err = json.Unmarshal(raw, &a.WaitId)
-		if err != nil {
-			return fmt.Errorf("error reading 'wait_id': %w", err)
-		}
-		delete(object, "wait_id")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for WaitResumedPayload to handle AdditionalProperties
-func (a WaitResumedPayload) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Payload != nil {
-		object["payload"], err = json.Marshal(a.Payload)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'payload': %w", err)
-		}
-	}
-
-	if a.Step != nil {
-		object["step"], err = json.Marshal(a.Step)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'step': %w", err)
-		}
-	}
-
-	if a.WaitId != nil {
-		object["wait_id"], err = json.Marshal(a.WaitId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'wait_id': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for WaitTimedOutPayload. Returns the specified
-// element and whether it was found
-func (a WaitTimedOutPayload) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for WaitTimedOutPayload
-func (a *WaitTimedOutPayload) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for WaitTimedOutPayload to handle AdditionalProperties
-func (a *WaitTimedOutPayload) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["reason"]; found {
-		err = json.Unmarshal(raw, &a.Reason)
-		if err != nil {
-			return fmt.Errorf("error reading 'reason': %w", err)
-		}
-		delete(object, "reason")
-	}
-
-	if raw, found := object["step"]; found {
-		err = json.Unmarshal(raw, &a.Step)
-		if err != nil {
-			return fmt.Errorf("error reading 'step': %w", err)
-		}
-		delete(object, "step")
-	}
-
-	if raw, found := object["wait_id"]; found {
-		err = json.Unmarshal(raw, &a.WaitId)
-		if err != nil {
-			return fmt.Errorf("error reading 'wait_id': %w", err)
-		}
-		delete(object, "wait_id")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for WaitTimedOutPayload to handle AdditionalProperties
-func (a WaitTimedOutPayload) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Reason != nil {
-		object["reason"], err = json.Marshal(a.Reason)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'reason': %w", err)
-		}
-	}
-
-	if a.Step != nil {
-		object["step"], err = json.Marshal(a.Step)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'step': %w", err)
-		}
-	}
-
-	if a.WaitId != nil {
-		object["wait_id"], err = json.Marshal(a.WaitId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'wait_id': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// AsCreateStandaloneInteractionRequest returns the union data inside the CreateInteractionRequest as a CreateStandaloneInteractionRequest
-func (t CreateInteractionRequest) AsCreateStandaloneInteractionRequest() (CreateStandaloneInteractionRequest, error) {
-	var body CreateStandaloneInteractionRequest
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromCreateStandaloneInteractionRequest overwrites any union data inside the CreateInteractionRequest as the provided CreateStandaloneInteractionRequest
-func (t *CreateInteractionRequest) FromCreateStandaloneInteractionRequest(v CreateStandaloneInteractionRequest) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeCreateStandaloneInteractionRequest performs a merge with any union data inside the CreateInteractionRequest, using the provided CreateStandaloneInteractionRequest
-func (t *CreateInteractionRequest) MergeCreateStandaloneInteractionRequest(v CreateStandaloneInteractionRequest) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsCreateRunBackedInteractionRequest returns the union data inside the CreateInteractionRequest as a CreateRunBackedInteractionRequest
-func (t CreateInteractionRequest) AsCreateRunBackedInteractionRequest() (CreateRunBackedInteractionRequest, error) {
-	var body CreateRunBackedInteractionRequest
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromCreateRunBackedInteractionRequest overwrites any union data inside the CreateInteractionRequest as the provided CreateRunBackedInteractionRequest
-func (t *CreateInteractionRequest) FromCreateRunBackedInteractionRequest(v CreateRunBackedInteractionRequest) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeCreateRunBackedInteractionRequest performs a merge with any union data inside the CreateInteractionRequest, using the provided CreateRunBackedInteractionRequest
-func (t *CreateInteractionRequest) MergeCreateRunBackedInteractionRequest(v CreateRunBackedInteractionRequest) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t CreateInteractionRequest) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *CreateInteractionRequest) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
 // AsCreateRoleAssignmentRequest0 returns the union data inside the CreateRoleAssignmentRequest as a CreateRoleAssignmentRequest0
 func (t CreateRoleAssignmentRequest) AsCreateRoleAssignmentRequest0() (CreateRoleAssignmentRequest0, error) {
 	var body CreateRoleAssignmentRequest0
@@ -18057,395 +12430,6 @@ func (t *InteractionValue) UnmarshalJSON(b []byte) error {
 	return err
 }
 
-// AsLoopSpecRepositoryId0 returns the union data inside the LoopSpecRepository_Id as a LoopSpecRepositoryId0
-func (t LoopSpecRepository_Id) AsLoopSpecRepositoryId0() (LoopSpecRepositoryId0, error) {
-	var body LoopSpecRepositoryId0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromLoopSpecRepositoryId0 overwrites any union data inside the LoopSpecRepository_Id as the provided LoopSpecRepositoryId0
-func (t *LoopSpecRepository_Id) FromLoopSpecRepositoryId0(v LoopSpecRepositoryId0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeLoopSpecRepositoryId0 performs a merge with any union data inside the LoopSpecRepository_Id, using the provided LoopSpecRepositoryId0
-func (t *LoopSpecRepository_Id) MergeLoopSpecRepositoryId0(v LoopSpecRepositoryId0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsLoopSpecRepositoryId1 returns the union data inside the LoopSpecRepository_Id as a LoopSpecRepositoryId1
-func (t LoopSpecRepository_Id) AsLoopSpecRepositoryId1() (LoopSpecRepositoryId1, error) {
-	var body LoopSpecRepositoryId1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromLoopSpecRepositoryId1 overwrites any union data inside the LoopSpecRepository_Id as the provided LoopSpecRepositoryId1
-func (t *LoopSpecRepository_Id) FromLoopSpecRepositoryId1(v LoopSpecRepositoryId1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeLoopSpecRepositoryId1 performs a merge with any union data inside the LoopSpecRepository_Id, using the provided LoopSpecRepositoryId1
-func (t *LoopSpecRepository_Id) MergeLoopSpecRepositoryId1(v LoopSpecRepositoryId1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t LoopSpecRepository_Id) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *LoopSpecRepository_Id) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsHTTPTriggerConfig returns the union data inside the LoopSpecTrigger_Config as a HTTPTriggerConfig
-func (t LoopSpecTrigger_Config) AsHTTPTriggerConfig() (HTTPTriggerConfig, error) {
-	var body HTTPTriggerConfig
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromHTTPTriggerConfig overwrites any union data inside the LoopSpecTrigger_Config as the provided HTTPTriggerConfig
-func (t *LoopSpecTrigger_Config) FromHTTPTriggerConfig(v HTTPTriggerConfig) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeHTTPTriggerConfig performs a merge with any union data inside the LoopSpecTrigger_Config, using the provided HTTPTriggerConfig
-func (t *LoopSpecTrigger_Config) MergeHTTPTriggerConfig(v HTTPTriggerConfig) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsScheduleTriggerConfig returns the union data inside the LoopSpecTrigger_Config as a ScheduleTriggerConfig
-func (t LoopSpecTrigger_Config) AsScheduleTriggerConfig() (ScheduleTriggerConfig, error) {
-	var body ScheduleTriggerConfig
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromScheduleTriggerConfig overwrites any union data inside the LoopSpecTrigger_Config as the provided ScheduleTriggerConfig
-func (t *LoopSpecTrigger_Config) FromScheduleTriggerConfig(v ScheduleTriggerConfig) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeScheduleTriggerConfig performs a merge with any union data inside the LoopSpecTrigger_Config, using the provided ScheduleTriggerConfig
-func (t *LoopSpecTrigger_Config) MergeScheduleTriggerConfig(v ScheduleTriggerConfig) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsEventTriggerConfig returns the union data inside the LoopSpecTrigger_Config as a EventTriggerConfig
-func (t LoopSpecTrigger_Config) AsEventTriggerConfig() (EventTriggerConfig, error) {
-	var body EventTriggerConfig
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromEventTriggerConfig overwrites any union data inside the LoopSpecTrigger_Config as the provided EventTriggerConfig
-func (t *LoopSpecTrigger_Config) FromEventTriggerConfig(v EventTriggerConfig) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeEventTriggerConfig performs a merge with any union data inside the LoopSpecTrigger_Config, using the provided EventTriggerConfig
-func (t *LoopSpecTrigger_Config) MergeEventTriggerConfig(v EventTriggerConfig) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t LoopSpecTrigger_Config) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *LoopSpecTrigger_Config) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsLoopAgentStepSpec returns the union data inside the LoopStep as a LoopAgentStepSpec
-func (t LoopStep) AsLoopAgentStepSpec() (LoopAgentStepSpec, error) {
-	var body LoopAgentStepSpec
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromLoopAgentStepSpec overwrites any union data inside the LoopStep as the provided LoopAgentStepSpec
-func (t *LoopStep) FromLoopAgentStepSpec(v LoopAgentStepSpec) error {
-	v.Kind = "agent"
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeLoopAgentStepSpec performs a merge with any union data inside the LoopStep, using the provided LoopAgentStepSpec
-func (t *LoopStep) MergeLoopAgentStepSpec(v LoopAgentStepSpec) error {
-	v.Kind = "agent"
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsLoopActionStepSpec returns the union data inside the LoopStep as a LoopActionStepSpec
-func (t LoopStep) AsLoopActionStepSpec() (LoopActionStepSpec, error) {
-	var body LoopActionStepSpec
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromLoopActionStepSpec overwrites any union data inside the LoopStep as the provided LoopActionStepSpec
-func (t *LoopStep) FromLoopActionStepSpec(v LoopActionStepSpec) error {
-	v.Kind = "action"
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeLoopActionStepSpec performs a merge with any union data inside the LoopStep, using the provided LoopActionStepSpec
-func (t *LoopStep) MergeLoopActionStepSpec(v LoopActionStepSpec) error {
-	v.Kind = "action"
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsLoopSleepStepSpec returns the union data inside the LoopStep as a LoopSleepStepSpec
-func (t LoopStep) AsLoopSleepStepSpec() (LoopSleepStepSpec, error) {
-	var body LoopSleepStepSpec
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromLoopSleepStepSpec overwrites any union data inside the LoopStep as the provided LoopSleepStepSpec
-func (t *LoopStep) FromLoopSleepStepSpec(v LoopSleepStepSpec) error {
-	v.Kind = "sleep"
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeLoopSleepStepSpec performs a merge with any union data inside the LoopStep, using the provided LoopSleepStepSpec
-func (t *LoopStep) MergeLoopSleepStepSpec(v LoopSleepStepSpec) error {
-	v.Kind = "sleep"
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsLoopWaitForEventStepSpec returns the union data inside the LoopStep as a LoopWaitForEventStepSpec
-func (t LoopStep) AsLoopWaitForEventStepSpec() (LoopWaitForEventStepSpec, error) {
-	var body LoopWaitForEventStepSpec
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromLoopWaitForEventStepSpec overwrites any union data inside the LoopStep as the provided LoopWaitForEventStepSpec
-func (t *LoopStep) FromLoopWaitForEventStepSpec(v LoopWaitForEventStepSpec) error {
-	v.Kind = "wait_for_event"
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeLoopWaitForEventStepSpec performs a merge with any union data inside the LoopStep, using the provided LoopWaitForEventStepSpec
-func (t *LoopStep) MergeLoopWaitForEventStepSpec(v LoopWaitForEventStepSpec) error {
-	v.Kind = "wait_for_event"
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsLoopInteractionStepSpec returns the union data inside the LoopStep as a LoopInteractionStepSpec
-func (t LoopStep) AsLoopInteractionStepSpec() (LoopInteractionStepSpec, error) {
-	var body LoopInteractionStepSpec
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromLoopInteractionStepSpec overwrites any union data inside the LoopStep as the provided LoopInteractionStepSpec
-func (t *LoopStep) FromLoopInteractionStepSpec(v LoopInteractionStepSpec) error {
-	v.Kind = "interaction"
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeLoopInteractionStepSpec performs a merge with any union data inside the LoopStep, using the provided LoopInteractionStepSpec
-func (t *LoopStep) MergeLoopInteractionStepSpec(v LoopInteractionStepSpec) error {
-	v.Kind = "interaction"
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsLoopSubLoopStepSpec returns the union data inside the LoopStep as a LoopSubLoopStepSpec
-func (t LoopStep) AsLoopSubLoopStepSpec() (LoopSubLoopStepSpec, error) {
-	var body LoopSubLoopStepSpec
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromLoopSubLoopStepSpec overwrites any union data inside the LoopStep as the provided LoopSubLoopStepSpec
-func (t *LoopStep) FromLoopSubLoopStepSpec(v LoopSubLoopStepSpec) error {
-	v.Kind = "loop"
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeLoopSubLoopStepSpec performs a merge with any union data inside the LoopStep, using the provided LoopSubLoopStepSpec
-func (t *LoopStep) MergeLoopSubLoopStepSpec(v LoopSubLoopStepSpec) error {
-	v.Kind = "loop"
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsLoopCheckStepSpec returns the union data inside the LoopStep as a LoopCheckStepSpec
-func (t LoopStep) AsLoopCheckStepSpec() (LoopCheckStepSpec, error) {
-	var body LoopCheckStepSpec
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromLoopCheckStepSpec overwrites any union data inside the LoopStep as the provided LoopCheckStepSpec
-func (t *LoopStep) FromLoopCheckStepSpec(v LoopCheckStepSpec) error {
-	v.Kind = "check"
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeLoopCheckStepSpec performs a merge with any union data inside the LoopStep, using the provided LoopCheckStepSpec
-func (t *LoopStep) MergeLoopCheckStepSpec(v LoopCheckStepSpec) error {
-	v.Kind = "check"
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t LoopStep) Discriminator() (string, error) {
-	var discriminator struct {
-		Discriminator string `json:"kind"`
-	}
-	err := json.Unmarshal(t.union, &discriminator)
-	return discriminator.Discriminator, err
-}
-
-func (t LoopStep) ValueByDiscriminator() (interface{}, error) {
-	discriminator, err := t.Discriminator()
-	if err != nil {
-		return nil, err
-	}
-	switch discriminator {
-	case "action":
-		return t.AsLoopActionStepSpec()
-	case "agent":
-		return t.AsLoopAgentStepSpec()
-	case "check":
-		return t.AsLoopCheckStepSpec()
-	case "interaction":
-		return t.AsLoopInteractionStepSpec()
-	case "loop":
-		return t.AsLoopSubLoopStepSpec()
-	case "sleep":
-		return t.AsLoopSleepStepSpec()
-	case "wait_for_event":
-		return t.AsLoopWaitForEventStepSpec()
-	default:
-		return nil, errors.New("unknown discriminator value: " + discriminator)
-	}
-}
-
-func (t LoopStep) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *LoopStep) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
 // AsResourceOwnershipTransitionRequest0 returns the union data inside the ResourceOwnershipTransitionRequest as a ResourceOwnershipTransitionRequest0
 func (t ResourceOwnershipTransitionRequest) AsResourceOwnershipTransitionRequest0() (ResourceOwnershipTransitionRequest0, error) {
 	var body ResourceOwnershipTransitionRequest0
@@ -18607,692 +12591,6 @@ func (t *ResourceOwnershipTransitionRequest) UnmarshalJSON(b []byte) error {
 		}
 	}
 
-	return err
-}
-
-// AsRunStartedPayload returns the union data inside the RunEventPayload as a RunStartedPayload
-func (t RunEventPayload) AsRunStartedPayload() (RunStartedPayload, error) {
-	var body RunStartedPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromRunStartedPayload overwrites any union data inside the RunEventPayload as the provided RunStartedPayload
-func (t *RunEventPayload) FromRunStartedPayload(v RunStartedPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeRunStartedPayload performs a merge with any union data inside the RunEventPayload, using the provided RunStartedPayload
-func (t *RunEventPayload) MergeRunStartedPayload(v RunStartedPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsWaitPayload returns the union data inside the RunEventPayload as a WaitPayload
-func (t RunEventPayload) AsWaitPayload() (WaitPayload, error) {
-	var body WaitPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromWaitPayload overwrites any union data inside the RunEventPayload as the provided WaitPayload
-func (t *RunEventPayload) FromWaitPayload(v WaitPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeWaitPayload performs a merge with any union data inside the RunEventPayload, using the provided WaitPayload
-func (t *RunEventPayload) MergeWaitPayload(v WaitPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsRunResumedPayload returns the union data inside the RunEventPayload as a RunResumedPayload
-func (t RunEventPayload) AsRunResumedPayload() (RunResumedPayload, error) {
-	var body RunResumedPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromRunResumedPayload overwrites any union data inside the RunEventPayload as the provided RunResumedPayload
-func (t *RunEventPayload) FromRunResumedPayload(v RunResumedPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeRunResumedPayload performs a merge with any union data inside the RunEventPayload, using the provided RunResumedPayload
-func (t *RunEventPayload) MergeRunResumedPayload(v RunResumedPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsRunCompletedPayload returns the union data inside the RunEventPayload as a RunCompletedPayload
-func (t RunEventPayload) AsRunCompletedPayload() (RunCompletedPayload, error) {
-	var body RunCompletedPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromRunCompletedPayload overwrites any union data inside the RunEventPayload as the provided RunCompletedPayload
-func (t *RunEventPayload) FromRunCompletedPayload(v RunCompletedPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeRunCompletedPayload performs a merge with any union data inside the RunEventPayload, using the provided RunCompletedPayload
-func (t *RunEventPayload) MergeRunCompletedPayload(v RunCompletedPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsRunFailedPayload returns the union data inside the RunEventPayload as a RunFailedPayload
-func (t RunEventPayload) AsRunFailedPayload() (RunFailedPayload, error) {
-	var body RunFailedPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromRunFailedPayload overwrites any union data inside the RunEventPayload as the provided RunFailedPayload
-func (t *RunEventPayload) FromRunFailedPayload(v RunFailedPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeRunFailedPayload performs a merge with any union data inside the RunEventPayload, using the provided RunFailedPayload
-func (t *RunEventPayload) MergeRunFailedPayload(v RunFailedPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsRunCancelledPayload returns the union data inside the RunEventPayload as a RunCancelledPayload
-func (t RunEventPayload) AsRunCancelledPayload() (RunCancelledPayload, error) {
-	var body RunCancelledPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromRunCancelledPayload overwrites any union data inside the RunEventPayload as the provided RunCancelledPayload
-func (t *RunEventPayload) FromRunCancelledPayload(v RunCancelledPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeRunCancelledPayload performs a merge with any union data inside the RunEventPayload, using the provided RunCancelledPayload
-func (t *RunEventPayload) MergeRunCancelledPayload(v RunCancelledPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsStepStartedPayload returns the union data inside the RunEventPayload as a StepStartedPayload
-func (t RunEventPayload) AsStepStartedPayload() (StepStartedPayload, error) {
-	var body StepStartedPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromStepStartedPayload overwrites any union data inside the RunEventPayload as the provided StepStartedPayload
-func (t *RunEventPayload) FromStepStartedPayload(v StepStartedPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeStepStartedPayload performs a merge with any union data inside the RunEventPayload, using the provided StepStartedPayload
-func (t *RunEventPayload) MergeStepStartedPayload(v StepStartedPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsStepCompletedPayload returns the union data inside the RunEventPayload as a StepCompletedPayload
-func (t RunEventPayload) AsStepCompletedPayload() (StepCompletedPayload, error) {
-	var body StepCompletedPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromStepCompletedPayload overwrites any union data inside the RunEventPayload as the provided StepCompletedPayload
-func (t *RunEventPayload) FromStepCompletedPayload(v StepCompletedPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeStepCompletedPayload performs a merge with any union data inside the RunEventPayload, using the provided StepCompletedPayload
-func (t *RunEventPayload) MergeStepCompletedPayload(v StepCompletedPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsStepFailedPayload returns the union data inside the RunEventPayload as a StepFailedPayload
-func (t RunEventPayload) AsStepFailedPayload() (StepFailedPayload, error) {
-	var body StepFailedPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromStepFailedPayload overwrites any union data inside the RunEventPayload as the provided StepFailedPayload
-func (t *RunEventPayload) FromStepFailedPayload(v StepFailedPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeStepFailedPayload performs a merge with any union data inside the RunEventPayload, using the provided StepFailedPayload
-func (t *RunEventPayload) MergeStepFailedPayload(v StepFailedPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsStepRetriedPayload returns the union data inside the RunEventPayload as a StepRetriedPayload
-func (t RunEventPayload) AsStepRetriedPayload() (StepRetriedPayload, error) {
-	var body StepRetriedPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromStepRetriedPayload overwrites any union data inside the RunEventPayload as the provided StepRetriedPayload
-func (t *RunEventPayload) FromStepRetriedPayload(v StepRetriedPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeStepRetriedPayload performs a merge with any union data inside the RunEventPayload, using the provided StepRetriedPayload
-func (t *RunEventPayload) MergeStepRetriedPayload(v StepRetriedPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsStepResumedPayload returns the union data inside the RunEventPayload as a StepResumedPayload
-func (t RunEventPayload) AsStepResumedPayload() (StepResumedPayload, error) {
-	var body StepResumedPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromStepResumedPayload overwrites any union data inside the RunEventPayload as the provided StepResumedPayload
-func (t *RunEventPayload) FromStepResumedPayload(v StepResumedPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeStepResumedPayload performs a merge with any union data inside the RunEventPayload, using the provided StepResumedPayload
-func (t *RunEventPayload) MergeStepResumedPayload(v StepResumedPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsStepSkippedPayload returns the union data inside the RunEventPayload as a StepSkippedPayload
-func (t RunEventPayload) AsStepSkippedPayload() (StepSkippedPayload, error) {
-	var body StepSkippedPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromStepSkippedPayload overwrites any union data inside the RunEventPayload as the provided StepSkippedPayload
-func (t *RunEventPayload) FromStepSkippedPayload(v StepSkippedPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeStepSkippedPayload performs a merge with any union data inside the RunEventPayload, using the provided StepSkippedPayload
-func (t *RunEventPayload) MergeStepSkippedPayload(v StepSkippedPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsActionCalledPayload returns the union data inside the RunEventPayload as a ActionCalledPayload
-func (t RunEventPayload) AsActionCalledPayload() (ActionCalledPayload, error) {
-	var body ActionCalledPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromActionCalledPayload overwrites any union data inside the RunEventPayload as the provided ActionCalledPayload
-func (t *RunEventPayload) FromActionCalledPayload(v ActionCalledPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeActionCalledPayload performs a merge with any union data inside the RunEventPayload, using the provided ActionCalledPayload
-func (t *RunEventPayload) MergeActionCalledPayload(v ActionCalledPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsActionCompletedPayload returns the union data inside the RunEventPayload as a ActionCompletedPayload
-func (t RunEventPayload) AsActionCompletedPayload() (ActionCompletedPayload, error) {
-	var body ActionCompletedPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromActionCompletedPayload overwrites any union data inside the RunEventPayload as the provided ActionCompletedPayload
-func (t *RunEventPayload) FromActionCompletedPayload(v ActionCompletedPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeActionCompletedPayload performs a merge with any union data inside the RunEventPayload, using the provided ActionCompletedPayload
-func (t *RunEventPayload) MergeActionCompletedPayload(v ActionCompletedPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsActionFailedPayload returns the union data inside the RunEventPayload as a ActionFailedPayload
-func (t RunEventPayload) AsActionFailedPayload() (ActionFailedPayload, error) {
-	var body ActionFailedPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromActionFailedPayload overwrites any union data inside the RunEventPayload as the provided ActionFailedPayload
-func (t *RunEventPayload) FromActionFailedPayload(v ActionFailedPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeActionFailedPayload performs a merge with any union data inside the RunEventPayload, using the provided ActionFailedPayload
-func (t *RunEventPayload) MergeActionFailedPayload(v ActionFailedPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsActionRetriedPayload returns the union data inside the RunEventPayload as a ActionRetriedPayload
-func (t RunEventPayload) AsActionRetriedPayload() (ActionRetriedPayload, error) {
-	var body ActionRetriedPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromActionRetriedPayload overwrites any union data inside the RunEventPayload as the provided ActionRetriedPayload
-func (t *RunEventPayload) FromActionRetriedPayload(v ActionRetriedPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeActionRetriedPayload performs a merge with any union data inside the RunEventPayload, using the provided ActionRetriedPayload
-func (t *RunEventPayload) MergeActionRetriedPayload(v ActionRetriedPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsActionResultPayload returns the union data inside the RunEventPayload as a ActionResultPayload
-func (t RunEventPayload) AsActionResultPayload() (ActionResultPayload, error) {
-	var body ActionResultPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromActionResultPayload overwrites any union data inside the RunEventPayload as the provided ActionResultPayload
-func (t *RunEventPayload) FromActionResultPayload(v ActionResultPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeActionResultPayload performs a merge with any union data inside the RunEventPayload, using the provided ActionResultPayload
-func (t *RunEventPayload) MergeActionResultPayload(v ActionResultPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsCheckVerdictPayload returns the union data inside the RunEventPayload as a CheckVerdictPayload
-func (t RunEventPayload) AsCheckVerdictPayload() (CheckVerdictPayload, error) {
-	var body CheckVerdictPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromCheckVerdictPayload overwrites any union data inside the RunEventPayload as the provided CheckVerdictPayload
-func (t *RunEventPayload) FromCheckVerdictPayload(v CheckVerdictPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeCheckVerdictPayload performs a merge with any union data inside the RunEventPayload, using the provided CheckVerdictPayload
-func (t *RunEventPayload) MergeCheckVerdictPayload(v CheckVerdictPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsInteractionRespondedPayload returns the union data inside the RunEventPayload as a InteractionRespondedPayload
-func (t RunEventPayload) AsInteractionRespondedPayload() (InteractionRespondedPayload, error) {
-	var body InteractionRespondedPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromInteractionRespondedPayload overwrites any union data inside the RunEventPayload as the provided InteractionRespondedPayload
-func (t *RunEventPayload) FromInteractionRespondedPayload(v InteractionRespondedPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeInteractionRespondedPayload performs a merge with any union data inside the RunEventPayload, using the provided InteractionRespondedPayload
-func (t *RunEventPayload) MergeInteractionRespondedPayload(v InteractionRespondedPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsWaitResumedPayload returns the union data inside the RunEventPayload as a WaitResumedPayload
-func (t RunEventPayload) AsWaitResumedPayload() (WaitResumedPayload, error) {
-	var body WaitResumedPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromWaitResumedPayload overwrites any union data inside the RunEventPayload as the provided WaitResumedPayload
-func (t *RunEventPayload) FromWaitResumedPayload(v WaitResumedPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeWaitResumedPayload performs a merge with any union data inside the RunEventPayload, using the provided WaitResumedPayload
-func (t *RunEventPayload) MergeWaitResumedPayload(v WaitResumedPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsWaitTimedOutPayload returns the union data inside the RunEventPayload as a WaitTimedOutPayload
-func (t RunEventPayload) AsWaitTimedOutPayload() (WaitTimedOutPayload, error) {
-	var body WaitTimedOutPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromWaitTimedOutPayload overwrites any union data inside the RunEventPayload as the provided WaitTimedOutPayload
-func (t *RunEventPayload) FromWaitTimedOutPayload(v WaitTimedOutPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeWaitTimedOutPayload performs a merge with any union data inside the RunEventPayload, using the provided WaitTimedOutPayload
-func (t *RunEventPayload) MergeWaitTimedOutPayload(v WaitTimedOutPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsBudgetExceededPayload returns the union data inside the RunEventPayload as a BudgetExceededPayload
-func (t RunEventPayload) AsBudgetExceededPayload() (BudgetExceededPayload, error) {
-	var body BudgetExceededPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromBudgetExceededPayload overwrites any union data inside the RunEventPayload as the provided BudgetExceededPayload
-func (t *RunEventPayload) FromBudgetExceededPayload(v BudgetExceededPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeBudgetExceededPayload performs a merge with any union data inside the RunEventPayload, using the provided BudgetExceededPayload
-func (t *RunEventPayload) MergeBudgetExceededPayload(v BudgetExceededPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsProgressStalledPayload returns the union data inside the RunEventPayload as a ProgressStalledPayload
-func (t RunEventPayload) AsProgressStalledPayload() (ProgressStalledPayload, error) {
-	var body ProgressStalledPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromProgressStalledPayload overwrites any union data inside the RunEventPayload as the provided ProgressStalledPayload
-func (t *RunEventPayload) FromProgressStalledPayload(v ProgressStalledPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeProgressStalledPayload performs a merge with any union data inside the RunEventPayload, using the provided ProgressStalledPayload
-func (t *RunEventPayload) MergeProgressStalledPayload(v ProgressStalledPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsLimitReachedPayload returns the union data inside the RunEventPayload as a LimitReachedPayload
-func (t RunEventPayload) AsLimitReachedPayload() (LimitReachedPayload, error) {
-	var body LimitReachedPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromLimitReachedPayload overwrites any union data inside the RunEventPayload as the provided LimitReachedPayload
-func (t *RunEventPayload) FromLimitReachedPayload(v LimitReachedPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeLimitReachedPayload performs a merge with any union data inside the RunEventPayload, using the provided LimitReachedPayload
-func (t *RunEventPayload) MergeLimitReachedPayload(v LimitReachedPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsArtifactCreatedPayload returns the union data inside the RunEventPayload as a ArtifactCreatedPayload
-func (t RunEventPayload) AsArtifactCreatedPayload() (ArtifactCreatedPayload, error) {
-	var body ArtifactCreatedPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromArtifactCreatedPayload overwrites any union data inside the RunEventPayload as the provided ArtifactCreatedPayload
-func (t *RunEventPayload) FromArtifactCreatedPayload(v ArtifactCreatedPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeArtifactCreatedPayload performs a merge with any union data inside the RunEventPayload, using the provided ArtifactCreatedPayload
-func (t *RunEventPayload) MergeArtifactCreatedPayload(v ArtifactCreatedPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsGenericEventPayload returns the union data inside the RunEventPayload as a GenericEventPayload
-func (t RunEventPayload) AsGenericEventPayload() (GenericEventPayload, error) {
-	var body GenericEventPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromGenericEventPayload overwrites any union data inside the RunEventPayload as the provided GenericEventPayload
-func (t *RunEventPayload) FromGenericEventPayload(v GenericEventPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeGenericEventPayload performs a merge with any union data inside the RunEventPayload, using the provided GenericEventPayload
-func (t *RunEventPayload) MergeGenericEventPayload(v GenericEventPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t RunEventPayload) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *RunEventPayload) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
 	return err
 }
 
@@ -21052,25 +14350,6 @@ type ClientInterface interface {
 	// ListCatalogWorkerModels request
 	ListCatalogWorkerModels(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListEnvironments request
-	ListEnvironments(ctx context.Context, params *ListEnvironmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateEnvironmentWithBody request with any body
-	CreateEnvironmentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateEnvironment(ctx context.Context, body CreateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DestroyEnvironment request
-	DestroyEnvironment(ctx context.Context, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetEnvironment request
-	GetEnvironment(ctx context.Context, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateEnvironmentWithBody request with any body
-	UpdateEnvironmentWithBody(ctx context.Context, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateEnvironment(ctx context.Context, environmentId EnvironmentIDParam, body UpdateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ListInteractions request
 	ListInteractions(ctx context.Context, params *ListInteractionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -21099,30 +14378,6 @@ type ClientInterface interface {
 	ReviewInteractionWithBody(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	ReviewInteraction(ctx context.Context, resourceId IDParam, body ReviewInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListLoops request
-	ListLoops(ctx context.Context, params *ListLoopsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateLoopWithBody request with any body
-	CreateLoopWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateLoop(ctx context.Context, body CreateLoopJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeleteLoop request
-	DeleteLoop(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetLoop request
-	GetLoop(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateLoopWithBody request with any body
-	UpdateLoopWithBody(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateLoop(ctx context.Context, resourceId IDParam, body UpdateLoopJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// StartRunWithBody request with any body
-	StartRunWithBody(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	StartRun(ctx context.Context, resourceId IDParam, body StartRunJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetOAuthReturnOrigins request
 	GetOAuthReturnOrigins(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -21189,37 +14444,39 @@ type ClientInterface interface {
 
 	UpdateRole(ctx context.Context, resourceId IDParam, body UpdateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListRuns request
-	ListRuns(ctx context.Context, params *ListRunsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ApproveRoutineProposal request
+	ApproveRoutineProposal(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetRun request
-	GetRun(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// DismissRoutineProposal request
+	DismissRoutineProposal(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CancelRunWithBody request with any body
-	CancelRunWithBody(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListRoutines request
+	ListRoutines(ctx context.Context, params *ListRoutinesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	CancelRun(ctx context.Context, resourceId IDParam, body CancelRunJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// CreateRoutineWithBody request with any body
+	CreateRoutineWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListRunEvents request
-	ListRunEvents(ctx context.Context, resourceId IDParam, params *ListRunEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateRoutine(ctx context.Context, body CreateRoutineJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ResumeRunWithBody request with any body
-	ResumeRunWithBody(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// DeleteRoutine request
+	DeleteRoutine(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	ResumeRun(ctx context.Context, resourceId IDParam, body ResumeRunJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetRoutine request
+	GetRoutine(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RetryRunWithBody request with any body
-	RetryRunWithBody(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// UpdateRoutineWithBody request with any body
+	UpdateRoutineWithBody(ctx context.Context, routineId RoutineID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	RetryRun(ctx context.Context, resourceId IDParam, body RetryRunJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateRoutine(ctx context.Context, routineId RoutineID, body UpdateRoutineJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SignalRunWithBody request with any body
-	SignalRunWithBody(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListRoutineOccurrences request
+	ListRoutineOccurrences(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	SignalRun(ctx context.Context, resourceId IDParam, body SignalRunJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// PauseRoutine request
+	PauseRoutine(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListRunSteps request
-	ListRunSteps(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ResumeRoutine request
+	ResumeRoutine(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListSessions request
 	ListSessions(ctx context.Context, params *ListSessionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -21247,7 +14504,7 @@ type ClientInterface interface {
 	DeleteSessionAttachment(ctx context.Context, sessionId SessionIdParam, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CancelSession request
-	CancelSession(ctx context.Context, sessionId SessionIdParam, params *CancelSessionParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CancelSession(ctx context.Context, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CompactSession request
 	CompactSession(ctx context.Context, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -21385,43 +14642,8 @@ type ClientInterface interface {
 
 	UpsertTableRow(ctx context.Context, tableId TableIDParam, body UpsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeliverHTTPTriggerWithBody request with any body
-	DeliverHTTPTriggerWithBody(ctx context.Context, httpHandle string, params *DeliverHTTPTriggerParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	DeliverHTTPTrigger(ctx context.Context, httpHandle string, params *DeliverHTTPTriggerParams, body DeliverHTTPTriggerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ListTurnMessages request
 	ListTurnMessages(ctx context.Context, turnId TurnIdParam, params *ListTurnMessagesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListWebhooks request
-	ListWebhooks(ctx context.Context, params *ListWebhooksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateWebhookWithBody request with any body
-	CreateWebhookWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateWebhook(ctx context.Context, body CreateWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeleteWebhook request
-	DeleteWebhook(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetWebhook request
-	GetWebhook(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateWebhookWithBody request with any body
-	UpdateWebhookWithBody(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateWebhook(ctx context.Context, resourceId IDParam, body UpdateWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListWebhookDeliveries request
-	ListWebhookDeliveries(ctx context.Context, resourceId IDParam, params *ListWebhookDeliveriesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// PingWebhookWithBody request with any body
-	PingWebhookWithBody(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	PingWebhook(ctx context.Context, resourceId IDParam, body PingWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// RotateWebhookSecret request
-	RotateWebhookSecret(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// OpenWorkerSocket request
 	OpenWorkerSocket(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -22219,90 +15441,6 @@ func (c *Client) ListCatalogWorkerModels(ctx context.Context, reqEditors ...Requ
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListEnvironments(ctx context.Context, params *ListEnvironmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListEnvironmentsRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateEnvironmentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateEnvironmentRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateEnvironment(ctx context.Context, body CreateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateEnvironmentRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DestroyEnvironment(ctx context.Context, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDestroyEnvironmentRequest(c.Server, environmentId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetEnvironment(ctx context.Context, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetEnvironmentRequest(c.Server, environmentId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateEnvironmentWithBody(ctx context.Context, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateEnvironmentRequestWithBody(c.Server, environmentId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateEnvironment(ctx context.Context, environmentId EnvironmentIDParam, body UpdateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateEnvironmentRequest(c.Server, environmentId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) ListInteractions(ctx context.Context, params *ListInteractionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListInteractionsRequest(c.Server, params)
 	if err != nil {
@@ -22425,114 +15563,6 @@ func (c *Client) ReviewInteractionWithBody(ctx context.Context, resourceId IDPar
 
 func (c *Client) ReviewInteraction(ctx context.Context, resourceId IDParam, body ReviewInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewReviewInteractionRequest(c.Server, resourceId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ListLoops(ctx context.Context, params *ListLoopsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListLoopsRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateLoopWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateLoopRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateLoop(ctx context.Context, body CreateLoopJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateLoopRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DeleteLoop(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteLoopRequest(c.Server, resourceId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetLoop(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetLoopRequest(c.Server, resourceId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateLoopWithBody(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateLoopRequestWithBody(c.Server, resourceId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateLoop(ctx context.Context, resourceId IDParam, body UpdateLoopJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateLoopRequest(c.Server, resourceId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) StartRunWithBody(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewStartRunRequestWithBody(c.Server, resourceId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) StartRun(ctx context.Context, resourceId IDParam, body StartRunJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewStartRunRequest(c.Server, resourceId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -22831,8 +15861,8 @@ func (c *Client) UpdateRole(ctx context.Context, resourceId IDParam, body Update
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListRuns(ctx context.Context, params *ListRunsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListRunsRequest(c.Server, params)
+func (c *Client) ApproveRoutineProposal(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewApproveRoutineProposalRequest(c.Server, proposalId)
 	if err != nil {
 		return nil, err
 	}
@@ -22843,8 +15873,8 @@ func (c *Client) ListRuns(ctx context.Context, params *ListRunsParams, reqEditor
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetRun(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetRunRequest(c.Server, resourceId)
+func (c *Client) DismissRoutineProposal(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDismissRoutineProposalRequest(c.Server, proposalId)
 	if err != nil {
 		return nil, err
 	}
@@ -22855,8 +15885,8 @@ func (c *Client) GetRun(ctx context.Context, resourceId IDParam, reqEditors ...R
 	return c.Client.Do(req)
 }
 
-func (c *Client) CancelRunWithBody(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCancelRunRequestWithBody(c.Server, resourceId, contentType, body)
+func (c *Client) ListRoutines(ctx context.Context, params *ListRoutinesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListRoutinesRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -22867,8 +15897,8 @@ func (c *Client) CancelRunWithBody(ctx context.Context, resourceId IDParam, cont
 	return c.Client.Do(req)
 }
 
-func (c *Client) CancelRun(ctx context.Context, resourceId IDParam, body CancelRunJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCancelRunRequest(c.Server, resourceId, body)
+func (c *Client) CreateRoutineWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateRoutineRequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -22879,8 +15909,8 @@ func (c *Client) CancelRun(ctx context.Context, resourceId IDParam, body CancelR
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListRunEvents(ctx context.Context, resourceId IDParam, params *ListRunEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListRunEventsRequest(c.Server, resourceId, params)
+func (c *Client) CreateRoutine(ctx context.Context, body CreateRoutineJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateRoutineRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -22891,8 +15921,8 @@ func (c *Client) ListRunEvents(ctx context.Context, resourceId IDParam, params *
 	return c.Client.Do(req)
 }
 
-func (c *Client) ResumeRunWithBody(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewResumeRunRequestWithBody(c.Server, resourceId, contentType, body)
+func (c *Client) DeleteRoutine(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteRoutineRequest(c.Server, routineId)
 	if err != nil {
 		return nil, err
 	}
@@ -22903,8 +15933,8 @@ func (c *Client) ResumeRunWithBody(ctx context.Context, resourceId IDParam, cont
 	return c.Client.Do(req)
 }
 
-func (c *Client) ResumeRun(ctx context.Context, resourceId IDParam, body ResumeRunJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewResumeRunRequest(c.Server, resourceId, body)
+func (c *Client) GetRoutine(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetRoutineRequest(c.Server, routineId)
 	if err != nil {
 		return nil, err
 	}
@@ -22915,8 +15945,8 @@ func (c *Client) ResumeRun(ctx context.Context, resourceId IDParam, body ResumeR
 	return c.Client.Do(req)
 }
 
-func (c *Client) RetryRunWithBody(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRetryRunRequestWithBody(c.Server, resourceId, contentType, body)
+func (c *Client) UpdateRoutineWithBody(ctx context.Context, routineId RoutineID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateRoutineRequestWithBody(c.Server, routineId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -22927,8 +15957,8 @@ func (c *Client) RetryRunWithBody(ctx context.Context, resourceId IDParam, conte
 	return c.Client.Do(req)
 }
 
-func (c *Client) RetryRun(ctx context.Context, resourceId IDParam, body RetryRunJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRetryRunRequest(c.Server, resourceId, body)
+func (c *Client) UpdateRoutine(ctx context.Context, routineId RoutineID, body UpdateRoutineJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateRoutineRequest(c.Server, routineId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -22939,8 +15969,8 @@ func (c *Client) RetryRun(ctx context.Context, resourceId IDParam, body RetryRun
 	return c.Client.Do(req)
 }
 
-func (c *Client) SignalRunWithBody(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSignalRunRequestWithBody(c.Server, resourceId, contentType, body)
+func (c *Client) ListRoutineOccurrences(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListRoutineOccurrencesRequest(c.Server, routineId)
 	if err != nil {
 		return nil, err
 	}
@@ -22951,8 +15981,8 @@ func (c *Client) SignalRunWithBody(ctx context.Context, resourceId IDParam, cont
 	return c.Client.Do(req)
 }
 
-func (c *Client) SignalRun(ctx context.Context, resourceId IDParam, body SignalRunJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSignalRunRequest(c.Server, resourceId, body)
+func (c *Client) PauseRoutine(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPauseRoutineRequest(c.Server, routineId)
 	if err != nil {
 		return nil, err
 	}
@@ -22963,8 +15993,8 @@ func (c *Client) SignalRun(ctx context.Context, resourceId IDParam, body SignalR
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListRunSteps(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListRunStepsRequest(c.Server, resourceId)
+func (c *Client) ResumeRoutine(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewResumeRoutineRequest(c.Server, routineId)
 	if err != nil {
 		return nil, err
 	}
@@ -23083,8 +16113,8 @@ func (c *Client) DeleteSessionAttachment(ctx context.Context, sessionId SessionI
 	return c.Client.Do(req)
 }
 
-func (c *Client) CancelSession(ctx context.Context, sessionId SessionIdParam, params *CancelSessionParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCancelSessionRequest(c.Server, sessionId, params)
+func (c *Client) CancelSession(ctx context.Context, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCancelSessionRequest(c.Server, sessionId)
 	if err != nil {
 		return nil, err
 	}
@@ -23695,164 +16725,8 @@ func (c *Client) UpsertTableRow(ctx context.Context, tableId TableIDParam, body 
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeliverHTTPTriggerWithBody(ctx context.Context, httpHandle string, params *DeliverHTTPTriggerParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeliverHTTPTriggerRequestWithBody(c.Server, httpHandle, params, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DeliverHTTPTrigger(ctx context.Context, httpHandle string, params *DeliverHTTPTriggerParams, body DeliverHTTPTriggerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeliverHTTPTriggerRequest(c.Server, httpHandle, params, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) ListTurnMessages(ctx context.Context, turnId TurnIdParam, params *ListTurnMessagesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListTurnMessagesRequest(c.Server, turnId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ListWebhooks(ctx context.Context, params *ListWebhooksParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListWebhooksRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateWebhookWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateWebhookRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateWebhook(ctx context.Context, body CreateWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateWebhookRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DeleteWebhook(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteWebhookRequest(c.Server, resourceId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetWebhook(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetWebhookRequest(c.Server, resourceId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateWebhookWithBody(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateWebhookRequestWithBody(c.Server, resourceId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateWebhook(ctx context.Context, resourceId IDParam, body UpdateWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateWebhookRequest(c.Server, resourceId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ListWebhookDeliveries(ctx context.Context, resourceId IDParam, params *ListWebhookDeliveriesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListWebhookDeliveriesRequest(c.Server, resourceId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) PingWebhookWithBody(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPingWebhookRequestWithBody(c.Server, resourceId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) PingWebhook(ctx context.Context, resourceId IDParam, body PingWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPingWebhookRequest(c.Server, resourceId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) RotateWebhookSecret(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRotateWebhookSecretRequest(c.Server, resourceId)
 	if err != nil {
 		return nil, err
 	}
@@ -23918,18 +16792,6 @@ func NewListActionInvocationsRequest(server string, params *ListActionInvocation
 		if params.Limit != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.RunId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "run_id", *params.RunId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -25743,30 +18605,6 @@ func NewListArtifactsRequest(server string, params *ListArtifactsParams) (*http.
 		// per the OpenAPI spec (e.g. "color=blue,black,brown").
 		var rawQueryFragments []string
 
-		if params.RunId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "run_id", *params.RunId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.StepId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "step_id", *params.StepId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
 		if params.Mime != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "mime", *params.Mime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
@@ -26114,18 +18952,6 @@ func NewListBillingUsageEventsRequest(server string, params *ListBillingUsageEve
 		if params.SourceId != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "source_id", *params.SourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.RunId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "run_id", *params.RunId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -26592,275 +19418,6 @@ func NewListCatalogWorkerModelsRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewListEnvironmentsRequest generates requests for ListEnvironments
-func NewListEnvironmentsRequest(server string, params *ListEnvironmentsParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/environments")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Cursor != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Limit != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Status != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.RunId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "run_id", *params.RunId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.IncludeDestroyed != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "include_destroyed", *params.IncludeDestroyed, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.DestroyedSince != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "destroyed_since", *params.DestroyedSince, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateEnvironmentRequest calls the generic CreateEnvironment builder with application/json body
-func NewCreateEnvironmentRequest(server string, body CreateEnvironmentJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateEnvironmentRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateEnvironmentRequestWithBody generates requests for CreateEnvironment with any type of body
-func NewCreateEnvironmentRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/environments")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDestroyEnvironmentRequest generates requests for DestroyEnvironment
-func NewDestroyEnvironmentRequest(server string, environmentId EnvironmentIDParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "environment_id", environmentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/environments/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetEnvironmentRequest generates requests for GetEnvironment
-func NewGetEnvironmentRequest(server string, environmentId EnvironmentIDParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "environment_id", environmentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/environments/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpdateEnvironmentRequest calls the generic UpdateEnvironment builder with application/json body
-func NewUpdateEnvironmentRequest(server string, environmentId EnvironmentIDParam, body UpdateEnvironmentJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateEnvironmentRequestWithBody(server, environmentId, "application/json", bodyReader)
-}
-
-// NewUpdateEnvironmentRequestWithBody generates requests for UpdateEnvironment with any type of body
-func NewUpdateEnvironmentRequestWithBody(server string, environmentId EnvironmentIDParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "environment_id", environmentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/environments/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
 // NewListInteractionsRequest generates requests for ListInteractions
 func NewListInteractionsRequest(server string, params *ListInteractionsParams) (*http.Request, error) {
 	var err error
@@ -26904,18 +19461,6 @@ func NewListInteractionsRequest(server string, params *ListInteractionsParams) (
 		if params.Kind != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "kind", *params.Kind, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.RunId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "run_id", *params.RunId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -27229,298 +19774,6 @@ func NewReviewInteractionRequestWithBody(server string, resourceId IDParam, cont
 	}
 
 	operationPath := fmt.Sprintf("/v1/interactions/%s/review", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewListLoopsRequest generates requests for ListLoops
-func NewListLoopsRequest(server string, params *ListLoopsParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/loops")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Status != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.AgentId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "agent_id", *params.AgentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Cursor != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Limit != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateLoopRequest calls the generic CreateLoop builder with application/json body
-func NewCreateLoopRequest(server string, body CreateLoopJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateLoopRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateLoopRequestWithBody generates requests for CreateLoop with any type of body
-func NewCreateLoopRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/loops")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDeleteLoopRequest generates requests for DeleteLoop
-func NewDeleteLoopRequest(server string, resourceId IDParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/loops/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetLoopRequest generates requests for GetLoop
-func NewGetLoopRequest(server string, resourceId IDParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/loops/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpdateLoopRequest calls the generic UpdateLoop builder with application/json body
-func NewUpdateLoopRequest(server string, resourceId IDParam, body UpdateLoopJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateLoopRequestWithBody(server, resourceId, "application/json", bodyReader)
-}
-
-// NewUpdateLoopRequestWithBody generates requests for UpdateLoop with any type of body
-func NewUpdateLoopRequestWithBody(server string, resourceId IDParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/loops/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewStartRunRequest calls the generic StartRun builder with application/json body
-func NewStartRunRequest(server string, resourceId IDParam, body StartRunJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewStartRunRequestWithBody(server, resourceId, "application/json", bodyReader)
-}
-
-// NewStartRunRequestWithBody generates requests for StartRun with any type of body
-func NewStartRunRequestWithBody(server string, resourceId IDParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/loops/%s/runs", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -28282,8 +20535,76 @@ func NewUpdateRoleRequestWithBody(server string, resourceId IDParam, contentType
 	return req, nil
 }
 
-// NewListRunsRequest generates requests for ListRuns
-func NewListRunsRequest(server string, params *ListRunsParams) (*http.Request, error) {
+// NewApproveRoutineProposalRequest generates requests for ApproveRoutineProposal
+func NewApproveRoutineProposalRequest(server string, proposalId RoutineProposalID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "proposal_id", proposalId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/routine-proposals/%s/approve", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewDismissRoutineProposalRequest generates requests for DismissRoutineProposal
+func NewDismissRoutineProposalRequest(server string, proposalId RoutineProposalID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "proposal_id", proposalId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/routine-proposals/%s/dismiss", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListRoutinesRequest generates requests for ListRoutines
+func NewListRoutinesRequest(server string, params *ListRoutinesParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -28291,7 +20612,7 @@ func NewListRunsRequest(server string, params *ListRunsParams) (*http.Request, e
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/runs")
+	operationPath := fmt.Sprintf("/v1/routines")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -28310,9 +20631,9 @@ func NewListRunsRequest(server string, params *ListRunsParams) (*http.Request, e
 		// per the OpenAPI spec (e.g. "color=blue,black,brown").
 		var rawQueryFragments []string
 
-		if params.Status != nil {
+		if params.OwnerId != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owner_id", *params.OwnerId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -28322,9 +20643,9 @@ func NewListRunsRequest(server string, params *ListRunsParams) (*http.Request, e
 
 		}
 
-		if params.LoopId != nil {
+		if params.AgentId != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "loop_id", *params.LoopId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "agent_id", *params.AgentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -28334,33 +20655,9 @@ func NewListRunsRequest(server string, params *ListRunsParams) (*http.Request, e
 
 		}
 
-		if params.SourceEventId != nil {
+		if params.SessionId != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "source_event_id", *params.SourceEventId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Cursor != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Limit != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "session_id", *params.SessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -28384,13 +20681,53 @@ func NewListRunsRequest(server string, params *ListRunsParams) (*http.Request, e
 	return req, nil
 }
 
-// NewGetRunRequest generates requests for GetRun
-func NewGetRunRequest(server string, resourceId IDParam) (*http.Request, error) {
+// NewCreateRoutineRequest calls the generic CreateRoutine builder with application/json body
+func NewCreateRoutineRequest(server string, body CreateRoutineJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateRoutineRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateRoutineRequestWithBody generates requests for CreateRoutine with any type of body
+func NewCreateRoutineRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/routines")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteRoutineRequest generates requests for DeleteRoutine
+func NewDeleteRoutineRequest(server string, routineId RoutineID) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "routine_id", routineId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -28400,7 +20737,41 @@ func NewGetRunRequest(server string, resourceId IDParam) (*http.Request, error) 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/runs/%s", pathParam0)
+	operationPath := fmt.Sprintf("/v1/routines/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetRoutineRequest generates requests for GetRoutine
+func NewGetRoutineRequest(server string, routineId RoutineID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "routine_id", routineId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/routines/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -28418,24 +20789,24 @@ func NewGetRunRequest(server string, resourceId IDParam) (*http.Request, error) 
 	return req, nil
 }
 
-// NewCancelRunRequest calls the generic CancelRun builder with application/json body
-func NewCancelRunRequest(server string, resourceId IDParam, body CancelRunJSONRequestBody) (*http.Request, error) {
+// NewUpdateRoutineRequest calls the generic UpdateRoutine builder with application/json body
+func NewUpdateRoutineRequest(server string, routineId RoutineID, body UpdateRoutineJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewCancelRunRequestWithBody(server, resourceId, "application/json", bodyReader)
+	return NewUpdateRoutineRequestWithBody(server, routineId, "application/json", bodyReader)
 }
 
-// NewCancelRunRequestWithBody generates requests for CancelRun with any type of body
-func NewCancelRunRequestWithBody(server string, resourceId IDParam, contentType string, body io.Reader) (*http.Request, error) {
+// NewUpdateRoutineRequestWithBody generates requests for UpdateRoutine with any type of body
+func NewUpdateRoutineRequestWithBody(server string, routineId RoutineID, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "routine_id", routineId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -28445,7 +20816,7 @@ func NewCancelRunRequestWithBody(server string, resourceId IDParam, contentType 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/runs/%s/cancel", pathParam0)
+	operationPath := fmt.Sprintf("/v1/routines/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -28455,7 +20826,7 @@ func NewCancelRunRequestWithBody(server string, resourceId IDParam, contentType 
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -28465,13 +20836,13 @@ func NewCancelRunRequestWithBody(server string, resourceId IDParam, contentType 
 	return req, nil
 }
 
-// NewListRunEventsRequest generates requests for ListRunEvents
-func NewListRunEventsRequest(server string, resourceId IDParam, params *ListRunEventsParams) (*http.Request, error) {
+// NewListRoutineOccurrencesRequest generates requests for ListRoutineOccurrences
+func NewListRoutineOccurrencesRequest(server string, routineId RoutineID) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "routine_id", routineId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -28481,236 +20852,7 @@ func NewListRunEventsRequest(server string, resourceId IDParam, params *ListRunE
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/runs/%s/events", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.AfterSequence != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "after_sequence", *params.AfterSequence, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Limit != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-
-		if params.LastEventID != nil {
-			var headerParam0 string
-
-			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Last-Event-ID", *params.LastEventID, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "integer", Format: "int64"})
-			if err != nil {
-				return nil, err
-			}
-
-			req.Header.Set("Last-Event-ID", headerParam0)
-		}
-
-	}
-
-	return req, nil
-}
-
-// NewResumeRunRequest calls the generic ResumeRun builder with application/json body
-func NewResumeRunRequest(server string, resourceId IDParam, body ResumeRunJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewResumeRunRequestWithBody(server, resourceId, "application/json", bodyReader)
-}
-
-// NewResumeRunRequestWithBody generates requests for ResumeRun with any type of body
-func NewResumeRunRequestWithBody(server string, resourceId IDParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/runs/%s/resume", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewRetryRunRequest calls the generic RetryRun builder with application/json body
-func NewRetryRunRequest(server string, resourceId IDParam, body RetryRunJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewRetryRunRequestWithBody(server, resourceId, "application/json", bodyReader)
-}
-
-// NewRetryRunRequestWithBody generates requests for RetryRun with any type of body
-func NewRetryRunRequestWithBody(server string, resourceId IDParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/runs/%s/retry", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewSignalRunRequest calls the generic SignalRun builder with application/json body
-func NewSignalRunRequest(server string, resourceId IDParam, body SignalRunJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewSignalRunRequestWithBody(server, resourceId, "application/json", bodyReader)
-}
-
-// NewSignalRunRequestWithBody generates requests for SignalRun with any type of body
-func NewSignalRunRequestWithBody(server string, resourceId IDParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/runs/%s/signals", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewListRunStepsRequest generates requests for ListRunSteps
-func NewListRunStepsRequest(server string, resourceId IDParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/runs/%s/steps", pathParam0)
+	operationPath := fmt.Sprintf("/v1/routines/%s/occurrences", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -28721,6 +20863,74 @@ func NewListRunStepsRequest(server string, resourceId IDParam) (*http.Request, e
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPauseRoutineRequest generates requests for PauseRoutine
+func NewPauseRoutineRequest(server string, routineId RoutineID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "routine_id", routineId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/routines/%s/pause", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewResumeRoutineRequest generates requests for ResumeRoutine
+func NewResumeRoutineRequest(server string, routineId RoutineID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "routine_id", routineId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/routines/%s/resume", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -29138,7 +21348,7 @@ func NewDeleteSessionAttachmentRequest(server string, sessionId SessionIdParam, 
 }
 
 // NewCancelSessionRequest generates requests for CancelSession
-func NewCancelSessionRequest(server string, sessionId SessionIdParam, params *CancelSessionParams) (*http.Request, error) {
+func NewCancelSessionRequest(server string, sessionId SessionIdParam) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -29161,33 +21371,6 @@ func NewCancelSessionRequest(server string, sessionId SessionIdParam, params *Ca
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Force != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "force", *params.Force, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
@@ -31032,106 +23215,6 @@ func NewUpsertTableRowRequestWithBody(server string, tableId TableIDParam, conte
 	return req, nil
 }
 
-// NewDeliverHTTPTriggerRequest calls the generic DeliverHTTPTrigger builder with application/json body
-func NewDeliverHTTPTriggerRequest(server string, httpHandle string, params *DeliverHTTPTriggerParams, body DeliverHTTPTriggerJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewDeliverHTTPTriggerRequestWithBody(server, httpHandle, params, "application/json", bodyReader)
-}
-
-// NewDeliverHTTPTriggerRequestWithBody generates requests for DeliverHTTPTrigger with any type of body
-func NewDeliverHTTPTriggerRequestWithBody(server string, httpHandle string, params *DeliverHTTPTriggerParams, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "http_handle", httpHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/triggers/http/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.IdempotencyKey != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "idempotency_key", *params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	if params != nil {
-
-		if params.XIdempotencyKey != nil {
-			var headerParam0 string
-
-			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Idempotency-Key", *params.XIdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-			if err != nil {
-				return nil, err
-			}
-
-			req.Header.Set("X-Idempotency-Key", headerParam0)
-		}
-
-		if params.XMobiusSignature != nil {
-			var headerParam1 string
-
-			headerParam1, err = runtime.StyleParamWithOptions("simple", false, "X-Mobius-Signature", *params.XMobiusSignature, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-			if err != nil {
-				return nil, err
-			}
-
-			req.Header.Set("X-Mobius-Signature", headerParam1)
-		}
-
-	}
-
-	return req, nil
-}
-
 // NewListTurnMessagesRequest generates requests for ListTurnMessages
 func NewListTurnMessagesRequest(server string, turnId TurnIdParam, params *ListTurnMessagesParams) (*http.Request, error) {
 	var err error
@@ -31210,393 +23293,6 @@ func NewListTurnMessagesRequest(server string, turnId TurnIdParam, params *ListT
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListWebhooksRequest generates requests for ListWebhooks
-func NewListWebhooksRequest(server string, params *ListWebhooksParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/webhooks")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Enabled != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "enabled", *params.Enabled, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Cursor != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Limit != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateWebhookRequest calls the generic CreateWebhook builder with application/json body
-func NewCreateWebhookRequest(server string, body CreateWebhookJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateWebhookRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateWebhookRequestWithBody generates requests for CreateWebhook with any type of body
-func NewCreateWebhookRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/webhooks")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDeleteWebhookRequest generates requests for DeleteWebhook
-func NewDeleteWebhookRequest(server string, resourceId IDParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/webhooks/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetWebhookRequest generates requests for GetWebhook
-func NewGetWebhookRequest(server string, resourceId IDParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/webhooks/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpdateWebhookRequest calls the generic UpdateWebhook builder with application/json body
-func NewUpdateWebhookRequest(server string, resourceId IDParam, body UpdateWebhookJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateWebhookRequestWithBody(server, resourceId, "application/json", bodyReader)
-}
-
-// NewUpdateWebhookRequestWithBody generates requests for UpdateWebhook with any type of body
-func NewUpdateWebhookRequestWithBody(server string, resourceId IDParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/webhooks/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewListWebhookDeliveriesRequest generates requests for ListWebhookDeliveries
-func NewListWebhookDeliveriesRequest(server string, resourceId IDParam, params *ListWebhookDeliveriesParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/webhooks/%s/deliveries", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Cursor != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Limit != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewPingWebhookRequest calls the generic PingWebhook builder with application/json body
-func NewPingWebhookRequest(server string, resourceId IDParam, body PingWebhookJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewPingWebhookRequestWithBody(server, resourceId, "application/json", bodyReader)
-}
-
-// NewPingWebhookRequestWithBody generates requests for PingWebhook with any type of body
-func NewPingWebhookRequestWithBody(server string, resourceId IDParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/webhooks/%s/ping", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewRotateWebhookSecretRequest generates requests for RotateWebhookSecret
-func NewRotateWebhookSecretRequest(server string, resourceId IDParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/webhooks/%s/secret/rotate", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -31857,25 +23553,6 @@ type ClientWithResponsesInterface interface {
 	// ListCatalogWorkerModelsWithResponse request
 	ListCatalogWorkerModelsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListCatalogWorkerModelsResponse, error)
 
-	// ListEnvironmentsWithResponse request
-	ListEnvironmentsWithResponse(ctx context.Context, params *ListEnvironmentsParams, reqEditors ...RequestEditorFn) (*ListEnvironmentsResponse, error)
-
-	// CreateEnvironmentWithBodyWithResponse request with any body
-	CreateEnvironmentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEnvironmentResponse, error)
-
-	CreateEnvironmentWithResponse(ctx context.Context, body CreateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEnvironmentResponse, error)
-
-	// DestroyEnvironmentWithResponse request
-	DestroyEnvironmentWithResponse(ctx context.Context, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*DestroyEnvironmentResponse, error)
-
-	// GetEnvironmentWithResponse request
-	GetEnvironmentWithResponse(ctx context.Context, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*GetEnvironmentResponse, error)
-
-	// UpdateEnvironmentWithBodyWithResponse request with any body
-	UpdateEnvironmentWithBodyWithResponse(ctx context.Context, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateEnvironmentResponse, error)
-
-	UpdateEnvironmentWithResponse(ctx context.Context, environmentId EnvironmentIDParam, body UpdateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateEnvironmentResponse, error)
-
 	// ListInteractionsWithResponse request
 	ListInteractionsWithResponse(ctx context.Context, params *ListInteractionsParams, reqEditors ...RequestEditorFn) (*ListInteractionsResponse, error)
 
@@ -31904,30 +23581,6 @@ type ClientWithResponsesInterface interface {
 	ReviewInteractionWithBodyWithResponse(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReviewInteractionResponse, error)
 
 	ReviewInteractionWithResponse(ctx context.Context, resourceId IDParam, body ReviewInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*ReviewInteractionResponse, error)
-
-	// ListLoopsWithResponse request
-	ListLoopsWithResponse(ctx context.Context, params *ListLoopsParams, reqEditors ...RequestEditorFn) (*ListLoopsResponse, error)
-
-	// CreateLoopWithBodyWithResponse request with any body
-	CreateLoopWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateLoopResponse, error)
-
-	CreateLoopWithResponse(ctx context.Context, body CreateLoopJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateLoopResponse, error)
-
-	// DeleteLoopWithResponse request
-	DeleteLoopWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*DeleteLoopResponse, error)
-
-	// GetLoopWithResponse request
-	GetLoopWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*GetLoopResponse, error)
-
-	// UpdateLoopWithBodyWithResponse request with any body
-	UpdateLoopWithBodyWithResponse(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateLoopResponse, error)
-
-	UpdateLoopWithResponse(ctx context.Context, resourceId IDParam, body UpdateLoopJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateLoopResponse, error)
-
-	// StartRunWithBodyWithResponse request with any body
-	StartRunWithBodyWithResponse(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*StartRunResponse, error)
-
-	StartRunWithResponse(ctx context.Context, resourceId IDParam, body StartRunJSONRequestBody, reqEditors ...RequestEditorFn) (*StartRunResponse, error)
 
 	// GetOAuthReturnOriginsWithResponse request
 	GetOAuthReturnOriginsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetOAuthReturnOriginsResponse, error)
@@ -31994,37 +23647,39 @@ type ClientWithResponsesInterface interface {
 
 	UpdateRoleWithResponse(ctx context.Context, resourceId IDParam, body UpdateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRoleResponse, error)
 
-	// ListRunsWithResponse request
-	ListRunsWithResponse(ctx context.Context, params *ListRunsParams, reqEditors ...RequestEditorFn) (*ListRunsResponse, error)
+	// ApproveRoutineProposalWithResponse request
+	ApproveRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*ApproveRoutineProposalResponse, error)
 
-	// GetRunWithResponse request
-	GetRunWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*GetRunResponse, error)
+	// DismissRoutineProposalWithResponse request
+	DismissRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*DismissRoutineProposalResponse, error)
 
-	// CancelRunWithBodyWithResponse request with any body
-	CancelRunWithBodyWithResponse(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CancelRunResponse, error)
+	// ListRoutinesWithResponse request
+	ListRoutinesWithResponse(ctx context.Context, params *ListRoutinesParams, reqEditors ...RequestEditorFn) (*ListRoutinesResponse, error)
 
-	CancelRunWithResponse(ctx context.Context, resourceId IDParam, body CancelRunJSONRequestBody, reqEditors ...RequestEditorFn) (*CancelRunResponse, error)
+	// CreateRoutineWithBodyWithResponse request with any body
+	CreateRoutineWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRoutineResponse, error)
 
-	// ListRunEventsWithResponse request
-	ListRunEventsWithResponse(ctx context.Context, resourceId IDParam, params *ListRunEventsParams, reqEditors ...RequestEditorFn) (*ListRunEventsResponse, error)
+	CreateRoutineWithResponse(ctx context.Context, body CreateRoutineJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRoutineResponse, error)
 
-	// ResumeRunWithBodyWithResponse request with any body
-	ResumeRunWithBodyWithResponse(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ResumeRunResponse, error)
+	// DeleteRoutineWithResponse request
+	DeleteRoutineWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*DeleteRoutineResponse, error)
 
-	ResumeRunWithResponse(ctx context.Context, resourceId IDParam, body ResumeRunJSONRequestBody, reqEditors ...RequestEditorFn) (*ResumeRunResponse, error)
+	// GetRoutineWithResponse request
+	GetRoutineWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*GetRoutineResponse, error)
 
-	// RetryRunWithBodyWithResponse request with any body
-	RetryRunWithBodyWithResponse(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RetryRunResponse, error)
+	// UpdateRoutineWithBodyWithResponse request with any body
+	UpdateRoutineWithBodyWithResponse(ctx context.Context, routineId RoutineID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateRoutineResponse, error)
 
-	RetryRunWithResponse(ctx context.Context, resourceId IDParam, body RetryRunJSONRequestBody, reqEditors ...RequestEditorFn) (*RetryRunResponse, error)
+	UpdateRoutineWithResponse(ctx context.Context, routineId RoutineID, body UpdateRoutineJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRoutineResponse, error)
 
-	// SignalRunWithBodyWithResponse request with any body
-	SignalRunWithBodyWithResponse(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SignalRunResponse, error)
+	// ListRoutineOccurrencesWithResponse request
+	ListRoutineOccurrencesWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*ListRoutineOccurrencesResponse, error)
 
-	SignalRunWithResponse(ctx context.Context, resourceId IDParam, body SignalRunJSONRequestBody, reqEditors ...RequestEditorFn) (*SignalRunResponse, error)
+	// PauseRoutineWithResponse request
+	PauseRoutineWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*PauseRoutineResponse, error)
 
-	// ListRunStepsWithResponse request
-	ListRunStepsWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*ListRunStepsResponse, error)
+	// ResumeRoutineWithResponse request
+	ResumeRoutineWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*ResumeRoutineResponse, error)
 
 	// ListSessionsWithResponse request
 	ListSessionsWithResponse(ctx context.Context, params *ListSessionsParams, reqEditors ...RequestEditorFn) (*ListSessionsResponse, error)
@@ -32052,7 +23707,7 @@ type ClientWithResponsesInterface interface {
 	DeleteSessionAttachmentWithResponse(ctx context.Context, sessionId SessionIdParam, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*DeleteSessionAttachmentResponse, error)
 
 	// CancelSessionWithResponse request
-	CancelSessionWithResponse(ctx context.Context, sessionId SessionIdParam, params *CancelSessionParams, reqEditors ...RequestEditorFn) (*CancelSessionResponse, error)
+	CancelSessionWithResponse(ctx context.Context, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*CancelSessionResponse, error)
 
 	// CompactSessionWithResponse request
 	CompactSessionWithResponse(ctx context.Context, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*CompactSessionResponse, error)
@@ -32190,43 +23845,8 @@ type ClientWithResponsesInterface interface {
 
 	UpsertTableRowWithResponse(ctx context.Context, tableId TableIDParam, body UpsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertTableRowResponse, error)
 
-	// DeliverHTTPTriggerWithBodyWithResponse request with any body
-	DeliverHTTPTriggerWithBodyWithResponse(ctx context.Context, httpHandle string, params *DeliverHTTPTriggerParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeliverHTTPTriggerResponse, error)
-
-	DeliverHTTPTriggerWithResponse(ctx context.Context, httpHandle string, params *DeliverHTTPTriggerParams, body DeliverHTTPTriggerJSONRequestBody, reqEditors ...RequestEditorFn) (*DeliverHTTPTriggerResponse, error)
-
 	// ListTurnMessagesWithResponse request
 	ListTurnMessagesWithResponse(ctx context.Context, turnId TurnIdParam, params *ListTurnMessagesParams, reqEditors ...RequestEditorFn) (*ListTurnMessagesResponse, error)
-
-	// ListWebhooksWithResponse request
-	ListWebhooksWithResponse(ctx context.Context, params *ListWebhooksParams, reqEditors ...RequestEditorFn) (*ListWebhooksResponse, error)
-
-	// CreateWebhookWithBodyWithResponse request with any body
-	CreateWebhookWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateWebhookResponse, error)
-
-	CreateWebhookWithResponse(ctx context.Context, body CreateWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateWebhookResponse, error)
-
-	// DeleteWebhookWithResponse request
-	DeleteWebhookWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*DeleteWebhookResponse, error)
-
-	// GetWebhookWithResponse request
-	GetWebhookWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*GetWebhookResponse, error)
-
-	// UpdateWebhookWithBodyWithResponse request with any body
-	UpdateWebhookWithBodyWithResponse(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateWebhookResponse, error)
-
-	UpdateWebhookWithResponse(ctx context.Context, resourceId IDParam, body UpdateWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateWebhookResponse, error)
-
-	// ListWebhookDeliveriesWithResponse request
-	ListWebhookDeliveriesWithResponse(ctx context.Context, resourceId IDParam, params *ListWebhookDeliveriesParams, reqEditors ...RequestEditorFn) (*ListWebhookDeliveriesResponse, error)
-
-	// PingWebhookWithBodyWithResponse request with any body
-	PingWebhookWithBodyWithResponse(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PingWebhookResponse, error)
-
-	PingWebhookWithResponse(ctx context.Context, resourceId IDParam, body PingWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*PingWebhookResponse, error)
-
-	// RotateWebhookSecretWithResponse request
-	RotateWebhookSecretWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*RotateWebhookSecretResponse, error)
 
 	// OpenWorkerSocketWithResponse request
 	OpenWorkerSocketWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*OpenWorkerSocketResponse, error)
@@ -33969,175 +25589,6 @@ func (r ListCatalogWorkerModelsResponse) ContentType() string {
 	return ""
 }
 
-type ListEnvironmentsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *EnvironmentListResponse
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-}
-
-// Status returns HTTPResponse.Status
-func (r ListEnvironmentsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListEnvironmentsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListEnvironmentsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type CreateEnvironmentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *Environment
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON409      *Conflict
-	JSON429      *TooManyRequests
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateEnvironmentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateEnvironmentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreateEnvironmentResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type DestroyEnvironmentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Environment
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-	JSON429      *TooManyRequests
-}
-
-// Status returns HTTPResponse.Status
-func (r DestroyEnvironmentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DestroyEnvironmentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DestroyEnvironmentResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetEnvironmentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Environment
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r GetEnvironmentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetEnvironmentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetEnvironmentResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type UpdateEnvironmentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Environment
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-	JSON429      *TooManyRequests
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateEnvironmentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateEnvironmentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r UpdateEnvironmentResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 type ListInteractionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -34368,211 +25819,6 @@ func (r ReviewInteractionResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ReviewInteractionResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListLoopsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *LoopListResponse
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-}
-
-// Status returns HTTPResponse.Status
-func (r ListLoopsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListLoopsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListLoopsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type CreateLoopResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *Loop
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON409      *Conflict
-	JSON429      *TooManyRequests
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateLoopResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateLoopResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreateLoopResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type DeleteLoopResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-	JSON429      *TooManyRequests
-}
-
-// Status returns HTTPResponse.Status
-func (r DeleteLoopResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeleteLoopResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DeleteLoopResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetLoopResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Loop
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r GetLoopResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetLoopResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetLoopResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type UpdateLoopResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Loop
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-	JSON409      *Conflict
-	JSON429      *TooManyRequests
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateLoopResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateLoopResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r UpdateLoopResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type StartRunResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON202      *LoopRun
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-	JSON409      *Conflict
-	JSON429      *TooManyRequests
-}
-
-// Status returns HTTPResponse.Status
-func (r StartRunResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r StartRunResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r StartRunResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -35147,153 +26393,18 @@ func (r UpdateRoleResponse) ContentType() string {
 	return ""
 }
 
-type ListRunsResponse struct {
+type ApproveRoutineProposalResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *LoopRunListResponse
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-}
-
-// Status returns HTTPResponse.Status
-func (r ListRunsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListRunsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListRunsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetRunResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *LoopRun
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r GetRunResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetRunResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetRunResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type CancelRunResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *LoopRun
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-	JSON429      *TooManyRequests
-}
-
-// Status returns HTTPResponse.Status
-func (r CancelRunResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CancelRunResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CancelRunResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListRunEventsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *LoopRunEventListResponse
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r ListRunEventsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListRunEventsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListRunEventsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ResumeRunResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON202      *LoopRun
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
+	JSON200      *Routine
+	JSON201      *Routine
 	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
-	JSON429      *TooManyRequests
 }
 
 // Status returns HTTPResponse.Status
-func (r ResumeRunResponse) Status() string {
+func (r ApproveRoutineProposalResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -35301,7 +26412,7 @@ func (r ResumeRunResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ResumeRunResponse) StatusCode() int {
+func (r ApproveRoutineProposalResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -35309,27 +26420,89 @@ func (r ResumeRunResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ResumeRunResponse) ContentType() string {
+func (r ApproveRoutineProposalResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type RetryRunResponse struct {
+type DismissRoutineProposalResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON202      *LoopRun
+	JSON200      *RoutineProposal
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r DismissRoutineProposalResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DismissRoutineProposalResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DismissRoutineProposalResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListRoutinesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RoutineList
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ListRoutinesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListRoutinesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListRoutinesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateRoutineResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *Routine
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
 	JSON403      *Forbidden
-	JSON404      *NotFound
 	JSON409      *Conflict
-	JSON429      *TooManyRequests
 }
 
 // Status returns HTTPResponse.Status
-func (r RetryRunResponse) Status() string {
+func (r CreateRoutineResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -35337,7 +26510,7 @@ func (r RetryRunResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r RetryRunResponse) StatusCode() int {
+func (r CreateRoutineResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -35345,26 +26518,85 @@ func (r RetryRunResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r RetryRunResponse) ContentType() string {
+func (r CreateRoutineResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type SignalRunResponse struct {
+type DeleteRoutineResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *LoopRun
+	JSON200      *Routine
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteRoutineResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteRoutineResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteRoutineResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetRoutineResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Routine
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetRoutineResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetRoutineResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetRoutineResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateRoutineResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Routine
 	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
 	JSON404      *NotFound
-	JSON429      *TooManyRequests
 }
 
 // Status returns HTTPResponse.Status
-func (r SignalRunResponse) Status() string {
+func (r UpdateRoutineResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -35372,7 +26604,7 @@ func (r SignalRunResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r SignalRunResponse) StatusCode() int {
+func (r UpdateRoutineResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -35380,24 +26612,22 @@ func (r SignalRunResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r SignalRunResponse) ContentType() string {
+func (r UpdateRoutineResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type ListRunStepsResponse struct {
+type ListRoutineOccurrencesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *LoopRunStepListResponse
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
+	JSON200      *RoutineOccurrenceList
 	JSON404      *NotFound
 }
 
 // Status returns HTTPResponse.Status
-func (r ListRunStepsResponse) Status() string {
+func (r ListRoutineOccurrencesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -35405,7 +26635,7 @@ func (r ListRunStepsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListRunStepsResponse) StatusCode() int {
+func (r ListRoutineOccurrencesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -35413,7 +26643,69 @@ func (r ListRunStepsResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListRunStepsResponse) ContentType() string {
+func (r ListRoutineOccurrencesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PauseRoutineResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Routine
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r PauseRoutineResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PauseRoutineResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PauseRoutineResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ResumeRoutineResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Routine
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ResumeRoutineResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ResumeRoutineResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ResumeRoutineResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -36142,7 +27434,6 @@ type CancelTurnResponse struct {
 	JSON401      *Unauthorized
 	JSON403      *Forbidden
 	JSON404      *NotFound
-	JSON409      *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -36922,41 +28213,6 @@ func (r UpsertTableRowResponse) ContentType() string {
 	return ""
 }
 
-type DeliverHTTPTriggerResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON202      *HTTPTriggerDeliveryResult
-	JSON400      *BadRequest
-	JSON401      *ErrorResponse
-	JSON404      *NotFound
-	JSON409      *Conflict
-	JSON413      *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r DeliverHTTPTriggerResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeliverHTTPTriggerResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DeliverHTTPTriggerResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 type ListTurnMessagesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -36984,279 +28240,6 @@ func (r ListTurnMessagesResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListTurnMessagesResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListWebhooksResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *WebhookListResponse
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r ListWebhooksResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListWebhooksResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListWebhooksResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type CreateWebhookResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *Webhook
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-	JSON409      *Conflict
-	JSON429      *TooManyRequests
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateWebhookResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateWebhookResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreateWebhookResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type DeleteWebhookResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-	JSON429      *TooManyRequests
-}
-
-// Status returns HTTPResponse.Status
-func (r DeleteWebhookResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeleteWebhookResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DeleteWebhookResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetWebhookResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Webhook
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r GetWebhookResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetWebhookResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetWebhookResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type UpdateWebhookResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Webhook
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-	JSON409      *Conflict
-	JSON429      *TooManyRequests
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateWebhookResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateWebhookResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r UpdateWebhookResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListWebhookDeliveriesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *WebhookDeliveryListResponse
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r ListWebhookDeliveriesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListWebhookDeliveriesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListWebhookDeliveriesResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type PingWebhookResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *PingWebhookResult
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-	JSON429      *TooManyRequests
-}
-
-// Status returns HTTPResponse.Status
-func (r PingWebhookResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r PingWebhookResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r PingWebhookResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type RotateWebhookSecretResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *RotateSecretResult
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-	JSON429      *TooManyRequests
-}
-
-// Status returns HTTPResponse.Status
-func (r RotateWebhookSecretResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r RotateWebhookSecretResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r RotateWebhookSecretResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -37875,67 +28858,6 @@ func (c *ClientWithResponses) ListCatalogWorkerModelsWithResponse(ctx context.Co
 	return ParseListCatalogWorkerModelsResponse(rsp)
 }
 
-// ListEnvironmentsWithResponse request returning *ListEnvironmentsResponse
-func (c *ClientWithResponses) ListEnvironmentsWithResponse(ctx context.Context, params *ListEnvironmentsParams, reqEditors ...RequestEditorFn) (*ListEnvironmentsResponse, error) {
-	rsp, err := c.ListEnvironments(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListEnvironmentsResponse(rsp)
-}
-
-// CreateEnvironmentWithBodyWithResponse request with arbitrary body returning *CreateEnvironmentResponse
-func (c *ClientWithResponses) CreateEnvironmentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEnvironmentResponse, error) {
-	rsp, err := c.CreateEnvironmentWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateEnvironmentResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateEnvironmentWithResponse(ctx context.Context, body CreateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEnvironmentResponse, error) {
-	rsp, err := c.CreateEnvironment(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateEnvironmentResponse(rsp)
-}
-
-// DestroyEnvironmentWithResponse request returning *DestroyEnvironmentResponse
-func (c *ClientWithResponses) DestroyEnvironmentWithResponse(ctx context.Context, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*DestroyEnvironmentResponse, error) {
-	rsp, err := c.DestroyEnvironment(ctx, environmentId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDestroyEnvironmentResponse(rsp)
-}
-
-// GetEnvironmentWithResponse request returning *GetEnvironmentResponse
-func (c *ClientWithResponses) GetEnvironmentWithResponse(ctx context.Context, environmentId EnvironmentIDParam, reqEditors ...RequestEditorFn) (*GetEnvironmentResponse, error) {
-	rsp, err := c.GetEnvironment(ctx, environmentId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetEnvironmentResponse(rsp)
-}
-
-// UpdateEnvironmentWithBodyWithResponse request with arbitrary body returning *UpdateEnvironmentResponse
-func (c *ClientWithResponses) UpdateEnvironmentWithBodyWithResponse(ctx context.Context, environmentId EnvironmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateEnvironmentResponse, error) {
-	rsp, err := c.UpdateEnvironmentWithBody(ctx, environmentId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateEnvironmentResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateEnvironmentWithResponse(ctx context.Context, environmentId EnvironmentIDParam, body UpdateEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateEnvironmentResponse, error) {
-	rsp, err := c.UpdateEnvironment(ctx, environmentId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateEnvironmentResponse(rsp)
-}
-
 // ListInteractionsWithResponse request returning *ListInteractionsResponse
 func (c *ClientWithResponses) ListInteractionsWithResponse(ctx context.Context, params *ListInteractionsParams, reqEditors ...RequestEditorFn) (*ListInteractionsResponse, error) {
 	rsp, err := c.ListInteractions(ctx, params, reqEditors...)
@@ -38029,84 +28951,6 @@ func (c *ClientWithResponses) ReviewInteractionWithResponse(ctx context.Context,
 		return nil, err
 	}
 	return ParseReviewInteractionResponse(rsp)
-}
-
-// ListLoopsWithResponse request returning *ListLoopsResponse
-func (c *ClientWithResponses) ListLoopsWithResponse(ctx context.Context, params *ListLoopsParams, reqEditors ...RequestEditorFn) (*ListLoopsResponse, error) {
-	rsp, err := c.ListLoops(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListLoopsResponse(rsp)
-}
-
-// CreateLoopWithBodyWithResponse request with arbitrary body returning *CreateLoopResponse
-func (c *ClientWithResponses) CreateLoopWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateLoopResponse, error) {
-	rsp, err := c.CreateLoopWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateLoopResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateLoopWithResponse(ctx context.Context, body CreateLoopJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateLoopResponse, error) {
-	rsp, err := c.CreateLoop(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateLoopResponse(rsp)
-}
-
-// DeleteLoopWithResponse request returning *DeleteLoopResponse
-func (c *ClientWithResponses) DeleteLoopWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*DeleteLoopResponse, error) {
-	rsp, err := c.DeleteLoop(ctx, resourceId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeleteLoopResponse(rsp)
-}
-
-// GetLoopWithResponse request returning *GetLoopResponse
-func (c *ClientWithResponses) GetLoopWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*GetLoopResponse, error) {
-	rsp, err := c.GetLoop(ctx, resourceId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetLoopResponse(rsp)
-}
-
-// UpdateLoopWithBodyWithResponse request with arbitrary body returning *UpdateLoopResponse
-func (c *ClientWithResponses) UpdateLoopWithBodyWithResponse(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateLoopResponse, error) {
-	rsp, err := c.UpdateLoopWithBody(ctx, resourceId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateLoopResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateLoopWithResponse(ctx context.Context, resourceId IDParam, body UpdateLoopJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateLoopResponse, error) {
-	rsp, err := c.UpdateLoop(ctx, resourceId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateLoopResponse(rsp)
-}
-
-// StartRunWithBodyWithResponse request with arbitrary body returning *StartRunResponse
-func (c *ClientWithResponses) StartRunWithBodyWithResponse(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*StartRunResponse, error) {
-	rsp, err := c.StartRunWithBody(ctx, resourceId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseStartRunResponse(rsp)
-}
-
-func (c *ClientWithResponses) StartRunWithResponse(ctx context.Context, resourceId IDParam, body StartRunJSONRequestBody, reqEditors ...RequestEditorFn) (*StartRunResponse, error) {
-	rsp, err := c.StartRun(ctx, resourceId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseStartRunResponse(rsp)
 }
 
 // GetOAuthReturnOriginsWithResponse request returning *GetOAuthReturnOriginsResponse
@@ -38318,108 +29162,110 @@ func (c *ClientWithResponses) UpdateRoleWithResponse(ctx context.Context, resour
 	return ParseUpdateRoleResponse(rsp)
 }
 
-// ListRunsWithResponse request returning *ListRunsResponse
-func (c *ClientWithResponses) ListRunsWithResponse(ctx context.Context, params *ListRunsParams, reqEditors ...RequestEditorFn) (*ListRunsResponse, error) {
-	rsp, err := c.ListRuns(ctx, params, reqEditors...)
+// ApproveRoutineProposalWithResponse request returning *ApproveRoutineProposalResponse
+func (c *ClientWithResponses) ApproveRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*ApproveRoutineProposalResponse, error) {
+	rsp, err := c.ApproveRoutineProposal(ctx, proposalId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListRunsResponse(rsp)
+	return ParseApproveRoutineProposalResponse(rsp)
 }
 
-// GetRunWithResponse request returning *GetRunResponse
-func (c *ClientWithResponses) GetRunWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*GetRunResponse, error) {
-	rsp, err := c.GetRun(ctx, resourceId, reqEditors...)
+// DismissRoutineProposalWithResponse request returning *DismissRoutineProposalResponse
+func (c *ClientWithResponses) DismissRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*DismissRoutineProposalResponse, error) {
+	rsp, err := c.DismissRoutineProposal(ctx, proposalId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetRunResponse(rsp)
+	return ParseDismissRoutineProposalResponse(rsp)
 }
 
-// CancelRunWithBodyWithResponse request with arbitrary body returning *CancelRunResponse
-func (c *ClientWithResponses) CancelRunWithBodyWithResponse(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CancelRunResponse, error) {
-	rsp, err := c.CancelRunWithBody(ctx, resourceId, contentType, body, reqEditors...)
+// ListRoutinesWithResponse request returning *ListRoutinesResponse
+func (c *ClientWithResponses) ListRoutinesWithResponse(ctx context.Context, params *ListRoutinesParams, reqEditors ...RequestEditorFn) (*ListRoutinesResponse, error) {
+	rsp, err := c.ListRoutines(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCancelRunResponse(rsp)
+	return ParseListRoutinesResponse(rsp)
 }
 
-func (c *ClientWithResponses) CancelRunWithResponse(ctx context.Context, resourceId IDParam, body CancelRunJSONRequestBody, reqEditors ...RequestEditorFn) (*CancelRunResponse, error) {
-	rsp, err := c.CancelRun(ctx, resourceId, body, reqEditors...)
+// CreateRoutineWithBodyWithResponse request with arbitrary body returning *CreateRoutineResponse
+func (c *ClientWithResponses) CreateRoutineWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRoutineResponse, error) {
+	rsp, err := c.CreateRoutineWithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCancelRunResponse(rsp)
+	return ParseCreateRoutineResponse(rsp)
 }
 
-// ListRunEventsWithResponse request returning *ListRunEventsResponse
-func (c *ClientWithResponses) ListRunEventsWithResponse(ctx context.Context, resourceId IDParam, params *ListRunEventsParams, reqEditors ...RequestEditorFn) (*ListRunEventsResponse, error) {
-	rsp, err := c.ListRunEvents(ctx, resourceId, params, reqEditors...)
+func (c *ClientWithResponses) CreateRoutineWithResponse(ctx context.Context, body CreateRoutineJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRoutineResponse, error) {
+	rsp, err := c.CreateRoutine(ctx, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListRunEventsResponse(rsp)
+	return ParseCreateRoutineResponse(rsp)
 }
 
-// ResumeRunWithBodyWithResponse request with arbitrary body returning *ResumeRunResponse
-func (c *ClientWithResponses) ResumeRunWithBodyWithResponse(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ResumeRunResponse, error) {
-	rsp, err := c.ResumeRunWithBody(ctx, resourceId, contentType, body, reqEditors...)
+// DeleteRoutineWithResponse request returning *DeleteRoutineResponse
+func (c *ClientWithResponses) DeleteRoutineWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*DeleteRoutineResponse, error) {
+	rsp, err := c.DeleteRoutine(ctx, routineId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseResumeRunResponse(rsp)
+	return ParseDeleteRoutineResponse(rsp)
 }
 
-func (c *ClientWithResponses) ResumeRunWithResponse(ctx context.Context, resourceId IDParam, body ResumeRunJSONRequestBody, reqEditors ...RequestEditorFn) (*ResumeRunResponse, error) {
-	rsp, err := c.ResumeRun(ctx, resourceId, body, reqEditors...)
+// GetRoutineWithResponse request returning *GetRoutineResponse
+func (c *ClientWithResponses) GetRoutineWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*GetRoutineResponse, error) {
+	rsp, err := c.GetRoutine(ctx, routineId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseResumeRunResponse(rsp)
+	return ParseGetRoutineResponse(rsp)
 }
 
-// RetryRunWithBodyWithResponse request with arbitrary body returning *RetryRunResponse
-func (c *ClientWithResponses) RetryRunWithBodyWithResponse(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RetryRunResponse, error) {
-	rsp, err := c.RetryRunWithBody(ctx, resourceId, contentType, body, reqEditors...)
+// UpdateRoutineWithBodyWithResponse request with arbitrary body returning *UpdateRoutineResponse
+func (c *ClientWithResponses) UpdateRoutineWithBodyWithResponse(ctx context.Context, routineId RoutineID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateRoutineResponse, error) {
+	rsp, err := c.UpdateRoutineWithBody(ctx, routineId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseRetryRunResponse(rsp)
+	return ParseUpdateRoutineResponse(rsp)
 }
 
-func (c *ClientWithResponses) RetryRunWithResponse(ctx context.Context, resourceId IDParam, body RetryRunJSONRequestBody, reqEditors ...RequestEditorFn) (*RetryRunResponse, error) {
-	rsp, err := c.RetryRun(ctx, resourceId, body, reqEditors...)
+func (c *ClientWithResponses) UpdateRoutineWithResponse(ctx context.Context, routineId RoutineID, body UpdateRoutineJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRoutineResponse, error) {
+	rsp, err := c.UpdateRoutine(ctx, routineId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseRetryRunResponse(rsp)
+	return ParseUpdateRoutineResponse(rsp)
 }
 
-// SignalRunWithBodyWithResponse request with arbitrary body returning *SignalRunResponse
-func (c *ClientWithResponses) SignalRunWithBodyWithResponse(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SignalRunResponse, error) {
-	rsp, err := c.SignalRunWithBody(ctx, resourceId, contentType, body, reqEditors...)
+// ListRoutineOccurrencesWithResponse request returning *ListRoutineOccurrencesResponse
+func (c *ClientWithResponses) ListRoutineOccurrencesWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*ListRoutineOccurrencesResponse, error) {
+	rsp, err := c.ListRoutineOccurrences(ctx, routineId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseSignalRunResponse(rsp)
+	return ParseListRoutineOccurrencesResponse(rsp)
 }
 
-func (c *ClientWithResponses) SignalRunWithResponse(ctx context.Context, resourceId IDParam, body SignalRunJSONRequestBody, reqEditors ...RequestEditorFn) (*SignalRunResponse, error) {
-	rsp, err := c.SignalRun(ctx, resourceId, body, reqEditors...)
+// PauseRoutineWithResponse request returning *PauseRoutineResponse
+func (c *ClientWithResponses) PauseRoutineWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*PauseRoutineResponse, error) {
+	rsp, err := c.PauseRoutine(ctx, routineId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseSignalRunResponse(rsp)
+	return ParsePauseRoutineResponse(rsp)
 }
 
-// ListRunStepsWithResponse request returning *ListRunStepsResponse
-func (c *ClientWithResponses) ListRunStepsWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*ListRunStepsResponse, error) {
-	rsp, err := c.ListRunSteps(ctx, resourceId, reqEditors...)
+// ResumeRoutineWithResponse request returning *ResumeRoutineResponse
+func (c *ClientWithResponses) ResumeRoutineWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*ResumeRoutineResponse, error) {
+	rsp, err := c.ResumeRoutine(ctx, routineId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListRunStepsResponse(rsp)
+	return ParseResumeRoutineResponse(rsp)
 }
 
 // ListSessionsWithResponse request returning *ListSessionsResponse
@@ -38502,8 +29348,8 @@ func (c *ClientWithResponses) DeleteSessionAttachmentWithResponse(ctx context.Co
 }
 
 // CancelSessionWithResponse request returning *CancelSessionResponse
-func (c *ClientWithResponses) CancelSessionWithResponse(ctx context.Context, sessionId SessionIdParam, params *CancelSessionParams, reqEditors ...RequestEditorFn) (*CancelSessionResponse, error) {
-	rsp, err := c.CancelSession(ctx, sessionId, params, reqEditors...)
+func (c *ClientWithResponses) CancelSessionWithResponse(ctx context.Context, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*CancelSessionResponse, error) {
+	rsp, err := c.CancelSession(ctx, sessionId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -38946,23 +29792,6 @@ func (c *ClientWithResponses) UpsertTableRowWithResponse(ctx context.Context, ta
 	return ParseUpsertTableRowResponse(rsp)
 }
 
-// DeliverHTTPTriggerWithBodyWithResponse request with arbitrary body returning *DeliverHTTPTriggerResponse
-func (c *ClientWithResponses) DeliverHTTPTriggerWithBodyWithResponse(ctx context.Context, httpHandle string, params *DeliverHTTPTriggerParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeliverHTTPTriggerResponse, error) {
-	rsp, err := c.DeliverHTTPTriggerWithBody(ctx, httpHandle, params, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeliverHTTPTriggerResponse(rsp)
-}
-
-func (c *ClientWithResponses) DeliverHTTPTriggerWithResponse(ctx context.Context, httpHandle string, params *DeliverHTTPTriggerParams, body DeliverHTTPTriggerJSONRequestBody, reqEditors ...RequestEditorFn) (*DeliverHTTPTriggerResponse, error) {
-	rsp, err := c.DeliverHTTPTrigger(ctx, httpHandle, params, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeliverHTTPTriggerResponse(rsp)
-}
-
 // ListTurnMessagesWithResponse request returning *ListTurnMessagesResponse
 func (c *ClientWithResponses) ListTurnMessagesWithResponse(ctx context.Context, turnId TurnIdParam, params *ListTurnMessagesParams, reqEditors ...RequestEditorFn) (*ListTurnMessagesResponse, error) {
 	rsp, err := c.ListTurnMessages(ctx, turnId, params, reqEditors...)
@@ -38970,102 +29799,6 @@ func (c *ClientWithResponses) ListTurnMessagesWithResponse(ctx context.Context, 
 		return nil, err
 	}
 	return ParseListTurnMessagesResponse(rsp)
-}
-
-// ListWebhooksWithResponse request returning *ListWebhooksResponse
-func (c *ClientWithResponses) ListWebhooksWithResponse(ctx context.Context, params *ListWebhooksParams, reqEditors ...RequestEditorFn) (*ListWebhooksResponse, error) {
-	rsp, err := c.ListWebhooks(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListWebhooksResponse(rsp)
-}
-
-// CreateWebhookWithBodyWithResponse request with arbitrary body returning *CreateWebhookResponse
-func (c *ClientWithResponses) CreateWebhookWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateWebhookResponse, error) {
-	rsp, err := c.CreateWebhookWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateWebhookResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateWebhookWithResponse(ctx context.Context, body CreateWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateWebhookResponse, error) {
-	rsp, err := c.CreateWebhook(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateWebhookResponse(rsp)
-}
-
-// DeleteWebhookWithResponse request returning *DeleteWebhookResponse
-func (c *ClientWithResponses) DeleteWebhookWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*DeleteWebhookResponse, error) {
-	rsp, err := c.DeleteWebhook(ctx, resourceId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeleteWebhookResponse(rsp)
-}
-
-// GetWebhookWithResponse request returning *GetWebhookResponse
-func (c *ClientWithResponses) GetWebhookWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*GetWebhookResponse, error) {
-	rsp, err := c.GetWebhook(ctx, resourceId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetWebhookResponse(rsp)
-}
-
-// UpdateWebhookWithBodyWithResponse request with arbitrary body returning *UpdateWebhookResponse
-func (c *ClientWithResponses) UpdateWebhookWithBodyWithResponse(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateWebhookResponse, error) {
-	rsp, err := c.UpdateWebhookWithBody(ctx, resourceId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateWebhookResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateWebhookWithResponse(ctx context.Context, resourceId IDParam, body UpdateWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateWebhookResponse, error) {
-	rsp, err := c.UpdateWebhook(ctx, resourceId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateWebhookResponse(rsp)
-}
-
-// ListWebhookDeliveriesWithResponse request returning *ListWebhookDeliveriesResponse
-func (c *ClientWithResponses) ListWebhookDeliveriesWithResponse(ctx context.Context, resourceId IDParam, params *ListWebhookDeliveriesParams, reqEditors ...RequestEditorFn) (*ListWebhookDeliveriesResponse, error) {
-	rsp, err := c.ListWebhookDeliveries(ctx, resourceId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListWebhookDeliveriesResponse(rsp)
-}
-
-// PingWebhookWithBodyWithResponse request with arbitrary body returning *PingWebhookResponse
-func (c *ClientWithResponses) PingWebhookWithBodyWithResponse(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PingWebhookResponse, error) {
-	rsp, err := c.PingWebhookWithBody(ctx, resourceId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePingWebhookResponse(rsp)
-}
-
-func (c *ClientWithResponses) PingWebhookWithResponse(ctx context.Context, resourceId IDParam, body PingWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*PingWebhookResponse, error) {
-	rsp, err := c.PingWebhook(ctx, resourceId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePingWebhookResponse(rsp)
-}
-
-// RotateWebhookSecretWithResponse request returning *RotateWebhookSecretResponse
-func (c *ClientWithResponses) RotateWebhookSecretWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*RotateWebhookSecretResponse, error) {
-	rsp, err := c.RotateWebhookSecret(ctx, resourceId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRotateWebhookSecretResponse(rsp)
 }
 
 // OpenWorkerSocketWithResponse request returning *OpenWorkerSocketResponse
@@ -41852,269 +32585,6 @@ func ParseListCatalogWorkerModelsResponse(rsp *http.Response) (*ListCatalogWorke
 	return response, nil
 }
 
-// ParseListEnvironmentsResponse parses an HTTP response from a ListEnvironmentsWithResponse call
-func ParseListEnvironmentsResponse(rsp *http.Response) (*ListEnvironmentsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListEnvironmentsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest EnvironmentListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateEnvironmentResponse parses an HTTP response from a CreateEnvironmentWithResponse call
-func ParseCreateEnvironmentResponse(rsp *http.Response) (*CreateEnvironmentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateEnvironmentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest Environment
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest TooManyRequests
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDestroyEnvironmentResponse parses an HTTP response from a DestroyEnvironmentWithResponse call
-func ParseDestroyEnvironmentResponse(rsp *http.Response) (*DestroyEnvironmentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DestroyEnvironmentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Environment
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest TooManyRequests
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetEnvironmentResponse parses an HTTP response from a GetEnvironmentWithResponse call
-func ParseGetEnvironmentResponse(rsp *http.Response) (*GetEnvironmentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetEnvironmentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Environment
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateEnvironmentResponse parses an HTTP response from a UpdateEnvironmentWithResponse call
-func ParseUpdateEnvironmentResponse(rsp *http.Response) (*UpdateEnvironmentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateEnvironmentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Environment
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest TooManyRequests
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseListInteractionsResponse parses an HTTP response from a ListInteractionsWithResponse call
 func ParseListInteractionsResponse(rsp *http.Response) (*ListInteractionsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -42473,337 +32943,6 @@ func ParseReviewInteractionResponse(rsp *http.Response) (*ReviewInteractionRespo
 			return nil, err
 		}
 		response.JSON409 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListLoopsResponse parses an HTTP response from a ListLoopsWithResponse call
-func ParseListLoopsResponse(rsp *http.Response) (*ListLoopsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListLoopsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LoopListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateLoopResponse parses an HTTP response from a CreateLoopWithResponse call
-func ParseCreateLoopResponse(rsp *http.Response) (*CreateLoopResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateLoopResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest Loop
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest TooManyRequests
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeleteLoopResponse parses an HTTP response from a DeleteLoopWithResponse call
-func ParseDeleteLoopResponse(rsp *http.Response) (*DeleteLoopResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeleteLoopResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest TooManyRequests
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetLoopResponse parses an HTTP response from a GetLoopWithResponse call
-func ParseGetLoopResponse(rsp *http.Response) (*GetLoopResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetLoopResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Loop
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateLoopResponse parses an HTTP response from a UpdateLoopWithResponse call
-func ParseUpdateLoopResponse(rsp *http.Response) (*UpdateLoopResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateLoopResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Loop
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest TooManyRequests
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseStartRunResponse parses an HTTP response from a StartRunWithResponse call
-func ParseStartRunResponse(rsp *http.Response) (*StartRunResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &StartRunResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest LoopRun
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON202 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest TooManyRequests
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
 
 	}
 
@@ -43658,238 +33797,33 @@ func ParseUpdateRoleResponse(rsp *http.Response) (*UpdateRoleResponse, error) {
 	return response, nil
 }
 
-// ParseListRunsResponse parses an HTTP response from a ListRunsWithResponse call
-func ParseListRunsResponse(rsp *http.Response) (*ListRunsResponse, error) {
+// ParseApproveRoutineProposalResponse parses an HTTP response from a ApproveRoutineProposalWithResponse call
+func ParseApproveRoutineProposalResponse(rsp *http.Response) (*ApproveRoutineProposalResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListRunsResponse{
+	response := &ApproveRoutineProposalResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LoopRunListResponse
+		var dest Routine
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Routine
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetRunResponse parses an HTTP response from a GetRunWithResponse call
-func ParseGetRunResponse(rsp *http.Response) (*GetRunResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetRunResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LoopRun
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCancelRunResponse parses an HTTP response from a CancelRunWithResponse call
-func ParseCancelRunResponse(rsp *http.Response) (*CancelRunResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CancelRunResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LoopRun
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest TooManyRequests
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListRunEventsResponse parses an HTTP response from a ListRunEventsWithResponse call
-func ParseListRunEventsResponse(rsp *http.Response) (*ListRunEventsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListRunEventsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LoopRunEventListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case rsp.StatusCode == 200:
-		// Content-type (text/event-stream) unsupported
-
-	}
-
-	return response, nil
-}
-
-// ParseResumeRunResponse parses an HTTP response from a ResumeRunWithResponse call
-func ParseResumeRunResponse(rsp *http.Response) (*ResumeRunResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ResumeRunResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest LoopRun
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON202 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
+		response.JSON201 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
 		var dest Forbidden
@@ -43912,38 +33846,111 @@ func ParseResumeRunResponse(rsp *http.Response) (*ResumeRunResponse, error) {
 		}
 		response.JSON409 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest TooManyRequests
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
 	}
 
 	return response, nil
 }
 
-// ParseRetryRunResponse parses an HTTP response from a RetryRunWithResponse call
-func ParseRetryRunResponse(rsp *http.Response) (*RetryRunResponse, error) {
+// ParseDismissRoutineProposalResponse parses an HTTP response from a DismissRoutineProposalWithResponse call
+func ParseDismissRoutineProposalResponse(rsp *http.Response) (*DismissRoutineProposalResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &RetryRunResponse{
+	response := &DismissRoutineProposalResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest LoopRun
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RoutineProposal
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON202 = &dest
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListRoutinesResponse parses an HTTP response from a ListRoutinesWithResponse call
+func ParseListRoutinesResponse(rsp *http.Response) (*ListRoutinesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListRoutinesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RoutineList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateRoutineResponse parses an HTTP response from a CreateRoutineWithResponse call
+func ParseCreateRoutineResponse(rsp *http.Response) (*CreateRoutineResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateRoutineResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Routine
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest BadRequest
@@ -43965,13 +33972,6 @@ func ParseRetryRunResponse(rsp *http.Response) (*RetryRunResponse, error) {
 			return nil, err
 		}
 		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
 		var dest Conflict
@@ -43980,34 +33980,93 @@ func ParseRetryRunResponse(rsp *http.Response) (*RetryRunResponse, error) {
 		}
 		response.JSON409 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest TooManyRequests
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
 	}
 
 	return response, nil
 }
 
-// ParseSignalRunResponse parses an HTTP response from a SignalRunWithResponse call
-func ParseSignalRunResponse(rsp *http.Response) (*SignalRunResponse, error) {
+// ParseDeleteRoutineResponse parses an HTTP response from a DeleteRoutineWithResponse call
+func ParseDeleteRoutineResponse(rsp *http.Response) (*DeleteRoutineResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &SignalRunResponse{
+	response := &DeleteRoutineResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LoopRun
+		var dest Routine
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetRoutineResponse parses an HTTP response from a GetRoutineWithResponse call
+func ParseGetRoutineResponse(rsp *http.Response) (*GetRoutineResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetRoutineResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Routine
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateRoutineResponse parses an HTTP response from a UpdateRoutineWithResponse call
+func ParseUpdateRoutineResponse(rsp *http.Response) (*UpdateRoutineResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateRoutineResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Routine
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -44020,19 +34079,38 @@ func ParseSignalRunResponse(rsp *http.Response) (*SignalRunResponse, error) {
 		}
 		response.JSON400 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON401 = &dest
+		response.JSON404 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
+	}
+
+	return response, nil
+}
+
+// ParseListRoutineOccurrencesResponse parses an HTTP response from a ListRoutineOccurrencesWithResponse call
+func ParseListRoutineOccurrencesResponse(rsp *http.Response) (*ListRoutineOccurrencesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListRoutineOccurrencesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RoutineOccurrenceList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON403 = &dest
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -44041,52 +34119,64 @@ func ParseSignalRunResponse(rsp *http.Response) (*SignalRunResponse, error) {
 		}
 		response.JSON404 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest TooManyRequests
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
 	}
 
 	return response, nil
 }
 
-// ParseListRunStepsResponse parses an HTTP response from a ListRunStepsWithResponse call
-func ParseListRunStepsResponse(rsp *http.Response) (*ListRunStepsResponse, error) {
+// ParsePauseRoutineResponse parses an HTTP response from a PauseRoutineWithResponse call
+func ParsePauseRoutineResponse(rsp *http.Response) (*PauseRoutineResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListRunStepsResponse{
+	response := &PauseRoutineResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LoopRunStepListResponse
+		var dest Routine
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON401 = &dest
+		response.JSON404 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
+	}
+
+	return response, nil
+}
+
+// ParseResumeRoutineResponse parses an HTTP response from a ResumeRoutineWithResponse call
+func ParseResumeRoutineResponse(rsp *http.Response) (*ResumeRoutineResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ResumeRoutineResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Routine
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON403 = &dest
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -45282,13 +35372,6 @@ func ParseCancelTurnResponse(rsp *http.Response) (*CancelTurnResponse, error) {
 			return nil, err
 		}
 		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
 
 	}
 
@@ -46518,67 +36601,6 @@ func ParseUpsertTableRowResponse(rsp *http.Response) (*UpsertTableRowResponse, e
 	return response, nil
 }
 
-// ParseDeliverHTTPTriggerResponse parses an HTTP response from a DeliverHTTPTriggerWithResponse call
-func ParseDeliverHTTPTriggerResponse(rsp *http.Response) (*DeliverHTTPTriggerResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeliverHTTPTriggerResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest HTTPTriggerDeliveryResult
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON202 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON413 = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseListTurnMessagesResponse parses an HTTP response from a ListTurnMessagesWithResponse call
 func ParseListTurnMessagesResponse(rsp *http.Response) (*ListTurnMessagesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -46620,445 +36642,6 @@ func ParseListTurnMessagesResponse(rsp *http.Response) (*ListTurnMessagesRespons
 			return nil, err
 		}
 		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListWebhooksResponse parses an HTTP response from a ListWebhooksWithResponse call
-func ParseListWebhooksResponse(rsp *http.Response) (*ListWebhooksResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListWebhooksResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest WebhookListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateWebhookResponse parses an HTTP response from a CreateWebhookWithResponse call
-func ParseCreateWebhookResponse(rsp *http.Response) (*CreateWebhookResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateWebhookResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest Webhook
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest TooManyRequests
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeleteWebhookResponse parses an HTTP response from a DeleteWebhookWithResponse call
-func ParseDeleteWebhookResponse(rsp *http.Response) (*DeleteWebhookResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeleteWebhookResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest TooManyRequests
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetWebhookResponse parses an HTTP response from a GetWebhookWithResponse call
-func ParseGetWebhookResponse(rsp *http.Response) (*GetWebhookResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetWebhookResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Webhook
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateWebhookResponse parses an HTTP response from a UpdateWebhookWithResponse call
-func ParseUpdateWebhookResponse(rsp *http.Response) (*UpdateWebhookResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateWebhookResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Webhook
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest TooManyRequests
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListWebhookDeliveriesResponse parses an HTTP response from a ListWebhookDeliveriesWithResponse call
-func ParseListWebhookDeliveriesResponse(rsp *http.Response) (*ListWebhookDeliveriesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListWebhookDeliveriesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest WebhookDeliveryListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParsePingWebhookResponse parses an HTTP response from a PingWebhookWithResponse call
-func ParsePingWebhookResponse(rsp *http.Response) (*PingWebhookResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &PingWebhookResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest PingWebhookResult
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest TooManyRequests
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseRotateWebhookSecretResponse parses an HTTP response from a RotateWebhookSecretWithResponse call
-func ParseRotateWebhookSecretResponse(rsp *http.Response) (*RotateWebhookSecretResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &RotateWebhookSecretResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest RotateSecretResult
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest TooManyRequests
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
 
 	}
 

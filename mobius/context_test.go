@@ -17,19 +17,14 @@ func newTestContext(job *runtimeJob) Context {
 func TestContext_JobIdentity(t *testing.T) {
 	ctx := newTestContext(&runtimeJob{
 		JobID:      "job_1",
-		RunID:      "run_1",
-		StepID:     "step_1",
 		LeaseToken: "lease_1",
 		Attempt:    3,
 		Queue:      "default",
 	})
 
 	assert.Equal(t, ctx.JobID(), "job_1")
-	assert.Equal(t, ctx.RunID(), "run_1")
-	assert.Equal(t, ctx.StepName(), "step_1")
 	assert.Equal(t, ctx.Attempt(), 3)
 	assert.Equal(t, ctx.Queue(), "default")
-	assert.Equal(t, ctx.WorkflowName(), "")
 	leaseCtx, ok := ctx.(interface{ LeaseToken() string })
 	assert.True(t, ok)
 	assert.Equal(t, leaseCtx.LeaseToken(), "lease_1")

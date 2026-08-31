@@ -11,10 +11,8 @@ import {
 
 export const WEBHOOK_EVENT_TYPE_HEADER = "X-Mobius-Event-Type";
 
-export type WebhookEventType = "run.completed" | "run.failed" | "ping" | string;
+export type WebhookEventType = "ping" | string;
 
-export const WEBHOOK_EVENT_RUN_COMPLETED = "run.completed";
-export const WEBHOOK_EVENT_RUN_FAILED = "run.failed";
 export const WEBHOOK_EVENT_PING = "ping";
 
 const SYNTHETIC_WEBHOOK_USER_AGENT = "mobius-sdk-webhook-delivery/1";

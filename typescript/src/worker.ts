@@ -111,14 +111,12 @@ export interface WorkerConfig {
 
 export interface ActionContext {
   jobId: string;
-  runId?: string;
   sessionId?: string;
   agentTurnId?: string;
   toolCallId?: string;
   workerInstanceId: string;
   attempt: number;
   queue?: string;
-  stepId?: string;
   action?: string;
   emitEvent(type: string, payload: Record<string, unknown>): void;
 }
@@ -131,7 +129,6 @@ export type ActionFn = (
 
 export interface GenerationJob {
   jobId: string;
-  runId?: string;
   sessionId?: string;
   agentTurnId?: string;
   toolCallId?: string;
@@ -469,7 +466,6 @@ export class Worker {
         let seq = 0;
         result = await fn(ctx, {
           jobId: job.id,
-          runId: job.run_id,
           sessionId: job.session_id,
           agentTurnId: job.agent_turn_id,
           toolCallId: job.tool_call_id,
@@ -507,14 +503,12 @@ export class Worker {
   private actionContext(job: WorkerSocketClaimedJob): ActionContext {
     return {
       jobId: job.id,
-      runId: job.run_id,
       sessionId: job.session_id,
       agentTurnId: job.agent_turn_id,
       toolCallId: job.tool_call_id,
       workerInstanceId: this.config.workerInstanceId ?? "",
       attempt: job.claim_attempt,
       queue: job.queue,
-      stepId: job.step_id,
       action: job.action_name,
       emitEvent: () => {
         this.logger.warn("[mobius] custom worker events are not supported by the WebSocket protocol yet");

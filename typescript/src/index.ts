@@ -11,7 +11,6 @@ export {
   StreamHTTPError,
   TurnTranscript,
   WorkerInstanceConflictError,
-  isTerminalRunStatus,
 } from "./client.js";
 export type {
   ClientOptions,
@@ -38,23 +37,15 @@ export type {
   ListSessionTurnsOptions,
   ListSessionsOptions,
   ListSkillsOptions,
-  ListLoopsOptions,
-  ListRunsOptions,
-  LoopOptions,
   NudgeSessionOptions,
-  RunEvent,
   SessionStreamEvent,
   StartTurnOptions,
   SetBlueprintProtectionOptions,
-  StartRunOptions,
   StreamSessionTranscriptOptions,
   TranscriptConnectionState,
   TranscriptDiagnostics,
   TranscriptUpdate,
   TurnDiagnostics,
-  UpdateLoopOptions,
-  WaitRunOptions,
-  WatchRunOptions,
   WatchSessionTranscriptOptions,
 } from "./client.js";
 export {
@@ -147,8 +138,6 @@ export type {
 } from "./api/index.js";
 export {
   WEBHOOK_EVENT_PING,
-  WEBHOOK_EVENT_RUN_COMPLETED,
-  WEBHOOK_EVENT_RUN_FAILED,
   WEBHOOK_EVENT_TYPE_HEADER,
   buildSyntheticWebhookPayload,
   deliverSyntheticWebhook,
@@ -212,19 +201,6 @@ export type {
 } from "./worker.js";
 
 export type {
-  Loop,
-  LoopListResponse,
-  LoopRun,
-  LoopRunEvent,
-  LoopRunListResponse,
-  LoopRunStatus,
-  LoopSpecTrigger,
-  LoopStatus,
-  CancelLoopRunRequest,
-  CreateLoopRequest,
-  SignalLoopRunRequest,
-  StartLoopRunRequest,
-  UpdateLoopRequest,
   WorkerSocketCancelDirective,
   WorkerSocketClaimedJob,
   WorkerSocketGenerationDeltaFrame,

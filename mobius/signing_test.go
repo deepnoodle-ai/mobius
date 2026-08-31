@@ -25,7 +25,7 @@ func signedDeliveryRequest(body []byte, key []byte, deliveryID string, timestamp
 
 func TestVerifySignedDeliveryWithKey(t *testing.T) {
 	key := []byte("01234567890123456789012345678901")
-	body := []byte(`{"type":"run.completed","data":{"id":"run_1"}}`)
+	body := []byte(`{"type":"ping","data":{"id":"run_1"}}`)
 	req := signedDeliveryRequest(body, key, "delivery_1", 1710000000)
 
 	got, err := VerifySignedDelivery(req, VerifySignedDeliveryOptions{
@@ -39,7 +39,7 @@ func TestVerifySignedDeliveryWithKey(t *testing.T) {
 	assert.Equal(t, body, got.Body)
 	event, err := ParseWebhookDelivery(got)
 	assert.NoError(t, err)
-	assert.Equal(t, WebhookEventRunCompleted, event.Type)
+	assert.Equal(t, WebhookEventPing, event.Type)
 }
 
 func TestVerifySignedDeliveryWithResolver(t *testing.T) {

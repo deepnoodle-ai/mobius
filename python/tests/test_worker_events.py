@@ -45,8 +45,6 @@ def _job(job_id: str = "job_1", action_name: str = "demo.action") -> WorkerSocke
         executor_kind="customer_worker",
         queue="default",
         action_name=action_name,
-        run_id="run_1",
-        step_id="step_1",
         spec={"parameters": {"topic": "sdk"}},
         lease_token="lease-1",
         claim_attempt=1,
@@ -134,7 +132,9 @@ async def test_worker_reports_cancelled_when_action_task_is_cancelled() -> None:
     worker.register("demo.action", action)
     ws = FakeWebSocket()
     task = asyncio.create_task(worker._execute_job(ws, _job()))
-    await started.wait()
+    # Bounded: if _execute_job raises before the action runs, started is never
+    # set, and an unbounded wait would hang the whole suite instead of failing.
+    await asyncio.wait_for(started.wait(), timeout=5)
     task.cancel()
     with pytest.raises(asyncio.CancelledError):
         await task

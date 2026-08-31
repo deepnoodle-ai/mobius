@@ -674,7 +674,7 @@ func authAPIGetWithClient(ctx *cli.Context, path string, client *http.Client) (*
 }
 
 func verifyAuthenticatedRequest(ctx *cli.Context) (authProbeResult, error) {
-	path := authProbePath(authFor(ctx).APIKey)
+	path := authProbePath()
 	result := authProbeResult{Path: path}
 	client := &http.Client{Timeout: 15 * time.Second}
 	resp, err := authAPIGetWithClient(ctx, path, client)
@@ -687,8 +687,11 @@ func verifyAuthenticatedRequest(ctx *cli.Context) (authProbeResult, error) {
 	return result, nil
 }
 
-func authProbePath(apiKey string) string {
-	return "/v1/loops"
+// authProbePath is the endpoint a credential check calls. Listing agents is
+// the cheapest read every role can perform, so a 200 means the key both
+// authenticated and can see the organization.
+func authProbePath() string {
+	return "/v1/agents"
 }
 
 // hasAuth reports whether clientFromContext will have a usable token.

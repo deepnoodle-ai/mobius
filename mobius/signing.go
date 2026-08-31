@@ -80,7 +80,6 @@ type ActionInvocationOriginV1 struct {
 	Kind              string `json:"kind"`
 	RunID             string `json:"run_id,omitempty"`
 	ChannelExchangeID string `json:"channel_exchange_id,omitempty"`
-	LoopID            string `json:"loop_id,omitempty"`
 	StepKey           string `json:"step_key,omitempty"`
 	AgentTurnID       string `json:"agent_turn_id,omitempty"`
 	SessionID         string `json:"session_id,omitempty"`

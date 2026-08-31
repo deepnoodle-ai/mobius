@@ -12,14 +12,7 @@ type Context interface {
 	context.Context
 
 	Logger() *slog.Logger
-	RunID() string
 	JobID() string
-	// WorkflowName is retained for source compatibility with pre-automation
-	// workers. Worker jobs no longer carry a workflow name, so this returns "".
-	//
-	// Deprecated: use RunID, JobID, and StepName for job identity.
-	WorkflowName() string
-	StepName() string
 	Attempt() int
 	Queue() string
 
@@ -34,9 +27,7 @@ type executionContext struct {
 	logger        *slog.Logger
 	client        *Client
 	environmentID string
-	runID         string
 	jobID         string
-	stepID        string
 	leaseToken    string
 	attempt       int
 	queue         string
@@ -45,11 +36,8 @@ type executionContext struct {
 func (c *executionContext) Logger() *slog.Logger             { return c.logger }
 func (c *executionContext) MobiusClient() *Client            { return c.client }
 func (c *executionContext) EnvironmentID() string            { return c.environmentID }
-func (c *executionContext) RunID() string                    { return c.runID }
 func (c *executionContext) JobID() string                    { return c.jobID }
 func (c *executionContext) LeaseToken() string               { return c.leaseToken }
-func (c *executionContext) WorkflowName() string             { return "" }
-func (c *executionContext) StepName() string                 { return c.stepID }
 func (c *executionContext) Attempt() int                     { return c.attempt }
 func (c *executionContext) Queue() string                    { return c.queue }
 func (c *executionContext) EmitEvent(string, map[string]any) {}
@@ -60,9 +48,7 @@ func newContext(ctx context.Context, client *Client, j *runtimeJob, logger *slog
 		logger:        logger,
 		client:        client,
 		environmentID: j.EnvironmentID,
-		runID:         j.RunID,
 		jobID:         j.JobID,
-		stepID:        j.StepID,
 		leaseToken:    j.LeaseToken,
 		attempt:       j.Attempt,
 		queue:         j.Queue,

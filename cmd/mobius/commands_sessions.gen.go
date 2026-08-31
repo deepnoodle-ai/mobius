@@ -90,9 +90,6 @@ func registerSessionsCommands(app *cli.App) {
 	sessionsGrp.Command("cancel").
 		Description("Cancel the session's active turn").
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
-		Flags(
-			cli.Bool("force", "").Help("When true, also cancel loop-owned turns to unlock a wedged session. Use only for recovery; the owning run may be left inconsistent."),
-		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -101,12 +98,7 @@ func registerSessionsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := api.SessionIdParam(ctx.Arg(0))
-			params := &api.CancelSessionParams{}
-			if ctx.IsSet("force") {
-				v := ctx.Bool("force")
-				params.Force = &v
-			}
-			resp, err := client.CancelSessionWithResponse(ctx.Context(), p0, params)
+			resp, err := client.CancelSessionWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}

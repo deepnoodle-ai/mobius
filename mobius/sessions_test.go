@@ -78,6 +78,9 @@ func TestInvokeAgent_HighLevelClient(t *testing.T) {
 	assert.Equal(t, contextItem["content"], "Chosen: none")
 	assert.Equal(t, body["session"].(map[string]any)["session_key"], "app:acct_1:user_2")
 	assert.Equal(t, body["session"].(map[string]any)["model_override"], "claude-sonnet-5")
+	// The stored agent is the sole definition authority: model_override above is
+	// the one execution override an invocation carries, so the request body must
+	// not grow a `config` alongside it.
 	_, hasConfig := body["config"]
 	assert.False(t, hasConfig)
 	assert.Equal(t, body["operation"].(map[string]any)["timeout_seconds"], float64(90))

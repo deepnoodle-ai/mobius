@@ -29,7 +29,6 @@ type SetBlueprintProtectionOptions struct {
 type ListInteractionsOptions struct {
 	Status       api.InteractionStatus
 	Kind         api.InteractionKind
-	RunID        string
 	SessionID    string
 	TargetUserID string
 	Inbox        bool
@@ -326,9 +325,6 @@ func listInteractionsParams(opts *ListInteractionsOptions) *api.ListInteractions
 	}
 	if opts.Kind != "" {
 		params.Kind = &opts.Kind
-	}
-	if opts.RunID != "" {
-		params.RunId = &opts.RunID
 	}
 	if opts.SessionID != "" {
 		params.SessionId = &opts.SessionID

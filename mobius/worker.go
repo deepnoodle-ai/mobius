@@ -74,7 +74,6 @@ type ModelCapability struct {
 // GenerationJob is the action-facing view of an LLM generation job.
 type GenerationJob struct {
 	JobID       string
-	RunID       string
 	SessionID   string
 	AgentTurnID string
 	ToolCallID  string
@@ -1111,9 +1110,7 @@ func (w *Worker) runJob(jobCtx context.Context, job *runtimeJob) {
 	defer w.keepWarm.release()
 	log := w.config.Logger.With(
 		"job_id", job.JobID,
-		"run_id", job.RunID,
 		"session_id", job.SessionID,
-		"step_id", job.StepID,
 		"action", job.Action,
 		"provider", job.Provider,
 		"model", job.Model,
@@ -1184,7 +1181,6 @@ func (w *Worker) executeGeneration(ctx Context, job *runtimeJob) (any, error) {
 	}
 	return fn(ctx, GenerationJob{
 		JobID:       job.JobID,
-		RunID:       job.RunID,
 		SessionID:   job.SessionID,
 		AgentTurnID: job.AgentTurnID,
 		ToolCallID:  job.ToolCallID,

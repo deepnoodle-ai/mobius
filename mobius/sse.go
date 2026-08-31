@@ -2,98 +2,17 @@ package mobius
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"io"
 	"net/http"
-
-	"github.com/deepnoodle-ai/mobius/mobius/api"
-	"github.com/deepnoodle-ai/wonton/sse"
 )
 
-// RunEvent is a decoded event from a loop run stream.
-type RunEvent = api.LoopRunEvent
-
-// sseReadBufferSize bounds a single SSE line. Run events can embed step I/O,
-// so the bufio default (64KB) is too tight.
+// sseReadBufferSize bounds a single SSE line. A session frame can embed a
+// whole tool result, so the bufio default (64KB) is too tight.
 const sseReadBufferSize = 8 << 20
 
-// WatchRun opens a Server-Sent Events stream for a single loop run and
-// emits decoded RunEvent values on the returned channel. The channel is closed
-// when ctx is cancelled or the server closes the connection.
-//
-// Pass since=0 to start from live updates only; pass a positive sequence cursor
-// to replay durable events recorded after that sequence before switching to
-// live updates.
-func (c *Client) WatchRun(ctx context.Context, runID string, since int64) (<-chan RunEvent, error) {
-	resp, err := c.ac.ListRunEvents(ctx, api.IDParam(runID), &api.ListRunEventsParams{
-		AfterSequence: sinceSequenceParam(since),
-	}, acceptEventStream)
-	if err != nil {
-		return nil, fmt.Errorf("mobius: open run stream: %w", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		_ = resp.Body.Close()
-		return nil, fmt.Errorf("mobius: stream run events: unexpected status %d", resp.StatusCode)
-	}
-
-	ch := make(chan RunEvent)
-	go c.readSSEStream(ctx, resp.Body, ch)
-	return ch, nil
-}
-
-// acceptEventStream opts the run-events request into Server-Sent Events. The
-// endpoint is content-negotiated and returns a JSON page by default, so the
+// acceptEventStream opts a request into Server-Sent Events. The streaming
+// endpoints are content-negotiated and return a JSON page by default, so the
 // stream is only opened when the request advertises text/event-stream.
 func acceptEventStream(_ context.Context, req *http.Request) error {
 	req.Header.Set("Accept", "text/event-stream")
 	return nil
-}
-
-// sinceSequenceParam returns nil for zero so the request omits
-// ?after_sequence=0 and the server delivers live-only updates.
-func sinceSequenceParam(since int64) *int64 {
-	if since <= 0 {
-		return nil
-	}
-	return &since
-}
-
-// readSSEStream decodes SSE frames from body using wonton/sse and forwards
-// them on ch. The body is closed when the stream ends or ctx is cancelled.
-func (c *Client) readSSEStream(ctx context.Context, body io.ReadCloser, ch chan<- RunEvent) {
-	defer close(ch)
-	defer func() { _ = body.Close() }()
-
-	reader := sse.NewReader(body)
-	reader.Buffer(sseReadBufferSize)
-
-	for {
-		if ctx.Err() != nil {
-			return
-		}
-
-		evt, err := reader.Read()
-		if errors.Is(err, io.EOF) {
-			return
-		}
-		if err != nil {
-			if ctx.Err() == nil {
-				c.config.Logger.Error("SSE stream error", "error", err)
-			}
-			return
-		}
-
-		var event api.LoopRunEvent
-		if err := evt.JSON(&event); err != nil {
-			c.config.Logger.Error("failed to parse SSE event", "error", err)
-			continue
-		}
-
-		select {
-		case ch <- event:
-		case <-ctx.Done():
-			return
-		}
-	}
 }

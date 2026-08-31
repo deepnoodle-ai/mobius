@@ -74,7 +74,6 @@ class ActionInvocationOriginV1:
     kind: str
     run_id: str | None = None
     channel_exchange_id: str | None = None
-    loop_id: str | None = None
     step_key: str | None = None
     agent_turn_id: str | None = None
     session_id: str | None = None
@@ -311,7 +310,6 @@ def parse_action_invocation_v1(v: VerifiedDelivery) -> ActionInvocationV1:
                 kind=origin_kind,
                 run_id=_optional_string(origin, "run_id", "mobius.origin"),
                 channel_exchange_id=_optional_string(origin, "channel_exchange_id", "mobius.origin"),
-                loop_id=_optional_string(origin, "loop_id", "mobius.origin"),
                 step_key=_optional_string(origin, "step_key", "mobius.origin"),
                 agent_turn_id=_optional_string(origin, "agent_turn_id", "mobius.origin"),
                 session_id=_optional_string(origin, "session_id", "mobius.origin"),
