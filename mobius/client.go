@@ -15,7 +15,7 @@ import (
 )
 
 const defaultHTTPTimeout = 60 * time.Second
-const DefaultBaseURL = "https://api.mobiusops.ai"
+const DefaultBaseURL = "https://api.mobiusops.com"
 
 // DefaultMaxRetries is the default number of retry attempts made by the
 // client for 429 and 503 responses. See docs/retries.md for the full

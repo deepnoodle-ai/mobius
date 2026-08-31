@@ -120,7 +120,7 @@ export interface CreateArtifactOptions {
   signal?: AbortSignal;
 }
 
-export const DEFAULT_BASE_URL = "https://api.mobiusops.ai";
+export const DEFAULT_BASE_URL = "https://api.mobiusops.com";
 
 export class AuthRevokedError extends Error {
   constructor() {
