@@ -88,7 +88,7 @@ from .transcript import (
     is_terminal_turn_status,
 )
 
-DEFAULT_BASE_URL = "https://api.mobiusops.ai"
+DEFAULT_BASE_URL = "https://api.mobiusops.com"
 
 
 @dataclass
