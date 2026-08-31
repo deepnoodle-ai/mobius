@@ -16,10 +16,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
   one-time `whsec_` reveals into the raw 32-byte HMAC key used by delivery
   signing and verification
   ([#203](https://github.com/deepnoodle-ai/mobius/pull/203)).
-- Routines: list, get, create, update, pause, resume, and delete a routine,
-  list its occurrences, and approve or dismiss a routine proposal, in all three
-  clients and as the `routines` CLI group. Routines are how scheduled work is
-  expressed now that loops are gone
+- Routines, the replacement for loops: lifecycle, occurrences, and proposals in
+  all three clients and as the `routines` CLI group
   ([#205](https://github.com/deepnoodle-ai/mobius/pull/205)).
 
 ### Changed
@@ -42,23 +40,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
   Agent behavior now comes from the stored agent; session creation exposes the
   narrow `model_override` used by model pickers
   ([#201](https://github.com/deepnoodle-ai/mobius/pull/201)).
-- **Breaking.** Removed loops and runs from every client and the CLI: the
-  `loops` and `runs` command groups, `StartRun` / `GetRun` / `CancelRun` /
-  `SignalRun` / `ResumeRun` / `RetryRun`, run event and step listing, the loop
-  CRUD methods, and the loop and run models. Scheduled work is expressed as
-  routines instead. Also removed the templates and generate surfaces, which
-  only existed to author loop definitions
+- **Breaking.** Removed loops, runs, templates and generate: the `loops` and
+  `runs` CLI groups, the run control and loop CRUD methods, and their models.
+  Use routines for scheduled work
   ([#205](https://github.com/deepnoodle-ai/mobius/pull/205)).
-- **Breaking.** Removed the environment and webhook management surfaces. Both
-  left the public contract in cloud #1531; the endpoints still exist internally
-  but are no longer part of the SDK
+- **Breaking.** Removed the environment and webhook management surfaces, which
+  left the public contract in cloud #1531
   ([#205](https://github.com/deepnoodle-ai/mobius/pull/205)).
-- **Breaking.** Removed the `WEBHOOK_EVENT_RUN_COMPLETED` /
-  `WEBHOOK_EVENT_RUN_FAILED` / `WebhookEventRunCompleted` /
-  `WebhookEventRunFailed` constants. They named `run.completed` and
-  `run.failed`, which nothing can emit now that runs are gone. Signature
-  verification and `ping` are unaffected
-  ([#205](https://github.com/deepnoodle-ai/mobius/pull/205)).
+- **Breaking.** Removed the `run.completed` and `run.failed` webhook event
+  constants, which nothing can emit now. Signature verification and `ping` are
+  unaffected ([#205](https://github.com/deepnoodle-ai/mobius/pull/205)).
 
 ## [0.0.61] - 2026-08-17
 
