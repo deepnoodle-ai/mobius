@@ -2,9 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius is pre-1.0; pin your version.
+The format is based on [Keep a Changelog](https://keepachangelog.com/).
+
+Mobius is pre-1.0 and follows SemVer's 0.x rules: the minor version carries
+breaking changes, and patch releases are additive or fixes only. Pin at least
+the minor version.
 
 ## [Unreleased]
+
+## [0.1.0] - 2026-09-09
 
 ### Added
 
@@ -13,6 +19,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
   `createSessionAttachment` / `deleteSessionAttachment`, matching the Go and
   CLI surfaces that shipped in 0.0.62
   ([#213](https://github.com/deepnoodle-ai/mobius/pull/213)).
+
+### Changed
+
+- Releases now bump the minor version for breaking changes rather than the
+  patch version, which 0.0.x releases had been doing — 0.0.62 renamed loops to
+  routines and 0.0.61 reshaped the CLI, both as patch bumps. Nothing in this
+  release is breaking; the version is the reset.
 
 ## [0.0.62] - 2026-09-09
 
