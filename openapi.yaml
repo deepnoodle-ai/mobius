@@ -14,7 +14,7 @@ info:
 
     **Conventions.** Collections return a cursor-paginated envelope (`items` / `has_more` / `next_cursor`); single resources return the bare object. Errors use a shared envelope with a stable machine-readable `error.code`. Timestamps are ISO-8601 UTC.
 servers:
-- url: https://api.mobiusops.ai
+- url: https://api.mobiusops.com
   description: Production
 - url: http://localhost:8080
   description: Local development
