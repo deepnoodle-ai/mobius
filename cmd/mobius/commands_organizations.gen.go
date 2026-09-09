@@ -8,13 +8,33 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/deepnoodle-ai/wonton/cli"
+
+	"github.com/deepnoodle-ai/mobius/mobius/api"
 )
 
 // registerOrganizationsCommands registers every generated subcommand in the "organizations" group.
 func registerOrganizationsCommands(app *cli.App) {
 	organizationsGrp := app.Group("organizations").Description("Organization settings and control plane")
 	organizationsGrp.Alias("organization")
+	organizationsGrp.Command("get-context").
+		Description("Get the organization's shared context").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			resp, err := client.GetOrgContextWithResponse(ctx.Context())
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "getOrgContext", resp.StatusCode(), resp.Body)
+		})
+
 	organizationsGrp.Command("get-oauth-return-origins").
 		Description("Get the org's OAuth return-origin allowlist").
 		Use(requireAuth()).
@@ -29,6 +49,40 @@ func registerOrganizationsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "getOAuthReturnOrigins", resp.StatusCode(), resp.Body)
+		})
+
+	organizationsGrp.Command("replace-org-context").
+		Description("Replace the organization's shared context").
+		Flags(
+			cli.String("content", "").Help("[required] The new context, in Markdown. At most 16384 bytes of UTF-8."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			var body api.ReplaceOrgContextJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("content") {
+				body.Content = ctx.String("content")
+			}
+			if body.Content == "" {
+				return fmt.Errorf("--content is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.ReplaceOrgContextWithResponse(ctx.Context(), body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "replaceOrgContext", resp.StatusCode(), resp.Body)
 		})
 
 }

@@ -877,6 +877,7 @@ func (e CapabilityReadiness) Valid() bool {
 
 // Defines values for CapabilityReadinessReason.
 const (
+	CapabilityReadinessReasonAgentOwnedOnly        CapabilityReadinessReason = "agent_owned_only"
 	CapabilityReadinessReasonCredentialsUnreadable CapabilityReadinessReason = "credentials_unreadable"
 	CapabilityReadinessReasonExpired               CapabilityReadinessReason = "expired"
 	CapabilityReadinessReasonInactive              CapabilityReadinessReason = "inactive"
@@ -889,6 +890,8 @@ const (
 // Valid indicates whether the value is a known member of the CapabilityReadinessReason enum.
 func (e CapabilityReadinessReason) Valid() bool {
 	switch e {
+	case CapabilityReadinessReasonAgentOwnedOnly:
+		return true
 	case CapabilityReadinessReasonCredentialsUnreadable:
 		return true
 	case CapabilityReadinessReasonExpired:
@@ -1021,11 +1024,10 @@ func (e ContextIncludeParam) Valid() bool {
 
 // Defines values for CreateAPIKeyRequestRole.
 const (
-	CreateAPIKeyRequestRoleAdmin    CreateAPIKeyRequestRole = "Admin"
-	CreateAPIKeyRequestRoleEditor   CreateAPIKeyRequestRole = "Editor"
-	CreateAPIKeyRequestRoleOperator CreateAPIKeyRequestRole = "Operator"
-	CreateAPIKeyRequestRoleOwner    CreateAPIKeyRequestRole = "Owner"
-	CreateAPIKeyRequestRoleViewer   CreateAPIKeyRequestRole = "Viewer"
+	CreateAPIKeyRequestRoleAdmin  CreateAPIKeyRequestRole = "Admin"
+	CreateAPIKeyRequestRoleOwner  CreateAPIKeyRequestRole = "Owner"
+	CreateAPIKeyRequestRoleUser   CreateAPIKeyRequestRole = "User"
+	CreateAPIKeyRequestRoleViewer CreateAPIKeyRequestRole = "Viewer"
 )
 
 // Valid indicates whether the value is a known member of the CreateAPIKeyRequestRole enum.
@@ -1033,11 +1035,9 @@ func (e CreateAPIKeyRequestRole) Valid() bool {
 	switch e {
 	case CreateAPIKeyRequestRoleAdmin:
 		return true
-	case CreateAPIKeyRequestRoleEditor:
-		return true
-	case CreateAPIKeyRequestRoleOperator:
-		return true
 	case CreateAPIKeyRequestRoleOwner:
+		return true
+	case CreateAPIKeyRequestRoleUser:
 		return true
 	case CreateAPIKeyRequestRoleViewer:
 		return true
@@ -1529,9 +1529,10 @@ func (e ModelProviderGroupSource) Valid() bool {
 // Defines values for PermissionDefinitionCategory.
 const (
 	PermissionDefinitionCategoryBilling  PermissionDefinitionCategory = "billing"
+	PermissionDefinitionCategoryJob      PermissionDefinitionCategory = "job"
 	PermissionDefinitionCategoryOrg      PermissionDefinitionCategory = "org"
 	PermissionDefinitionCategoryPlatform PermissionDefinitionCategory = "platform"
-	PermissionDefinitionCategoryWork     PermissionDefinitionCategory = "work"
+	PermissionDefinitionCategoryResource PermissionDefinitionCategory = "resource"
 )
 
 // Valid indicates whether the value is a known member of the PermissionDefinitionCategory enum.
@@ -1539,11 +1540,13 @@ func (e PermissionDefinitionCategory) Valid() bool {
 	switch e {
 	case PermissionDefinitionCategoryBilling:
 		return true
+	case PermissionDefinitionCategoryJob:
+		return true
 	case PermissionDefinitionCategoryOrg:
 		return true
 	case PermissionDefinitionCategoryPlatform:
 		return true
-	case PermissionDefinitionCategoryWork:
+	case PermissionDefinitionCategoryResource:
 		return true
 	default:
 		return false
@@ -1832,6 +1835,42 @@ func (e ReviewInteractionRequestAction) Valid() bool {
 	}
 }
 
+// Defines values for RoutineChangeStatus.
+const (
+	RoutineChangeStatusFailure RoutineChangeStatus = "failure"
+	RoutineChangeStatusSuccess RoutineChangeStatus = "success"
+)
+
+// Valid indicates whether the value is a known member of the RoutineChangeStatus enum.
+func (e RoutineChangeStatus) Valid() bool {
+	switch e {
+	case RoutineChangeStatusFailure:
+		return true
+	case RoutineChangeStatusSuccess:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RoutineFollowLevel.
+const (
+	RoutineFollowLevelAllResults   RoutineFollowLevel = "all_results"
+	RoutineFollowLevelFailuresOnly RoutineFollowLevel = "failures_only"
+)
+
+// Valid indicates whether the value is a known member of the RoutineFollowLevel enum.
+func (e RoutineFollowLevel) Valid() bool {
+	switch e {
+	case RoutineFollowLevelAllResults:
+		return true
+	case RoutineFollowLevelFailuresOnly:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RoutineKind.
 const (
 	RoutineKindInvoke RoutineKind = "invoke"
@@ -1844,6 +1883,24 @@ func (e RoutineKind) Valid() bool {
 	case RoutineKindInvoke:
 		return true
 	case RoutineKindNotify:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RoutineManagedBy.
+const (
+	RoutineManagedByNamed RoutineManagedBy = "named"
+	RoutineManagedByTeam  RoutineManagedBy = "team"
+)
+
+// Valid indicates whether the value is a known member of the RoutineManagedBy enum.
+func (e RoutineManagedBy) Valid() bool {
+	switch e {
+	case RoutineManagedByNamed:
+		return true
+	case RoutineManagedByTeam:
 		return true
 	default:
 		return false
@@ -1880,6 +1937,69 @@ func (e RoutineOccurrenceStatus) Valid() bool {
 	}
 }
 
+// Defines values for RoutineOccurrenceTrigger.
+const (
+	RoutineOccurrenceTriggerEvent    RoutineOccurrenceTrigger = "event"
+	RoutineOccurrenceTriggerManual   RoutineOccurrenceTrigger = "manual"
+	RoutineOccurrenceTriggerSchedule RoutineOccurrenceTrigger = "schedule"
+)
+
+// Valid indicates whether the value is a known member of the RoutineOccurrenceTrigger enum.
+func (e RoutineOccurrenceTrigger) Valid() bool {
+	switch e {
+	case RoutineOccurrenceTriggerEvent:
+		return true
+	case RoutineOccurrenceTriggerManual:
+		return true
+	case RoutineOccurrenceTriggerSchedule:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RoutineOwnerKind.
+const (
+	RoutineOwnerKindPerson RoutineOwnerKind = "person"
+	RoutineOwnerKindTeam   RoutineOwnerKind = "team"
+)
+
+// Valid indicates whether the value is a known member of the RoutineOwnerKind enum.
+func (e RoutineOwnerKind) Valid() bool {
+	switch e {
+	case RoutineOwnerKindPerson:
+		return true
+	case RoutineOwnerKindTeam:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RoutinePrincipalKind.
+const (
+	RoutinePrincipalKindAgent   RoutinePrincipalKind = "agent"
+	RoutinePrincipalKindHuman   RoutinePrincipalKind = "human"
+	RoutinePrincipalKindService RoutinePrincipalKind = "service"
+	RoutinePrincipalKindSystem  RoutinePrincipalKind = "system"
+)
+
+// Valid indicates whether the value is a known member of the RoutinePrincipalKind enum.
+func (e RoutinePrincipalKind) Valid() bool {
+	switch e {
+	case RoutinePrincipalKindAgent:
+		return true
+	case RoutinePrincipalKindHuman:
+		return true
+	case RoutinePrincipalKindService:
+		return true
+	case RoutinePrincipalKindSystem:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RoutineProposalStatus.
 const (
 	RoutineProposalStatusApproved  RoutineProposalStatus = "approved"
@@ -1904,6 +2024,27 @@ func (e RoutineProposalStatus) Valid() bool {
 	}
 }
 
+// Defines values for RoutineRelationship.
+const (
+	RoutineRelationshipFollower    RoutineRelationship = "follower"
+	RoutineRelationshipManager     RoutineRelationship = "manager"
+	RoutineRelationshipResponsible RoutineRelationship = "responsible"
+)
+
+// Valid indicates whether the value is a known member of the RoutineRelationship enum.
+func (e RoutineRelationship) Valid() bool {
+	switch e {
+	case RoutineRelationshipFollower:
+		return true
+	case RoutineRelationshipManager:
+		return true
+	case RoutineRelationshipResponsible:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RoutineStatus.
 const (
 	RoutineStatusActive    RoutineStatus = "active"
@@ -1922,6 +2063,24 @@ func (e RoutineStatus) Valid() bool {
 	case RoutineStatusCompleted:
 		return true
 	case RoutineStatusPaused:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RoutineTrigger.
+const (
+	RoutineTriggerEvent    RoutineTrigger = "event"
+	RoutineTriggerSchedule RoutineTrigger = "schedule"
+)
+
+// Valid indicates whether the value is a known member of the RoutineTrigger enum.
+func (e RoutineTrigger) Valid() bool {
+	switch e {
+	case RoutineTriggerEvent:
+		return true
+	case RoutineTriggerSchedule:
 		return true
 	default:
 		return false
@@ -2987,6 +3146,36 @@ func (e UpdateResourceOwnershipParamsResourceType) Valid() bool {
 	}
 }
 
+// Defines values for ListRoutineOccurrencesParamsStatus.
+const (
+	ListRoutineOccurrencesParamsStatusAdmitted  ListRoutineOccurrencesParamsStatus = "admitted"
+	ListRoutineOccurrencesParamsStatusCompleted ListRoutineOccurrencesParamsStatus = "completed"
+	ListRoutineOccurrencesParamsStatusFailed    ListRoutineOccurrencesParamsStatus = "failed"
+	ListRoutineOccurrencesParamsStatusMissed    ListRoutineOccurrencesParamsStatus = "missed"
+	ListRoutineOccurrencesParamsStatusPending   ListRoutineOccurrencesParamsStatus = "pending"
+	ListRoutineOccurrencesParamsStatusSkipped   ListRoutineOccurrencesParamsStatus = "skipped"
+)
+
+// Valid indicates whether the value is a known member of the ListRoutineOccurrencesParamsStatus enum.
+func (e ListRoutineOccurrencesParamsStatus) Valid() bool {
+	switch e {
+	case ListRoutineOccurrencesParamsStatusAdmitted:
+		return true
+	case ListRoutineOccurrencesParamsStatusCompleted:
+		return true
+	case ListRoutineOccurrencesParamsStatusFailed:
+		return true
+	case ListRoutineOccurrencesParamsStatusMissed:
+		return true
+	case ListRoutineOccurrencesParamsStatusPending:
+		return true
+	case ListRoutineOccurrencesParamsStatusSkipped:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListSessionMessagesParamsOrder.
 const (
 	ListSessionMessagesParamsOrderAsc  ListSessionMessagesParamsOrder = "asc"
@@ -3479,6 +3668,16 @@ type AddAgentMembersRequest struct {
 	PrincipalIds []string `json:"principal_ids"`
 }
 
+// AddRoutinePrincipalRequest defines model for AddRoutinePrincipalRequest.
+type AddRoutinePrincipalRequest struct {
+	// Level Narrows what a follower is notified about. Ignored on the other relationships, which are always notified.
+	Level       *RoutineFollowLevel `json:"level,omitempty"`
+	PrincipalId string              `json:"principal_id"`
+
+	// Relationship The relationship a principal holds to a routine. `follower` is opt-in attention, `responsible` is the person the routine waits on, `manager` may change it. One principal may hold more than one.
+	Relationship RoutineRelationship `json:"relationship"`
+}
+
 // Agent AI actor identity. An agent IS a principal (its permissions are role grants on that principal) with instructions, configuration, and session presence.
 type Agent struct {
 	// Color Display color for this agent in UI surfaces. One of the Mantine color palette keys (e.g. `indigo`, `teal`, `grape`); empty string falls back to a hash-derived color.
@@ -3550,9 +3749,9 @@ type Agent struct {
 	// TimeoutSeconds Execution timeout, in seconds, for a single turn of this agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A request's `operation.timeout_seconds` overrides this for that turn.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 
-	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
+	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
 	//
-	// The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise.
+	// The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise. Existing agents retain their stored mode; the default applies when creating an agent without one.
 	ToolPresentation *AgentToolPresentation `json:"tool_presentation,omitempty"`
 
 	// ToolSelectors The agent's tool grant: the action selectors it may call, expanded against the live action catalog at each build.
@@ -3953,9 +4152,9 @@ type AgentToolManifest struct {
 	Warnings []AgentManifestWarning `json:"warnings"`
 }
 
-// AgentToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
+// AgentToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
 //
-// The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise.
+// The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise. Existing agents retain their stored mode; the default applies when creating an agent without one.
 type AgentToolPresentation string
 
 // AgentTurn One attempt of an agent working on the session — the unit that produces a transcript. A turn is triggered by a direct send to the session or an inbound channel message (channel_exchange_id). Its messages are read via the turn's transcript endpoint.
@@ -4424,9 +4623,9 @@ type BlueprintAgentInput struct {
 	// TimeoutSeconds Per-turn execution timeout; `0` uses the platform default.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 
-	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
+	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
 	//
-	// The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise.
+	// The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise. Existing agents retain their stored mode; the default applies when creating an agent without one.
 	ToolPresentation *AgentToolPresentation `json:"tool_presentation,omitempty"`
 }
 
@@ -4743,7 +4942,7 @@ type CreateAPIKeyRequest struct {
 	// PrincipalId Principal this key authenticates as. Omit to use the permanent organization principal with the requested role as a mandatory scope.
 	PrincipalId *string `json:"principal_id,omitempty"`
 
-	// Role Mandatory scope role when `principal_id` is omitted. The permanent organization principal holds Owner, and this credential scope can only narrow it. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org administration without billing; lower roles narrow to build/run, run-only, or read-only. Ignored when `principal_id` is set.
+	// Role Mandatory scope role when `principal_id` is omitted. The permanent organization principal holds Owner, and this credential scope can only narrow it. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers organization administration and team resource posture, plus billing reads; `User` can use reachable resources and build private configuration; `Viewer` is read-only. `Worker` is not selectable here — org-level keys are barred from the job endpoints, so it would be inert. For a narrower cap, such as use-only automation, bind the key to a principal and set `scope_role_id` to a custom role. Ignored when `principal_id` is set.
 	Role *CreateAPIKeyRequestRole `json:"role,omitempty"`
 
 	// ScopeRoleId Optional role whose permissions cap this key below its principal's full grants. Only applicable when `principal_id` is set.
@@ -4753,7 +4952,7 @@ type CreateAPIKeyRequest struct {
 	Tags *TagMap `json:"tags,omitempty"`
 }
 
-// CreateAPIKeyRequestRole Mandatory scope role when `principal_id` is omitted. The permanent organization principal holds Owner, and this credential scope can only narrow it. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org administration without billing; lower roles narrow to build/run, run-only, or read-only. Ignored when `principal_id` is set.
+// CreateAPIKeyRequestRole Mandatory scope role when `principal_id` is omitted. The permanent organization principal holds Owner, and this credential scope can only narrow it. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers organization administration and team resource posture, plus billing reads; `User` can use reachable resources and build private configuration; `Viewer` is read-only. `Worker` is not selectable here — org-level keys are barred from the job endpoints, so it would be inert. For a narrower cap, such as use-only automation, bind the key to a principal and set `scope_role_id` to a custom role. Ignored when `principal_id` is set.
 type CreateAPIKeyRequestRole string
 
 // CreateActionRequest Registers an org-owned custom action agents can call as a tool.
@@ -4850,9 +5049,9 @@ type CreateAgentRequest struct {
 	// TimeoutSeconds Per-turn execution timeout in seconds for this agent. Omit or `0` to use the platform default (600s / 10 minutes); a request's `operation.timeout_seconds` overrides it for that turn.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 
-	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
+	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
 	//
-	// The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise.
+	// The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise. Existing agents retain their stored mode; the default applies when creating an agent without one.
 	ToolPresentation *AgentToolPresentation `json:"tool_presentation,omitempty"`
 
 	// ToolSelectors The agent's tool grant. Omit for an agent with no granted actions; its intrinsic tools are unaffected.
@@ -6017,6 +6216,18 @@ type OAuthReturnOrigins struct {
 	Origins []string `json:"origins"`
 }
 
+// OrgContext The organization's shared context: background on the business that every agent in the organization carries in its system prompt. It belongs to the organization rather than to any one agent or person — administrators write it, every member can read it, and every agent receives it on every turn.
+type OrgContext struct {
+	// Content The context as stored, in Markdown. Empty when the organization has not written one.
+	Content string `json:"content"`
+
+	// MaxBytes The largest content the server accepts, in bytes of UTF-8. The content rides in every agent turn, so the cap is a per-turn budget rather than a storage limit.
+	MaxBytes int `json:"max_bytes"`
+
+	// UpdatedAt When the content last changed. Absent until it is first written.
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+}
+
 // PermissionCatalogResponse defines model for PermissionCatalogResponse.
 type PermissionCatalogResponse struct {
 	ActionGroups []ActionPermissionGroup `json:"action_groups"`
@@ -6133,6 +6344,12 @@ type PromoteAgentMemoryEntryRequest struct {
 type PutOAuthReturnOriginsRequest struct {
 	// Origins Exact HTTPS return origins to allow. An empty array disables embedded return.
 	Origins []string `json:"origins"`
+}
+
+// PutOrgContextRequest Full-replace body for the organization context. An empty string clears it.
+type PutOrgContextRequest struct {
+	// Content The new context, in Markdown. At most 16384 bytes of UTF-8.
+	Content string `json:"content"`
 }
 
 // QueryRowsRequest defines model for QueryRowsRequest.
@@ -6377,45 +6594,144 @@ type Routine struct {
 	CompletedAt        *time.Time `json:"completed_at,omitempty"`
 	CreatedAt          time.Time  `json:"created_at"`
 	DailyCeilingMilli  int64      `json:"daily_ceiling_milli"`
-	Id                 string     `json:"id"`
+
+	// Event Present when `trigger` is `event`.
+	Event *RoutineEventTrigger `json:"event,omitempty"`
+
+	// FollowerCount Principals holding a follower row. Responsible people and managers are notified too, and are named separately.
+	FollowerCount int `json:"follower_count"`
+
+	// Following Whether the calling principal follows this routine.
+	Following bool   `json:"following"`
+	Id        string `json:"id"`
 
 	// Instructions Omitted from administrator metadata-only projections.
 	Instructions *string `json:"instructions,omitempty"`
 
 	// Kind V1 accepts invoke; notify is reserved and returns unsupported_routine_kind.
-	Kind                      RoutineKind `json:"kind"`
-	LastFireAt                *time.Time  `json:"last_fire_at,omitempty"`
-	Name                      string      `json:"name"`
-	NextFireAt                *time.Time  `json:"next_fire_at,omitempty"`
-	OccurrenceCount           int         `json:"occurrence_count"`
-	OrgId                     string      `json:"org_id"`
-	OwnerId                   string      `json:"owner_id"`
-	PauseReason               *string     `json:"pause_reason,omitempty"`
-	PerOccurrenceCeilingMilli int64       `json:"per_occurrence_ceiling_milli"`
+	Kind       RoutineKind `json:"kind"`
+	LastFireAt *time.Time  `json:"last_fire_at,omitempty"`
 
-	// Schedule Exactly one of at, interval, or cron is required.
-	Schedule  RoutineSchedule `json:"schedule"`
-	SessionId string          `json:"session_id"`
-	Status    RoutineStatus   `json:"status"`
-	Timezone  string          `json:"timezone"`
-	UpdatedAt time.Time       `json:"updated_at"`
+	// ManagedBy Who may change the routine. `team` is any member who can already reach it; `named` is the principals holding a `manager` row plus organization administrators. Defaults to `named`; only a person may change it, because `named` -> `team` turns "these people" into "anyone".
+	ManagedBy RoutineManagedBy `json:"managed_by"`
+	Name      string           `json:"name"`
+
+	// NextFireAt Absent on an event routine, which has no next fire to predict.
+	NextFireAt      *time.Time `json:"next_fire_at,omitempty"`
+	OccurrenceCount int        `json:"occurrence_count"`
+	OrgId           string     `json:"org_id"`
+
+	// OriginSessionId The conversation the routine was proposed in, kept as provenance and nothing more. Each occurrence runs in its own session, so this is absent for a form-created routine and for one whose conversation has since been deleted. Archiving it does not stop the routine.
+	OriginSessionId *string `json:"origin_session_id,omitempty"`
+
+	// OwnerId The custodian. Absent under team custody, which has no owner.
+	OwnerId *string `json:"owner_id,omitempty"`
+
+	// OwnerKind Whose the routine is. `person` pauses with its owner's offboarding and runs on their connections. `team` belongs to the business: it has no `owner_id`, survives its creator's departure, and must name at least one responsible person.
+	OwnerKind                 RoutineOwnerKind `json:"owner_kind"`
+	PauseReason               *string          `json:"pause_reason,omitempty"`
+	PerOccurrenceCeilingMilli int64            `json:"per_occurrence_ceiling_milli"`
+
+	// Responsible The people this routine waits on. Non-empty under team custody.
+	Responsible *[]RoutinePrincipal `json:"responsible,omitempty"`
+
+	// Schedule Present when `trigger` is `schedule`.
+	Schedule *RoutineSchedule `json:"schedule,omitempty"`
+	Status   RoutineStatus    `json:"status"`
+	Timezone string           `json:"timezone"`
+
+	// Trigger What starts this routine's runs. `schedule` fires on the routine's schedule; `event` fires when a matching integration event arrives. Derived from whichever of `schedule` and `event` the routine carries, never stored.
+	Trigger RoutineTrigger `json:"trigger"`
+
+	// Unread Whether a recent run has landed since the calling principal last opened its session. Computed per caller from their session read marks, never stored, and always false on a routine they do not follow — following is what opts you into the indicator.
+	Unread    *bool     `json:"unread,omitempty"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// RoutineCreateRequest defines model for RoutineCreateRequest.
+// RoutineChange One recorded change to a routine, read from the audit trail.
+//
+// Deliberately narrower than an audit log entry: no IP address, no user agent, no request ID. This is a product surface a colleague reads, not a security investigation, and the operational fields would expose a person to everyone who can see the routine they touched.
+type RoutineChange struct {
+	// Action What happened: create, update, delete, transfer, or run (a person asking for a run now).
+	Action string `json:"action"`
+
+	// ActorName The actor's display name as it stood when the change was made. An agent's name appears here exactly as a person's does.
+	ActorName *string `json:"actor_name,omitempty"`
+
+	// Changes The values before and after. Withheld fields read as `<redacted>` rather than disappearing.
+	Changes *struct {
+		After  *map[string]interface{} `json:"after,omitempty"`
+		Before *map[string]interface{} `json:"before,omitempty"`
+	} `json:"changes,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+
+	// CredentialName The credential or session the change came through, when one was recorded.
+	CredentialName *string `json:"credential_name,omitempty"`
+	ErrorType      *string `json:"error_type,omitempty"`
+	Id             string  `json:"id"`
+
+	// PrincipalId The human or agent who made the change.
+	PrincipalId *string             `json:"principal_id,omitempty"`
+	Status      RoutineChangeStatus `json:"status"`
+}
+
+// RoutineChangeStatus defines model for RoutineChange.Status.
+type RoutineChangeStatus string
+
+// RoutineChangeList defines model for RoutineChangeList.
+type RoutineChangeList struct {
+	HasMore    bool            `json:"has_more"`
+	Items      []RoutineChange `json:"items"`
+	NextCursor *string         `json:"next_cursor,omitempty"`
+}
+
+// RoutineCreateRequest Exactly one of `schedule` and `event` is required: a routine runs on a schedule or when an event arrives, not both.
 type RoutineCreateRequest struct {
 	AgentId           string `json:"agent_id"`
 	DailyCeilingMilli int64  `json:"daily_ceiling_milli"`
-	Instructions      string `json:"instructions"`
+
+	// Event Runs the routine when a matching integration event arrives. Each matched event is one run on the ledger, one at a time per routine: an event arriving while a run is in flight waits behind it, and a run still waiting six hours later is closed `skipped` with `error_code` `stale`.
+	Event *RoutineEventTrigger `json:"event,omitempty"`
+
+	// FollowerPrincipalIds Principals who opt into the routine's results. The creator is added automatically.
+	FollowerPrincipalIds *[]string `json:"follower_principal_ids,omitempty"`
+	Instructions         string    `json:"instructions"`
 
 	// Kind V1 accepts invoke; notify is reserved and returns unsupported_routine_kind.
-	Kind                      *RoutineKind `json:"kind,omitempty"`
-	Name                      *string      `json:"name,omitempty"`
-	PerOccurrenceCeilingMilli int64        `json:"per_occurrence_ceiling_milli"`
+	Kind *RoutineKind `json:"kind,omitempty"`
+
+	// ManagedBy Defaults to `named`.
+	ManagedBy *RoutineManagedBy `json:"managed_by,omitempty"`
+	Name      *string           `json:"name,omitempty"`
+
+	// OwnerKind Defaults to `person`. `team` requires organization administration.
+	OwnerKind                 *RoutineOwnerKind `json:"owner_kind,omitempty"`
+	PerOccurrenceCeilingMilli int64             `json:"per_occurrence_ceiling_milli"`
+
+	// ResponsiblePrincipalIds The people the routine waits on. Required and non-empty when `owner_kind` is `team`; rejected otherwise. Each must be a person.
+	ResponsiblePrincipalIds *[]string `json:"responsible_principal_ids,omitempty"`
 
 	// Schedule Exactly one of at, interval, or cron is required.
-	Schedule  RoutineSchedule `json:"schedule"`
-	SessionId string          `json:"session_id"`
+	Schedule *RoutineSchedule `json:"schedule,omitempty"`
+
+	// SessionId Optional conversation this routine was proposed in, kept as provenance. Occurrences run in their own sessions, so this never affects where results are delivered. Omitted for a routine created from the form.
+	SessionId *string `json:"session_id,omitempty"`
 }
+
+// RoutineEventTrigger Runs the routine when a matching integration event arrives. Each matched event is one run on the ledger, one at a time per routine: an event arriving while a run is in flight waits behind it, and a run still waiting six hours later is closed `skipped` with `error_code` `stale`.
+type RoutineEventTrigger struct {
+	// Condition Optional expression over the event's `{event, meta}` envelope. The run starts only when it returns true. A condition that cannot be evaluated against an event records a `failed` run with `error_code` `trigger_condition_error` and starts nothing.
+	Condition *string `json:"condition,omitempty"`
+
+	// EventType The integration event to react to: a concrete type from the event catalog (`github.issues.opened`) or a wildcard on a prefix (`github.issues.*`, `github.*`). The first segment must name a registered integration provider; built-in Mobius events are not accepted here.
+	EventType string `json:"event_type"`
+
+	// IntegrationId Optional. Only events from this connection start a run. Omitted, an event from any of the organization's connections for the provider does.
+	IntegrationId *string `json:"integration_id,omitempty"`
+}
+
+// RoutineFollowLevel Narrows what a follower is notified about. Ignored on the other relationships, which are always notified.
+type RoutineFollowLevel string
 
 // RoutineKind V1 accepts invoke; notify is reserved and returns unsupported_routine_kind.
 type RoutineKind string
@@ -6427,30 +6743,91 @@ type RoutineList struct {
 	NextCursor *string   `json:"next_cursor,omitempty"`
 }
 
-// RoutineOccurrence defines model for RoutineOccurrence.
+// RoutineManagedBy Who may change the routine. `team` is any member who can already reach it; `named` is the principals holding a `manager` row plus organization administrators. Defaults to `named`; only a person may change it, because `named` -> `team` turns "these people" into "anyone".
+type RoutineManagedBy string
+
+// RoutineOccurrence One run of a routine, and the durable record of it. Status, outcome, error, credits, and timing all live here, so a run whose transcript is gone is still a complete row.
 type RoutineOccurrence struct {
-	CreditsSpentMilli    int64                   `json:"credits_spent_milli"`
-	ErrorCode            *string                 `json:"error_code,omitempty"`
-	ErrorMessage         *string                 `json:"error_message,omitempty"`
-	Id                   string                  `json:"id"`
-	IntakeAt             time.Time               `json:"intake_at"`
-	LatenessMilliseconds int64                   `json:"lateness_milliseconds"`
-	Outcome              *string                 `json:"outcome,omitempty"`
-	RoutineId            string                  `json:"routine_id"`
-	ScheduledAt          time.Time               `json:"scheduled_at"`
-	Status               RoutineOccurrenceStatus `json:"status"`
-	TranscriptUrl        string                  `json:"transcript_url"`
-	TurnId               *string                 `json:"turn_id,omitempty"`
+	CreditsSpentMilli int64   `json:"credits_spent_milli"`
+	ErrorCode         *string `json:"error_code,omitempty"`
+	ErrorMessage      *string `json:"error_message,omitempty"`
+
+	// EventType The concrete event type that arrived (`github.issues.opened`), not the pattern the routine subscribed to. Present only when `trigger` is `event`.
+	EventType            *string   `json:"event_type,omitempty"`
+	Id                   string    `json:"id"`
+	IntakeAt             time.Time `json:"intake_at"`
+	LatenessMilliseconds int64     `json:"lateness_milliseconds"`
+
+	// Outcome A completed run's headline: one line saying what it did, derived from the run's own final message with markdown removed and length capped, falling back to the scheduled time when the run said nothing. Safe to render in a table cell as-is.
+	Outcome   *string `json:"outcome,omitempty"`
+	RoutineId string  `json:"routine_id"`
+
+	// RoutineName The routine's current name, carried on the row so a cross-routine ledger renders without joining against every routine in the organization.
+	RoutineName *string   `json:"routine_name,omitempty"`
+	ScheduledAt time.Time `json:"scheduled_at"`
+
+	// SessionId The conversation this run happened in, minted at admission. Absent for a run skipped before admission, and for one whose session has since been deleted.
+	SessionId *string `json:"session_id,omitempty"`
+
+	// SourceEventId The source event that started this run. Present only when `trigger` is `event`; it is the row the integration events list shows for the delivery.
+	SourceEventId *string                 `json:"source_event_id,omitempty"`
+	Status        RoutineOccurrenceStatus `json:"status"`
+
+	// TranscriptUrl Link to the run's transcript, which is the whole of session_id's conversation: one session holds exactly one occurrence. Absent whenever session_id is; render the row without it rather than as an error.
+	TranscriptUrl *string `json:"transcript_url,omitempty"`
+
+	// Trigger What put this run on the ledger: the routine's schedule, a principal asking for it now, or an integration event that matched the routine's event trigger. Every kind is bounded and recorded the same way. Always present — a row written before manual runs existed reads as `schedule`, which is what it was.
+	Trigger RoutineOccurrenceTrigger `json:"trigger"`
+
+	// TriggeredBy The principal who put this run on the ledger, named the same way the routine's changelog names an actor: a human or an agent, either of which can ask for a run through the API. Always present when `trigger` is `manual`, because a manual run is somebody's act and the record has to say whose. For a scheduled or event run it is the routine's own custodian, and so absent under team custody, which has no custodian to name.
+	TriggeredBy *string `json:"triggered_by,omitempty"`
+	TurnId      *string `json:"turn_id,omitempty"`
+
+	// Unread Whether this run landed after the calling principal last opened its session. Computed per caller from their session read marks, never stored, and always false on a routine they do not follow.
+	Unread *bool `json:"unread,omitempty"`
 }
 
 // RoutineOccurrenceStatus defines model for RoutineOccurrence.Status.
 type RoutineOccurrenceStatus string
+
+// RoutineOccurrenceTrigger What put this run on the ledger: the routine's schedule, a principal asking for it now, or an integration event that matched the routine's event trigger. Every kind is bounded and recorded the same way. Always present — a row written before manual runs existed reads as `schedule`, which is what it was.
+type RoutineOccurrenceTrigger string
 
 // RoutineOccurrenceList defines model for RoutineOccurrenceList.
 type RoutineOccurrenceList struct {
 	HasMore    bool                `json:"has_more"`
 	Items      []RoutineOccurrence `json:"items"`
 	NextCursor *string             `json:"next_cursor,omitempty"`
+}
+
+// RoutineOwnerKind Whose the routine is. `person` pauses with its owner's offboarding and runs on their connections. `team` belongs to the business: it has no `owner_id`, survives its creator's departure, and must name at least one responsible person.
+type RoutineOwnerKind string
+
+// RoutinePrincipal defines model for RoutinePrincipal.
+type RoutinePrincipal struct {
+	AddedAt time.Time `json:"added_at"`
+
+	// AddedBy Principal who wrote this row.
+	AddedBy     *string `json:"added_by,omitempty"`
+	DisplayName *string `json:"display_name,omitempty"`
+
+	// Kind The principal's kind, resolved from the principal record.
+	Kind RoutinePrincipalKind `json:"kind"`
+
+	// Level Narrows what a follower is notified about. Ignored on the other relationships, which are always notified.
+	Level       *RoutineFollowLevel `json:"level,omitempty"`
+	PrincipalId string              `json:"principal_id"`
+
+	// Relationship The relationship a principal holds to a routine. `follower` is opt-in attention, `responsible` is the person the routine waits on, `manager` may change it. One principal may hold more than one.
+	Relationship RoutineRelationship `json:"relationship"`
+}
+
+// RoutinePrincipalKind The principal's kind, resolved from the principal record.
+type RoutinePrincipalKind string
+
+// RoutinePrincipalList defines model for RoutinePrincipalList.
+type RoutinePrincipalList struct {
+	Items []RoutinePrincipal `json:"items"`
 }
 
 // RoutineProposal defines model for RoutineProposal.
@@ -6468,6 +6845,9 @@ type RoutineProposal struct {
 // RoutineProposalStatus defines model for RoutineProposal.Status.
 type RoutineProposalStatus string
 
+// RoutineRelationship The relationship a principal holds to a routine. `follower` is opt-in attention, `responsible` is the person the routine waits on, `manager` may change it. One principal may hold more than one.
+type RoutineRelationship string
+
 // RoutineSchedule Exactly one of at, interval, or cron is required.
 type RoutineSchedule struct {
 	At             *time.Time `json:"at,omitempty"`
@@ -6482,14 +6862,26 @@ type RoutineSchedule struct {
 // RoutineStatus defines model for RoutineStatus.
 type RoutineStatus string
 
+// RoutineTrigger What starts this routine's runs. `schedule` fires on the routine's schedule; `event` fires when a matching integration event arrives. Derived from whichever of `schedule` and `event` the routine carries, never stored.
+type RoutineTrigger string
+
 // RoutineUpdateRequest defines model for RoutineUpdateRequest.
 type RoutineUpdateRequest struct {
-	DailyCeilingMilli         *int64  `json:"daily_ceiling_milli,omitempty"`
-	Instructions              *string `json:"instructions,omitempty"`
-	Name                      *string `json:"name,omitempty"`
-	PerOccurrenceCeilingMilli *int64  `json:"per_occurrence_ceiling_milli,omitempty"`
+	// DailyCeilingMilli Must remain at least the per-occurrence ceiling. A person may move it either way; an agent may only lower it.
+	DailyCeilingMilli *int64 `json:"daily_ceiling_milli,omitempty"`
 
-	// Schedule Exactly one of at, interval, or cron is required.
+	// Event Makes this an event routine, dropping any schedule it had. Rejected together with `schedule`.
+	Event        *RoutineEventTrigger `json:"event,omitempty"`
+	Instructions *string              `json:"instructions,omitempty"`
+
+	// ManagedBy Only a person may change this. An agent manager receives 403.
+	ManagedBy *RoutineManagedBy `json:"managed_by,omitempty"`
+	Name      *string           `json:"name,omitempty"`
+
+	// PerOccurrenceCeilingMilli A person may move this either way. An agent may only lower it, so no agent widens the budget it runs under; raising it as an agent receives 403.
+	PerOccurrenceCeilingMilli *int64 `json:"per_occurrence_ceiling_milli,omitempty"`
+
+	// Schedule Makes this a scheduled routine, dropping any event trigger it had. Rejected together with `event`.
 	Schedule *RoutineSchedule `json:"schedule,omitempty"`
 }
 
@@ -6615,9 +7007,6 @@ type Session struct {
 	// ModelProvider Provider for the recorded `model`.
 	ModelProvider *string `json:"model_provider,omitempty"`
 
-	// NextRoutineFireAt Earliest next fire among the caller's active routines in this conversation.
-	NextRoutineFireAt *time.Time `json:"next_routine_fire_at,omitempty"`
-
 	// Origin Surface that created the session: `manual`, `api`, or `interaction`.
 	Origin SessionOrigin `json:"origin"`
 
@@ -6659,9 +7048,6 @@ type Session struct {
 
 	// TokenOutputTotal Lifetime output-token total reported for this session.
 	TokenOutputTotal int `json:"token_output_total"`
-
-	// UnreadScheduledResult True when the routine owner has not opened this conversation since its latest admitted scheduled result settled.
-	UnreadScheduledResult *bool `json:"unread_scheduled_result,omitempty"`
 
 	// UpdatedAt Last update timestamp.
 	UpdatedAt time.Time `json:"updated_at"`
@@ -7850,9 +8236,9 @@ type UpdateAgentRequest struct {
 	// TimeoutSeconds Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (600s / 10 minutes); a request's `operation.timeout_seconds` overrides it for that turn.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 
-	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
+	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
 	//
-	// The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise.
+	// The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise. Existing agents retain their stored mode; the default applies when creating an agent without one.
 	ToolPresentation *AgentToolPresentation `json:"tool_presentation,omitempty"`
 
 	// ToolSelectors Replacement tool grant, as a whole. Omit to leave the agent's current grant untouched; send an empty array to revoke it.
@@ -8410,6 +8796,9 @@ type TableIDParam = string
 // TableNameQueryParam defines model for TableNameQueryParam.
 type TableNameQueryParam = string
 
+// TerminalPartialsIncludeParam defines model for TerminalPartialsIncludeParam.
+type TerminalPartialsIncludeParam = bool
+
 // TurnIdParam defines model for TurnIdParam.
 type TurnIdParam = string
 
@@ -8694,9 +9083,54 @@ type ListRolesParams struct {
 
 // ListRoutinesParams defines parameters for ListRoutines.
 type ListRoutinesParams struct {
-	OwnerId   *string `form:"owner_id,omitempty" json:"owner_id,omitempty"`
-	AgentId   *string `form:"agent_id,omitempty" json:"agent_id,omitempty"`
-	SessionId *string `form:"session_id,omitempty" json:"session_id,omitempty"`
+	OwnerId *string `form:"owner_id,omitempty" json:"owner_id,omitempty"`
+	AgentId *string `form:"agent_id,omitempty" json:"agent_id,omitempty"`
+
+	// OriginSessionId Filter to routines proposed in one conversation. Provenance only; it is not where they run.
+	OriginSessionId *string `form:"origin_session_id,omitempty" json:"origin_session_id,omitempty"`
+	Limit           *int    `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor next_cursor from the previous page.
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
+// ListRoutineOccurrencesParams defines parameters for ListRoutineOccurrences.
+type ListRoutineOccurrencesParams struct {
+	// RoutineId Narrow to one routine. This is what the deleted nested route was.
+	RoutineId *string `form:"routine_id,omitempty" json:"routine_id,omitempty"`
+
+	// OwnerId Narrow to routines one person is the custodian of. Team-custody routines have no owner and never match.
+	OwnerId *string `form:"owner_id,omitempty" json:"owner_id,omitempty"`
+
+	// Status Narrow to these occurrence statuses.
+	Status *[]ListRoutineOccurrencesParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// Since Only occurrences scheduled at or after this time.
+	Since *time.Time `form:"since,omitempty" json:"since,omitempty"`
+
+	// Until Only occurrences scheduled before this time.
+	Until *time.Time `form:"until,omitempty" json:"until,omitempty"`
+	Limit *int       `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor next_cursor from the previous page.
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
+// ListRoutineOccurrencesParamsStatus defines parameters for ListRoutineOccurrences.
+type ListRoutineOccurrencesParamsStatus string
+
+// ListRoutineChangesParams defines parameters for ListRoutineChanges.
+type ListRoutineChangesParams struct {
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor next_cursor from the previous page.
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
+// RemoveRoutinePrincipalParams defines parameters for RemoveRoutinePrincipal.
+type RemoveRoutinePrincipalParams struct {
+	// Relationship Limit the removal to one relationship. Omit to remove all of them.
+	Relationship *RoutineRelationship `form:"relationship,omitempty" json:"relationship,omitempty"`
 }
 
 // ListSessionsParams defines parameters for ListSessions.
@@ -8754,6 +9188,9 @@ type ListSessionMessagesParams struct {
 
 	// Include Set to `context` to include caller-supplied runtime context rows whose model-visible names begin with `app-`. Platform-owned runtime context remains hidden.
 	Include *ContextIncludeParam `form:"include,omitempty" json:"include,omitempty"`
+
+	// IncludeTerminalPartials Set to `true` to include durable transcript rows salvaged from a failed or cancelled turn. These rows carry `partial` and `terminal_outcome` metadata and remain excluded from future model context.
+	IncludeTerminalPartials *TerminalPartialsIncludeParam `form:"include_terminal_partials,omitempty" json:"include_terminal_partials,omitempty"`
 }
 
 // ListSessionMessagesParamsOrder defines parameters for ListSessionMessages.
@@ -8915,6 +9352,9 @@ type RespondToInteractionJSONRequestBody = RespondToInteractionRequest
 // ReviewInteractionJSONRequestBody defines body for ReviewInteraction for application/json ContentType.
 type ReviewInteractionJSONRequestBody = ReviewInteractionRequest
 
+// ReplaceOrgContextJSONRequestBody defines body for ReplaceOrgContext for application/json ContentType.
+type ReplaceOrgContextJSONRequestBody = PutOrgContextRequest
+
 // ReplaceOAuthReturnOriginsJSONRequestBody defines body for ReplaceOAuthReturnOrigins for application/json ContentType.
 type ReplaceOAuthReturnOriginsJSONRequestBody = PutOAuthReturnOriginsRequest
 
@@ -8941,6 +9381,9 @@ type CreateRoutineJSONRequestBody = RoutineCreateRequest
 
 // UpdateRoutineJSONRequestBody defines body for UpdateRoutine for application/json ContentType.
 type UpdateRoutineJSONRequestBody = RoutineUpdateRequest
+
+// AddRoutinePrincipalJSONRequestBody defines body for AddRoutinePrincipal for application/json ContentType.
+type AddRoutinePrincipalJSONRequestBody = AddRoutinePrincipalRequest
 
 // CreateSessionJSONRequestBody defines body for CreateSession for application/json ContentType.
 type CreateSessionJSONRequestBody = CreateSessionRequest
@@ -14379,6 +14822,14 @@ type ClientInterface interface {
 
 	ReviewInteraction(ctx context.Context, resourceId IDParam, body ReviewInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetOrgContext request
+	GetOrgContext(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReplaceOrgContextWithBody request with any body
+	ReplaceOrgContextWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ReplaceOrgContext(ctx context.Context, body ReplaceOrgContextJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetOAuthReturnOrigins request
 	GetOAuthReturnOrigins(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -14444,12 +14895,6 @@ type ClientInterface interface {
 
 	UpdateRole(ctx context.Context, resourceId IDParam, body UpdateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ApproveRoutineProposal request
-	ApproveRoutineProposal(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DismissRoutineProposal request
-	DismissRoutineProposal(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ListRoutines request
 	ListRoutines(ctx context.Context, params *ListRoutinesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -14457,6 +14902,15 @@ type ClientInterface interface {
 	CreateRoutineWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	CreateRoutine(ctx context.Context, body CreateRoutineJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListRoutineOccurrences request
+	ListRoutineOccurrences(ctx context.Context, params *ListRoutineOccurrencesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ApproveRoutineProposal request
+	ApproveRoutineProposal(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DismissRoutineProposal request
+	DismissRoutineProposal(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteRoutine request
 	DeleteRoutine(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -14469,14 +14923,28 @@ type ClientInterface interface {
 
 	UpdateRoutine(ctx context.Context, routineId RoutineID, body UpdateRoutineJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListRoutineOccurrences request
-	ListRoutineOccurrences(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListRoutineChanges request
+	ListRoutineChanges(ctx context.Context, routineId RoutineID, params *ListRoutineChangesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// PauseRoutine request
 	PauseRoutine(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListRoutinePrincipals request
+	ListRoutinePrincipals(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AddRoutinePrincipalWithBody request with any body
+	AddRoutinePrincipalWithBody(ctx context.Context, routineId RoutineID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	AddRoutinePrincipal(ctx context.Context, routineId RoutineID, body AddRoutinePrincipalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RemoveRoutinePrincipal request
+	RemoveRoutinePrincipal(ctx context.Context, routineId RoutineID, principalId string, params *RemoveRoutinePrincipalParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ResumeRoutine request
 	ResumeRoutine(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RunRoutineNow request
+	RunRoutineNow(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListSessions request
 	ListSessions(ctx context.Context, params *ListSessionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -15573,6 +16041,42 @@ func (c *Client) ReviewInteraction(ctx context.Context, resourceId IDParam, body
 	return c.Client.Do(req)
 }
 
+func (c *Client) GetOrgContext(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetOrgContextRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReplaceOrgContextWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceOrgContextRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReplaceOrgContext(ctx context.Context, body ReplaceOrgContextJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceOrgContextRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetOAuthReturnOrigins(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetOAuthReturnOriginsRequest(c.Server)
 	if err != nil {
@@ -15861,30 +16365,6 @@ func (c *Client) UpdateRole(ctx context.Context, resourceId IDParam, body Update
 	return c.Client.Do(req)
 }
 
-func (c *Client) ApproveRoutineProposal(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewApproveRoutineProposalRequest(c.Server, proposalId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DismissRoutineProposal(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDismissRoutineProposalRequest(c.Server, proposalId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) ListRoutines(ctx context.Context, params *ListRoutinesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListRoutinesRequest(c.Server, params)
 	if err != nil {
@@ -15911,6 +16391,42 @@ func (c *Client) CreateRoutineWithBody(ctx context.Context, contentType string, 
 
 func (c *Client) CreateRoutine(ctx context.Context, body CreateRoutineJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateRoutineRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListRoutineOccurrences(ctx context.Context, params *ListRoutineOccurrencesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListRoutineOccurrencesRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ApproveRoutineProposal(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewApproveRoutineProposalRequest(c.Server, proposalId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DismissRoutineProposal(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDismissRoutineProposalRequest(c.Server, proposalId)
 	if err != nil {
 		return nil, err
 	}
@@ -15969,8 +16485,8 @@ func (c *Client) UpdateRoutine(ctx context.Context, routineId RoutineID, body Up
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListRoutineOccurrences(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListRoutineOccurrencesRequest(c.Server, routineId)
+func (c *Client) ListRoutineChanges(ctx context.Context, routineId RoutineID, params *ListRoutineChangesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListRoutineChangesRequest(c.Server, routineId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -15993,8 +16509,68 @@ func (c *Client) PauseRoutine(ctx context.Context, routineId RoutineID, reqEdito
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListRoutinePrincipals(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListRoutinePrincipalsRequest(c.Server, routineId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AddRoutinePrincipalWithBody(ctx context.Context, routineId RoutineID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddRoutinePrincipalRequestWithBody(c.Server, routineId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AddRoutinePrincipal(ctx context.Context, routineId RoutineID, body AddRoutinePrincipalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddRoutinePrincipalRequest(c.Server, routineId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RemoveRoutinePrincipal(ctx context.Context, routineId RoutineID, principalId string, params *RemoveRoutinePrincipalParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRemoveRoutinePrincipalRequest(c.Server, routineId, principalId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ResumeRoutine(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewResumeRoutineRequest(c.Server, routineId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RunRoutineNow(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRunRoutineNowRequest(c.Server, routineId)
 	if err != nil {
 		return nil, err
 	}
@@ -19793,6 +20369,73 @@ func NewReviewInteractionRequestWithBody(server string, resourceId IDParam, cont
 	return req, nil
 }
 
+// NewGetOrgContextRequest generates requests for GetOrgContext
+func NewGetOrgContextRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/organization/context")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewReplaceOrgContextRequest calls the generic ReplaceOrgContext builder with application/json body
+func NewReplaceOrgContextRequest(server string, body ReplaceOrgContextJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewReplaceOrgContextRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewReplaceOrgContextRequestWithBody generates requests for ReplaceOrgContext with any type of body
+func NewReplaceOrgContextRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/organization/context")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewGetOAuthReturnOriginsRequest generates requests for GetOAuthReturnOrigins
 func NewGetOAuthReturnOriginsRequest(server string) (*http.Request, error) {
 	var err error
@@ -20535,74 +21178,6 @@ func NewUpdateRoleRequestWithBody(server string, resourceId IDParam, contentType
 	return req, nil
 }
 
-// NewApproveRoutineProposalRequest generates requests for ApproveRoutineProposal
-func NewApproveRoutineProposalRequest(server string, proposalId RoutineProposalID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "proposal_id", proposalId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/routine-proposals/%s/approve", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewDismissRoutineProposalRequest generates requests for DismissRoutineProposal
-func NewDismissRoutineProposalRequest(server string, proposalId RoutineProposalID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "proposal_id", proposalId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/routine-proposals/%s/dismiss", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
 // NewListRoutinesRequest generates requests for ListRoutines
 func NewListRoutinesRequest(server string, params *ListRoutinesParams) (*http.Request, error) {
 	var err error
@@ -20655,9 +21230,33 @@ func NewListRoutinesRequest(server string, params *ListRoutinesParams) (*http.Re
 
 		}
 
-		if params.SessionId != nil {
+		if params.OriginSessionId != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "session_id", *params.SessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "origin_session_id", *params.OriginSessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -20717,6 +21316,200 @@ func NewCreateRoutineRequestWithBody(server string, contentType string, body io.
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListRoutineOccurrencesRequest generates requests for ListRoutineOccurrences
+func NewListRoutineOccurrencesRequest(server string, params *ListRoutineOccurrencesParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/routines/occurrences")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.RoutineId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "routine_id", *params.RoutineId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.OwnerId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owner_id", *params.OwnerId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Since != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "since", *params.Since, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Until != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "until", *params.Until, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewApproveRoutineProposalRequest generates requests for ApproveRoutineProposal
+func NewApproveRoutineProposalRequest(server string, proposalId RoutineProposalID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "proposal_id", proposalId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/routines/proposals/%s/approve", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewDismissRoutineProposalRequest generates requests for DismissRoutineProposal
+func NewDismissRoutineProposalRequest(server string, proposalId RoutineProposalID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "proposal_id", proposalId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/routines/proposals/%s/dismiss", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -20836,8 +21629,8 @@ func NewUpdateRoutineRequestWithBody(server string, routineId RoutineID, content
 	return req, nil
 }
 
-// NewListRoutineOccurrencesRequest generates requests for ListRoutineOccurrences
-func NewListRoutineOccurrencesRequest(server string, routineId RoutineID) (*http.Request, error) {
+// NewListRoutineChangesRequest generates requests for ListRoutineChanges
+func NewListRoutineChangesRequest(server string, routineId RoutineID, params *ListRoutineChangesParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -20852,7 +21645,7 @@ func NewListRoutineOccurrencesRequest(server string, routineId RoutineID) (*http
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/routines/%s/occurrences", pathParam0)
+	operationPath := fmt.Sprintf("/v1/routines/%s/changes", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -20860,6 +21653,45 @@ func NewListRoutineOccurrencesRequest(server string, routineId RoutineID) (*http
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -20904,6 +21736,155 @@ func NewPauseRoutineRequest(server string, routineId RoutineID) (*http.Request, 
 	return req, nil
 }
 
+// NewListRoutinePrincipalsRequest generates requests for ListRoutinePrincipals
+func NewListRoutinePrincipalsRequest(server string, routineId RoutineID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "routine_id", routineId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/routines/%s/principals", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewAddRoutinePrincipalRequest calls the generic AddRoutinePrincipal builder with application/json body
+func NewAddRoutinePrincipalRequest(server string, routineId RoutineID, body AddRoutinePrincipalJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAddRoutinePrincipalRequestWithBody(server, routineId, "application/json", bodyReader)
+}
+
+// NewAddRoutinePrincipalRequestWithBody generates requests for AddRoutinePrincipal with any type of body
+func NewAddRoutinePrincipalRequestWithBody(server string, routineId RoutineID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "routine_id", routineId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/routines/%s/principals", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRemoveRoutinePrincipalRequest generates requests for RemoveRoutinePrincipal
+func NewRemoveRoutinePrincipalRequest(server string, routineId RoutineID, principalId string, params *RemoveRoutinePrincipalParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "routine_id", routineId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "principal_id", principalId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/routines/%s/principals/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Relationship != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "relationship", *params.Relationship, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewResumeRoutineRequest generates requests for ResumeRoutine
 func NewResumeRoutineRequest(server string, routineId RoutineID) (*http.Request, error) {
 	var err error
@@ -20921,6 +21902,40 @@ func NewResumeRoutineRequest(server string, routineId RoutineID) (*http.Request,
 	}
 
 	operationPath := fmt.Sprintf("/v1/routines/%s/resume", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRunRoutineNowRequest generates requests for RunRoutineNow
+func NewRunRoutineNowRequest(server string, routineId RoutineID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "routine_id", routineId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/routines/%s/run", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -21501,6 +22516,18 @@ func NewListSessionMessagesRequest(server string, sessionId SessionIdParam, para
 		if params.Include != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "include", *params.Include, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.IncludeTerminalPartials != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "include_terminal_partials", *params.IncludeTerminalPartials, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -23582,6 +24609,14 @@ type ClientWithResponsesInterface interface {
 
 	ReviewInteractionWithResponse(ctx context.Context, resourceId IDParam, body ReviewInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*ReviewInteractionResponse, error)
 
+	// GetOrgContextWithResponse request
+	GetOrgContextWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetOrgContextResponse, error)
+
+	// ReplaceOrgContextWithBodyWithResponse request with any body
+	ReplaceOrgContextWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceOrgContextResponse, error)
+
+	ReplaceOrgContextWithResponse(ctx context.Context, body ReplaceOrgContextJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceOrgContextResponse, error)
+
 	// GetOAuthReturnOriginsWithResponse request
 	GetOAuthReturnOriginsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetOAuthReturnOriginsResponse, error)
 
@@ -23647,12 +24682,6 @@ type ClientWithResponsesInterface interface {
 
 	UpdateRoleWithResponse(ctx context.Context, resourceId IDParam, body UpdateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRoleResponse, error)
 
-	// ApproveRoutineProposalWithResponse request
-	ApproveRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*ApproveRoutineProposalResponse, error)
-
-	// DismissRoutineProposalWithResponse request
-	DismissRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*DismissRoutineProposalResponse, error)
-
 	// ListRoutinesWithResponse request
 	ListRoutinesWithResponse(ctx context.Context, params *ListRoutinesParams, reqEditors ...RequestEditorFn) (*ListRoutinesResponse, error)
 
@@ -23660,6 +24689,15 @@ type ClientWithResponsesInterface interface {
 	CreateRoutineWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRoutineResponse, error)
 
 	CreateRoutineWithResponse(ctx context.Context, body CreateRoutineJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRoutineResponse, error)
+
+	// ListRoutineOccurrencesWithResponse request
+	ListRoutineOccurrencesWithResponse(ctx context.Context, params *ListRoutineOccurrencesParams, reqEditors ...RequestEditorFn) (*ListRoutineOccurrencesResponse, error)
+
+	// ApproveRoutineProposalWithResponse request
+	ApproveRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*ApproveRoutineProposalResponse, error)
+
+	// DismissRoutineProposalWithResponse request
+	DismissRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*DismissRoutineProposalResponse, error)
 
 	// DeleteRoutineWithResponse request
 	DeleteRoutineWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*DeleteRoutineResponse, error)
@@ -23672,14 +24710,28 @@ type ClientWithResponsesInterface interface {
 
 	UpdateRoutineWithResponse(ctx context.Context, routineId RoutineID, body UpdateRoutineJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRoutineResponse, error)
 
-	// ListRoutineOccurrencesWithResponse request
-	ListRoutineOccurrencesWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*ListRoutineOccurrencesResponse, error)
+	// ListRoutineChangesWithResponse request
+	ListRoutineChangesWithResponse(ctx context.Context, routineId RoutineID, params *ListRoutineChangesParams, reqEditors ...RequestEditorFn) (*ListRoutineChangesResponse, error)
 
 	// PauseRoutineWithResponse request
 	PauseRoutineWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*PauseRoutineResponse, error)
 
+	// ListRoutinePrincipalsWithResponse request
+	ListRoutinePrincipalsWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*ListRoutinePrincipalsResponse, error)
+
+	// AddRoutinePrincipalWithBodyWithResponse request with any body
+	AddRoutinePrincipalWithBodyWithResponse(ctx context.Context, routineId RoutineID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddRoutinePrincipalResponse, error)
+
+	AddRoutinePrincipalWithResponse(ctx context.Context, routineId RoutineID, body AddRoutinePrincipalJSONRequestBody, reqEditors ...RequestEditorFn) (*AddRoutinePrincipalResponse, error)
+
+	// RemoveRoutinePrincipalWithResponse request
+	RemoveRoutinePrincipalWithResponse(ctx context.Context, routineId RoutineID, principalId string, params *RemoveRoutinePrincipalParams, reqEditors ...RequestEditorFn) (*RemoveRoutinePrincipalResponse, error)
+
 	// ResumeRoutineWithResponse request
 	ResumeRoutineWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*ResumeRoutineResponse, error)
+
+	// RunRoutineNowWithResponse request
+	RunRoutineNowWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*RunRoutineNowResponse, error)
 
 	// ListSessionsWithResponse request
 	ListSessionsWithResponse(ctx context.Context, params *ListSessionsParams, reqEditors ...RequestEditorFn) (*ListSessionsResponse, error)
@@ -25825,6 +26877,73 @@ func (r ReviewInteractionResponse) ContentType() string {
 	return ""
 }
 
+type GetOrgContextResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *OrgContext
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetOrgContextResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetOrgContextResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetOrgContextResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ReplaceOrgContextResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *OrgContext
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ReplaceOrgContextResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReplaceOrgContextResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ReplaceOrgContextResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type GetOAuthReturnOriginsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -26393,76 +27512,11 @@ func (r UpdateRoleResponse) ContentType() string {
 	return ""
 }
 
-type ApproveRoutineProposalResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Routine
-	JSON201      *Routine
-	JSON403      *Forbidden
-	JSON404      *NotFound
-	JSON409      *Conflict
-}
-
-// Status returns HTTPResponse.Status
-func (r ApproveRoutineProposalResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ApproveRoutineProposalResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ApproveRoutineProposalResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type DismissRoutineProposalResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *RoutineProposal
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r DismissRoutineProposalResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DismissRoutineProposalResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DismissRoutineProposalResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 type ListRoutinesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *RoutineList
+	JSON400      *BadRequest
 	JSON401      *Unauthorized
 	JSON403      *Forbidden
 }
@@ -26525,10 +27579,113 @@ func (r CreateRoutineResponse) ContentType() string {
 	return ""
 }
 
+type ListRoutineOccurrencesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RoutineOccurrenceList
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListRoutineOccurrencesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListRoutineOccurrencesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListRoutineOccurrencesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ApproveRoutineProposalResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Routine
+	JSON201      *Routine
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r ApproveRoutineProposalResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ApproveRoutineProposalResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ApproveRoutineProposalResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DismissRoutineProposalResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RoutineProposal
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r DismissRoutineProposalResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DismissRoutineProposalResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DismissRoutineProposalResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type DeleteRoutineResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *Routine
+	JSON401      *Unauthorized
 	JSON404      *NotFound
 }
 
@@ -26560,6 +27717,7 @@ type GetRoutineResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *Routine
+	JSON401      *Unauthorized
 	JSON404      *NotFound
 }
 
@@ -26592,6 +27750,7 @@ type UpdateRoutineResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *Routine
 	JSON400      *BadRequest
+	JSON401      *Unauthorized
 	JSON404      *NotFound
 }
 
@@ -26619,15 +27778,18 @@ func (r UpdateRoutineResponse) ContentType() string {
 	return ""
 }
 
-type ListRoutineOccurrencesResponse struct {
+type ListRoutineChangesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *RoutineOccurrenceList
+	JSON200      *RoutineChangeList
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
 	JSON404      *NotFound
 }
 
 // Status returns HTTPResponse.Status
-func (r ListRoutineOccurrencesResponse) Status() string {
+func (r ListRoutineChangesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -26635,7 +27797,7 @@ func (r ListRoutineOccurrencesResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListRoutineOccurrencesResponse) StatusCode() int {
+func (r ListRoutineChangesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -26643,7 +27805,7 @@ func (r ListRoutineOccurrencesResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListRoutineOccurrencesResponse) ContentType() string {
+func (r ListRoutineChangesResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -26654,6 +27816,7 @@ type PauseRoutineResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *Routine
+	JSON401      *Unauthorized
 	JSON404      *NotFound
 }
 
@@ -26681,10 +27844,112 @@ func (r PauseRoutineResponse) ContentType() string {
 	return ""
 }
 
+type ListRoutinePrincipalsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RoutinePrincipalList
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListRoutinePrincipalsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListRoutinePrincipalsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListRoutinePrincipalsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AddRoutinePrincipalResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RoutinePrincipalList
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r AddRoutinePrincipalResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AddRoutinePrincipalResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AddRoutinePrincipalResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type RemoveRoutinePrincipalResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r RemoveRoutinePrincipalResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RemoveRoutinePrincipalResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RemoveRoutinePrincipalResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ResumeRoutineResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *Routine
+	JSON401      *Unauthorized
 	JSON404      *NotFound
 }
 
@@ -26706,6 +27971,40 @@ func (r ResumeRoutineResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ResumeRoutineResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type RunRoutineNowResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *RoutineOccurrence
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r RunRoutineNowResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RunRoutineNowResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RunRoutineNowResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -28953,6 +30252,32 @@ func (c *ClientWithResponses) ReviewInteractionWithResponse(ctx context.Context,
 	return ParseReviewInteractionResponse(rsp)
 }
 
+// GetOrgContextWithResponse request returning *GetOrgContextResponse
+func (c *ClientWithResponses) GetOrgContextWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetOrgContextResponse, error) {
+	rsp, err := c.GetOrgContext(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetOrgContextResponse(rsp)
+}
+
+// ReplaceOrgContextWithBodyWithResponse request with arbitrary body returning *ReplaceOrgContextResponse
+func (c *ClientWithResponses) ReplaceOrgContextWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceOrgContextResponse, error) {
+	rsp, err := c.ReplaceOrgContextWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReplaceOrgContextResponse(rsp)
+}
+
+func (c *ClientWithResponses) ReplaceOrgContextWithResponse(ctx context.Context, body ReplaceOrgContextJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceOrgContextResponse, error) {
+	rsp, err := c.ReplaceOrgContext(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReplaceOrgContextResponse(rsp)
+}
+
 // GetOAuthReturnOriginsWithResponse request returning *GetOAuthReturnOriginsResponse
 func (c *ClientWithResponses) GetOAuthReturnOriginsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetOAuthReturnOriginsResponse, error) {
 	rsp, err := c.GetOAuthReturnOrigins(ctx, reqEditors...)
@@ -29162,24 +30487,6 @@ func (c *ClientWithResponses) UpdateRoleWithResponse(ctx context.Context, resour
 	return ParseUpdateRoleResponse(rsp)
 }
 
-// ApproveRoutineProposalWithResponse request returning *ApproveRoutineProposalResponse
-func (c *ClientWithResponses) ApproveRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*ApproveRoutineProposalResponse, error) {
-	rsp, err := c.ApproveRoutineProposal(ctx, proposalId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseApproveRoutineProposalResponse(rsp)
-}
-
-// DismissRoutineProposalWithResponse request returning *DismissRoutineProposalResponse
-func (c *ClientWithResponses) DismissRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*DismissRoutineProposalResponse, error) {
-	rsp, err := c.DismissRoutineProposal(ctx, proposalId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDismissRoutineProposalResponse(rsp)
-}
-
 // ListRoutinesWithResponse request returning *ListRoutinesResponse
 func (c *ClientWithResponses) ListRoutinesWithResponse(ctx context.Context, params *ListRoutinesParams, reqEditors ...RequestEditorFn) (*ListRoutinesResponse, error) {
 	rsp, err := c.ListRoutines(ctx, params, reqEditors...)
@@ -29204,6 +30511,33 @@ func (c *ClientWithResponses) CreateRoutineWithResponse(ctx context.Context, bod
 		return nil, err
 	}
 	return ParseCreateRoutineResponse(rsp)
+}
+
+// ListRoutineOccurrencesWithResponse request returning *ListRoutineOccurrencesResponse
+func (c *ClientWithResponses) ListRoutineOccurrencesWithResponse(ctx context.Context, params *ListRoutineOccurrencesParams, reqEditors ...RequestEditorFn) (*ListRoutineOccurrencesResponse, error) {
+	rsp, err := c.ListRoutineOccurrences(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListRoutineOccurrencesResponse(rsp)
+}
+
+// ApproveRoutineProposalWithResponse request returning *ApproveRoutineProposalResponse
+func (c *ClientWithResponses) ApproveRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*ApproveRoutineProposalResponse, error) {
+	rsp, err := c.ApproveRoutineProposal(ctx, proposalId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseApproveRoutineProposalResponse(rsp)
+}
+
+// DismissRoutineProposalWithResponse request returning *DismissRoutineProposalResponse
+func (c *ClientWithResponses) DismissRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*DismissRoutineProposalResponse, error) {
+	rsp, err := c.DismissRoutineProposal(ctx, proposalId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDismissRoutineProposalResponse(rsp)
 }
 
 // DeleteRoutineWithResponse request returning *DeleteRoutineResponse
@@ -29241,13 +30575,13 @@ func (c *ClientWithResponses) UpdateRoutineWithResponse(ctx context.Context, rou
 	return ParseUpdateRoutineResponse(rsp)
 }
 
-// ListRoutineOccurrencesWithResponse request returning *ListRoutineOccurrencesResponse
-func (c *ClientWithResponses) ListRoutineOccurrencesWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*ListRoutineOccurrencesResponse, error) {
-	rsp, err := c.ListRoutineOccurrences(ctx, routineId, reqEditors...)
+// ListRoutineChangesWithResponse request returning *ListRoutineChangesResponse
+func (c *ClientWithResponses) ListRoutineChangesWithResponse(ctx context.Context, routineId RoutineID, params *ListRoutineChangesParams, reqEditors ...RequestEditorFn) (*ListRoutineChangesResponse, error) {
+	rsp, err := c.ListRoutineChanges(ctx, routineId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListRoutineOccurrencesResponse(rsp)
+	return ParseListRoutineChangesResponse(rsp)
 }
 
 // PauseRoutineWithResponse request returning *PauseRoutineResponse
@@ -29259,6 +30593,41 @@ func (c *ClientWithResponses) PauseRoutineWithResponse(ctx context.Context, rout
 	return ParsePauseRoutineResponse(rsp)
 }
 
+// ListRoutinePrincipalsWithResponse request returning *ListRoutinePrincipalsResponse
+func (c *ClientWithResponses) ListRoutinePrincipalsWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*ListRoutinePrincipalsResponse, error) {
+	rsp, err := c.ListRoutinePrincipals(ctx, routineId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListRoutinePrincipalsResponse(rsp)
+}
+
+// AddRoutinePrincipalWithBodyWithResponse request with arbitrary body returning *AddRoutinePrincipalResponse
+func (c *ClientWithResponses) AddRoutinePrincipalWithBodyWithResponse(ctx context.Context, routineId RoutineID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddRoutinePrincipalResponse, error) {
+	rsp, err := c.AddRoutinePrincipalWithBody(ctx, routineId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAddRoutinePrincipalResponse(rsp)
+}
+
+func (c *ClientWithResponses) AddRoutinePrincipalWithResponse(ctx context.Context, routineId RoutineID, body AddRoutinePrincipalJSONRequestBody, reqEditors ...RequestEditorFn) (*AddRoutinePrincipalResponse, error) {
+	rsp, err := c.AddRoutinePrincipal(ctx, routineId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAddRoutinePrincipalResponse(rsp)
+}
+
+// RemoveRoutinePrincipalWithResponse request returning *RemoveRoutinePrincipalResponse
+func (c *ClientWithResponses) RemoveRoutinePrincipalWithResponse(ctx context.Context, routineId RoutineID, principalId string, params *RemoveRoutinePrincipalParams, reqEditors ...RequestEditorFn) (*RemoveRoutinePrincipalResponse, error) {
+	rsp, err := c.RemoveRoutinePrincipal(ctx, routineId, principalId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRemoveRoutinePrincipalResponse(rsp)
+}
+
 // ResumeRoutineWithResponse request returning *ResumeRoutineResponse
 func (c *ClientWithResponses) ResumeRoutineWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*ResumeRoutineResponse, error) {
 	rsp, err := c.ResumeRoutine(ctx, routineId, reqEditors...)
@@ -29266,6 +30635,15 @@ func (c *ClientWithResponses) ResumeRoutineWithResponse(ctx context.Context, rou
 		return nil, err
 	}
 	return ParseResumeRoutineResponse(rsp)
+}
+
+// RunRoutineNowWithResponse request returning *RunRoutineNowResponse
+func (c *ClientWithResponses) RunRoutineNowWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*RunRoutineNowResponse, error) {
+	rsp, err := c.RunRoutineNow(ctx, routineId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRunRoutineNowResponse(rsp)
 }
 
 // ListSessionsWithResponse request returning *ListSessionsResponse
@@ -32949,6 +34327,107 @@ func ParseReviewInteractionResponse(rsp *http.Response) (*ReviewInteractionRespo
 	return response, nil
 }
 
+// ParseGetOrgContextResponse parses an HTTP response from a GetOrgContextWithResponse call
+func ParseGetOrgContextResponse(rsp *http.Response) (*GetOrgContextResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetOrgContextResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OrgContext
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReplaceOrgContextResponse parses an HTTP response from a ReplaceOrgContextWithResponse call
+func ParseReplaceOrgContextResponse(rsp *http.Response) (*ReplaceOrgContextResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReplaceOrgContextResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OrgContext
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetOAuthReturnOriginsResponse parses an HTTP response from a GetOAuthReturnOriginsWithResponse call
 func ParseGetOAuthReturnOriginsResponse(rsp *http.Response) (*GetOAuthReturnOriginsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -33797,100 +35276,6 @@ func ParseUpdateRoleResponse(rsp *http.Response) (*UpdateRoleResponse, error) {
 	return response, nil
 }
 
-// ParseApproveRoutineProposalResponse parses an HTTP response from a ApproveRoutineProposalWithResponse call
-func ParseApproveRoutineProposalResponse(rsp *http.Response) (*ApproveRoutineProposalResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ApproveRoutineProposalResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Routine
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest Routine
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDismissRoutineProposalResponse parses an HTTP response from a DismissRoutineProposalWithResponse call
-func ParseDismissRoutineProposalResponse(rsp *http.Response) (*DismissRoutineProposalResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DismissRoutineProposalResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest RoutineProposal
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseListRoutinesResponse parses an HTTP response from a ListRoutinesWithResponse call
 func ParseListRoutinesResponse(rsp *http.Response) (*ListRoutinesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -33911,6 +35296,13 @@ func ParseListRoutinesResponse(rsp *http.Response) (*ListRoutinesResponse, error
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized
@@ -33985,6 +35377,168 @@ func ParseCreateRoutineResponse(rsp *http.Response) (*CreateRoutineResponse, err
 	return response, nil
 }
 
+// ParseListRoutineOccurrencesResponse parses an HTTP response from a ListRoutineOccurrencesWithResponse call
+func ParseListRoutineOccurrencesResponse(rsp *http.Response) (*ListRoutineOccurrencesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListRoutineOccurrencesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RoutineOccurrenceList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseApproveRoutineProposalResponse parses an HTTP response from a ApproveRoutineProposalWithResponse call
+func ParseApproveRoutineProposalResponse(rsp *http.Response) (*ApproveRoutineProposalResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ApproveRoutineProposalResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Routine
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Routine
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDismissRoutineProposalResponse parses an HTTP response from a DismissRoutineProposalWithResponse call
+func ParseDismissRoutineProposalResponse(rsp *http.Response) (*DismissRoutineProposalResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DismissRoutineProposalResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RoutineProposal
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseDeleteRoutineResponse parses an HTTP response from a DeleteRoutineWithResponse call
 func ParseDeleteRoutineResponse(rsp *http.Response) (*DeleteRoutineResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -34005,6 +35559,13 @@ func ParseDeleteRoutineResponse(rsp *http.Response) (*DeleteRoutineResponse, err
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -34038,6 +35599,13 @@ func ParseGetRoutineResponse(rsp *http.Response) (*GetRoutineResponse, error) {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -34079,6 +35647,13 @@ func ParseUpdateRoutineResponse(rsp *http.Response) (*UpdateRoutineResponse, err
 		}
 		response.JSON400 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -34091,26 +35666,47 @@ func ParseUpdateRoutineResponse(rsp *http.Response) (*UpdateRoutineResponse, err
 	return response, nil
 }
 
-// ParseListRoutineOccurrencesResponse parses an HTTP response from a ListRoutineOccurrencesWithResponse call
-func ParseListRoutineOccurrencesResponse(rsp *http.Response) (*ListRoutineOccurrencesResponse, error) {
+// ParseListRoutineChangesResponse parses an HTTP response from a ListRoutineChangesWithResponse call
+func ParseListRoutineChangesResponse(rsp *http.Response) (*ListRoutineChangesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListRoutineOccurrencesResponse{
+	response := &ListRoutineChangesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest RoutineOccurrenceList
+		var dest RoutineChangeList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -34145,12 +35741,174 @@ func ParsePauseRoutineResponse(rsp *http.Response) (*PauseRoutineResponse, error
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListRoutinePrincipalsResponse parses an HTTP response from a ListRoutinePrincipalsWithResponse call
+func ParseListRoutinePrincipalsResponse(rsp *http.Response) (*ListRoutinePrincipalsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListRoutinePrincipalsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RoutinePrincipalList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAddRoutinePrincipalResponse parses an HTTP response from a AddRoutinePrincipalWithResponse call
+func ParseAddRoutinePrincipalResponse(rsp *http.Response) (*AddRoutinePrincipalResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AddRoutinePrincipalResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RoutinePrincipalList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRemoveRoutinePrincipalResponse parses an HTTP response from a RemoveRoutinePrincipalWithResponse call
+func ParseRemoveRoutinePrincipalResponse(rsp *http.Response) (*RemoveRoutinePrincipalResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RemoveRoutinePrincipalResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 
@@ -34178,12 +35936,73 @@ func ParseResumeRoutineResponse(rsp *http.Response) (*ResumeRoutineResponse, err
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRunRoutineNowResponse parses an HTTP response from a RunRoutineNowWithResponse call
+func ParseRunRoutineNowResponse(rsp *http.Response) (*RunRoutineNowResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RunRoutineNowResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest RoutineOccurrence
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 

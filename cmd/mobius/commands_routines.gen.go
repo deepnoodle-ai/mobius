@@ -19,6 +19,54 @@ import (
 func registerRoutinesCommands(app *cli.App) {
 	routinesGrp := app.Group("routines")
 	routinesGrp.Alias("routine")
+	routinesGrp.Command("add-principal").
+		Description("Add a principal to a routine's roster").
+		Args("routine-id").
+		Flags(
+			cli.String("level", "").Help("Narrows what a follower is notified about. Ignored on the other relationships, which are always notified."),
+			cli.String("principal-id", "").Help("[required] principal-id"),
+			cli.String("relationship", "").Help("[required] The relationship a principal holds to a routine. `follower` is opt-in attention, `responsible` is the person the routine waits on…"),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.RoutineID(ctx.Arg(0))
+			var body api.AddRoutinePrincipalJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("level") {
+				v := api.RoutineFollowLevel(ctx.String("level"))
+				body.Level = &v
+			}
+			if ctx.IsSet("principal-id") {
+				body.PrincipalId = ctx.String("principal-id")
+			}
+			if ctx.IsSet("relationship") {
+				body.Relationship = api.RoutineRelationship(ctx.String("relationship"))
+			}
+			if body.PrincipalId == "" {
+				return fmt.Errorf("--principal-id is required (or supply it via --file)")
+			}
+			if body.Relationship == "" {
+				return fmt.Errorf("--relationship is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.AddRoutinePrincipalWithResponse(ctx.Context(), p0, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "addRoutinePrincipal", resp.StatusCode(), resp.Body)
+		})
+
 	routinesGrp.Command("approve-routine-proposal").
 		Description("Approve a pending proposal as its proposed human owner").
 		Args("proposal-id").
@@ -42,12 +90,17 @@ func registerRoutinesCommands(app *cli.App) {
 		Flags(
 			cli.String("agent-id", "").Help("[required] agent-id"),
 			cli.Int("daily-ceiling-milli", "").Help("[required] daily-ceiling-milli"),
+			cli.String("event", "").Help("Runs the routine when a matching integration event arrives. Each matched event is one run on the ledger, one at a time per routine: an… Accepts JSON, @file, or @-."),
+			cli.Strings("follower-principal-ids", "").Help("Principals who opt into the routine's results. The creator is added automatically."),
 			cli.String("instructions", "").Help("[required] instructions Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
 			cli.String("kind", "").Help("V1 accepts invoke; notify is reserved and returns unsupported_routine_kind."),
+			cli.String("managed-by", "").Help("Defaults to `named`."),
 			cli.String("name", "").Help("name"),
+			cli.String("owner-kind", "").Help("Defaults to `person`. `team` requires organization administration."),
 			cli.Int("per-occurrence-ceiling-milli", "").Help("[required] per-occurrence-ceiling-milli"),
-			cli.String("schedule", "").Help("[required] Exactly one of at, interval, or cron is required. Accepts JSON, @file, or @-."),
-			cli.String("session-id", "").Help("[required] session-id"),
+			cli.Strings("responsible-principal-ids", "").Help("The people the routine waits on. Required and non-empty when `owner_kind` is `team`; rejected otherwise. Each must be a person."),
+			cli.String("schedule", "").Help("Exactly one of at, interval, or cron is required. Accepts JSON, @file, or @-."),
+			cli.String("session-id", "").Help("Optional conversation this routine was proposed in, kept as provenance. Occurrences run in their own sessions, so this never affects where…"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -68,6 +121,15 @@ func registerRoutinesCommands(app *cli.App) {
 			if ctx.IsSet("daily-ceiling-milli") {
 				body.DailyCeilingMilli = int64(ctx.Int("daily-ceiling-milli"))
 			}
+			if ctx.IsSet("event") {
+				if err := decodeFlagJSON(ctx, "event", ctx.String("event"), &body.Event); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("follower-principal-ids") {
+				v := ctx.Strings("follower-principal-ids")
+				body.FollowerPrincipalIds = &v
+			}
 			if ctx.IsSet("instructions") {
 				v, err := decodeFlagText(ctx, "instructions", ctx.String("instructions"))
 				if err != nil {
@@ -79,12 +141,24 @@ func registerRoutinesCommands(app *cli.App) {
 				v := api.RoutineKind(ctx.String("kind"))
 				body.Kind = &v
 			}
+			if ctx.IsSet("managed-by") {
+				v := api.RoutineManagedBy(ctx.String("managed-by"))
+				body.ManagedBy = &v
+			}
 			if ctx.IsSet("name") {
 				v := ctx.String("name")
 				body.Name = &v
 			}
+			if ctx.IsSet("owner-kind") {
+				v := api.RoutineOwnerKind(ctx.String("owner-kind"))
+				body.OwnerKind = &v
+			}
 			if ctx.IsSet("per-occurrence-ceiling-milli") {
 				body.PerOccurrenceCeilingMilli = int64(ctx.Int("per-occurrence-ceiling-milli"))
+			}
+			if ctx.IsSet("responsible-principal-ids") {
+				v := ctx.Strings("responsible-principal-ids")
+				body.ResponsiblePrincipalIds = &v
 			}
 			if ctx.IsSet("schedule") {
 				if err := decodeFlagJSON(ctx, "schedule", ctx.String("schedule"), &body.Schedule); err != nil {
@@ -92,7 +166,8 @@ func registerRoutinesCommands(app *cli.App) {
 				}
 			}
 			if ctx.IsSet("session-id") {
-				body.SessionId = ctx.String("session-id")
+				v := ctx.String("session-id")
+				body.SessionId = &v
 			}
 			if body.AgentId == "" {
 				return fmt.Errorf("--agent-id is required (or supply it via --file)")
@@ -106,14 +181,8 @@ func registerRoutinesCommands(app *cli.App) {
 			if body.PerOccurrenceCeilingMilli == 0 {
 				return fmt.Errorf("--per-occurrence-ceiling-milli is required (or supply it via --file)")
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("schedule") {
-				return fmt.Errorf("--schedule is required (or supply it via --file)")
-			}
-			if body.SessionId == "" {
-				return fmt.Errorf("--session-id is required (or supply it via --file)")
-			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body, "schedule")
+				return printDryRun(ctx, body, "event", "schedule")
 			}
 			resp, err := client.CreateRoutineWithResponse(ctx.Context(), body)
 			if err != nil {
@@ -181,7 +250,9 @@ func registerRoutinesCommands(app *cli.App) {
 		Flags(
 			cli.String("owner-id", "").Help("owner-id"),
 			cli.String("agent-id", "").Help("agent-id"),
-			cli.String("session-id", "").Help("session-id"),
+			cli.String("origin-session-id", "").Help("Filter to routines proposed in one conversation. Provenance only; it is not where they run."),
+			cli.Int("limit", "").Help("limit"),
+			cli.String("cursor", "").Help("next_cursor from the previous page."),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -199,9 +270,17 @@ func registerRoutinesCommands(app *cli.App) {
 				v := ctx.String("agent-id")
 				params.AgentId = &v
 			}
-			if ctx.IsSet("session-id") {
-				v := ctx.String("session-id")
-				params.SessionId = &v
+			if ctx.IsSet("origin-session-id") {
+				v := ctx.String("origin-session-id")
+				params.OriginSessionId = &v
+			}
+			if ctx.IsSet("limit") {
+				v := ctx.Int("limit")
+				params.Limit = &v
+			}
+			if ctx.IsSet("cursor") {
+				v := ctx.String("cursor")
+				params.Cursor = &v
 			}
 			resp, err := client.ListRoutinesWithResponse(ctx.Context(), params)
 			if err != nil {
@@ -210,8 +289,103 @@ func registerRoutinesCommands(app *cli.App) {
 			return printResponse(ctx, "listRoutines", resp.StatusCode(), resp.Body)
 		})
 
+	routinesGrp.Command("list-changes").
+		Description("List a routine's changes").
+		Args("routine-id").
+		Flags(
+			cli.Int("limit", "").Help("limit"),
+			cli.String("cursor", "").Help("next_cursor from the previous page."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.RoutineID(ctx.Arg(0))
+			params := &api.ListRoutineChangesParams{}
+			if ctx.IsSet("limit") {
+				v := ctx.Int("limit")
+				params.Limit = &v
+			}
+			if ctx.IsSet("cursor") {
+				v := ctx.String("cursor")
+				params.Cursor = &v
+			}
+			resp, err := client.ListRoutineChangesWithResponse(ctx.Context(), p0, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listRoutineChanges", resp.StatusCode(), resp.Body)
+		})
+
 	routinesGrp.Command("list-occurrences").
-		Description("List a routine's occurrence ledger").
+		Description("List the occurrence ledger").
+		Flags(
+			cli.String("routine-id", "").Help("Narrow to one routine. This is what the deleted nested route was."),
+			cli.String("owner-id", "").Help("Narrow to routines one person is the custodian of. Team-custody routines have no owner and never match."),
+			cli.Strings("status", "").Help("Narrow to these occurrence statuses."),
+			cli.String("since", "").Help("Only occurrences scheduled at or after this time. Accepts an RFC3339 timestamp (for example: 2026-07-22T12:00:00Z)."),
+			cli.String("until", "").Help("Only occurrences scheduled before this time. Accepts an RFC3339 timestamp (for example: 2026-07-22T12:00:00Z)."),
+			cli.Int("limit", "").Help("limit"),
+			cli.String("cursor", "").Help("next_cursor from the previous page."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			params := &api.ListRoutineOccurrencesParams{}
+			if ctx.IsSet("routine-id") {
+				v := ctx.String("routine-id")
+				params.RoutineId = &v
+			}
+			if ctx.IsSet("owner-id") {
+				v := ctx.String("owner-id")
+				params.OwnerId = &v
+			}
+			if ctx.IsSet("status") {
+				raw := ctx.Strings("status")
+				v := make([]api.ListRoutineOccurrencesParamsStatus, len(raw))
+				for i, item := range raw {
+					v[i] = api.ListRoutineOccurrencesParamsStatus(item)
+				}
+				params.Status = &v
+			}
+			if ctx.IsSet("since") {
+				v, err := parseTimeFlag("since", ctx.String("since"))
+				if err != nil {
+					return err
+				}
+				params.Since = &v
+			}
+			if ctx.IsSet("until") {
+				v, err := parseTimeFlag("until", ctx.String("until"))
+				if err != nil {
+					return err
+				}
+				params.Until = &v
+			}
+			if ctx.IsSet("limit") {
+				v := ctx.Int("limit")
+				params.Limit = &v
+			}
+			if ctx.IsSet("cursor") {
+				v := ctx.String("cursor")
+				params.Cursor = &v
+			}
+			resp, err := client.ListRoutineOccurrencesWithResponse(ctx.Context(), params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listRoutineOccurrences", resp.StatusCode(), resp.Body)
+		})
+
+	routinesGrp.Command("list-principals").
+		Description("List a routine's roster").
 		Args("routine-id").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -221,11 +395,11 @@ func registerRoutinesCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := api.RoutineID(ctx.Arg(0))
-			resp, err := client.ListRoutineOccurrencesWithResponse(ctx.Context(), p0)
+			resp, err := client.ListRoutinePrincipalsWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "listRoutineOccurrences", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listRoutinePrincipals", resp.StatusCode(), resp.Body)
 		})
 
 	routinesGrp.Command("pause-routine").
@@ -246,6 +420,33 @@ func registerRoutinesCommands(app *cli.App) {
 			return printResponse(ctx, "pauseRoutine", resp.StatusCode(), resp.Body)
 		})
 
+	routinesGrp.Command("remove-principal").
+		Description("Remove a principal from a routine's roster").
+		Args("routine-id", "principal-id").
+		Flags(
+			cli.String("relationship", "").Help("Limit the removal to one relationship. Omit to remove all of them."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.RoutineID(ctx.Arg(0))
+			p1 := ctx.Arg(1)
+			params := &api.RemoveRoutinePrincipalParams{}
+			if ctx.IsSet("relationship") {
+				v := api.RoutineRelationship(ctx.String("relationship"))
+				params.Relationship = &v
+			}
+			resp, err := client.RemoveRoutinePrincipalWithResponse(ctx.Context(), p0, p1, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "removeRoutinePrincipal", resp.StatusCode(), resp.Body)
+		})
+
 	routinesGrp.Command("resume-routine").
 		Description("Resume a routine").
 		Args("routine-id").
@@ -264,15 +465,35 @@ func registerRoutinesCommands(app *cli.App) {
 			return printResponse(ctx, "resumeRoutine", resp.StatusCode(), resp.Body)
 		})
 
+	routinesGrp.Command("run-routine-now").
+		Description("Run a routine now").
+		Args("routine-id").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.RoutineID(ctx.Arg(0))
+			resp, err := client.RunRoutineNowWithResponse(ctx.Context(), p0)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "runRoutineNow", resp.StatusCode(), resp.Body)
+		})
+
 	routinesGrp.Command("update").
 		Description("Update mutable routine fields").
 		Args("routine-id").
 		Flags(
-			cli.Int("daily-ceiling-milli", "").Help("daily-ceiling-milli"),
+			cli.Int("daily-ceiling-milli", "").Help("Must remain at least the per-occurrence ceiling. A person may move it either way; an agent may only lower it."),
+			cli.String("event", "").Help("Makes this an event routine, dropping any schedule it had. Rejected together with `schedule`. Accepts JSON, @file, or @-."),
 			cli.String("instructions", "").Help("instructions Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
+			cli.String("managed-by", "").Help("Only a person may change this. An agent manager receives 403."),
 			cli.String("name", "").Help("name"),
-			cli.Int("per-occurrence-ceiling-milli", "").Help("per-occurrence-ceiling-milli"),
-			cli.String("schedule", "").Help("Exactly one of at, interval, or cron is required. Accepts JSON, @file, or @-."),
+			cli.Int("per-occurrence-ceiling-milli", "").Help("A person may move this either way. An agent may only lower it, so no agent widens the budget it runs under; raising it as an agent receives…"),
+			cli.String("schedule", "").Help("Makes this a scheduled routine, dropping any event trigger it had. Rejected together with `event`. Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -292,12 +513,21 @@ func registerRoutinesCommands(app *cli.App) {
 				v := int64(ctx.Int("daily-ceiling-milli"))
 				body.DailyCeilingMilli = &v
 			}
+			if ctx.IsSet("event") {
+				if err := decodeFlagJSON(ctx, "event", ctx.String("event"), &body.Event); err != nil {
+					return err
+				}
+			}
 			if ctx.IsSet("instructions") {
 				v, err := decodeFlagText(ctx, "instructions", ctx.String("instructions"))
 				if err != nil {
 					return err
 				}
 				body.Instructions = &v
+			}
+			if ctx.IsSet("managed-by") {
+				v := api.RoutineManagedBy(ctx.String("managed-by"))
+				body.ManagedBy = &v
 			}
 			if ctx.IsSet("name") {
 				v := ctx.String("name")
@@ -312,11 +542,11 @@ func registerRoutinesCommands(app *cli.App) {
 					return err
 				}
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("daily-ceiling-milli") && !ctx.IsSet("instructions") && !ctx.IsSet("name") && !ctx.IsSet("per-occurrence-ceiling-milli") && !ctx.IsSet("schedule") {
+			if ctx.String("file") == "" && !ctx.IsSet("daily-ceiling-milli") && !ctx.IsSet("event") && !ctx.IsSet("instructions") && !ctx.IsSet("managed-by") && !ctx.IsSet("name") && !ctx.IsSet("per-occurrence-ceiling-milli") && !ctx.IsSet("schedule") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body, "schedule")
+				return printDryRun(ctx, body, "event", "schedule")
 			}
 			resp, err := client.UpdateRoutineWithResponse(ctx.Context(), p0, body)
 			if err != nil {
