@@ -19,9 +19,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 - Routines, the replacement for loops: lifecycle, occurrences, and proposals in
   all three clients and as the `routines` CLI group
   ([#205](https://github.com/deepnoodle-ai/mobius/pull/205)).
+- `mobius sessions attach SESSION_ID PATH` and Go's `CreateSessionAttachment` /
+  `DeleteSessionAttachment` cover the multipart session attachment endpoint,
+  which had no CLI or helper surface. See `docs/sdk-helpers.md`.
+- The CLI generator now warns when a spec operation produces no command, so a
+  raw-body operation can no longer drop out of the CLI silently.
 
 ### Changed
 
+- Realigned the CLI surface with the current contract: leaf names are
+  verb-first in every group (`routines pause`, `interactions review`,
+  `permissions list`, `sessions append-messages`), `agents invoke` moved
+  beside the other agent commands, and every group now carries a description.
 - Regenerated every SDK from the current public Mobius contract. Action secret
   rotation now activates immediately with a fixed 72-hour verification overlap;
   the CLI requires an explicit sink for one-time reveals

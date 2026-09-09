@@ -8,7 +8,7 @@ package main
 //   - Group overrides the subcommand group (default: the operation's first
 //     OpenAPI tag).
 //   - Command overrides the leaf command name (default: derived from the
-//     operationId, e.g. `listLoops` -> `list`, `getLoop` -> `get`).
+//     operationId, e.g. `listSkills` -> `list`, `getSkill` -> `get`).
 //   - Description overrides the short help string (default: the OpenAPI
 //     operation summary).
 type Override struct {
@@ -25,12 +25,15 @@ type Override struct {
 //     the mobius command package).
 //   - The auto-derived group, command name, or description is awkward.
 //
+// The recurring rename is the redundant resource token: the auto-derivation
+// only strips the resource word for verbs it recognises, so operations like
+// `pauseRoutine` or `reviewInteraction` keep a noun the group name already
+// carries. Strip it so every leaf in a group reads verb-first.
+//
 // Entries are grouped by command group so the file mirrors how a user reads
 // `mobius --help`.
 var overrides = map[string]Override{
 	// --- actions ----------------------------------------------------------
-	// `invoke` isn't in the verb list, so the auto-derive keeps the redundant
-	// `-action` suffix; strip it.
 	"invokeAction": {Command: "invoke"},
 	// Hand-written: create and rotate reveal one-time secret material, so the
 	// commands require an explicit sink (--secret-file or --show-secret)
@@ -39,18 +42,22 @@ var overrides = map[string]Override{
 	"rotateActionSecret": {Skip: true},
 
 	// --- agents -----------------------------------------------------------
-	// Drop the redundant `agent` token that the auto-derivation can't strip
-	// (the group name already carries it).
-	"provisionAgentInbox":       {Command: "provision-inbox"},
-	"saveAgentMessagingBinding": {Command: "save-messaging-binding"},
-	// `save` isn't in the verb list, so the auto-derive keeps the redundant
-	// `agent` token; strip it so the leaf matches its siblings
-	// `get-memory`/`list-memory-entries`/`delete-memory-entry`.
-	"saveAgentMemoryEntry": {Command: "save-memory-entry"},
-	// `replaceAgentSkillAssignments` keeps a
-	// redundant `agent` token the auto-derivation can't strip (the group
-	// already carries it); the matching list operation derives cleanly.
+	"previewAgentVisibilityChange": {Command: "preview-visibility-change"},
+	"provisionAgentInbox":          {Command: "provision-inbox"},
+	"replaceAgentMembers":          {Command: "replace-members"},
+	"saveAgentMessagingBinding":    {Command: "save-messaging-binding"},
+	"saveAgentMemoryEntry":         {Command: "save-memory-entry"},
+	"promoteAgentMemoryEntry":      {Command: "promote-memory-entry"},
+	"revertAgentMemoryPromotion":   {Command: "revert-memory-promotion"},
 	"replaceAgentSkillAssignments": {Command: "replace-skill-assignments"},
+	// Turn-scoped (GET /v1/turns/{turn_id}/messages), not agent-scoped: the
+	// bare `list-messages` leaf would read like the session-scoped command of
+	// the same name, so keep the turn in the name.
+	"listTurnMessages": {Command: "list-turn-messages"},
+	// Tagged `sessions` in the spec because it returns a turn transcript, but
+	// the path is /v1/agents/invoke and users look for it next to the other
+	// agent commands.
+	"invokeAgent": {Group: "agents", Command: "invoke"},
 
 	// --- principals -------------------------------------------------------
 	// Hand-written so `principals create NAME --role Operator --with-key`
@@ -64,9 +71,8 @@ var overrides = map[string]Override{
 	"importSkill": {Skip: true},
 
 	// --- interactions -----------------------------------------------------
-	// `respond` isn't in the verb list, so the auto-derive keeps the
-	// redundant `-interaction` suffix; strip it (the group already carries it).
 	"respondToInteraction": {Command: "respond"},
+	"reviewInteraction":    {Command: "review"},
 
 	// --- api-keys ---------------------------------------------------------
 	// Drop the redundant `key` token; the group name already carries it.
@@ -74,17 +80,6 @@ var overrides = map[string]Override{
 	"listAPIKeys":  {Command: "list"},
 	"getAPIKey":    {Command: "get"},
 	"deleteAPIKey": {Command: "delete"},
-
-	// --- org-api-keys -----------------------------------------------------
-	// The spec folded these into the `api-keys` tag (paths moved to
-	// /v1/api-keys), but sharing a group with the plain api-key ops would
-	// collide on the create/list/get/delete leaves (create-2, list-2, …).
-	// Keep the dedicated CLI group so the surface stays
-	// `mobius org-api-keys <verb>` as shipped in v0.0.36.
-	"createOrgAPIKey": {Group: "org-api-keys", Command: "create"},
-	"listOrgAPIKeys":  {Group: "org-api-keys", Command: "list"},
-	"getOrgAPIKey":    {Group: "org-api-keys", Command: "get"},
-	"deleteOrgAPIKey": {Group: "org-api-keys", Command: "delete"},
 
 	// --- organizations ------------------------------------------------------
 	// "OAuth" (capital O+A only, not a fully-uppercase initialism like "API")
@@ -96,17 +91,20 @@ var overrides = map[string]Override{
 	// empty origins list, but an empty list is the documented way to disable
 	// embedded return — the hand-written command adds --clear for it.
 	"replaceOAuthReturnOrigins": {Skip: true},
+	// Pairs with `get-context`, which derives cleanly.
+	"replaceOrgContext": {Command: "replace-context"},
+
+	// --- permissions ------------------------------------------------------
+	"listOrgPermissions": {Command: "list"},
 
 	// --- blueprints -------------------------------------------------------
-	// Drop the redundant `blueprint` token; the group name already carries it.
-	"applyBlueprint": {Command: "apply"},
+	"applyBlueprint":         {Command: "apply"},
+	"setBlueprintProtection": {Command: "set-protection"},
 
-	// --- environments -----------------------------------------------------
-	"listEnvironments":   {Command: "list"},
-	"createEnvironment":  {Command: "create"},
-	"getEnvironment":     {Command: "get"},
-	"updateEnvironment":  {Command: "update"},
-	"destroyEnvironment": {Command: "destroy"},
+	// --- artifacts --------------------------------------------------------
+	// Multipart upload: the generated client exposes it only in raw-body
+	// form, so `artifacts upload` is hand-written in artifacts.go.
+	"createArtifact": {Skip: true},
 
 	// --- jobs -------------------------------------------------------------
 	// The worker socket is a WebSocket transport endpoint, not a normal JSON
@@ -114,11 +112,12 @@ var overrides = map[string]Override{
 	// the public CLI entrypoint for this path.
 	"openWorkerSocket": {Skip: true},
 
-	// --- runs -------------------------------------------------------------
-	// The group name already says "runs"; keep the leaf names verb-first.
-	"resumeRun": {Command: "resume"},
-	"signalRun": {Command: "signal"},
-	"startRun":  {Command: "start"},
+	// --- routines ---------------------------------------------------------
+	"runRoutineNow":          {Command: "run-now"},
+	"pauseRoutine":           {Command: "pause"},
+	"resumeRoutine":          {Command: "resume"},
+	"approveRoutineProposal": {Command: "approve-proposal"},
+	"dismissRoutineProposal": {Command: "dismiss-proposal"},
 
 	// --- sessions ---------------------------------------------------------
 	// `cancelTurn` and `cancelSession` both auto-derive to `cancel` (the
@@ -129,14 +128,15 @@ var overrides = map[string]Override{
 	// Keep nudge lifecycle commands explicit. Without overrides, `cancelNudge`
 	// steals the existing `cancel` leaf from `cancelSession`, and `nudgeSession`
 	// redundantly renders as `nudge-session` inside the sessions group.
-	"nudgeSession": {Command: "nudge"},
-	"cancelNudge":  {Command: "cancel-nudge"},
-	// `compact` isn't in the verb list, so the auto-derive keeps the
-	// redundant `-session` suffix; strip it (the group already carries it).
-	"compactSession": {Command: "compact"},
-	// Same for `stream` (not a recognised verb): `streamSession` would land as
-	// `stream-session`, so strip the redundant suffix to give `sessions stream`.
-	"streamSession": {Command: "stream"},
+	"nudgeSession":            {Command: "nudge"},
+	"cancelNudge":             {Command: "cancel-nudge"},
+	"compactSession":          {Command: "compact"},
+	"streamSession":           {Command: "stream"},
+	"streamSessionTranscript": {Command: "stream-transcript"},
+	"appendSessionMessages":   {Command: "append-messages"},
+	// Multipart upload: the generated client exposes it only in raw-body
+	// form, so `sessions attach` is hand-written in session_attachments.go.
+	"createSessionAttachment": {Skip: true},
 
 	// --- tables -----------------------------------------------------------
 	// Row operations use verbs the auto-derivation doesn't recognise
@@ -147,9 +147,6 @@ var overrides = map[string]Override{
 	"queryTableRows":      {Command: "query-rows"},
 	"searchTableRows":     {Command: "search-rows"},
 	"bulkCreateTableRows": {Command: "bulk-create-rows"},
-
-	// --- webhooks ---------------------------------------------------------
-	"pingWebhook": {Command: "ping"},
 }
 
 // groupDescriptions is an opt-in table of subcommand group descriptions,
@@ -157,26 +154,24 @@ var overrides = map[string]Override{
 //
 // Descriptions should be short noun phrases (roughly 4–8 words) that read
 // well when listed vertically in `mobius --help`. Prefer consistent
-// grammatical shape across entries.
+// grammatical shape across entries. Every group the generator emits should
+// have one — `mobius --help` prints a bare group name otherwise.
 var groupDescriptions = map[string]string{
-	"actions":       "Actions available to loops and agents",
-	"agents":        "Agent identities, presence, and lifecycle",
+	"actions":       "Actions that agents and workers invoke",
+	"agents":        "Agent identities, memory, and lifecycle",
 	"api-keys":      "API keys scoped to the org",
-	"org-api-keys":  "API keys acting org-wide across principals",
-	"artifacts":     "Run output artifacts and storage quota",
+	"artifacts":     "Stored files, uploads, and storage quota",
+	"billing":       "Recorded usage events for the org",
 	"blueprints":    "Org blueprint application and bindings",
-	"catalog":       "Available actions and triggerable events",
-	"environments":  "Managed execution environments",
+	"catalog":       "Available actions, events, and models",
 	"interactions":  "Information, approval, and review requests between users and agents",
-	"loops":         "Loop definitions, versions, and runs",
 	"organizations": "Organization settings and control plane",
 	"permissions":   "Assignable org permission catalog",
 	"principals":    "Machine identities and their roles",
+	"resources":     "Resource custody and audience changes",
 	"roles":         "Org roles and assignments",
-	"runs":          "Loop runs",
-	"sessions":      "Conversation sessions, transcripts, and invocation",
+	"routines":      "Scheduled routines, occurrences, and rosters",
+	"sessions":      "Conversation sessions, transcripts, and turns",
 	"skills":        "Skill templates that shape agent behavior and tool access",
 	"tables":        "Org-scoped tables and rows",
-	"toolkits":      "Sets of tools agents can use to take action",
-	"webhooks":      "Outgoing webhook subscriptions",
 }

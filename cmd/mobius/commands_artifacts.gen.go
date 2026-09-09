@@ -15,7 +15,7 @@ import (
 
 // registerArtifactsCommands registers every generated subcommand in the "artifacts" group.
 func registerArtifactsCommands(app *cli.App) {
-	artifactsGrp := app.Group("artifacts").Description("Run output artifacts and storage quota")
+	artifactsGrp := app.Group("artifacts").Description("Stored files, uploads, and storage quota")
 	artifactsGrp.Alias("artifact")
 	artifactsGrp.Command("create-signed-url").
 		Description("Create signed artifact URL").

@@ -17,7 +17,7 @@ import (
 
 // registerActionsCommands registers every generated subcommand in the "actions" group.
 func registerActionsCommands(app *cli.App) {
-	actionsGrp := app.Group("actions").Description("Actions available to loops and agents")
+	actionsGrp := app.Group("actions").Description("Actions that agents and workers invoke")
 	actionsGrp.Alias("action")
 	actionsGrp.Command("delete").
 		Description("Delete action").

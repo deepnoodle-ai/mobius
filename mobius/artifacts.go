@@ -100,44 +100,24 @@ func (c *Client) CreateArtifact(ctx context.Context, opts CreateArtifactOptions)
 	if len(opts.IdempotencyKey) > 255 {
 		return nil, fmt.Errorf("mobius: artifact IdempotencyKey must be at most 255 characters")
 	}
-	if (opts.Path == "") == (opts.Reader == nil) {
-		return nil, fmt.Errorf("mobius: exactly one of Path or Reader is required")
+	upload, closeSource, err := newArtifactUpload("artifact", uploadSource{
+		Path:      opts.Path,
+		Reader:    opts.Reader,
+		Name:      opts.Name,
+		Mime:      opts.Mime,
+		SizeBytes: opts.SizeBytes,
+	})
+	if err != nil {
+		return nil, err
 	}
-	upload := artifactUpload{
-		name:           strings.TrimSpace(opts.Name),
-		mime:           opts.Mime,
-		sizeBytes:      opts.SizeBytes,
-		source:         opts.Reader,
-		idempotencyKey: opts.IdempotencyKey,
-	}
+	defer closeSource()
+	upload.idempotencyKey = opts.IdempotencyKey
 	if opts.Metadata != nil {
 		raw, err := json.Marshal(opts.Metadata)
 		if err != nil {
 			return nil, fmt.Errorf("mobius: encode artifact metadata: %w", err)
 		}
 		upload.metadataJSON = raw
-	}
-	if opts.Path != "" {
-		file, err := os.Open(opts.Path)
-		if err != nil {
-			return nil, err
-		}
-		defer func() { _ = file.Close() }()
-		info, err := file.Stat()
-		if err != nil {
-			return nil, err
-		}
-		upload.source = file
-		upload.fileName = filepath.Base(opts.Path)
-		if upload.name == "" {
-			upload.name = upload.fileName
-		}
-		if upload.sizeBytes == 0 {
-			upload.sizeBytes = info.Size()
-		}
-	}
-	if upload.name == "" {
-		return nil, fmt.Errorf("mobius: artifact Name is required")
 	}
 	return c.uploadArtifact(ctx, upload)
 }
@@ -221,7 +201,72 @@ type artifactUpload struct {
 	source         io.Reader
 }
 
+// uploadSource is the caller-supplied byte source shared by the artifact and
+// session-attachment upload options.
+type uploadSource struct {
+	Path      string
+	Reader    io.Reader
+	Name      string
+	Mime      string
+	SizeBytes int64
+}
+
+// newArtifactUpload validates one upload source and fills in the multipart
+// fields both upload endpoints share. When the source is a Path, the file must
+// stay open until the upload completes, so the returned func closes it; it is
+// never nil and is safe to defer. noun names the resource in validation errors.
+func newArtifactUpload(noun string, src uploadSource) (artifactUpload, func(), error) {
+	noClose := func() {}
+	if (src.Path == "") == (src.Reader == nil) {
+		return artifactUpload{}, noClose, fmt.Errorf("mobius: exactly one of Path or Reader is required")
+	}
+	upload := artifactUpload{
+		name:      strings.TrimSpace(src.Name),
+		mime:      src.Mime,
+		sizeBytes: src.SizeBytes,
+		source:    src.Reader,
+	}
+	closeSource := noClose
+	if src.Path != "" {
+		file, err := os.Open(src.Path)
+		if err != nil {
+			return artifactUpload{}, noClose, err
+		}
+		info, err := file.Stat()
+		if err != nil {
+			_ = file.Close()
+			return artifactUpload{}, noClose, err
+		}
+		closeSource = func() { _ = file.Close() }
+		upload.source = file
+		upload.fileName = filepath.Base(src.Path)
+		if upload.name == "" {
+			upload.name = upload.fileName
+		}
+		if upload.sizeBytes == 0 {
+			upload.sizeBytes = info.Size()
+		}
+	}
+	if upload.name == "" {
+		closeSource()
+		return artifactUpload{}, noClose, fmt.Errorf("mobius: %s Name is required", noun)
+	}
+	return upload, closeSource, nil
+}
+
 func (c *Client) uploadArtifact(ctx context.Context, upload artifactUpload) (*Artifact, error) {
+	var out Artifact
+	if err := c.postArtifactMultipart(ctx, "/v1/artifacts", upload, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// postArtifactMultipart streams an upload to path as multipart/form-data and
+// decodes the JSON response into out. Both the org artifact endpoint and the
+// session attachment endpoint accept the same name/mime/size_bytes/file part
+// layout, so they share this writer.
+func (c *Client) postArtifactMultipart(ctx context.Context, path string, upload artifactUpload, out any) error {
 	if upload.fileName == "" {
 		upload.fileName = filepath.Base(upload.name)
 	}
@@ -246,17 +291,16 @@ func (c *Client) uploadArtifact(ctx context.Context, upload artifactUpload) (*Ar
 	if upload.idempotencyKey != "" {
 		headers["Idempotency-Key"] = upload.idempotencyKey
 	}
-	var out Artifact
-	err := c.doMultipartWithHeaders(ctx, http.MethodPost, "/v1/artifacts", contentType, reader, headers, &out)
+	err := c.doMultipartWithHeaders(ctx, http.MethodPost, path, contentType, reader, headers, out)
 	if err != nil {
 		_ = reader.CloseWithError(err)
 		<-writeErr
-		return nil, err
+		return err
 	}
 	if werr := <-writeErr; werr != nil {
-		return nil, werr
+		return werr
 	}
-	return &out, nil
+	return nil
 }
 
 // writeArtifactMultipart writes the metadata fields before the file part so

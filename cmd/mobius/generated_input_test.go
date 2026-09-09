@@ -31,7 +31,7 @@ func TestGeneratedCommandRejectsUnknownRequestFileField(t *testing.T) {
 
 func TestGeneratedPreviewVisibilityRequiresAndSendsVisibility(t *testing.T) {
 	missing := newApp().Test(t, cli.TestArgs(
-		"agents", "preview-agent-visibility-change", "agent_test",
+		"agents", "preview-visibility-change", "agent_test",
 		"--api-key", "mbx_test",
 	))
 	assert.False(t, missing.Success())
@@ -46,7 +46,7 @@ func TestGeneratedPreviewVisibilityRequiresAndSendsVisibility(t *testing.T) {
 	defer srv.Close()
 
 	result := newApp().Test(t, cli.TestArgs(
-		"agents", "preview-agent-visibility-change", "agent_test",
+		"agents", "preview-visibility-change", "agent_test",
 		"--visibility", "restricted",
 		"--api-url", srv.URL, "--api-key", "mbx_test", "--output", "json",
 	))
@@ -97,7 +97,7 @@ func TestGeneratedSkillInstructionsHelpDocumentsLeadingAtEscape(t *testing.T) {
 
 func TestPreviewAgentVisibilityChangeRequiresVisibility(t *testing.T) {
 	result := newApp().Test(t, cli.TestArgs(
-		"agents", "preview-agent-visibility-change", "agent_test",
+		"agents", "preview-visibility-change", "agent_test",
 		"--api-key", "mbx_test",
 	))
 

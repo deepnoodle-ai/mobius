@@ -140,7 +140,7 @@ func registerBlueprintsCommands(app *cli.App) {
 			return printResponse(ctx, "listBlueprintBindings", resp.StatusCode(), resp.Body)
 		})
 
-	blueprintsGrp.Command("set-blueprint-protection").
+	blueprintsGrp.Command("set-protection").
 		Description("Set blueprint resource protection").
 		Args("blueprint-key").
 		Flags(

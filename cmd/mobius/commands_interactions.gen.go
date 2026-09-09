@@ -311,7 +311,7 @@ func registerInteractionsCommands(app *cli.App) {
 			return printResponse(ctx, "respondToInteraction", resp.StatusCode(), resp.Body)
 		})
 
-	interactionsGrp.Command("review-interaction").
+	interactionsGrp.Command("review").
 		Description("Accept or send back submitted work").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(

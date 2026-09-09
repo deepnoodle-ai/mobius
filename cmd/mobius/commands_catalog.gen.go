@@ -15,7 +15,7 @@ import (
 
 // registerCatalogCommands registers every generated subcommand in the "catalog" group.
 func registerCatalogCommands(app *cli.App) {
-	catalogGrp := app.Group("catalog").Description("Available actions and triggerable events")
+	catalogGrp := app.Group("catalog").Description("Available actions, events, and models")
 	catalogGrp.Command("get-action").
 		Description("Get action").
 		AddArg(&cli.Arg{Name: "action-name", Description: "Action name as registered in the catalog.", Required: true}).

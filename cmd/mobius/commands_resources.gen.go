@@ -17,7 +17,7 @@ import (
 
 // registerResourcesCommands registers every generated subcommand in the "resources" group.
 func registerResourcesCommands(app *cli.App) {
-	resourcesGrp := app.Group("resources")
+	resourcesGrp := app.Group("resources").Description("Resource custody and audience changes")
 	resourcesGrp.Alias("resource")
 	resourcesGrp.Command("update-ownership").
 		Description("Update a resource's custody or audience").
