@@ -80,6 +80,9 @@ func buildPlan(client *ClientInfo, spec map[string]*SpecOp, overrides map[string
 		plan  Plan
 		warns []string
 	)
+	// Operations the first pass already reported on, so the reverse pass
+	// below doesn't warn about them a second time under the wrong reason.
+	warned := map[string]bool{}
 
 	// Sort method names for stable output.
 	names := make([]string, 0, len(client.Methods))
@@ -110,6 +113,7 @@ func buildPlan(client *ClientInfo, spec map[string]*SpecOp, overrides map[string
 		}
 		if pc.Group == "" {
 			warns = append(warns, fmt.Sprintf("skip %s: no tag or derivable group", name))
+			warned[opID] = true
 			continue
 		}
 		if pc.Description == "" {
@@ -119,6 +123,7 @@ func buildPlan(client *ClientInfo, spec map[string]*SpecOp, overrides map[string
 		ok, reason := classifyParams(method, client, &pc)
 		if !ok {
 			warns = append(warns, fmt.Sprintf("skip %s: %s", name, reason))
+			warned[opID] = true
 			continue
 		}
 		if pc.Body != nil {
@@ -155,7 +160,7 @@ func buildPlan(client *ClientInfo, spec map[string]*SpecOp, overrides map[string
 	}
 	missing := make([]string, 0, len(spec))
 	for opID := range spec {
-		if planned[opID] || overrides[opID].Skip {
+		if planned[opID] || warned[opID] || overrides[opID].Skip {
 			continue
 		}
 		missing = append(missing, opID)

@@ -247,6 +247,9 @@ attachment, err := client.CreateSessionAttachment(ctx, sessionID,
 mobius sessions attach sess_123 ./brief.md
 ```
 
+Supply the bytes with either `Path` or `Reader`, never both. `Reader` also
+requires `Name`, since there is no path to derive the filename from.
+
 Mobius detects the media type from the bytes rather than the multipart MIME
 declaration, so `--mime` (and `Mime`) is only a hint. The retry key is scoped
 to the session and caller: reusing it with different bytes, filename, or MIME

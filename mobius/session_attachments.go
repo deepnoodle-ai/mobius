@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/url"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/deepnoodle-ai/mobius/mobius/api"
@@ -48,38 +46,18 @@ func (c *Client) CreateSessionAttachment(ctx context.Context, sessionID string, 
 	if len(opts.IdempotencyKey) > 255 {
 		return nil, fmt.Errorf("mobius: attachment IdempotencyKey must be at most 255 characters")
 	}
-	if (opts.Path == "") == (opts.Reader == nil) {
-		return nil, fmt.Errorf("mobius: exactly one of Path or Reader is required")
+	upload, closeSource, err := newArtifactUpload("attachment", uploadSource{
+		Path:      opts.Path,
+		Reader:    opts.Reader,
+		Name:      opts.Name,
+		Mime:      opts.Mime,
+		SizeBytes: opts.SizeBytes,
+	})
+	if err != nil {
+		return nil, err
 	}
-	upload := artifactUpload{
-		name:           strings.TrimSpace(opts.Name),
-		mime:           opts.Mime,
-		sizeBytes:      opts.SizeBytes,
-		source:         opts.Reader,
-		idempotencyKey: opts.IdempotencyKey,
-	}
-	if opts.Path != "" {
-		file, err := os.Open(opts.Path)
-		if err != nil {
-			return nil, err
-		}
-		defer func() { _ = file.Close() }()
-		info, err := file.Stat()
-		if err != nil {
-			return nil, err
-		}
-		upload.source = file
-		upload.fileName = filepath.Base(opts.Path)
-		if upload.name == "" {
-			upload.name = upload.fileName
-		}
-		if upload.sizeBytes == 0 {
-			upload.sizeBytes = info.Size()
-		}
-	}
-	if upload.name == "" {
-		return nil, fmt.Errorf("mobius: attachment Name is required")
-	}
+	defer closeSource()
+	upload.idempotencyKey = opts.IdempotencyKey
 	path := "/v1/sessions/" + url.PathEscape(sessionID) + "/attachments"
 	var out api.SessionAttachmentResponse
 	if err := c.postArtifactMultipart(ctx, path, upload, &out); err != nil {

@@ -19,7 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 - Routines, the replacement for loops: lifecycle, occurrences, and proposals in
   all three clients and as the `routines` CLI group
   ([#205](https://github.com/deepnoodle-ai/mobius/pull/205)).
-- `mobius sessions attach PATH` and Go's `CreateSessionAttachment` /
+- `mobius sessions attach SESSION_ID PATH` and Go's `CreateSessionAttachment` /
   `DeleteSessionAttachment` cover the multipart session attachment endpoint,
   which had no CLI or helper surface. See `docs/sdk-helpers.md`.
 - The CLI generator now warns when a spec operation produces no command, so a
