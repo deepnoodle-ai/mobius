@@ -1835,6 +1835,60 @@ func (e ReviewInteractionRequestAction) Valid() bool {
 	}
 }
 
+// Defines values for RoutineAudience.
+const (
+	RoutineAudienceNamed        RoutineAudience = "named"
+	RoutineAudienceOrganization RoutineAudience = "organization"
+	RoutineAudiencePrivate      RoutineAudience = "private"
+	RoutineAudienceTeam         RoutineAudience = "team"
+)
+
+// Valid indicates whether the value is a known member of the RoutineAudience enum.
+func (e RoutineAudience) Valid() bool {
+	switch e {
+	case RoutineAudienceNamed:
+		return true
+	case RoutineAudienceOrganization:
+		return true
+	case RoutineAudiencePrivate:
+		return true
+	case RoutineAudienceTeam:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RoutineAvailableActions.
+const (
+	RoutineAvailableActionsDelete RoutineAvailableActions = "delete"
+	RoutineAvailableActionsEdit   RoutineAvailableActions = "edit"
+	RoutineAvailableActionsInvite RoutineAvailableActions = "invite"
+	RoutineAvailableActionsPause  RoutineAvailableActions = "pause"
+	RoutineAvailableActionsResume RoutineAvailableActions = "resume"
+	RoutineAvailableActionsRun    RoutineAvailableActions = "run"
+)
+
+// Valid indicates whether the value is a known member of the RoutineAvailableActions enum.
+func (e RoutineAvailableActions) Valid() bool {
+	switch e {
+	case RoutineAvailableActionsDelete:
+		return true
+	case RoutineAvailableActionsEdit:
+		return true
+	case RoutineAvailableActionsInvite:
+		return true
+	case RoutineAvailableActionsPause:
+		return true
+	case RoutineAvailableActionsResume:
+		return true
+	case RoutineAvailableActionsRun:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RoutineChangeStatus.
 const (
 	RoutineChangeStatusFailure RoutineChangeStatus = "failure"
@@ -3670,6 +3724,9 @@ type AddAgentMembersRequest struct {
 
 // AddRoutinePrincipalRequest defines model for AddRoutinePrincipalRequest.
 type AddRoutinePrincipalRequest struct {
+	// ConfirmAudienceExpansion Confirm access to existing and future routine results and the selected manager powers. Required when inviting another person to private work.
+	ConfirmAudienceExpansion *bool `json:"confirm_audience_expansion,omitempty"`
+
 	// Level Narrows what a follower is notified about. Ignored on the other relationships, which are always notified.
 	Level       *RoutineFollowLevel `json:"level,omitempty"`
 	PrincipalId string              `json:"principal_id"`
@@ -6589,11 +6646,15 @@ type RotateSecretResult struct {
 
 // Routine defines model for Routine.
 type Routine struct {
-	ActAsUserProviders *[]string  `json:"act_as_user_providers,omitempty"`
-	AgentId            string     `json:"agent_id"`
-	CompletedAt        *time.Time `json:"completed_at,omitempty"`
-	CreatedAt          time.Time  `json:"created_at"`
-	DailyCeilingMilli  int64      `json:"daily_ceiling_milli"`
+	ActAsUserProviders *[]string        `json:"act_as_user_providers,omitempty"`
+	AgentId            string           `json:"agent_id"`
+	Audience           *RoutineAudience `json:"audience,omitempty"`
+
+	// AvailableActions Actions permitted for this caller; the server rechecks each request.
+	AvailableActions  *[]RoutineAvailableActions `json:"available_actions,omitempty"`
+	CompletedAt       *time.Time                 `json:"completed_at,omitempty"`
+	CreatedAt         time.Time                  `json:"created_at"`
+	DailyCeilingMilli int64                      `json:"daily_ceiling_milli"`
 
 	// Event Present when `trigger` is `event`.
 	Event *RoutineEventTrigger `json:"event,omitempty"`
@@ -6605,7 +6666,7 @@ type Routine struct {
 	Following bool   `json:"following"`
 	Id        string `json:"id"`
 
-	// Instructions Omitted from administrator metadata-only projections.
+	// Instructions Present only after ordinary content access is authorized.
 	Instructions *string `json:"instructions,omitempty"`
 
 	// Kind V1 accepts invoke; notify is reserved and returns unsupported_routine_kind.
@@ -6632,6 +6693,9 @@ type Routine struct {
 	PauseReason               *string          `json:"pause_reason,omitempty"`
 	PerOccurrenceCeilingMilli int64            `json:"per_occurrence_ceiling_milli"`
 
+	// Posture Employee-facing effective ownership and audience posture for the current caller.
+	Posture *ResourcePosture `json:"posture,omitempty"`
+
 	// Responsible The people this routine waits on. Non-empty under team custody.
 	Responsible *[]RoutinePrincipal `json:"responsible,omitempty"`
 
@@ -6647,6 +6711,12 @@ type Routine struct {
 	Unread    *bool     `json:"unread,omitempty"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
+
+// RoutineAudience defines model for Routine.Audience.
+type RoutineAudience string
+
+// RoutineAvailableActions defines model for Routine.AvailableActions.
+type RoutineAvailableActions string
 
 // RoutineChange One recorded change to a routine, read from the audit trail.
 //
@@ -6687,8 +6757,11 @@ type RoutineChangeList struct {
 
 // RoutineCreateRequest Exactly one of `schedule` and `event` is required: a routine runs on a schedule or when an event arrives, not both.
 type RoutineCreateRequest struct {
-	AgentId           string `json:"agent_id"`
-	DailyCeilingMilli int64  `json:"daily_ceiling_milli"`
+	AgentId string `json:"agent_id"`
+
+	// ConfirmAudienceExpansion Confirm access to existing and future routine results and the selected manager powers. Required when inviting another person to private work.
+	ConfirmAudienceExpansion *bool `json:"confirm_audience_expansion,omitempty"`
+	DailyCeilingMilli        int64 `json:"daily_ceiling_milli"`
 
 	// Event Runs the routine when a matching integration event arrives. Each matched event is one run on the ledger, one at a time per routine: an event arriving while a run is in flight waits behind it, and a run still waiting six hours later is closed `skipped` with `error_code` `stale`.
 	Event *RoutineEventTrigger `json:"event,omitempty"`
@@ -6857,6 +6930,12 @@ type RoutineSchedule struct {
 	MaxOccurrences *int       `json:"max_occurrences,omitempty"`
 	StartsAt       *time.Time `json:"starts_at,omitempty"`
 	Timezone       *string    `json:"timezone,omitempty"`
+}
+
+// RoutineSharingConfirmation defines model for RoutineSharingConfirmation.
+type RoutineSharingConfirmation struct {
+	// ConfirmAudienceExpansion Confirm sharing existing and future routine results with the proposed named people.
+	ConfirmAudienceExpansion *bool `json:"confirm_audience_expansion,omitempty"`
 }
 
 // RoutineStatus defines model for RoutineStatus.
@@ -9378,6 +9457,9 @@ type UpdateRoleJSONRequestBody = UpdateRoleRequest
 
 // CreateRoutineJSONRequestBody defines body for CreateRoutine for application/json ContentType.
 type CreateRoutineJSONRequestBody = RoutineCreateRequest
+
+// ApproveRoutineProposalJSONRequestBody defines body for ApproveRoutineProposal for application/json ContentType.
+type ApproveRoutineProposalJSONRequestBody = RoutineSharingConfirmation
 
 // UpdateRoutineJSONRequestBody defines body for UpdateRoutine for application/json ContentType.
 type UpdateRoutineJSONRequestBody = RoutineUpdateRequest
@@ -14906,8 +14988,10 @@ type ClientInterface interface {
 	// ListRoutineOccurrences request
 	ListRoutineOccurrences(ctx context.Context, params *ListRoutineOccurrencesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ApproveRoutineProposal request
-	ApproveRoutineProposal(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ApproveRoutineProposalWithBody request with any body
+	ApproveRoutineProposalWithBody(ctx context.Context, proposalId RoutineProposalID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ApproveRoutineProposal(ctx context.Context, proposalId RoutineProposalID, body ApproveRoutineProposalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DismissRoutineProposal request
 	DismissRoutineProposal(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -16413,8 +16497,20 @@ func (c *Client) ListRoutineOccurrences(ctx context.Context, params *ListRoutine
 	return c.Client.Do(req)
 }
 
-func (c *Client) ApproveRoutineProposal(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewApproveRoutineProposalRequest(c.Server, proposalId)
+func (c *Client) ApproveRoutineProposalWithBody(ctx context.Context, proposalId RoutineProposalID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewApproveRoutineProposalRequestWithBody(c.Server, proposalId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ApproveRoutineProposal(ctx context.Context, proposalId RoutineProposalID, body ApproveRoutineProposalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewApproveRoutineProposalRequest(c.Server, proposalId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -21446,8 +21542,19 @@ func NewListRoutineOccurrencesRequest(server string, params *ListRoutineOccurren
 	return req, nil
 }
 
-// NewApproveRoutineProposalRequest generates requests for ApproveRoutineProposal
-func NewApproveRoutineProposalRequest(server string, proposalId RoutineProposalID) (*http.Request, error) {
+// NewApproveRoutineProposalRequest calls the generic ApproveRoutineProposal builder with application/json body
+func NewApproveRoutineProposalRequest(server string, proposalId RoutineProposalID, body ApproveRoutineProposalJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewApproveRoutineProposalRequestWithBody(server, proposalId, "application/json", bodyReader)
+}
+
+// NewApproveRoutineProposalRequestWithBody generates requests for ApproveRoutineProposal with any type of body
+func NewApproveRoutineProposalRequestWithBody(server string, proposalId RoutineProposalID, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -21472,10 +21579,12 @@ func NewApproveRoutineProposalRequest(server string, proposalId RoutineProposalI
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -24693,8 +24802,10 @@ type ClientWithResponsesInterface interface {
 	// ListRoutineOccurrencesWithResponse request
 	ListRoutineOccurrencesWithResponse(ctx context.Context, params *ListRoutineOccurrencesParams, reqEditors ...RequestEditorFn) (*ListRoutineOccurrencesResponse, error)
 
-	// ApproveRoutineProposalWithResponse request
-	ApproveRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*ApproveRoutineProposalResponse, error)
+	// ApproveRoutineProposalWithBodyWithResponse request with any body
+	ApproveRoutineProposalWithBodyWithResponse(ctx context.Context, proposalId RoutineProposalID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ApproveRoutineProposalResponse, error)
+
+	ApproveRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, body ApproveRoutineProposalJSONRequestBody, reqEditors ...RequestEditorFn) (*ApproveRoutineProposalResponse, error)
 
 	// DismissRoutineProposalWithResponse request
 	DismissRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*DismissRoutineProposalResponse, error)
@@ -30522,9 +30633,17 @@ func (c *ClientWithResponses) ListRoutineOccurrencesWithResponse(ctx context.Con
 	return ParseListRoutineOccurrencesResponse(rsp)
 }
 
-// ApproveRoutineProposalWithResponse request returning *ApproveRoutineProposalResponse
-func (c *ClientWithResponses) ApproveRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*ApproveRoutineProposalResponse, error) {
-	rsp, err := c.ApproveRoutineProposal(ctx, proposalId, reqEditors...)
+// ApproveRoutineProposalWithBodyWithResponse request with arbitrary body returning *ApproveRoutineProposalResponse
+func (c *ClientWithResponses) ApproveRoutineProposalWithBodyWithResponse(ctx context.Context, proposalId RoutineProposalID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ApproveRoutineProposalResponse, error) {
+	rsp, err := c.ApproveRoutineProposalWithBody(ctx, proposalId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseApproveRoutineProposalResponse(rsp)
+}
+
+func (c *ClientWithResponses) ApproveRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, body ApproveRoutineProposalJSONRequestBody, reqEditors ...RequestEditorFn) (*ApproveRoutineProposalResponse, error) {
+	rsp, err := c.ApproveRoutineProposal(ctx, proposalId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}

@@ -4868,6 +4868,10 @@ class AddRoutinePrincipalRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
+    confirm_audience_expansion: bool | None = Field(
+        None,
+        description='Confirm access to existing and future routine results and the selected manager powers. Required when inviting another person to private work.',
+    )
     principal_id: str
     relationship: RoutineRelationship
     level: RoutineFollowLevel | None = None
@@ -4931,6 +4935,10 @@ class RoutineCreateRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
+    confirm_audience_expansion: bool | None = Field(
+        None,
+        description='Confirm access to existing and future routine results and the selected manager powers. Required when inviting another person to private work.',
+    )
     session_id: str | None = Field(
         None,
         description='Optional conversation this routine was proposed in, kept as provenance. Occurrences run in their own sessions, so this never affects where results are delivered. Omitted for a routine created from the form.',
@@ -4990,10 +4998,32 @@ class RoutineUpdateRequest(BaseModel):
     )
 
 
+class AvailableAction(StrEnum):
+    edit = 'edit'
+    run = 'run'
+    pause = 'pause'
+    resume = 'resume'
+    delete = 'delete'
+    invite = 'invite'
+
+
+class Audience(StrEnum):
+    private = 'private'
+    named = 'named'
+    organization = 'organization'
+    team = 'team'
+
+
 class Routine(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
+    available_actions: list[AvailableAction] | None = Field(
+        None,
+        description='Actions permitted for this caller; the server rechecks each request.',
+    )
+    posture: ResourcePosture | None = None
+    audience: Audience | None = None
     id: str
     org_id: str
     agent_id: str
@@ -5024,7 +5054,7 @@ class Routine(BaseModel):
     )
     name: str
     instructions: str | None = Field(
-        None, description='Omitted from administrator metadata-only projections.'
+        None, description='Present only after ordinary content access is authorized.'
     )
     kind: RoutineKind
     trigger: RoutineTrigger
@@ -5224,6 +5254,16 @@ class RoutineProposal(BaseModel):
     routine_id: str | None = None
     expires_at: AwareDatetime
     payload: dict[str, Any]
+
+
+class RoutineSharingConfirmation(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    confirm_audience_expansion: bool | None = Field(
+        None,
+        description='Confirm sharing existing and future routine results with the proposed named people.',
+    )
 
 
 class SkillRequest(BaseModel):

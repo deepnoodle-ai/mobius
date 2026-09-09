@@ -1453,7 +1453,7 @@ export interface paths {
          *
          *     Read from the audit trail but authorized as the routine, not as the audit log: anyone who can see the routine can see its history. Per-run records are excluded; the occurrence ledger is the place for those.
          *
-         *     Instructions are withheld on a private routine, where an administrator who can reach the metadata is not meant to read the content. On any other routine the instructions are already on the detail page and are shown here too.
+         *     Private authored values are withheld from the audit representation. Ordinary administrators cannot read another person's private routine or its history without a confirmed invitation.
          */
         get: operations["listRoutineChanges"];
         put?: never;
@@ -5952,6 +5952,8 @@ export interface components {
             items: components["schemas"]["RoutinePrincipal"][];
         };
         AddRoutinePrincipalRequest: {
+            /** @description Confirm access to existing and future routine results and the selected manager powers. Required when inviting another person to private work. */
+            confirm_audience_expansion?: boolean;
             principal_id: string;
             relationship: components["schemas"]["RoutineRelationship"];
             level?: components["schemas"]["RoutineFollowLevel"];
@@ -5994,6 +5996,8 @@ export interface components {
         };
         /** @description Exactly one of `schedule` and `event` is required: a routine runs on a schedule or when an event arrives, not both. */
         RoutineCreateRequest: {
+            /** @description Confirm access to existing and future routine results and the selected manager powers. Required when inviting another person to private work. */
+            confirm_audience_expansion?: boolean;
             /** @description Optional conversation this routine was proposed in, kept as provenance. Occurrences run in their own sessions, so this never affects where results are delivered. Omitted for a routine created from the form. */
             session_id?: string;
             agent_id: string;
@@ -6036,6 +6040,11 @@ export interface components {
             managed_by?: components["schemas"]["RoutineManagedBy"];
         };
         Routine: {
+            /** @description Actions permitted for this caller; the server rechecks each request. */
+            available_actions?: ("edit" | "run" | "pause" | "resume" | "delete" | "invite")[];
+            posture?: components["schemas"]["ResourcePosture"];
+            /** @enum {string} */
+            audience?: "private" | "named" | "organization" | "team";
             id: string;
             org_id: string;
             agent_id: string;
@@ -6054,7 +6063,7 @@ export interface components {
             /** @description Principals holding a follower row. Responsible people and managers are notified too, and are named separately. */
             follower_count: number;
             name: string;
-            /** @description Omitted from administrator metadata-only projections. */
+            /** @description Present only after ordinary content access is authorized. */
             instructions?: string;
             kind: components["schemas"]["RoutineKind"];
             trigger: components["schemas"]["RoutineTrigger"];
@@ -6182,6 +6191,10 @@ export interface components {
             payload: {
                 [key: string]: unknown;
             };
+        };
+        RoutineSharingConfirmation: {
+            /** @description Confirm sharing existing and future routine results with the proposed named people. */
+            confirm_audience_expansion?: boolean;
         };
         /**
          * @example {
@@ -10523,7 +10536,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RoutineSharingConfirmation"];
+            };
+        };
         responses: {
             /** @description Existing routine returned for an idempotent replay. */
             200: {

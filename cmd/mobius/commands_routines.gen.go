@@ -23,6 +23,7 @@ func registerRoutinesCommands(app *cli.App) {
 		Description("Add a principal to a routine's roster").
 		Args("routine-id").
 		Flags(
+			cli.Bool("confirm-audience-expansion", "").Help("Confirm access to existing and future routine results and the selected manager powers. Required when inviting another person to private…"),
 			cli.String("level", "").Help("Narrows what a follower is notified about. Ignored on the other relationships, which are always notified."),
 			cli.String("principal-id", "").Help("[required] principal-id"),
 			cli.String("relationship", "").Help("[required] The relationship a principal holds to a routine. `follower` is opt-in attention, `responsible` is the person the routine waits on…"),
@@ -40,6 +41,10 @@ func registerRoutinesCommands(app *cli.App) {
 			var body api.AddRoutinePrincipalJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
+			}
+			if ctx.IsSet("confirm-audience-expansion") {
+				v := ctx.Bool("confirm-audience-expansion")
+				body.ConfirmAudienceExpansion = &v
 			}
 			if ctx.IsSet("level") {
 				v := api.RoutineFollowLevel(ctx.String("level"))
@@ -70,6 +75,11 @@ func registerRoutinesCommands(app *cli.App) {
 	routinesGrp.Command("approve-proposal").
 		Description("Approve a pending proposal as its proposed human owner").
 		Args("proposal-id").
+		Flags(
+			cli.Bool("confirm-audience-expansion", "").Help("Confirm sharing existing and future routine results with the proposed named people."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -78,7 +88,18 @@ func registerRoutinesCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := api.RoutineProposalID(ctx.Arg(0))
-			resp, err := client.ApproveRoutineProposalWithResponse(ctx.Context(), p0)
+			var body api.ApproveRoutineProposalJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("confirm-audience-expansion") {
+				v := ctx.Bool("confirm-audience-expansion")
+				body.ConfirmAudienceExpansion = &v
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.ApproveRoutineProposalWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -89,6 +110,7 @@ func registerRoutinesCommands(app *cli.App) {
 		Description("Create a routine owned by the authenticated human").
 		Flags(
 			cli.String("agent-id", "").Help("[required] agent-id"),
+			cli.Bool("confirm-audience-expansion", "").Help("Confirm access to existing and future routine results and the selected manager powers. Required when inviting another person to private…"),
 			cli.Int("daily-ceiling-milli", "").Help("[required] daily-ceiling-milli"),
 			cli.String("event", "").Help("Runs the routine when a matching integration event arrives. Each matched event is one run on the ledger, one at a time per routine: an… Accepts JSON, @file, or @-."),
 			cli.Strings("follower-principal-ids", "").Help("Principals who opt into the routine's results. The creator is added automatically."),
@@ -117,6 +139,10 @@ func registerRoutinesCommands(app *cli.App) {
 			}
 			if ctx.IsSet("agent-id") {
 				body.AgentId = ctx.String("agent-id")
+			}
+			if ctx.IsSet("confirm-audience-expansion") {
+				v := ctx.Bool("confirm-audience-expansion")
+				body.ConfirmAudienceExpansion = &v
 			}
 			if ctx.IsSet("daily-ceiling-milli") {
 				body.DailyCeilingMilli = int64(ctx.Int("daily-ceiling-milli"))

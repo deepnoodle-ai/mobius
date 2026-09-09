@@ -3373,7 +3373,7 @@ paths:
 
         Read from the audit trail but authorized as the routine, not as the audit log: anyone who can see the routine can see its history. Per-run records are excluded; the occurrence ledger is the place for those.
 
-        Instructions are withheld on a private routine, where an administrator who can reach the metadata is not meant to read the content. On any other routine the instructions are already on the detail page and are shown here too.
+        Private authored values are withheld from the audit representation. Ordinary administrators cannot read another person's private routine or its history without a confirmed invitation.
       parameters:
       - $ref: '#/components/parameters/RoutineID'
       - name: limit
@@ -3580,6 +3580,12 @@ paths:
       description: Atomically materializes a pending proposal as a routine after human approval.
       parameters:
       - $ref: '#/components/parameters/RoutineProposalID'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoutineSharingConfirmation'
       responses:
         '200':
           description: Existing routine returned for an idempotent replay.
@@ -12437,6 +12443,10 @@ components:
       - principal_id
       - relationship
       properties:
+        confirm_audience_expansion:
+          type: boolean
+          description: Confirm access to existing and future routine results and the selected
+            manager powers. Required when inviting another person to private work.
         principal_id:
           type: string
         relationship:
@@ -12516,6 +12526,10 @@ components:
       description: 'Exactly one of `schedule` and `event` is required: a routine runs on a
         schedule or when an event arrives, not both.'
       properties:
+        confirm_audience_expansion:
+          type: boolean
+          description: Confirm access to existing and future routine results and the selected
+            manager powers. Required when inviting another person to private work.
         session_id:
           type: string
           description: Optional conversation this routine was proposed in, kept as provenance.
@@ -12618,6 +12632,27 @@ components:
       - created_at
       - updated_at
       properties:
+        available_actions:
+          type: array
+          description: Actions permitted for this caller; the server rechecks each request.
+          items:
+            type: string
+            enum:
+            - edit
+            - run
+            - pause
+            - resume
+            - delete
+            - invite
+        posture:
+          $ref: '#/components/schemas/ResourcePosture'
+        audience:
+          type: string
+          enum:
+          - private
+          - named
+          - organization
+          - team
         id:
           type: string
         org_id:
@@ -12659,7 +12694,7 @@ components:
           type: string
         instructions:
           type: string
-          description: Omitted from administrator metadata-only projections.
+          description: Present only after ordinary content access is authorized.
         kind:
           $ref: '#/components/schemas/RoutineKind'
         trigger:
@@ -12934,6 +12969,14 @@ components:
         payload:
           type: object
           additionalProperties: true
+    RoutineSharingConfirmation:
+      type: object
+      additionalProperties: false
+      properties:
+        confirm_audience_expansion:
+          type: boolean
+          description: Confirm sharing existing and future routine results with the proposed
+            named people.
     SkillRequest:
       type: object
       additionalProperties: false

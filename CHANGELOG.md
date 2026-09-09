@@ -10,6 +10,11 @@ the minor version.
 
 ## [Unreleased]
 
+### Changed
+
+- Routine APIs expose custody posture, audience, and available actions, and accept
+  explicit confirmation when sharing private routines with named people.
+
 ## [0.1.0] - 2026-09-09
 
 ### Added
