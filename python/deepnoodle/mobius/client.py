@@ -63,6 +63,7 @@ from ._api.models import (
     RoleAssignmentListResponse,
     RoleListResponse,
     Session,
+    SessionAttachmentResponse,
     SessionListResponse,
     SessionMessageListResponse,
     SessionNudge,
@@ -990,6 +991,80 @@ class Client:
             f"/v1/sessions/{quote(session_id, safe='')}/compact",
         )
         return Session.model_validate(resp.json())
+
+    def create_session_attachment(
+        self,
+        session_id: str,
+        file: bytes | BinaryIO | str | os.PathLike[str],
+        *,
+        name: str | None = None,
+        mime: str | None = None,
+        idempotency_key: str | None = None,
+    ) -> SessionAttachmentResponse:
+        """Attach one document or image to a session.
+
+        Uploads the bytes into server-managed artifact storage and binds
+        them immutably to the session. The returned ``content_block`` is
+        the canonical block to append in a session message or turn input.
+
+        ``file`` may be raw bytes, a binary file object, or a filesystem
+        path. Path sources stream from disk and default ``name`` to the
+        file's base name; bytes and file-object sources require ``name``.
+
+        ``mime`` is a hint only: Mobius detects and validates the media
+        type from the bytes. ``idempotency_key`` is scoped to this session
+        and caller, so an identical retry returns the original attachment.
+        """
+        if idempotency_key is not None and len(idempotency_key) > 255:
+            raise ValueError(
+                "attachment idempotency_key must be at most 255 characters"
+            )
+        opened: BinaryIO | None = None
+        try:
+            source: bytes | BinaryIO
+            size: int | None = None
+            if isinstance(file, (str, os.PathLike)):
+                opened = open(file, "rb")
+                source = opened
+                size = os.fstat(opened.fileno()).st_size
+                if name is None:
+                    name = os.path.basename(os.fspath(file))
+            elif isinstance(file, (bytes, bytearray, memoryview)):
+                source = bytes(file)
+                size = len(source)
+            else:
+                source = file
+            clean_name = (name or "").strip()
+            if not clean_name:
+                raise ValueError("attachment name is required")
+            fields: dict[str, Any] = {"name": clean_name}
+            if mime:
+                fields["mime"] = mime
+            if size is not None:
+                fields["size_bytes"] = str(size)
+            filename = clean_name.rsplit("/", 1)[-1] or "attachment"
+            resp = self._request(
+                "POST",
+                f"/v1/sessions/{quote(session_id, safe='')}/attachments",
+                files={"file": (filename, source, mime or "application/octet-stream")},
+                data=fields,
+                idempotency_key=idempotency_key,
+            )
+            return SessionAttachmentResponse.model_validate(resp.json())
+        finally:
+            if opened is not None:
+                opened.close()
+
+    def delete_session_attachment(self, session_id: str, artifact_id: str) -> None:
+        """Delete one artifact created through this session's attachments.
+
+        Deleting an artifact this session already deleted succeeds.
+        """
+        self._request(
+            "DELETE",
+            f"/v1/sessions/{quote(session_id, safe='')}"
+            f"/attachments/{quote(artifact_id, safe='')}",
+        )
 
     def list_session_messages(
         self, session_id: str, opts: ListSessionMessagesOptions | None = None

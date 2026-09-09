@@ -43,6 +43,7 @@ import type {
   ReplaceSkillsRequest,
   SaveAgentMemoryEntryRequest,
   Session,
+  SessionAttachmentResponse,
   SessionListResponse,
   SessionMessageListResponse,
   SessionNudge,
@@ -117,6 +118,23 @@ export interface CreateArtifactOptions {
   idempotencyKey?: string;
   mimeType?: string;
   metadata?: Record<string, unknown>;
+  signal?: AbortSignal;
+}
+
+export interface CreateSessionAttachmentOptions {
+  /** Session to bind the attachment to. */
+  sessionId: string;
+  /** Attachment bytes. A Blob's existing MIME type is preserved unless mimeType is supplied. */
+  file: Blob | Uint8Array;
+  /** Display filename recorded for the attachment. */
+  name: string;
+  /**
+   * MIME hint only: Mobius detects and validates the media type from the
+   * bytes and does not trust this declaration.
+   */
+  mimeType?: string;
+  /** Retry key scoped to this session and caller; an identical retry returns the original attachment. */
+  idempotencyKey?: string;
   signal?: AbortSignal;
 }
 
@@ -1313,6 +1331,72 @@ export class Client {
     );
     const resp = await this.request(path, { method: "POST" });
     return (await resp.json()) as Session;
+  }
+
+  /**
+   * Attach one document or image to a session.
+   *
+   * Uploads the bytes into server-managed artifact storage and binds them
+   * immutably to the session. The returned `content_block` is the canonical
+   * block to append in a session message or turn input.
+   */
+  async createSessionAttachment(
+    opts: CreateSessionAttachmentOptions,
+  ): Promise<SessionAttachmentResponse> {
+    const idempotencyKey = normalizeIdempotencyKey(opts.idempotencyKey);
+    if (idempotencyKey != null && idempotencyKey.length > 255) {
+      throw new ConfigError(
+        "attachment idempotencyKey must be at most 255 characters",
+      );
+    }
+    const name = opts.name.trim();
+    if (!name) throw new ConfigError("attachment name is required");
+
+    const mimeType = opts.mimeType?.trim();
+    let file: Blob;
+    if (opts.file instanceof Blob) {
+      file =
+        mimeType && mimeType !== opts.file.type
+          ? new Blob([opts.file], { type: mimeType })
+          : opts.file;
+    } else {
+      const bytes = Uint8Array.from(opts.file);
+      file = new Blob([bytes.buffer], {
+        type: mimeType || "application/octet-stream",
+      });
+    }
+
+    const form = new FormData();
+    form.append("name", name);
+    form.append("mime", mimeType || file.type || "application/octet-stream");
+    form.append("size_bytes", String(file.size));
+    const filename = name.split("/").pop() || "attachment";
+    form.append("file", file, filename);
+
+    const resp = await this.request(
+      `/v1/sessions/${encodeURIComponent(opts.sessionId)}/attachments`,
+      {
+        method: "POST",
+        formData: form,
+        idempotencyKey,
+        signal: opts.signal,
+      },
+    );
+    return (await resp.json()) as SessionAttachmentResponse;
+  }
+
+  /**
+   * Delete one artifact created through this session's attachments.
+   * Deleting an artifact this session already deleted succeeds.
+   */
+  async deleteSessionAttachment(
+    sessionId: string,
+    artifactId: string,
+  ): Promise<void> {
+    await this.request(
+      `/v1/sessions/${encodeURIComponent(sessionId)}/attachments/${encodeURIComponent(artifactId)}`,
+      { method: "DELETE" },
+    );
   }
 
   async compactSession(sessionId: string): Promise<Session> {

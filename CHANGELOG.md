@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+### Added
+
+- Session attachments in Python and TypeScript:
+  `create_session_attachment` / `delete_session_attachment` and
+  `createSessionAttachment` / `deleteSessionAttachment`, matching the Go and
+  CLI surfaces that shipped in 0.0.62
+  ([#213](https://github.com/deepnoodle-ai/mobius/pull/213)).
+
 ## [0.0.62] - 2026-09-09
 
 ### Added

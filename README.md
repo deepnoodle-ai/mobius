@@ -89,7 +89,7 @@ The SDKs expose two layers:
 
 - A high-level surface for common agent and worker flows: invoke agents and
   follow a session's live transcript, manage sessions, turns, and nudges,
-  upload artifacts, read and synchronize agent memory,
+  upload artifacts and session attachments, read and synchronize agent memory,
   run WebSocket workers that execute action jobs and LLM generation jobs,
   verify and parse webhook deliveries, and deliver synthetic local webhooks.
 - Generated OpenAPI bindings for the full API contract when you need a lower

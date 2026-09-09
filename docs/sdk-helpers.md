@@ -10,7 +10,8 @@ common integration tasks:
 - managing org blueprints, principals, roles, and role assignments
 - managing the organization OAuth return-origin allowlist
 - managing organization Actions and their signing-secret lifecycle
-- publishing org artifacts with metadata and safe retry keys
+- publishing org artifacts with metadata and safe retry keys, and attaching
+  documents and images to a session
 - reading, searching, and synchronizing agent memory
 - managing org and organization-shared skills and agent skill assignments
 - listing action invocation audit records with provenance filters
@@ -230,9 +231,7 @@ principal returns the original artifact without uploading the bytes again.
 
 A document or image that belongs to one conversation goes through the session
 attachment endpoint instead, which binds the artifact immutably to the session
-and returns the content block to append in a message or turn input. The Go SDK
-and the CLI expose it today; Python and TypeScript callers use the generated
-client:
+and returns the content block to append in a message or turn input:
 
 ```go
 attachment, err := client.CreateSessionAttachment(ctx, sessionID,
@@ -243,17 +242,42 @@ attachment, err := client.CreateSessionAttachment(ctx, sessionID,
 // attachment.ContentBlock is the block to append in the next turn input.
 ```
 
+```python
+attachment = client.create_session_attachment(
+    session_id,
+    brief_path,  # or bytes / a binary file object
+    idempotency_key=f"{turn_id}:brief",
+)
+# attachment.content_block is the block to append in the next turn input.
+```
+
+```ts
+const attachment = await client.createSessionAttachment({
+  sessionId,
+  name: "brief.md",
+  file: briefBytes,
+  idempotencyKey: `${turnId}:brief`,
+});
+// attachment.content_block is the block to append in the next turn input.
+```
+
 ```bash
 mobius sessions attach sess_123 ./brief.md
 ```
 
-Supply the bytes with either `Path` or `Reader`, never both. `Reader` also
-requires `Name`, since there is no path to derive the filename from.
+Go takes exactly one of `Path` or `Reader`; Python takes a path, raw bytes, or a
+binary file object. A path source defaults the name to the file's base name —
+every other source requires a name, since there is no path to derive one from.
+TypeScript is in-memory only, so it always requires `name`.
 
 Mobius detects the media type from the bytes rather than the multipart MIME
-declaration, so `--mime` (and `Mime`) is only a hint. The retry key is scoped
-to the session and caller: reusing it with different bytes, filename, or MIME
-hint is rejected with a conflict.
+declaration, so `--mime` (and `Mime` / `mime` / `mimeType`) is only a hint. The
+retry key is scoped to the session and caller: reusing it with different bytes,
+filename, or MIME hint is rejected with a conflict.
+
+`DeleteSessionAttachment` / `delete_session_attachment` /
+`deleteSessionAttachment` removes one artifact created through this session;
+deleting one the session already deleted succeeds.
 
 ## Synthetic Webhooks
 

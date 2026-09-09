@@ -41,5 +41,5 @@ This policy covers the code published from this repository:
 - `deepnoodle-mobius` on PyPI
 - `@deepnoodle/mobius` on npm
 
-For vulnerabilities in the Mobius service itself (api.mobiusops.ai), please use the
+For vulnerabilities in the Mobius service itself (api.mobiusops.com), please use the
 same email address.
