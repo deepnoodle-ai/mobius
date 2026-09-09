@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.62] - 2026-09-09
+
 ### Added
 
 - Resource ownership is now explicit across configuration and work roots:
@@ -21,23 +23,46 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
   ([#205](https://github.com/deepnoodle-ai/mobius/pull/205)).
 - `mobius sessions attach SESSION_ID PATH` and Go's `CreateSessionAttachment` /
   `DeleteSessionAttachment` cover the multipart session attachment endpoint,
-  which had no CLI or helper surface. See `docs/sdk-helpers.md`.
+  which had no CLI or helper surface. See `docs/sdk-helpers.md`
+  ([#209](https://github.com/deepnoodle-ai/mobius/pull/209)).
 - The CLI generator now warns when a spec operation produces no command, so a
-  raw-body operation can no longer drop out of the CLI silently.
+  raw-body operation can no longer drop out of the CLI silently
+  ([#209](https://github.com/deepnoodle-ai/mobius/pull/209)).
+- Org context: the business background every agent in the org receives in its
+  system prompt. Any member may read it; replacing it requires Admin or Owner
+  ([#208](https://github.com/deepnoodle-ai/mobius/pull/208)).
+- Routine custody and history: routine principals, change history, and run-now,
+  with their supporting schemas
+  ([#208](https://github.com/deepnoodle-ai/mobius/pull/208)).
 
 ### Changed
 
+- **Breaking.** The default API base URL is now `https://api.mobiusops.com` in
+  all three SDKs and the CLI, replacing the legacy `api.mobiusops.ai` host.
+  Callers that never set an explicit base URL pick this up on upgrade
+  ([#207](https://github.com/deepnoodle-ai/mobius/pull/207)).
 - Realigned the CLI surface with the current contract: leaf names are
   verb-first in every group (`routines pause`, `interactions review`,
   `permissions list`, `sessions append-messages`), `agents invoke` moved
-  beside the other agent commands, and every group now carries a description.
+  beside the other agent commands, and every group now carries a description
+  ([#209](https://github.com/deepnoodle-ai/mobius/pull/209)).
 - Regenerated every SDK from the current public Mobius contract. Action secret
   rotation now activates immediately with a fixed 72-hour verification overlap;
   the CLI requires an explicit sink for one-time reveals
   ([#203](https://github.com/deepnoodle-ai/mobius/pull/203)).
+- `tool_presentation` examples moved from `meta` to `flat`, following the
+  toolkit removal on the platform
+  ([#208](https://github.com/deepnoodle-ai/mobius/pull/208)).
+- Updated wonton to v0.0.38 and refreshed dependencies
+  ([#199](https://github.com/deepnoodle-ai/mobius/pull/199)).
 
 ### Removed
 
+- **Breaking.** Removed projects: the `--project` global flag and
+  `MOBIUS_PROJECT`, project pinning and handle extraction in all three SDKs,
+  and the `CreateProject` resource. Org is now the sole tenant, and every route
+  is a plain `/v1/...` path
+  ([#200](https://github.com/deepnoodle-ai/mobius/pull/200)).
 - Removed the duplicate organization action, organization skill, and toolkit
   surfaces; actions and skills now use their canonical catalogs and custody
   ([#202](https://github.com/deepnoodle-ai/mobius/pull/202)).
