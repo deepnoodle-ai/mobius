@@ -17,9 +17,9 @@ import (
 
 // registerSessionsCommands registers every generated subcommand in the "sessions" group.
 func registerSessionsCommands(app *cli.App) {
-	sessionsGrp := app.Group("sessions").Description("Conversation sessions, transcripts, and invocation")
+	sessionsGrp := app.Group("sessions").Description("Conversation sessions, transcripts, and turns")
 	sessionsGrp.Alias("session")
-	sessionsGrp.Command("append-session-messages").
+	sessionsGrp.Command("append-messages").
 		Description("Append session messages").
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Flags(
@@ -403,69 +403,6 @@ func registerSessionsCommands(app *cli.App) {
 			return printResponse(ctx, "getSessionTurnLive", resp.StatusCode(), resp.Body)
 		})
 
-	sessionsGrp.Command("invoke-agent").
-		Description("Invoke an agent").
-		Flags(
-			cli.String("agent-ref", "").Help("[required] Reference to an agent in this org. Supply exactly one of `id` (the agent identifier) or `name` (the org-unique agent name). A… Accepts JSON, @file, or @-."),
-			cli.String("channel-context", "").Help("Optional messaging provider/channel routing context (Slack, Telegram, …). Persisted on the started turn's input-message metadata under a… Accepts JSON, @file, or @-."),
-			cli.String("input", "").Help("[required] The caller input message that starts the agent turn. Accepts JSON, @file, or @-."),
-			cli.String("operation", "").Help("Operational policy for this newly admitted turn only. It is not saved on the session. Its timeout takes precedence over the agent default… Accepts JSON, @file, or @-."),
-			cli.String("session", "").Help("How to resolve or create the session this invocation runs in. Mirrors the create-session policy: `mode` + `session_key` resolve a durable… Accepts JSON, @file, or @-."),
-			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
-			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			var body api.InvokeAgentJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
-				return err
-			}
-			if ctx.IsSet("agent-ref") {
-				if err := decodeFlagJSON(ctx, "agent-ref", ctx.String("agent-ref"), &body.AgentRef); err != nil {
-					return err
-				}
-			}
-			if ctx.IsSet("channel-context") {
-				if err := decodeFlagJSON(ctx, "channel-context", ctx.String("channel-context"), &body.ChannelContext); err != nil {
-					return err
-				}
-			}
-			if ctx.IsSet("input") {
-				if err := decodeFlagJSON(ctx, "input", ctx.String("input"), &body.Input); err != nil {
-					return err
-				}
-			}
-			if ctx.IsSet("operation") {
-				if err := decodeFlagJSON(ctx, "operation", ctx.String("operation"), &body.Operation); err != nil {
-					return err
-				}
-			}
-			if ctx.IsSet("session") {
-				if err := decodeFlagJSON(ctx, "session", ctx.String("session"), &body.Session); err != nil {
-					return err
-				}
-			}
-			if ctx.String("file") == "" && !ctx.IsSet("agent-ref") {
-				return fmt.Errorf("--agent-ref is required (or supply it via --file)")
-			}
-			if ctx.String("file") == "" && !ctx.IsSet("input") {
-				return fmt.Errorf("--input is required (or supply it via --file)")
-			}
-			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body, "agent_ref", "channel_context", "input", "operation", "output", "session")
-			}
-			resp, err := client.InvokeAgentWithResponse(ctx.Context(), body)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "invokeAgent", resp.StatusCode(), resp.Body)
-		})
-
 	sessionsGrp.Command("list").
 		Description("List sessions").
 		Flags(
@@ -824,7 +761,7 @@ func registerSessionsCommands(app *cli.App) {
 			return printResponse(ctx, "streamSession", resp.StatusCode(), resp.Body)
 		})
 
-	sessionsGrp.Command("stream-session-transcript").
+	sessionsGrp.Command("stream-transcript").
 		Description("Stream authoritative transcript upserts").
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Flags(

@@ -17,7 +17,7 @@ import (
 
 // registerAgentsCommands registers every generated subcommand in the "agents" group.
 func registerAgentsCommands(app *cli.App) {
-	agentsGrp := app.Group("agents").Description("Agent identities, presence, and lifecycle")
+	agentsGrp := app.Group("agents").Description("Agent identities, memory, and lifecycle")
 	agentsGrp.Alias("agent")
 	agentsGrp.Command("add-members").
 		Description("Add agent members").
@@ -326,6 +326,69 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "getAgentTools", resp.StatusCode(), resp.Body)
 		})
 
+	agentsGrp.Command("invoke").
+		Description("Invoke an agent").
+		Flags(
+			cli.String("agent-ref", "").Help("[required] Reference to an agent in this org. Supply exactly one of `id` (the agent identifier) or `name` (the org-unique agent name). A… Accepts JSON, @file, or @-."),
+			cli.String("channel-context", "").Help("Optional messaging provider/channel routing context (Slack, Telegram, …). Persisted on the started turn's input-message metadata under a… Accepts JSON, @file, or @-."),
+			cli.String("input", "").Help("[required] The caller input message that starts the agent turn. Accepts JSON, @file, or @-."),
+			cli.String("operation", "").Help("Operational policy for this newly admitted turn only. It is not saved on the session. Its timeout takes precedence over the agent default… Accepts JSON, @file, or @-."),
+			cli.String("session", "").Help("How to resolve or create the session this invocation runs in. Mirrors the create-session policy: `mode` + `session_key` resolve a durable… Accepts JSON, @file, or @-."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			var body api.InvokeAgentJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("agent-ref") {
+				if err := decodeFlagJSON(ctx, "agent-ref", ctx.String("agent-ref"), &body.AgentRef); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("channel-context") {
+				if err := decodeFlagJSON(ctx, "channel-context", ctx.String("channel-context"), &body.ChannelContext); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("input") {
+				if err := decodeFlagJSON(ctx, "input", ctx.String("input"), &body.Input); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("operation") {
+				if err := decodeFlagJSON(ctx, "operation", ctx.String("operation"), &body.Operation); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("session") {
+				if err := decodeFlagJSON(ctx, "session", ctx.String("session"), &body.Session); err != nil {
+					return err
+				}
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("agent-ref") {
+				return fmt.Errorf("--agent-ref is required (or supply it via --file)")
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("input") {
+				return fmt.Errorf("--input is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body, "agent_ref", "channel_context", "input", "operation", "output", "session")
+			}
+			resp, err := client.InvokeAgentWithResponse(ctx.Context(), body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "invokeAgent", resp.StatusCode(), resp.Body)
+		})
+
 	agentsGrp.Command("list").
 		Description("List agents").
 		Flags(
@@ -465,42 +528,6 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "listAgentMemoryEntries", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("list-messages").
-		Description("List turn messages").
-		AddArg(&cli.Arg{Name: "turn-id", Description: "Identifier of a turn within a session.", Required: true}).
-		Flags(
-			cli.Int("after-sequence", "").Help("Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this…"),
-			cli.Int("limit", "").Help("Maximum number of items to return"),
-			cli.String("include", "").Help("Set to `context` to include caller-supplied runtime context rows whose model-visible names begin with `app-`. Platform-owned runtime…"),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := api.TurnIdParam(ctx.Arg(0))
-			params := &api.ListTurnMessagesParams{}
-			if ctx.IsSet("after-sequence") {
-				v := api.AfterSequenceParam(int64(ctx.Int("after-sequence")))
-				params.AfterSequence = &v
-			}
-			if ctx.IsSet("limit") {
-				v := api.LimitParam(ctx.Int("limit"))
-				params.Limit = &v
-			}
-			if ctx.IsSet("include") {
-				v := api.ContextIncludeParam(ctx.String("include"))
-				params.Include = &v
-			}
-			resp, err := client.ListTurnMessagesWithResponse(ctx.Context(), p0, params)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "listTurnMessages", resp.StatusCode(), resp.Body)
-		})
-
 	agentsGrp.Command("list-messaging-bindings").
 		Description("List agent messaging bindings").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
@@ -537,7 +564,43 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "listAgentSkillAssignments", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("preview-agent-visibility-change").
+	agentsGrp.Command("list-turn-messages").
+		Description("List turn messages").
+		AddArg(&cli.Arg{Name: "turn-id", Description: "Identifier of a turn within a session.", Required: true}).
+		Flags(
+			cli.Int("after-sequence", "").Help("Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this…"),
+			cli.Int("limit", "").Help("Maximum number of items to return"),
+			cli.String("include", "").Help("Set to `context` to include caller-supplied runtime context rows whose model-visible names begin with `app-`. Platform-owned runtime…"),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.TurnIdParam(ctx.Arg(0))
+			params := &api.ListTurnMessagesParams{}
+			if ctx.IsSet("after-sequence") {
+				v := api.AfterSequenceParam(int64(ctx.Int("after-sequence")))
+				params.AfterSequence = &v
+			}
+			if ctx.IsSet("limit") {
+				v := api.LimitParam(ctx.Int("limit"))
+				params.Limit = &v
+			}
+			if ctx.IsSet("include") {
+				v := api.ContextIncludeParam(ctx.String("include"))
+				params.Include = &v
+			}
+			resp, err := client.ListTurnMessagesWithResponse(ctx.Context(), p0, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listTurnMessages", resp.StatusCode(), resp.Body)
+		})
+
+	agentsGrp.Command("preview-visibility-change").
 		Description("Preview a visibility change").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
@@ -565,7 +628,7 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "previewAgentVisibilityChange", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("promote-agent-memory-entry").
+	agentsGrp.Command("promote-memory-entry").
 		Description("Promote a memory entry to the shared layer").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		AddArg(&cli.Arg{Name: "memory-key", Description: "The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably…", Required: true}).
@@ -646,7 +709,7 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "removeAgentMember", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("replace-agent-members").
+	agentsGrp.Command("replace-members").
 		Description("Replace agent members").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
@@ -720,7 +783,7 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "replaceAgentSkillAssignments", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("revert-agent-memory-promotion").
+	agentsGrp.Command("revert-memory-promotion").
 		Description("Reverse a promotion").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		AddArg(&cli.Arg{Name: "memory-key", Description: "The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably…", Required: true}).

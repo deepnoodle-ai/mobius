@@ -15,7 +15,7 @@ import (
 
 // registerBillingCommands registers every generated subcommand in the "billing" group.
 func registerBillingCommands(app *cli.App) {
-	billingGrp := app.Group("billing")
+	billingGrp := app.Group("billing").Description("Recorded usage events for the org")
 	billingGrp.Command("list-usage-events").
 		Description("List usage events").
 		Flags(

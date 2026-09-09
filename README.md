@@ -36,9 +36,9 @@ mobius --help
 Inspect the resources available in your org:
 
 ```bash
-mobius loops list
-mobius runs list
 mobius agents list
+mobius sessions list
+mobius routines list
 ```
 
 Start the stock worker:
@@ -87,16 +87,16 @@ The stock worker registers built-in actions like `print`, `fail`, `json`, `time`
 
 The SDKs expose two layers:
 
-- A high-level surface for common loop and worker flows: create and publish
-  loops, start runs, get/list/cancel/signal runs, watch run events, wait for
-  terminal completion, run WebSocket workers that execute action jobs and LLM
-  generation jobs, verify and parse webhook deliveries, and deliver synthetic
-  local webhooks.
+- A high-level surface for common agent and worker flows: invoke agents and
+  follow a session's live transcript, manage sessions, turns, and nudges,
+  upload artifacts, read and synchronize agent memory,
+  run WebSocket workers that execute action jobs and LLM generation jobs,
+  verify and parse webhook deliveries, and deliver synthetic local webhooks.
 - Generated OpenAPI bindings for the full API contract when you need a lower
   level escape hatch.
 
 See [`docs/sdk-helpers.md`](./docs/sdk-helpers.md) for cross-language examples
-of the webhook, loop, run, session-transcript, and worker helpers.
+of the webhook, artifact, session-transcript, and worker helpers.
 
 Start and render a real multi-tool turn with the Go SDK:
 

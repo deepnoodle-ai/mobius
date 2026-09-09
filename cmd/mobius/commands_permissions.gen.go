@@ -15,7 +15,7 @@ import (
 func registerPermissionsCommands(app *cli.App) {
 	permissionsGrp := app.Group("permissions").Description("Assignable org permission catalog")
 	permissionsGrp.Alias("permission")
-	permissionsGrp.Command("list-permissions").
+	permissionsGrp.Command("list").
 		Description("List org permissions").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {

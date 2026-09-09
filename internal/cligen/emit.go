@@ -144,6 +144,28 @@ func buildPlan(client *ClientInfo, spec map[string]*SpecOp, overrides map[string
 		}
 		plan.Commands = append(plan.Commands, pc)
 	}
+
+	// Reverse pass: an operation the client only exposes in its raw-body form
+	// (multipart uploads) never reaches the loop above, so without this it
+	// would disappear from the CLI silently. Every intentional omission
+	// carries a Skip override; anything else is a gap to close.
+	planned := make(map[string]bool, len(plan.Commands))
+	for _, c := range plan.Commands {
+		planned[c.OperationID] = true
+	}
+	missing := make([]string, 0, len(spec))
+	for opID := range spec {
+		if planned[opID] || overrides[opID].Skip {
+			continue
+		}
+		missing = append(missing, opID)
+	}
+	sort.Strings(missing)
+	for _, opID := range missing {
+		warns = append(warns, fmt.Sprintf(
+			"skip %s: no typed client method (raw-body only?) — hand-write the command and add a Skip override", opID))
+	}
+
 	return &plan, warns
 }
 

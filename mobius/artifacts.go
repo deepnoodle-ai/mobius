@@ -222,6 +222,18 @@ type artifactUpload struct {
 }
 
 func (c *Client) uploadArtifact(ctx context.Context, upload artifactUpload) (*Artifact, error) {
+	var out Artifact
+	if err := c.postArtifactMultipart(ctx, "/v1/artifacts", upload, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// postArtifactMultipart streams an upload to path as multipart/form-data and
+// decodes the JSON response into out. Both the org artifact endpoint and the
+// session attachment endpoint accept the same name/mime/size_bytes/file part
+// layout, so they share this writer.
+func (c *Client) postArtifactMultipart(ctx context.Context, path string, upload artifactUpload, out any) error {
 	if upload.fileName == "" {
 		upload.fileName = filepath.Base(upload.name)
 	}
@@ -246,17 +258,16 @@ func (c *Client) uploadArtifact(ctx context.Context, upload artifactUpload) (*Ar
 	if upload.idempotencyKey != "" {
 		headers["Idempotency-Key"] = upload.idempotencyKey
 	}
-	var out Artifact
-	err := c.doMultipartWithHeaders(ctx, http.MethodPost, "/v1/artifacts", contentType, reader, headers, &out)
+	err := c.doMultipartWithHeaders(ctx, http.MethodPost, path, contentType, reader, headers, out)
 	if err != nil {
 		_ = reader.CloseWithError(err)
 		<-writeErr
-		return nil, err
+		return err
 	}
 	if werr := <-writeErr; werr != nil {
-		return nil, werr
+		return werr
 	}
-	return &out, nil
+	return nil
 }
 
 // writeArtifactMultipart writes the metadata fields before the file part so

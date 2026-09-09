@@ -51,7 +51,7 @@ func registerOrganizationsCommands(app *cli.App) {
 			return printResponse(ctx, "getOAuthReturnOrigins", resp.StatusCode(), resp.Body)
 		})
 
-	organizationsGrp.Command("replace-org-context").
+	organizationsGrp.Command("replace-context").
 		Description("Replace the organization's shared context").
 		Flags(
 			cli.String("content", "").Help("[required] The new context, in Markdown. At most 16384 bytes of UTF-8."),

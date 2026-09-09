@@ -206,6 +206,13 @@ func captureArtifactUpload(t *testing.T, r *http.Request) artifactUploadCapture 
 	if r.Method != http.MethodPost || r.URL.Path != "/v1/artifacts" {
 		t.Fatalf("unexpected request %s %s", r.Method, r.URL.Path)
 	}
+	return captureMultipartUpload(t, r)
+}
+
+// captureMultipartUpload reads one multipart upload without asserting its
+// path, so both the artifact and session-attachment endpoints can use it.
+func captureMultipartUpload(t *testing.T, r *http.Request) artifactUploadCapture {
+	t.Helper()
 	mr, err := r.MultipartReader()
 	if err != nil {
 		t.Fatalf("MultipartReader: %v", err)

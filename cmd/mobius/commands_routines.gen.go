@@ -17,7 +17,7 @@ import (
 
 // registerRoutinesCommands registers every generated subcommand in the "routines" group.
 func registerRoutinesCommands(app *cli.App) {
-	routinesGrp := app.Group("routines")
+	routinesGrp := app.Group("routines").Description("Scheduled routines, occurrences, and rosters")
 	routinesGrp.Alias("routine")
 	routinesGrp.Command("add-principal").
 		Description("Add a principal to a routine's roster").
@@ -67,7 +67,7 @@ func registerRoutinesCommands(app *cli.App) {
 			return printResponse(ctx, "addRoutinePrincipal", resp.StatusCode(), resp.Body)
 		})
 
-	routinesGrp.Command("approve-routine-proposal").
+	routinesGrp.Command("approve-proposal").
 		Description("Approve a pending proposal as its proposed human owner").
 		Args("proposal-id").
 		Use(requireAuth()).
@@ -209,7 +209,7 @@ func registerRoutinesCommands(app *cli.App) {
 			return printResponse(ctx, "deleteRoutine", resp.StatusCode(), resp.Body)
 		})
 
-	routinesGrp.Command("dismiss-routine-proposal").
+	routinesGrp.Command("dismiss-proposal").
 		Description("Dismiss a pending proposal").
 		Args("proposal-id").
 		Use(requireAuth()).
@@ -402,7 +402,7 @@ func registerRoutinesCommands(app *cli.App) {
 			return printResponse(ctx, "listRoutinePrincipals", resp.StatusCode(), resp.Body)
 		})
 
-	routinesGrp.Command("pause-routine").
+	routinesGrp.Command("pause").
 		Description("Pause a routine").
 		Args("routine-id").
 		Use(requireAuth()).
@@ -447,7 +447,7 @@ func registerRoutinesCommands(app *cli.App) {
 			return printResponse(ctx, "removeRoutinePrincipal", resp.StatusCode(), resp.Body)
 		})
 
-	routinesGrp.Command("resume-routine").
+	routinesGrp.Command("resume").
 		Description("Resume a routine").
 		Args("routine-id").
 		Use(requireAuth()).
@@ -465,7 +465,7 @@ func registerRoutinesCommands(app *cli.App) {
 			return printResponse(ctx, "resumeRoutine", resp.StatusCode(), resp.Body)
 		})
 
-	routinesGrp.Command("run-routine-now").
+	routinesGrp.Command("run-now").
 		Description("Run a routine now").
 		Args("routine-id").
 		Use(requireAuth()).

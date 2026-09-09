@@ -5,7 +5,6 @@ common integration tasks:
 
 - verifying and parsing Mobius outgoing webhook deliveries
 - delivering Mobius-shaped synthetic webhooks for local/test bridges
-- managing loops and loop runs from code
 - creating (or safely re-creating) agents with create-or-adopt semantics
   keyed on `external_ref`
 - managing org blueprints, principals, roles, and role assignments
@@ -227,6 +226,32 @@ claim run or step lineage. Use a distinct idempotency key for each artifact
 produced by one delivery. Repeating the same key under the same authenticated
 principal returns the original artifact without uploading the bytes again.
 
+### Session Attachments
+
+A document or image that belongs to one conversation goes through the session
+attachment endpoint instead, which binds the artifact immutably to the session
+and returns the content block to append in a message or turn input. The Go SDK
+and the CLI expose it today; Python and TypeScript callers use the generated
+client:
+
+```go
+attachment, err := client.CreateSessionAttachment(ctx, sessionID,
+	mobius.CreateSessionAttachmentOptions{
+		Path:           briefPath, // or Reader for in-memory bytes
+		IdempotencyKey: turnID + ":brief",
+	})
+// attachment.ContentBlock is the block to append in the next turn input.
+```
+
+```bash
+mobius sessions attach sess_123 ./brief.md
+```
+
+Mobius detects the media type from the bytes rather than the multipart MIME
+declaration, so `--mime` (and `Mime`) is only a hint. The retry key is scoped
+to the session and caller: reusing it with different bytes, filename, or MIME
+hint is rejected with a conflict.
+
 ## Synthetic Webhooks
 
 Local development bridges can post a Mobius-shaped webhook to a local app when
@@ -261,53 +286,6 @@ await deliverSyntheticWebhook({
   data: run,
 });
 ```
-
-## Loops And Runs
-
-Create a saved, runnable loop with an inline spec, then start a run by loop
-ID. The run's `event` object is reachable in step templates at `event.*`;
-optional `config` is reachable at `config.*`.
-
-```go
-loop, err := client.CreateLoop(ctx, mobius.LoopOptions{
-	Name: "Customer onboarding",
-	Spec: map[string]any{"steps": []any{ /* ... */ }},
-})
-if err != nil { return err }
-run, err := client.StartRun(ctx, loop.Id, &mobius.StartRunOptions{
-	Event:      map[string]any{"customer_id": "cus_123"},
-	ExternalID: "customer-run-123",
-})
-```
-
-```python
-loop = client.create_loop(mobius.LoopOptions(
-    name="Customer onboarding",
-    spec={"steps": []},
-))
-run = client.start_run(
-    loop.id,
-    mobius.StartRunOptions(
-        event={"customer_id": "cus_123"},
-        external_id="customer-run-123",
-    ),
-)
-```
-
-```ts
-const loop = await client.createLoop({
-  name: "Customer onboarding",
-  spec: { steps: [] },
-});
-const run = await client.startRun(loop.id, {
-  event: { customer_id: "cus_123" },
-  external_id: "customer-run-123",
-});
-```
-
-Use `WaitRun` / `wait_run` / `waitRun` when callers need the fresh terminal run
-record, or `WatchRun` / `watch_run` / `watchRun` when they need the live event
-stream.
 
 ## Create-or-Adopt Provisioning
 
@@ -708,8 +686,7 @@ operations.
 
 Turn cancellation is idempotent, cooperative, and non-resumable. It retains
 committed transcript rows but cannot roll back model, tool, or external effects;
-reusing the invocation idempotency key returns the same cancelled turn. A live
-loop-owned turn instead returns `409 turn_owned_by_run`; cancel the owning run.
+reusing the invocation idempotency key returns the same cancelled turn.
 
 ## Server-to-browser boundary
 
