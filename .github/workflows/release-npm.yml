@@ -45,7 +45,8 @@ jobs:
 
       # --latest=false: this tag only marks the npm publish. The CLI
       # release (v*) carries the binaries and stays "Latest".
-      - run: gh release create "${{ github.ref_name }}" --generate-notes --latest=false
+      - run: gh release create "$TAG" --generate-notes --latest=false
         working-directory: ${{ github.workspace }}
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
