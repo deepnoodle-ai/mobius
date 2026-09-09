@@ -217,6 +217,7 @@ export type RoutinePrincipalList = components["schemas"]["RoutinePrincipalList"]
 export type RoutineProposal = components["schemas"]["RoutineProposal"];
 export type RoutineRelationship = components["schemas"]["RoutineRelationship"];
 export type RoutineSchedule = components["schemas"]["RoutineSchedule"];
+export type RoutineSharingConfirmation = components["schemas"]["RoutineSharingConfirmation"];
 export type RoutineStatus = components["schemas"]["RoutineStatus"];
 export type RoutineTrigger = components["schemas"]["RoutineTrigger"];
 export type RoutineUpdateRequest = components["schemas"]["RoutineUpdateRequest"];
