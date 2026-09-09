@@ -547,6 +547,7 @@ func registerSessionsCommands(app *cli.App) {
 			cli.String("order", "").Help("Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first — the way to fetch the latest rows of…"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 			cli.String("include", "").Help("Set to `context` to include caller-supplied runtime context rows whose model-visible names begin with `app-`. Platform-owned runtime…"),
+			cli.Bool("include-terminal-partials", "").Help("Set to `true` to include durable transcript rows salvaged from a failed or cancelled turn. These rows carry `partial` and…"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -576,6 +577,10 @@ func registerSessionsCommands(app *cli.App) {
 			if ctx.IsSet("include") {
 				v := api.ContextIncludeParam(ctx.String("include"))
 				params.Include = &v
+			}
+			if ctx.IsSet("include-terminal-partials") {
+				v := ctx.Bool("include-terminal-partials")
+				params.IncludeTerminalPartials = &v
 			}
 			resp, err := client.ListSessionMessagesWithResponse(ctx.Context(), p0, params)
 			if err != nil {

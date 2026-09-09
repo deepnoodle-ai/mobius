@@ -162,6 +162,7 @@ class CapabilityReadinessReason(StrEnum):
     permission_missing = 'permission_missing'
     not_implemented = 'not_implemented'
     credentials_unreadable = 'credentials_unreadable'
+    agent_owned_only = 'agent_owned_only'
 
 
 class TagMap(RootModel[dict[str, str]]):
@@ -303,9 +304,9 @@ class AgentModelRoute(BaseModel):
 
 class AgentToolPresentation(StrEnum):
     """
-    Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
+    Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
 
-    The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise.
+    The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise. Existing agents retain their stored mode; the default applies when creating an agent without one.
     """
 
     flat = 'flat'
@@ -605,6 +606,19 @@ class SessionStatus(StrEnum):
     deleted = 'deleted'
 
 
+class AgentTurnStatus(StrEnum):
+    """
+    Agent turn lifecycle status: `queued`, `running`, `waiting`, `completed`, `failed`, or `cancelled`.
+    """
+
+    queued = 'queued'
+    running = 'running'
+    waiting = 'waiting'
+    completed = 'completed'
+    failed = 'failed'
+    cancelled = 'cancelled'
+
+
 class SessionOrigin(StrEnum):
     """
     Surface that created the session: `manual`, `api`, or `interaction`.
@@ -803,14 +817,6 @@ class Session(BaseModel):
         ...,
         description='Lifetime prompt-cache-write (cache creation) input-token total for this session.',
     )
-    next_routine_fire_at: AwareDatetime | None = Field(
-        None,
-        description="Earliest next fire among the caller's active routines in this conversation.",
-    )
-    unread_scheduled_result: bool | None = Field(
-        None,
-        description='True when the routine owner has not opened this conversation since its latest admitted scheduled result settled.',
-    )
     version: int = Field(
         ..., description='Optimistic-concurrency version. Increments on every mutation.'
     )
@@ -833,19 +839,6 @@ class Session(BaseModel):
     )
     created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
     updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
-
-
-class AgentTurnStatus(StrEnum):
-    """
-    Agent turn lifecycle status: `queued`, `running`, `waiting`, `completed`, `failed`, or `cancelled`.
-    """
-
-    queued = 'queued'
-    running = 'running'
-    waiting = 'waiting'
-    completed = 'completed'
-    failed = 'failed'
-    cancelled = 'cancelled'
 
 
 class SessionMessageRole(StrEnum):
@@ -973,13 +966,12 @@ class APIKeyListResponse(BaseModel):
 
 class Role(StrEnum):
     """
-    Mandatory scope role when `principal_id` is omitted. The permanent organization principal holds Owner, and this credential scope can only narrow it. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org administration without billing; lower roles narrow to build/run, run-only, or read-only. Ignored when `principal_id` is set.
+    Mandatory scope role when `principal_id` is omitted. The permanent organization principal holds Owner, and this credential scope can only narrow it. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers organization administration and team resource posture, plus billing reads; `User` can use reachable resources and build private configuration; `Viewer` is read-only. `Worker` is not selectable here — org-level keys are barred from the job endpoints, so it would be inert. For a narrower cap, such as use-only automation, bind the key to a principal and set `scope_role_id` to a custom role. Ignored when `principal_id` is set.
     """
 
     Owner = 'Owner'
     Admin = 'Admin'
-    Editor = 'Editor'
-    Operator = 'Operator'
+    User = 'User'
     Viewer = 'Viewer'
 
 
@@ -1008,7 +1000,7 @@ class CreateAPIKeyRequest(BaseModel):
     )
     role: Role = Field(
         'Admin',
-        description='Mandatory scope role when `principal_id` is omitted. The permanent organization principal holds Owner, and this credential scope can only narrow it. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org administration without billing; lower roles narrow to build/run, run-only, or read-only. Ignored when `principal_id` is set.',
+        description='Mandatory scope role when `principal_id` is omitted. The permanent organization principal holds Owner, and this credential scope can only narrow it. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers organization administration and team resource posture, plus billing reads; `User` can use reachable resources and build private configuration; `Viewer` is read-only. `Worker` is not selectable here — org-level keys are barred from the job endpoints, so it would be inert. For a narrower cap, such as use-only automation, bind the key to a principal and set `scope_role_id` to a custom role. Ignored when `principal_id` is set.',
     )
     expires_at: AwareDatetime | None = Field(
         None, description='Optional hard expiry. Omit for a non-expiring key.'
@@ -2189,8 +2181,9 @@ class Scope(StrEnum):
 
 
 class Category(StrEnum):
+    resource = 'resource'
     org = 'org'
-    work = 'work'
+    job = 'job'
     billing = 'billing'
     platform = 'platform'
 
@@ -2441,6 +2434,43 @@ class PutOAuthReturnOriginsRequest(BaseModel):
         ...,
         description='Exact HTTPS return origins to allow. An empty array disables embedded return.',
         max_length=20,
+    )
+
+
+class OrgContext(BaseModel):
+    """
+    The organization's shared context: background on the business that every agent in the organization carries in its system prompt. It belongs to the organization rather than to any one agent or person — administrators write it, every member can read it, and every agent receives it on every turn.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    content: str = Field(
+        ...,
+        description='The context as stored, in Markdown. Empty when the organization has not written one.',
+    )
+    max_bytes: int = Field(
+        ...,
+        description='The largest content the server accepts, in bytes of UTF-8. The content rides in every agent turn, so the cap is a per-turn budget rather than a storage limit.',
+    )
+    updated_at: AwareDatetime | None = Field(
+        None,
+        description='When the content last changed. Absent until it is first written.',
+    )
+
+
+class PutOrgContextRequest(BaseModel):
+    """
+    Full-replace body for the organization context. An empty string clears it.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    content: str = Field(
+        ...,
+        description='The new context, in Markdown. At most 16384 bytes of UTF-8.',
+        max_length=16384,
     )
 
 
@@ -3275,7 +3305,7 @@ class CreateAgentRequest(BaseModel):
         None, description='Default route for model calls made by this agent.'
     )
     tool_presentation: AgentToolPresentation | None = Field(
-        None, description='Omit to use the create-time default, `meta`.'
+        None, description='Omit to use the create-time default, `flat`.'
     )
     tool_selectors: list[ActionSelector] | None = Field(
         None,
@@ -4764,6 +4794,85 @@ class RoutineKind(StrEnum):
     notify = 'notify'
 
 
+class RoutineOwnerKind(StrEnum):
+    """
+    Whose the routine is. `person` pauses with its owner's offboarding and runs on their connections. `team` belongs to the business: it has no `owner_id`, survives its creator's departure, and must name at least one responsible person.
+    """
+
+    person = 'person'
+    team = 'team'
+
+
+class RoutineManagedBy(StrEnum):
+    """
+    Who may change the routine. `team` is any member who can already reach it; `named` is the principals holding a `manager` row plus organization administrators. Defaults to `named`; only a person may change it, because `named` -> `team` turns "these people" into "anyone".
+    """
+
+    team = 'team'
+    named = 'named'
+
+
+class RoutineRelationship(StrEnum):
+    """
+    The relationship a principal holds to a routine. `follower` is opt-in attention, `responsible` is the person the routine waits on, `manager` may change it. One principal may hold more than one.
+    """
+
+    follower = 'follower'
+    responsible = 'responsible'
+    manager = 'manager'
+
+
+class RoutineFollowLevel(StrEnum):
+    """
+    Narrows what a follower is notified about. Ignored on the other relationships, which are always notified.
+    """
+
+    all_results = 'all_results'
+    failures_only = 'failures_only'
+
+
+class Kind12(StrEnum):
+    """
+    The principal's kind, resolved from the principal record.
+    """
+
+    human = 'human'
+    agent = 'agent'
+    service = 'service'
+    system = 'system'
+
+
+class RoutinePrincipal(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    principal_id: str
+    relationship: RoutineRelationship
+    level: RoutineFollowLevel | None = None
+    kind: Kind12 = Field(
+        ..., description="The principal's kind, resolved from the principal record."
+    )
+    display_name: str | None = None
+    added_by: str | None = Field(None, description='Principal who wrote this row.')
+    added_at: AwareDatetime
+
+
+class RoutinePrincipalList(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[RoutinePrincipal]
+
+
+class AddRoutinePrincipalRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    principal_id: str
+    relationship: RoutineRelationship
+    level: RoutineFollowLevel | None = None
+
+
 class RoutineSchedule(BaseModel):
     """
     Exactly one of at, interval, or cron is required.
@@ -4781,18 +4890,74 @@ class RoutineSchedule(BaseModel):
     max_occurrences: int | None = Field(None, ge=1)
 
 
-class RoutineCreateRequest(BaseModel):
+class RoutineTrigger(StrEnum):
+    """
+    What starts this routine's runs. `schedule` fires on the routine's schedule; `event` fires when a matching integration event arrives. Derived from whichever of `schedule` and `event` the routine carries, never stored.
+    """
+
+    schedule = 'schedule'
+    event = 'event'
+
+
+class RoutineEventTrigger(BaseModel):
+    """
+    Runs the routine when a matching integration event arrives. Each matched event is one run on the ledger, one at a time per routine: an event arriving while a run is in flight waits behind it, and a run still waiting six hours later is closed `skipped` with `error_code` `stale`.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
-    session_id: str
+    event_type: str = Field(
+        ...,
+        description='The integration event to react to: a concrete type from the event catalog (`github.issues.opened`) or a wildcard on a prefix (`github.issues.*`, `github.*`). The first segment must name a registered integration provider; built-in Mobius events are not accepted here.',
+        examples=['github.issues.opened'],
+    )
+    integration_id: str | None = Field(
+        None,
+        description="Optional. Only events from this connection start a run. Omitted, an event from any of the organization's connections for the provider does.",
+    )
+    condition: str | None = Field(
+        None,
+        description="Optional expression over the event's `{event, meta}` envelope. The run starts only when it returns true. A condition that cannot be evaluated against an event records a `failed` run with `error_code` `trigger_condition_error` and starts nothing.",
+        examples=['event.repository.full_name == "acme/api"'],
+    )
+
+
+class RoutineCreateRequest(BaseModel):
+    """
+    Exactly one of `schedule` and `event` is required: a routine runs on a schedule or when an event arrives, not both.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    session_id: str | None = Field(
+        None,
+        description='Optional conversation this routine was proposed in, kept as provenance. Occurrences run in their own sessions, so this never affects where results are delivered. Omitted for a routine created from the form.',
+    )
     agent_id: str
     name: str | None = None
     instructions: str
     kind: RoutineKind | None = None
-    schedule: RoutineSchedule
+    schedule: RoutineSchedule | None = None
+    event: RoutineEventTrigger | None = None
     per_occurrence_ceiling_milli: int = Field(..., ge=1)
     daily_ceiling_milli: int = Field(..., ge=1)
+    owner_kind: RoutineOwnerKind | None = Field(
+        None,
+        description='Defaults to `person`. `team` requires organization administration.',
+    )
+    managed_by: RoutineManagedBy | None = Field(
+        None, description='Defaults to `named`.'
+    )
+    responsible_principal_ids: list[str] | None = Field(
+        None,
+        description='The people the routine waits on. Required and non-empty when `owner_kind` is `team`; rejected otherwise. Each must be a person.',
+    )
+    follower_principal_ids: list[str] | None = Field(
+        None,
+        description="Principals who opt into the routine's results. The creator is added automatically.",
+    )
 
 
 class RoutineUpdateRequest(BaseModel):
@@ -4801,9 +4966,28 @@ class RoutineUpdateRequest(BaseModel):
     )
     name: str | None = None
     instructions: str | None = None
-    schedule: RoutineSchedule | None = None
-    per_occurrence_ceiling_milli: int | None = Field(None, ge=1)
-    daily_ceiling_milli: int | None = Field(None, ge=1)
+    schedule: RoutineSchedule | None = Field(
+        None,
+        description='Makes this a scheduled routine, dropping any event trigger it had. Rejected together with `event`.',
+    )
+    event: RoutineEventTrigger | None = Field(
+        None,
+        description='Makes this an event routine, dropping any schedule it had. Rejected together with `schedule`.',
+    )
+    per_occurrence_ceiling_milli: int | None = Field(
+        None,
+        description='A person may move this either way. An agent may only lower it, so no agent widens the budget it runs under; raising it as an agent receives 403.',
+        ge=1,
+    )
+    daily_ceiling_milli: int | None = Field(
+        None,
+        description='Must remain at least the per-occurrence ceiling. A person may move it either way; an agent may only lower it.',
+        ge=1,
+    )
+    managed_by: RoutineManagedBy | None = Field(
+        None,
+        description='Only a person may change this. An agent manager receives 403.',
+    )
 
 
 class Routine(BaseModel):
@@ -4813,18 +4997,50 @@ class Routine(BaseModel):
     id: str
     org_id: str
     agent_id: str
-    session_id: str
-    owner_id: str
+    origin_session_id: str | None = Field(
+        None,
+        description='The conversation the routine was proposed in, kept as provenance and nothing more. Each occurrence runs in its own session, so this is absent for a form-created routine and for one whose conversation has since been deleted. Archiving it does not stop the routine.',
+    )
+    owner_id: str | None = Field(
+        None,
+        description='The custodian. Absent under team custody, which has no owner.',
+    )
+    owner_kind: RoutineOwnerKind
+    managed_by: RoutineManagedBy
+    responsible: list[RoutinePrincipal] | None = Field(
+        None,
+        description='The people this routine waits on. Non-empty under team custody.',
+    )
+    following: bool = Field(
+        ..., description='Whether the calling principal follows this routine.'
+    )
+    unread: bool | None = Field(
+        None,
+        description='Whether a recent run has landed since the calling principal last opened its session. Computed per caller from their session read marks, never stored, and always false on a routine they do not follow — following is what opts you into the indicator.',
+    )
+    follower_count: int = Field(
+        ...,
+        description='Principals holding a follower row. Responsible people and managers are notified too, and are named separately.',
+    )
     name: str
     instructions: str | None = Field(
         None, description='Omitted from administrator metadata-only projections.'
     )
     kind: RoutineKind
-    schedule: RoutineSchedule
+    trigger: RoutineTrigger
+    schedule: RoutineSchedule | None = Field(
+        None, description='Present when `trigger` is `schedule`.'
+    )
+    event: RoutineEventTrigger | None = Field(
+        None, description='Present when `trigger` is `event`.'
+    )
     timezone: str
     status: RoutineStatus
     pause_reason: str | None = None
-    next_fire_at: AwareDatetime | None = None
+    next_fire_at: AwareDatetime | None = Field(
+        None,
+        description='Absent on an event routine, which has no next fire to predict.',
+    )
     last_fire_at: AwareDatetime | None = None
     occurrence_count: int
     completed_at: AwareDatetime | None = None
@@ -4844,6 +5060,16 @@ class RoutineList(BaseModel):
     next_cursor: str | None = None
 
 
+class Trigger(StrEnum):
+    """
+    What put this run on the ledger: the routine's schedule, a principal asking for it now, or an integration event that matched the routine's event trigger. Every kind is bounded and recorded the same way. Always present — a row written before manual runs existed reads as `schedule`, which is what it was.
+    """
+
+    schedule = 'schedule'
+    manual = 'manual'
+    event = 'event'
+
+
 class Status3(StrEnum):
     pending = 'pending'
     admitted = 'admitted'
@@ -4854,21 +5080,120 @@ class Status3(StrEnum):
 
 
 class RoutineOccurrence(BaseModel):
+    """
+    One run of a routine, and the durable record of it. Status, outcome, error, credits, and timing all live here, so a run whose transcript is gone is still a complete row.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
     id: str
     routine_id: str
+    routine_name: str | None = Field(
+        None,
+        description="The routine's current name, carried on the row so a cross-routine ledger renders without joining against every routine in the organization.",
+    )
+    session_id: str | None = Field(
+        None,
+        description='The conversation this run happened in, minted at admission. Absent for a run skipped before admission, and for one whose session has since been deleted.',
+    )
     scheduled_at: AwareDatetime
     intake_at: AwareDatetime
     lateness_milliseconds: int
+    trigger: Trigger = Field(
+        ...,
+        description="What put this run on the ledger: the routine's schedule, a principal asking for it now, or an integration event that matched the routine's event trigger. Every kind is bounded and recorded the same way. Always present — a row written before manual runs existed reads as `schedule`, which is what it was.",
+    )
+    triggered_by: str | None = Field(
+        None,
+        description="The principal who put this run on the ledger, named the same way the routine's changelog names an actor: a human or an agent, either of which can ask for a run through the API. Always present when `trigger` is `manual`, because a manual run is somebody's act and the record has to say whose. For a scheduled or event run it is the routine's own custodian, and so absent under team custody, which has no custodian to name.",
+    )
+    source_event_id: str | None = Field(
+        None,
+        description='The source event that started this run. Present only when `trigger` is `event`; it is the row the integration events list shows for the delivery.',
+    )
+    event_type: str | None = Field(
+        None,
+        description='The concrete event type that arrived (`github.issues.opened`), not the pattern the routine subscribed to. Present only when `trigger` is `event`.',
+    )
     status: Status3
-    outcome: str | None = None
+    outcome: str | None = Field(
+        None,
+        description="A completed run's headline: one line saying what it did, derived from the run's own final message with markdown removed and length capped, falling back to the scheduled time when the run said nothing. Safe to render in a table cell as-is.",
+    )
     error_code: str | None = None
     error_message: str | None = None
     turn_id: str | None = None
     credits_spent_milli: int
-    transcript_url: str
+    unread: bool | None = Field(
+        None,
+        description='Whether this run landed after the calling principal last opened its session. Computed per caller from their session read marks, never stored, and always false on a routine they do not follow.',
+    )
+    transcript_url: str | None = Field(
+        None,
+        description="Link to the run's transcript, which is the whole of session_id's conversation: one session holds exactly one occurrence. Absent whenever session_id is; render the row without it rather than as an error.",
+    )
+
+
+class Changes(BaseModel):
+    """
+    The values before and after. Withheld fields read as `<redacted>` rather than disappearing.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    before: dict[str, Any] | None = None
+    after: dict[str, Any] | None = None
+
+
+class Status4(StrEnum):
+    success = 'success'
+    failure = 'failure'
+
+
+class RoutineChange(BaseModel):
+    """
+    One recorded change to a routine, read from the audit trail.
+
+    Deliberately narrower than an audit log entry: no IP address, no user agent, no request ID. This is a product surface a colleague reads, not a security investigation, and the operational fields would expose a person to everyone who can see the routine they touched.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    action: str = Field(
+        ...,
+        description='What happened: create, update, delete, transfer, or run (a person asking for a run now).',
+    )
+    actor_name: str | None = Field(
+        None,
+        description="The actor's display name as it stood when the change was made. An agent's name appears here exactly as a person's does.",
+    )
+    principal_id: str | None = Field(
+        None, description='The human or agent who made the change.'
+    )
+    credential_name: str | None = Field(
+        None,
+        description='The credential or session the change came through, when one was recorded.',
+    )
+    changes: Changes | None = Field(
+        None,
+        description='The values before and after. Withheld fields read as `<redacted>` rather than disappearing.',
+    )
+    status: Status4
+    error_type: str | None = None
+    created_at: AwareDatetime
+
+
+class RoutineChangeList(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[RoutineChange]
+    has_more: bool
+    next_cursor: str | None = None
 
 
 class RoutineOccurrenceList(BaseModel):
@@ -4880,7 +5205,7 @@ class RoutineOccurrenceList(BaseModel):
     next_cursor: str | None = None
 
 
-class Status4(StrEnum):
+class Status5(StrEnum):
     pending = 'pending'
     approved = 'approved'
     dismissed = 'dismissed'
@@ -4895,7 +5220,7 @@ class RoutineProposal(BaseModel):
     session_id: str
     agent_id: str
     proposed_to: str
-    status: Status4
+    status: Status5
     routine_id: str | None = None
     expires_at: AwareDatetime
     payload: dict[str, Any]
@@ -5035,7 +5360,7 @@ class BlueprintSkillInput(BaseModel):
     tags: TagMap | None = None
 
 
-class Status5(StrEnum):
+class Status6(StrEnum):
     """
     `applied` for a mutating apply, `previewed` for a preview.
     """
@@ -5090,7 +5415,7 @@ class SetBlueprintProtectionRequest(BaseModel):
     protected: bool
 
 
-class Status6(StrEnum):
+class Status7(StrEnum):
     deleted = 'deleted'
 
 
@@ -5098,7 +5423,7 @@ class BlueprintDeleteResult(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    status: Status6
+    status: Status7
     namespace: str | None = None
     blueprint_key: str
     deleted: list[BlueprintBinding] = Field(
@@ -6485,7 +6810,7 @@ class BlueprintApplyResult(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    status: Status5 = Field(
+    status: Status6 = Field(
         ..., description='`applied` for a mutating apply, `previewed` for a preview.'
     )
     namespace: str | None = None

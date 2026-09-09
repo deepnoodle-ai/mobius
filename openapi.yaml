@@ -14,7 +14,7 @@ info:
 
     **Conventions.** Collections return a cursor-paginated envelope (`items` / `has_more` / `next_cursor`); single resources return the bare object. Errors use a shared envelope with a stable machine-readable `error.code`. Timestamps are ISO-8601 UTC.
 servers:
-- url: https://api.mobiusops.com
+- url: https://api.mobiusops.ai
   description: Production
 - url: http://localhost:8080
   description: Local development
@@ -1038,6 +1038,62 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/organization/context:
+    get:
+      operationId: getOrgContext
+      tags:
+      - organizations
+      x-public: true
+      summary: Get the organization's shared context
+      description: 'Returns the organization context: background on the business that every
+        agent in the organization receives in its system prompt, on every turn, whether the
+        agent is used in chat, invoked by an application, run by a routine, or reached through
+        a messaging channel. Any member of the organization may read it.'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgContext'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: replaceOrgContext
+      tags:
+      - organizations
+      x-public: true
+      summary: Replace the organization's shared context
+      description: 'Full-replace of the organization context. The content is stored as written
+        apart from normalization: line endings collapse to LF and trailing whitespace is dropped.
+        It must be valid UTF-8 without NUL bytes and at most 16384 bytes; an empty string
+        clears it. The new text reaches every agent in the organization on its next turn.
+        Requires `Admin` or `Owner` membership.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutOrgContextRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgContext'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/interactions:
     post:
       operationId: createInteraction
@@ -1381,7 +1437,7 @@ paths:
               description: Reviews pull requests for risky changes.
               color: teal
               model: claude-sonnet-4-6
-              tool_presentation: meta
+              tool_presentation: flat
               tags:
                 owner: product
       responses:
@@ -1405,7 +1461,7 @@ paths:
                 description: Reviews pull requests for risky changes.
                 color: teal
                 model: claude-sonnet-4-6
-                tool_presentation: meta
+                tool_presentation: flat
                 memory_enabled: true
                 status: active
                 tags:
@@ -2216,7 +2272,7 @@ paths:
 
         Agents always run from their stored definition. A newly created session may set `session.model_override` to keep that conversation on one model. For a one-shot timeout override, send `operation.timeout_seconds` with a value of at least one; it applies only to the newly admitted turn.
 
-        By default it returns `202 Accepted` immediately with a durable `after_sequence` stream cursor; the turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection, identical to the `POST /v1/sessions/{session_id}/turns` stream. A repeated call with the same `input.idempotency_key` resolves the same session and returns the existing invocation without restarting it or writing new input, so a webhook handler can acknowledge fast and retry safely. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
+        By default it returns `202 Accepted` immediately with a durable `after_sequence` stream cursor; the turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection, identical to the `POST /v1/sessions/{session_id}/turns` stream. A repeated call with the same `input.idempotency_key` resolves the same session and returns the existing invocation without restarting it or writing new input, so a webhook handler can acknowledge fast and retry safely. Requires the `mobius.resource.use` permission (or the agent's own backing principal).
 
         Only one direct invocation may be nonterminal in a session. A distinct input while a turn is queued, running, or waiting returns `409` with `error.code = session_turn_active` and `error.details = {turn_id, status}` before the new input is appended. Use the session nudge endpoint explicitly to steer a running or waiting turn; Mobius never converts a second send into a nudge implicitly.
       requestBody:
@@ -2571,6 +2627,7 @@ paths:
       - $ref: '#/components/parameters/OrderParam'
       - $ref: '#/components/parameters/LimitParam'
       - $ref: '#/components/parameters/ContextIncludeParam'
+      - $ref: '#/components/parameters/TerminalPartialsIncludeParam'
       responses:
         '200':
           description: OK
@@ -2666,7 +2723,7 @@ paths:
       - sessions
       summary: Start an agent turn
       description: |-
-        Appends one caller input message to the session and starts an agent turn to respond. By default returns `202 Accepted` immediately with a durable `after_sequence` cursor (a message `sequence`) to stream from. The turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection, equivalent to opening `GET .../stream` at the returned cursor. A repeated call with the same `idempotency_key` returns the existing invocation without restarting it or writing new input. A distinct send while a direct turn is queued, running, or waiting returns `409 session_turn_active` before appending the new input; use the nudge endpoint explicitly to steer an active turn. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
+        Appends one caller input message to the session and starts an agent turn to respond. By default returns `202 Accepted` immediately with a durable `after_sequence` cursor (a message `sequence`) to stream from. The turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection, equivalent to opening `GET .../stream` at the returned cursor. A repeated call with the same `idempotency_key` returns the existing invocation without restarting it or writing new input. A distinct send while a direct turn is queued, running, or waiting returns `409 session_turn_active` before appending the new input; use the nudge endpoint explicitly to steer an active turn. Requires the `mobius.resource.use` permission (or the agent's own backing principal).
 
         Set `operation.timeout_seconds` to at least one for a one-shot timeout override on this turn. It takes precedence over the agent default and is not saved on the session.
       parameters:
@@ -2783,7 +2840,7 @@ paths:
         new_turn` and `status: delivered`. The same conversion re-homes input whose target
         turn ends without absorbing it, so accepted input is never lost. Reusing an `idempotency_key`
         with identical content returns the original acknowledgement; reusing it with different
-        content returns `409 Conflict`. Requires the `mobius.agent.invoke` permission (or
+        content returns `409 Conflict`. Requires the `mobius.resource.use` permission (or
         the agent''s own backing principal).'
       parameters:
       - $ref: '#/components/parameters/SessionIdParam'
@@ -2898,7 +2955,7 @@ paths:
       description: |-
         Idempotently cancels one dispatcher-owned agent turn in the session. The first request that wins marks the turn terminal, retires its pending waits, interactions, nudges, and jobs, and emits `turn.cancelled` once. Later requests return the current terminal row without another lifecycle transition. Cancellation is cooperative: already-performed model, tool, and external effects are not rolled back. Committed transcript rows are retained, while live-only uncommitted preview content is discarded.
 
-        A cancelled turn cannot be resumed. Reusing its invocation idempotency key returns the same cancelled turn; retrying the task requires a new invocation and may repeat external effects. Stream cursors resume observation only. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
+        A cancelled turn cannot be resumed. Reusing its invocation idempotency key returns the same cancelled turn; retrying the task requires a new invocation and may repeat external effects. Stream cursors resume observation only. Requires the `mobius.resource.use` permission (or the agent's own backing principal).
       parameters:
       - $ref: '#/components/parameters/SessionIdParam'
       - $ref: '#/components/parameters/TurnIdParam'
@@ -3036,7 +3093,7 @@ paths:
         transition is emitted once. Cancellation is cooperative and does not roll back effects
         that already happened. Committed transcript rows remain; live-only preview content
         is discarded. Cancelled turns cannot be resumed, and stream cursors resume observation
-        only. Returns the updated session. Requires the `mobius.agent.invoke` permission (or
+        only. Returns the updated session. Requires the `mobius.resource.use` permission (or
         the agent's own backing principal).
       parameters:
       - $ref: '#/components/parameters/SessionIdParam'
@@ -3087,7 +3144,10 @@ paths:
       tags:
       - routines
       summary: List reachable routines
-      description: Returns routines whose origin conversations are reachable by the caller.
+      description: 'Returns the routines the caller can reach, most recently created first.
+        Pagination is keyset on (created_at, id): pass next_cursor back as cursor, and keep
+        going while has_more is true. A page may hold fewer than limit rows once unreachable
+        routines are dropped; has_more, not the row count, says whether more remain.'
       parameters:
       - name: owner_id
         in: query
@@ -3097,17 +3157,33 @@ paths:
         in: query
         schema:
           type: string
-      - name: session_id
+      - name: origin_session_id
+        in: query
+        description: Filter to routines proposed in one conversation. Provenance only; it
+          is not where they run.
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 50
+      - name: cursor
         in: query
         schema:
           type: string
+        description: next_cursor from the previous page.
       responses:
         '200':
-          description: Routines reachable through their origin sessions.
+          description: Reachable routines.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/RoutineList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -3140,6 +3216,84 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/Conflict'
+  /v1/routines/occurrences:
+    get:
+      operationId: listRoutineOccurrences
+      tags:
+      - routines
+      summary: List the occurrence ledger
+      description: 'Returns durable occurrence outcomes across every routine the caller can
+        reach, most recently scheduled first. Set routine_id to narrow it to one routine.
+        Pagination is keyset on (scheduled_at, id): pass next_cursor back as cursor, and keep
+        going while has_more is true. A page may hold fewer than limit rows once unreachable
+        routines are dropped; has_more, not the row count, says whether more remain.'
+      parameters:
+      - name: routine_id
+        in: query
+        schema:
+          type: string
+        description: Narrow to one routine. This is what the deleted nested route was.
+      - name: owner_id
+        in: query
+        schema:
+          type: string
+        description: Narrow to routines one person is the custodian of. Team-custody routines
+          have no owner and never match.
+      - name: status
+        in: query
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - pending
+            - admitted
+            - completed
+            - failed
+            - skipped
+            - missed
+        explode: false
+        style: form
+        description: Narrow to these occurrence statuses.
+      - name: since
+        in: query
+        schema:
+          type: string
+          format: date-time
+        description: Only occurrences scheduled at or after this time.
+      - name: until
+        in: query
+        schema:
+          type: string
+          format: date-time
+        description: Only occurrences scheduled before this time.
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 50
+      - name: cursor
+        in: query
+        schema:
+          type: string
+        description: next_cursor from the previous page.
+      responses:
+        '200':
+          description: Occurrences.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoutineOccurrenceList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/routines/{routine_id}:
     get:
       operationId: getRoutine
@@ -3156,6 +3310,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Routine'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
     patch:
@@ -3182,6 +3338,8 @@ paths:
                 $ref: '#/components/schemas/Routine'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
     delete:
@@ -3200,8 +3358,85 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Routine'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/routines/{routine_id}/changes:
+    get:
+      operationId: listRoutineChanges
+      tags:
+      - routines
+      summary: List a routine's changes
+      description: |-
+        Who changed this routine, when, and what the values were before and after — including roster and custody changes, which are ordinary audited mutations.
+
+        Read from the audit trail but authorized as the routine, not as the audit log: anyone who can see the routine can see its history. Per-run records are excluded; the occurrence ledger is the place for those.
+
+        Instructions are withheld on a private routine, where an administrator who can reach the metadata is not meant to read the content. On any other routine the instructions are already on the detail page and are shown here too.
+      parameters:
+      - $ref: '#/components/parameters/RoutineID'
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 50
+      - name: cursor
+        in: query
+        schema:
+          type: string
+        description: next_cursor from the previous page.
+      responses:
+        '200':
+          description: Changes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoutineChangeList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/routines/{routine_id}/run:
+    post:
+      operationId: runRoutineNow
+      tags:
+      - routines
+      summary: Run a routine now
+      description: |-
+        Puts one occurrence on the ledger immediately and leaves the schedule untouched: the next scheduled run, the occurrence count, and an interval schedule's phase are all unaffected.
+
+        The run is admitted by the same alarm that admits a scheduled one, so it is bounded by the same per-occurrence ceiling, rolling daily ceiling, and organization funding, and it lands in its own session with its own ledger row.
+
+        A paused routine may be run this way — pausing stops it running on its own, not by name. A cancelled or completed one may not, and a routine that already has a run pending or in flight returns 409 rather than queueing a second.
+
+        Asking for a run takes the same manage gate as editing the routine, so a caller who may read it but not manage it gets 403.
+      parameters:
+      - $ref: '#/components/parameters/RoutineID'
+      responses:
+        '202':
+          description: |-
+            Run accepted. The occurrence is pending until the alarm admits it, which is why this is not a 200 with a running row.
+
+            A manual run carries a ten-minute deadline: asking for one is an act of attention, and work that cannot start within ten minutes is answering a stale intention. An occurrence still pending past that deadline is closed on the ledger with `status: skipped` and `error_code: stale` rather than run late.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoutineOccurrence'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /v1/routines/{routine_id}/pause:
     post:
       operationId: pauseRoutine
@@ -3218,6 +3453,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Routine'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
   /v1/routines/{routine_id}/resume:
@@ -3236,28 +3473,105 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Routine'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/routines/{routine_id}/occurrences:
+  /v1/routines/{routine_id}/principals:
     get:
-      operationId: listRoutineOccurrences
+      operationId: listRoutinePrincipals
       tags:
       - routines
-      summary: List a routine's occurrence ledger
-      description: Returns durable occurrence outcomes and transcript links for a reachable
-        routine.
+      summary: List a routine's roster
+      description: 'Returns every principal holding a relationship to the routine: the people
+        it waits on (`responsible`), the principals who may change it (`manager`), and the
+        principals who opted into its results (`follower`). One principal may appear more
+        than once.'
       parameters:
       - $ref: '#/components/parameters/RoutineID'
       responses:
         '200':
-          description: Occurrences.
+          description: Roster.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RoutineOccurrenceList'
+                $ref: '#/components/schemas/RoutinePrincipalList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/routine-proposals/{proposal_id}/approve:
+    post:
+      operationId: addRoutinePrincipal
+      tags:
+      - routines
+      summary: Add a principal to a routine's roster
+      description: |-
+        Idempotent: adding a relationship the principal already holds changes nothing.
+
+        Two gates on one endpoint. Adding YOURSELF as a `follower` needs only read access to the routine — following is opt-in, and opting in is yours to do. Adding anyone else, or any `manager` or `responsible` row, needs manage rights on the routine.
+
+        `responsible` is accepted only on a team-owned routine, and only for a person: a routine that waits on unattended work waits on nobody.
+      parameters:
+      - $ref: '#/components/parameters/RoutineID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddRoutinePrincipalRequest'
+      responses:
+        '200':
+          description: The roster after the add.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoutinePrincipalList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/routines/{routine_id}/principals/{principal_id}:
+    delete:
+      operationId: removeRoutinePrincipal
+      tags:
+      - routines
+      summary: Remove a principal from a routine's roster
+      description: |-
+        Drops the principal's rows on this routine. Omit `relationship` to remove every relationship they hold.
+
+        Removing YOURSELF as a `follower` needs only read access; removing anyone else, or any `manager` or `responsible` row, needs manage rights. Removing the last `responsible` person from a team-owned routine is refused — name a replacement first.
+      parameters:
+      - $ref: '#/components/parameters/RoutineID'
+      - name: principal_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: relationship
+        in: query
+        description: Limit the removal to one relationship. Omit to remove all of them.
+        schema:
+          $ref: '#/components/schemas/RoutineRelationship'
+      responses:
+        '204':
+          description: Removed.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/routines/proposals/{proposal_id}/approve:
     post:
       operationId: approveRoutineProposal
       tags:
@@ -3279,13 +3593,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Routine'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /v1/routine-proposals/{proposal_id}/dismiss:
+  /v1/routines/proposals/{proposal_id}/dismiss:
     post:
       operationId: dismissRoutineProposal
       tags:
@@ -3301,6 +3617,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RoutineProposal'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -4532,7 +4850,7 @@ paths:
       - artifacts
       summary: Create artifact
       description: |-
-        Accepts an org-authorized multipart file upload. Without a worker lease, the caller needs `mobius.org.edit`; the artifact is private to the authenticated principal and has no run or step lineage. A worker may instead supply `X-Mobius-Lease-Token` with `mobius.work.execute`; Mobius then derives run, step, job, worker session, attempt, and shared visibility from the active claim. Caller-supplied lineage, ownership, and visibility fields are rejected in both modes.
+        Accepts an org-authorized multipart file upload. Without a worker lease, the caller needs `mobius.resource.build`; the artifact is private to the authenticated principal and has no run or step lineage. A worker may instead supply `X-Mobius-Lease-Token` with `mobius.job.execute`; Mobius then derives run, step, job, worker session, attempt, and shared visibility from the active claim. Caller-supplied lineage, ownership, and visibility fields are rejected in both modes.
 
         DOCX, XLSX, and PPTX uploads may pass `convert=true` to start asynchronous Markdown extraction for later model delivery.
       parameters:
@@ -4826,6 +5144,13 @@ components:
         type: integer
         format: int64
         minimum: 0
+    OrgIDParam:
+      name: org_id
+      in: path
+      required: true
+      description: Organization ID.
+      schema:
+        type: string
     EnvironmentIDParam:
       name: environment_id
       in: path
@@ -4872,13 +5197,6 @@ components:
         type: string
         minLength: 1
         maxLength: 255
-    OrgIDParam:
-      name: org_id
-      in: path
-      required: true
-      description: Organization ID.
-      schema:
-        type: string
     MemoryKeyParam:
       name: memory_key
       in: path
@@ -4906,6 +5224,16 @@ components:
         model-visible names begin with `app-`. Platform-owned runtime context remains hidden.
       schema:
         $ref: '#/components/schemas/ContextIncludeParam'
+    TerminalPartialsIncludeParam:
+      name: include_terminal_partials
+      in: query
+      required: false
+      description: Set to `true` to include durable transcript rows salvaged from a failed
+        or cancelled turn. These rows carry `partial` and `terminal_outcome` metadata and
+        remain excluded from future model context.
+      schema:
+        type: boolean
+        default: false
     NudgeIdParam:
       name: nudge_id
       in: path
@@ -5188,6 +5516,7 @@ components:
       - permission_missing
       - not_implemented
       - credentials_unreadable
+      - agent_owned_only
       description: Why a capability is `needs_setup`. Present only when readiness is `needs_setup`.
         `not_configured` — no integration or credential is connected yet. `inactive` — the
         backing integration is manually disabled. `expired` — the backing credential has expired.
@@ -5303,9 +5632,9 @@ components:
       - flat
       - meta
       description: |-
-        Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
+        Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
 
-        The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise.
+        The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise. Existing agents retain their stored mode; the default applies when creating an agent without one.
     ActionSelectorType:
       type: string
       description: How one entry in an agent's tool grant names the actions it covers. `exact`
@@ -5613,7 +5942,7 @@ components:
         description: Reviews pull requests for risky changes.
         color: teal
         model: claude-sonnet-4-6
-        tool_presentation: meta
+        tool_presentation: flat
         memory_enabled: true
         status: active
         tags:
@@ -5648,6 +5977,17 @@ components:
       - archived
       - deleted
       description: 'Durable conversation session status: `active`, `archived`, or `deleted`.'
+    AgentTurnStatus:
+      type: string
+      enum:
+      - queued
+      - running
+      - waiting
+      - completed
+      - failed
+      - cancelled
+      description: 'Agent turn lifecycle status: `queued`, `running`, `waiting`, `completed`,
+        `failed`, or `cancelled`.'
     SessionOrigin:
       type: string
       enum:
@@ -5882,15 +6222,6 @@ components:
           type: integer
           description: Lifetime prompt-cache-write (cache creation) input-token total for
             this session.
-        next_routine_fire_at:
-          type: string
-          format: date-time
-          nullable: true
-          description: Earliest next fire among the caller's active routines in this conversation.
-        unread_scheduled_result:
-          type: boolean
-          description: True when the routine owner has not opened this conversation since
-            its latest admitted scheduled result settled.
         version:
           type: integer
           description: Optimistic-concurrency version. Increments on every mutation.
@@ -5921,17 +6252,6 @@ components:
           type: string
           format: date-time
           description: Last update timestamp.
-    AgentTurnStatus:
-      type: string
-      enum:
-      - queued
-      - running
-      - waiting
-      - completed
-      - failed
-      - cancelled
-      description: 'Agent turn lifecycle status: `queued`, `running`, `waiting`, `completed`,
-        `failed`, or `cancelled`.'
     SessionMessageRole:
       type: string
       enum:
@@ -6141,15 +6461,18 @@ components:
           enum:
           - Owner
           - Admin
-          - Editor
-          - Operator
+          - User
           - Viewer
           default: Admin
           description: Mandatory scope role when `principal_id` is omitted. The permanent
             organization principal holds Owner, and this credential scope can only narrow
             it. Defaults to `Admin`. `Owner` grants full control (including billing and org
-            deletion); `Admin` covers org administration without billing; lower roles narrow
-            to build/run, run-only, or read-only. Ignored when `principal_id` is set.
+            deletion); `Admin` covers organization administration and team resource posture,
+            plus billing reads; `User` can use reachable resources and build private configuration;
+            `Viewer` is read-only. `Worker` is not selectable here — org-level keys are barred
+            from the job endpoints, so it would be inert. For a narrower cap, such as use-only
+            automation, bind the key to a principal and set `scope_role_id` to a custom role.
+            Ignored when `principal_id` is set.
         expires_at:
           type: string
           format: date-time
@@ -7833,8 +8156,9 @@ components:
         category:
           type: string
           enum:
+          - resource
           - org
-          - work
+          - job
           - billing
           - platform
         risk:
@@ -8128,6 +8452,42 @@ components:
             return.
           items:
             type: string
+    OrgContext:
+      type: object
+      additionalProperties: false
+      description: 'The organization''s shared context: background on the business that every
+        agent in the organization carries in its system prompt. It belongs to the organization
+        rather than to any one agent or person — administrators write it, every member can
+        read it, and every agent receives it on every turn.'
+      required:
+      - content
+      - max_bytes
+      properties:
+        content:
+          type: string
+          description: The context as stored, in Markdown. Empty when the organization has
+            not written one.
+        max_bytes:
+          type: integer
+          description: The largest content the server accepts, in bytes of UTF-8. The content
+            rides in every agent turn, so the cap is a per-turn budget rather than a storage
+            limit.
+        updated_at:
+          type: string
+          format: date-time
+          description: When the content last changed. Absent until it is first written.
+    PutOrgContextRequest:
+      type: object
+      additionalProperties: false
+      description: Full-replace body for the organization context. An empty string clears
+        it.
+      required:
+      - content
+      properties:
+        content:
+          type: string
+          maxLength: 16384
+          description: The new context, in Markdown. At most 16384 bytes of UTF-8.
     InteractionMode:
       type: string
       enum:
@@ -9505,7 +9865,7 @@ components:
           description: Default route for model calls made by this agent.
         tool_presentation:
           $ref: '#/components/schemas/AgentToolPresentation'
-          description: Omit to use the create-time default, `meta`.
+          description: Omit to use the create-time default, `flat`.
         tool_selectors:
           type: array
           description: The agent's tool grant. Omit for an agent with no granted actions;
@@ -9566,7 +9926,7 @@ components:
         description: Reviews pull requests for risky changes.
         color: teal
         model: claude-sonnet-4-6
-        tool_presentation: meta
+        tool_presentation: flat
         tags:
           owner: product
     UpdateAgentRequest:
@@ -11996,6 +12356,93 @@ components:
       - invoke
       - notify
       description: V1 accepts invoke; notify is reserved and returns unsupported_routine_kind.
+    RoutineOwnerKind:
+      type: string
+      enum:
+      - person
+      - team
+      description: 'Whose the routine is. `person` pauses with its owner''s offboarding and
+        runs on their connections. `team` belongs to the business: it has no `owner_id`, survives
+        its creator''s departure, and must name at least one responsible person.'
+    RoutineManagedBy:
+      type: string
+      enum:
+      - team
+      - named
+      description: Who may change the routine. `team` is any member who can already reach
+        it; `named` is the principals holding a `manager` row plus organization administrators.
+        Defaults to `named`; only a person may change it, because `named` -> `team` turns
+        "these people" into "anyone".
+    RoutineRelationship:
+      type: string
+      enum:
+      - follower
+      - responsible
+      - manager
+      description: The relationship a principal holds to a routine. `follower` is opt-in attention,
+        `responsible` is the person the routine waits on, `manager` may change it. One principal
+        may hold more than one.
+    RoutineFollowLevel:
+      type: string
+      enum:
+      - all_results
+      - failures_only
+      description: Narrows what a follower is notified about. Ignored on the other relationships,
+        which are always notified.
+    RoutinePrincipal:
+      type: object
+      additionalProperties: false
+      required:
+      - principal_id
+      - relationship
+      - kind
+      - added_at
+      properties:
+        principal_id:
+          type: string
+        relationship:
+          $ref: '#/components/schemas/RoutineRelationship'
+        level:
+          $ref: '#/components/schemas/RoutineFollowLevel'
+        kind:
+          type: string
+          enum:
+          - human
+          - agent
+          - service
+          - system
+          description: The principal's kind, resolved from the principal record.
+        display_name:
+          type: string
+        added_by:
+          type: string
+          description: Principal who wrote this row.
+        added_at:
+          type: string
+          format: date-time
+    RoutinePrincipalList:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoutinePrincipal'
+    AddRoutinePrincipalRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - principal_id
+      - relationship
+      properties:
+        principal_id:
+          type: string
+        relationship:
+          $ref: '#/components/schemas/RoutineRelationship'
+        level:
+          $ref: '#/components/schemas/RoutineFollowLevel'
     RoutineSchedule:
       type: object
       additionalProperties: false
@@ -12022,19 +12469,58 @@ components:
           type: integer
           minimum: 1
       description: Exactly one of at, interval, or cron is required.
+    RoutineTrigger:
+      type: string
+      enum:
+      - schedule
+      - event
+      description: What starts this routine's runs. `schedule` fires on the routine's schedule;
+        `event` fires when a matching integration event arrives. Derived from whichever of
+        `schedule` and `event` the routine carries, never stored.
+    RoutineEventTrigger:
+      type: object
+      additionalProperties: false
+      required:
+      - event_type
+      description: 'Runs the routine when a matching integration event arrives. Each matched
+        event is one run on the ledger, one at a time per routine: an event arriving while
+        a run is in flight waits behind it, and a run still waiting six hours later is closed
+        `skipped` with `error_code` `stale`.'
+      properties:
+        event_type:
+          type: string
+          example: github.issues.opened
+          description: 'The integration event to react to: a concrete type from the event
+            catalog (`github.issues.opened`) or a wildcard on a prefix (`github.issues.*`,
+            `github.*`). The first segment must name a registered integration provider; built-in
+            Mobius events are not accepted here.'
+        integration_id:
+          type: string
+          description: Optional. Only events from this connection start a run. Omitted, an
+            event from any of the organization's connections for the provider does.
+        condition:
+          type: string
+          example: event.repository.full_name == "acme/api"
+          description: Optional expression over the event's `{event, meta}` envelope. The
+            run starts only when it returns true. A condition that cannot be evaluated against
+            an event records a `failed` run with `error_code` `trigger_condition_error` and
+            starts nothing.
     RoutineCreateRequest:
       type: object
       additionalProperties: false
       required:
-      - session_id
       - agent_id
       - instructions
-      - schedule
       - per_occurrence_ceiling_milli
       - daily_ceiling_milli
+      description: 'Exactly one of `schedule` and `event` is required: a routine runs on a
+        schedule or when an event arrives, not both.'
       properties:
         session_id:
           type: string
+          description: Optional conversation this routine was proposed in, kept as provenance.
+            Occurrences run in their own sessions, so this never affects where results are
+            delivered. Omitted for a routine created from the form.
         agent_id:
           type: string
         name:
@@ -12045,6 +12531,8 @@ components:
           $ref: '#/components/schemas/RoutineKind'
         schedule:
           $ref: '#/components/schemas/RoutineSchedule'
+        event:
+          $ref: '#/components/schemas/RoutineEventTrigger'
         per_occurrence_ceiling_milli:
           type: integer
           format: int64
@@ -12053,6 +12541,26 @@ components:
           type: integer
           format: int64
           minimum: 1
+        owner_kind:
+          allOf:
+          - $ref: '#/components/schemas/RoutineOwnerKind'
+          description: Defaults to `person`. `team` requires organization administration.
+        managed_by:
+          allOf:
+          - $ref: '#/components/schemas/RoutineManagedBy'
+          description: Defaults to `named`.
+        responsible_principal_ids:
+          type: array
+          items:
+            type: string
+          description: The people the routine waits on. Required and non-empty when `owner_kind`
+            is `team`; rejected otherwise. Each must be a person.
+        follower_principal_ids:
+          type: array
+          items:
+            type: string
+          description: Principals who opt into the routine's results. The creator is added
+            automatically.
     RoutineUpdateRequest:
       type: object
       additionalProperties: false
@@ -12063,15 +12571,31 @@ components:
         instructions:
           type: string
         schedule:
-          $ref: '#/components/schemas/RoutineSchedule'
+          allOf:
+          - $ref: '#/components/schemas/RoutineSchedule'
+          description: Makes this a scheduled routine, dropping any event trigger it had.
+            Rejected together with `event`.
+        event:
+          allOf:
+          - $ref: '#/components/schemas/RoutineEventTrigger'
+          description: Makes this an event routine, dropping any schedule it had. Rejected
+            together with `schedule`.
         per_occurrence_ceiling_milli:
           type: integer
           format: int64
           minimum: 1
+          description: A person may move this either way. An agent may only lower it, so no
+            agent widens the budget it runs under; raising it as an agent receives 403.
         daily_ceiling_milli:
           type: integer
           format: int64
           minimum: 1
+          description: Must remain at least the per-occurrence ceiling. A person may move
+            it either way; an agent may only lower it.
+        managed_by:
+          allOf:
+          - $ref: '#/components/schemas/RoutineManagedBy'
+          description: Only a person may change this. An agent manager receives 403.
     Routine:
       type: object
       additionalProperties: false
@@ -12079,16 +12603,18 @@ components:
       - id
       - org_id
       - agent_id
-      - session_id
-      - owner_id
+      - owner_kind
+      - managed_by
       - name
       - kind
-      - schedule
+      - trigger
       - timezone
       - status
       - occurrence_count
       - per_occurrence_ceiling_milli
       - daily_ceiling_milli
+      - following
+      - follower_count
       - created_at
       - updated_at
       properties:
@@ -12098,10 +12624,37 @@ components:
           type: string
         agent_id:
           type: string
-        session_id:
+        origin_session_id:
           type: string
+          description: The conversation the routine was proposed in, kept as provenance and
+            nothing more. Each occurrence runs in its own session, so this is absent for a
+            form-created routine and for one whose conversation has since been deleted. Archiving
+            it does not stop the routine.
         owner_id:
           type: string
+          description: The custodian. Absent under team custody, which has no owner.
+        owner_kind:
+          $ref: '#/components/schemas/RoutineOwnerKind'
+        managed_by:
+          $ref: '#/components/schemas/RoutineManagedBy'
+        responsible:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoutinePrincipal'
+          description: The people this routine waits on. Non-empty under team custody.
+        following:
+          type: boolean
+          description: Whether the calling principal follows this routine.
+        unread:
+          type: boolean
+          description: Whether a recent run has landed since the calling principal last opened
+            its session. Computed per caller from their session read marks, never stored,
+            and always false on a routine they do not follow — following is what opts you
+            into the indicator.
+        follower_count:
+          type: integer
+          description: Principals holding a follower row. Responsible people and managers
+            are notified too, and are named separately.
         name:
           type: string
         instructions:
@@ -12109,8 +12662,16 @@ components:
           description: Omitted from administrator metadata-only projections.
         kind:
           $ref: '#/components/schemas/RoutineKind'
+        trigger:
+          $ref: '#/components/schemas/RoutineTrigger'
         schedule:
-          $ref: '#/components/schemas/RoutineSchedule'
+          allOf:
+          - $ref: '#/components/schemas/RoutineSchedule'
+          description: Present when `trigger` is `schedule`.
+        event:
+          allOf:
+          - $ref: '#/components/schemas/RoutineEventTrigger'
+          description: Present when `trigger` is `event`.
         timezone:
           type: string
         status:
@@ -12120,6 +12681,7 @@ components:
         next_fire_at:
           type: string
           format: date-time
+          description: Absent on an event routine, which has no next fire to predict.
         last_fire_at:
           type: string
           format: date-time
@@ -12168,14 +12730,25 @@ components:
       - scheduled_at
       - intake_at
       - lateness_milliseconds
+      - trigger
       - status
       - credits_spent_milli
-      - transcript_url
+      description: One run of a routine, and the durable record of it. Status, outcome, error,
+        credits, and timing all live here, so a run whose transcript is gone is still a complete
+        row.
       properties:
         id:
           type: string
         routine_id:
           type: string
+        routine_name:
+          type: string
+          description: The routine's current name, carried on the row so a cross-routine ledger
+            renders without joining against every routine in the organization.
+        session_id:
+          type: string
+          description: The conversation this run happened in, minted at admission. Absent
+            for a run skipped before admission, and for one whose session has since been deleted.
         scheduled_at:
           type: string
           format: date-time
@@ -12185,6 +12758,32 @@ components:
         lateness_milliseconds:
           type: integer
           format: int64
+        trigger:
+          type: string
+          enum:
+          - schedule
+          - manual
+          - event
+          description: 'What put this run on the ledger: the routine''s schedule, a principal
+            asking for it now, or an integration event that matched the routine''s event trigger.
+            Every kind is bounded and recorded the same way. Always present — a row written
+            before manual runs existed reads as `schedule`, which is what it was.'
+        triggered_by:
+          type: string
+          description: 'The principal who put this run on the ledger, named the same way the
+            routine''s changelog names an actor: a human or an agent, either of which can
+            ask for a run through the API. Always present when `trigger` is `manual`, because
+            a manual run is somebody''s act and the record has to say whose. For a scheduled
+            or event run it is the routine''s own custodian, and so absent under team custody,
+            which has no custodian to name.'
+        source_event_id:
+          type: string
+          description: The source event that started this run. Present only when `trigger`
+            is `event`; it is the row the integration events list shows for the delivery.
+        event_type:
+          type: string
+          description: The concrete event type that arrived (`github.issues.opened`), not
+            the pattern the routine subscribed to. Present only when `trigger` is `event`.
         status:
           type: string
           enum:
@@ -12196,6 +12795,10 @@ components:
           - missed
         outcome:
           type: string
+          description: 'A completed run''s headline: one line saying what it did, derived
+            from the run''s own final message with markdown removed and length capped, falling
+            back to the scheduled time when the run said nothing. Safe to render in a table
+            cell as-is.'
         error_code:
           type: string
         error_message:
@@ -12205,7 +12808,81 @@ components:
         credits_spent_milli:
           type: integer
           format: int64
+        unread:
+          type: boolean
+          description: Whether this run landed after the calling principal last opened its
+            session. Computed per caller from their session read marks, never stored, and
+            always false on a routine they do not follow.
         transcript_url:
+          type: string
+          description: 'Link to the run''s transcript, which is the whole of session_id''s
+            conversation: one session holds exactly one occurrence. Absent whenever session_id
+            is; render the row without it rather than as an error.'
+    RoutineChange:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - action
+      - status
+      - created_at
+      description: |-
+        One recorded change to a routine, read from the audit trail.
+
+        Deliberately narrower than an audit log entry: no IP address, no user agent, no request ID. This is a product surface a colleague reads, not a security investigation, and the operational fields would expose a person to everyone who can see the routine they touched.
+      properties:
+        id:
+          type: string
+        action:
+          type: string
+          description: 'What happened: create, update, delete, transfer, or run (a person
+            asking for a run now).'
+        actor_name:
+          type: string
+          description: The actor's display name as it stood when the change was made. An agent's
+            name appears here exactly as a person's does.
+        principal_id:
+          type: string
+          description: The human or agent who made the change.
+        credential_name:
+          type: string
+          description: The credential or session the change came through, when one was recorded.
+        changes:
+          type: object
+          additionalProperties: false
+          description: The values before and after. Withheld fields read as `<redacted>` rather
+            than disappearing.
+          properties:
+            before:
+              type: object
+              additionalProperties: true
+            after:
+              type: object
+              additionalProperties: true
+        status:
+          type: string
+          enum:
+          - success
+          - failure
+        error_type:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    RoutineChangeList:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - has_more
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoutineChange'
+        has_more:
+          type: boolean
+        next_cursor:
           type: string
     RoutineOccurrenceList:
       type: object
