@@ -13639,7 +13639,9 @@ components:
           description: Failure reason when state is failed.
     Artifact:
       type: object
-      description: Stored file or generated artifact metadata.
+      description: Stored file or generated artifact metadata. Lineage fields are included
+        by artifact-versions, latest_only=true listings, and uploads declaring previous_artifact_id.
+        Ordinary calls omit the new fields for existing SDKs with strict response decoders.
       required:
       - id
       - owner

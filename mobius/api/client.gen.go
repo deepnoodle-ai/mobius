@@ -4796,7 +4796,7 @@ type ApplyBlueprintRequest struct {
 	Resources BlueprintResources `json:"resources"`
 }
 
-// Artifact Stored file or generated artifact metadata.
+// Artifact Stored file or generated artifact metadata. Lineage fields are included by artifact-versions, latest_only=true listings, and uploads declaring previous_artifact_id. Ordinary calls omit the new fields for existing SDKs with strict response decoders.
 type Artifact struct {
 	// Container The agent that contains this resource and may further narrow who can reach it.
 	Container *ResourceContainer `json:"container,omitempty"`
@@ -7729,7 +7729,7 @@ type Session struct {
 
 // SessionAttachmentResponse defines model for SessionAttachmentResponse.
 type SessionAttachmentResponse struct {
-	// Artifact Stored file or generated artifact metadata.
+	// Artifact Stored file or generated artifact metadata. Lineage fields are included by artifact-versions, latest_only=true listings, and uploads declaring previous_artifact_id. Ordinary calls omit the new fields for existing SDKs with strict response decoders.
 	Artifact Artifact `json:"artifact"`
 
 	// ContentBlock One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, `image`, and `document`, plus host-managed `reminder` blocks when caller runtime context is explicitly included. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers.

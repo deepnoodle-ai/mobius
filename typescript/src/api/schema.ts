@@ -6499,7 +6499,7 @@ export interface components {
             error?: string;
         };
         /**
-         * @description Stored file or generated artifact metadata.
+         * @description Stored file or generated artifact metadata. Lineage fields are included by artifact-versions, latest_only=true listings, and uploads declaring previous_artifact_id. Ordinary calls omit the new fields for existing SDKs with strict response decoders.
          * @example {
          *       "id": "art_2m7q9x5v3p8n4r6t",
          *       "owner": {

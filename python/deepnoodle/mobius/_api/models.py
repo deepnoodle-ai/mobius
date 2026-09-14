@@ -5142,7 +5142,7 @@ class ArtifactConversionSummary(BaseModel):
 
 class Artifact(BaseModel):
     """
-    Stored file or generated artifact metadata.
+    Stored file or generated artifact metadata. Lineage fields are included by artifact-versions, latest_only=true listings, and uploads declaring previous_artifact_id. Ordinary calls omit the new fields for existing SDKs with strict response decoders.
     """
 
     model_config = ConfigDict(
