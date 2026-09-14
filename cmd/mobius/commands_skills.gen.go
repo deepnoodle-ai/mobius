@@ -22,11 +22,13 @@ func registerSkillsCommands(app *cli.App) {
 	skillsGrp.Command("create").
 		Description("Create skill").
 		Flags(
-			cli.Strings("allowed-tools", "").Help("Tool selectors naming the actions this skill needs. The grant applies once an agent invokes the skill and lasts for the rest of that turn…"),
+			cli.Strings("allowed-actions", "").Help("Action selectors naming the actions this skill permits after it is invoked. Empty declares nothing and narrows nothing."),
 			cli.String("description", "").Help("Markdown description of the skill's purpose."),
 			cli.String("instructions", "").Help("[required] Markdown instructions loaded when the skill is active. Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
 			cli.String("name", "").Help("[required] Human-readable skill name."),
 			cli.String("owner", "").Help("The human or team responsible for this resource. Accepts JSON, @file, or @-."),
+			cli.Strings("recommended-actions", "").Help("Optional action selectors that produce warnings when absent and never select actions."),
+			cli.Strings("required-actions", "").Help("Action selectors that must already be effective for this skill to be invoked."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("visibility", "").Help("Who the custodian chose to share the resource with."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -43,9 +45,9 @@ func registerSkillsCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			if ctx.IsSet("allowed-tools") {
-				v := ctx.Strings("allowed-tools")
-				body.AllowedTools = &v
+			if ctx.IsSet("allowed-actions") {
+				v := ctx.Strings("allowed-actions")
+				body.AllowedActions = &v
 			}
 			if ctx.IsSet("description") {
 				v := ctx.String("description")
@@ -65,6 +67,14 @@ func registerSkillsCommands(app *cli.App) {
 				if err := decodeFlagJSON(ctx, "owner", ctx.String("owner"), &body.Owner); err != nil {
 					return err
 				}
+			}
+			if ctx.IsSet("recommended-actions") {
+				v := ctx.Strings("recommended-actions")
+				body.RecommendedActions = &v
+			}
+			if ctx.IsSet("required-actions") {
+				v := ctx.Strings("required-actions")
+				body.RequiredActions = &v
 			}
 			if tags, err := parseTagFlags(ctx); err != nil {
 				return err
@@ -156,11 +166,13 @@ func registerSkillsCommands(app *cli.App) {
 		Description("Update skill").
 		AddArg(&cli.Arg{Name: "skill-id", Description: "Skill ID.", Required: true}).
 		Flags(
-			cli.Strings("allowed-tools", "").Help("Tool selectors naming the actions this skill needs. The grant applies once an agent invokes the skill and lasts for the rest of that turn…"),
+			cli.Strings("allowed-actions", "").Help("Action selectors naming the actions this skill permits after it is invoked. Empty declares nothing and narrows nothing."),
 			cli.String("description", "").Help("Markdown description of the skill's purpose."),
 			cli.String("instructions", "").Help("[required] Markdown instructions loaded when the skill is active. Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
 			cli.String("name", "").Help("[required] Human-readable skill name."),
 			cli.String("owner", "").Help("The human or team responsible for this resource. Accepts JSON, @file, or @-."),
+			cli.Strings("recommended-actions", "").Help("Optional action selectors that produce warnings when absent and never select actions."),
+			cli.Strings("required-actions", "").Help("Action selectors that must already be effective for this skill to be invoked."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("visibility", "").Help("Who the custodian chose to share the resource with."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -178,9 +190,9 @@ func registerSkillsCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			if ctx.IsSet("allowed-tools") {
-				v := ctx.Strings("allowed-tools")
-				body.AllowedTools = &v
+			if ctx.IsSet("allowed-actions") {
+				v := ctx.Strings("allowed-actions")
+				body.AllowedActions = &v
 			}
 			if ctx.IsSet("description") {
 				v := ctx.String("description")
@@ -200,6 +212,14 @@ func registerSkillsCommands(app *cli.App) {
 				if err := decodeFlagJSON(ctx, "owner", ctx.String("owner"), &body.Owner); err != nil {
 					return err
 				}
+			}
+			if ctx.IsSet("recommended-actions") {
+				v := ctx.Strings("recommended-actions")
+				body.RecommendedActions = &v
+			}
+			if ctx.IsSet("required-actions") {
+				v := ctx.Strings("required-actions")
+				body.RequiredActions = &v
 			}
 			if tags, err := parseTagFlags(ctx); err != nil {
 				return err

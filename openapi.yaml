@@ -37,6 +37,9 @@ tags:
   x-displayName: Jobs
   description: The worker WebSocket protocol used by customer-side workers to claim, run,
     and report jobs.
+- name: integrations
+  x-displayName: Integrations
+  description: Org integration records, provider setup, lifecycle checks, and event diagnostics.
 - name: billing
   x-displayName: Billing
   description: Organization subscription, invoice, and billing portal endpoints.
@@ -425,8 +428,10 @@ paths:
       tags:
       - actions
       summary: List invocations
-      description: Lists recent action invocation audit records from agents, direct invocations,
-        and job-backed execution.
+      description: |-
+        Lists recent action invocation audit records from agents, direct invocations, and job-backed execution.
+
+        Each record belongs to the conversation or configuration it ran under. A caller sees their own records, team-owned records, and organization-visible records. An organization administrator sees every record, but `parameters` are withheld on a private record the administrator does not own and `parameters_redacted` is set.
       parameters:
       - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
@@ -450,6 +455,31 @@ paths:
         description: Filter to an immutable custom Action ID.
         schema:
           type: string
+      - name: integration
+        in: query
+        description: Action name prefix; the provider or built-in namespace. Matches invocations
+          whose action name begins with `<integration>.` — a provider slug (`gmail`), a built-in
+          namespace (`mobius`, `environment`), or an MCP server slug. The trailing dot is
+          implied, so `gmail` does not match `gmail_extra.send`.
+        schema:
+          type: string
+      - name: agent_id
+        in: query
+        description: Filter to invocations made by a specific agent.
+        schema:
+          type: string
+      - name: started_after
+        in: query
+        description: Only include invocations started at or after this time (inclusive).
+        schema:
+          type: string
+          format: date-time
+      - name: started_before
+        in: query
+        description: Only include invocations started strictly before this time (exclusive).
+        schema:
+          type: string
+          format: date-time
       - name: definition_scope
         in: query
         description: Filter by the scope that owned the selected definition.
@@ -677,6 +707,323 @@ paths:
                 $ref: '#/components/schemas/WorkerSocketFrame'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/integrations/governance:
+    get:
+      operationId: listConnectionGovernance
+      x-public: true
+      tags:
+      - integrations
+      summary: List minimal connection governance metadata
+      description: Organization administrators can identify and deactivate connections without
+        seeing personal configuration, account labels, credentials, or provider content.
+      parameters:
+      - name: provider
+        in: query
+        schema:
+          type: string
+      - $ref: '#/components/parameters/LimitParam'
+      - $ref: '#/components/parameters/CursorParam'
+      responses:
+        '200':
+          description: Minimal governance metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionGovernanceListResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /v1/integrations/governance/{integration_id}/deactivate:
+    post:
+      operationId: deactivateConnectionGovernance
+      x-public: true
+      tags:
+      - integrations
+      summary: Deactivate a connection through organization governance
+      description: Deactivates the connection, revokes grants and defaults, and suspends dependent
+        routines. It never transfers control or exposes provider content.
+      parameters:
+      - name: integration_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: Connection deactivated
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/integrations/connections/{integration_id}/team-management:
+    post:
+      operationId: startConnectionTeamManagement
+      x-public: true
+      tags:
+      - integrations
+      summary: Start team management of an existing account
+      description: Explicitly transfers management of the existing active connection to the
+        organization. Only its current human manager with live local organization administrator
+        authority may make this change. Preserves the connection ID, credentials, provider
+        identity, label, grants and their audiences, defaults, and routine bindings. Does
+        not start provider authorization or broaden assistant access. Repeating the request
+        for an already team-managed account is an administrator-only no-op.
+      parameters:
+      - name: integration_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Completed management change with kind complete and the same active
+            integration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrationConnectResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/integrations/connections/{integration_id}/confirm-replacement:
+    post:
+      operationId: confirmConnectionReplacement
+      x-public: true
+      tags:
+      - integrations
+      summary: Confirm replacement using fresh provider authorization
+      description: Consumes a short-lived candidate authorized by this human and atomically
+        retires the former authority and its grants. The candidate receives no inherited grants.
+      parameters:
+      - name: integration_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: Replacement confirmed
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/integrations/connections/{integration_id}/grants:
+    get:
+      operationId: listConnectionGrants
+      x-public: true
+      tags:
+      - integrations
+      summary: List agents with access to a controlled connection
+      description: Returns live grants only to the connection controller or an authorized
+        organization administrator.
+      parameters:
+      - name: integration_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Controller-authorized grants
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionGrantListResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: materializeConnectionGrants
+      x-public: true
+      tags:
+      - integrations
+      summary: Give explicitly selected current agents access
+      description: Materializes grants for the submitted agent IDs. Identical active grants
+        are replay-safe; changed constraints revoke the previous grant ID.
+      parameters:
+      - name: integration_id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaterializeConnectionGrantsRequest'
+      responses:
+        '200':
+          description: Individual grants; replay preserves identical active grants
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionGrantListResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/integrations/connections/{integration_id}/grants/{grant_id}:
+    delete:
+      operationId: revokeConnectionGrant
+      x-public: true
+      tags:
+      - integrations
+      summary: Revoke one grant and its context defaults
+      description: Revokes the specified grant and removes only defaults bound to that grant.
+        In-flight work must revalidate before its next dispatch.
+      parameters:
+      - name: integration_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: grant_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: Grant revoked or already absent
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/agents/{agent_id}/connection-grants:
+    get:
+      operationId: listAgentConnectionGrants
+      x-public: true
+      tags:
+      - integrations
+      summary: List this viewer's operational connection grants for an agent
+      description: Returns operational labels for grants the viewer controls or belongs to,
+        after verifying the viewer can reach the agent. Credentials and connection configuration
+        are omitted.
+      parameters:
+      - name: agent_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Authorized operational labels and grants
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionGrantListResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/agents/{agent_id}/connection-defaults:
+    get:
+      operationId: listAgentConnectionDefaults
+      x-public: true
+      tags:
+      - integrations
+      summary: List account preferences for one execution context
+      description: Returns the union of saved and currently selectable provider preferences
+        without exposing credentials or unavailable account identity.
+      parameters:
+      - name: agent_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: context
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/ConnectionDefaultContext'
+      - name: execution_mode
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/ConnectionExecutionMode'
+      responses:
+        '200':
+          description: Saved state and selectable account choices by provider
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionDefaultPreferenceListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/agents/{agent_id}/connection-defaults/{provider}:
+    put:
+      operationId: setAgentConnectionDefault
+      x-public: true
+      tags:
+      - integrations
+      summary: Select a default for one execution context
+      description: Changes only the authenticated human context or an administrator-authorized
+        organization background context. The selected active grant must satisfy connection
+        ownership and audience restrictions for that context.
+      parameters:
+      - name: agent_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: provider
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetConnectionDefaultRequest'
+      responses:
+        '204':
+          description: Context default selected
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: clearAgentConnectionDefault
+      x-public: true
+      tags:
+      - integrations
+      summary: Clear a default for one execution context
+      description: Clears only the exact context preference. Repeated clears succeed and do
+        not revoke account access.
+      parameters:
+      - name: agent_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: provider
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: context
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/ConnectionDefaultContext'
+      - name: execution_mode
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/ConnectionExecutionMode'
+      responses:
+        '204':
+          description: Context default cleared or already absent
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -1423,7 +1770,7 @@ paths:
       - agents
       summary: Create agent
       description: |-
-        Creates an agent. An agent IS a principal (principals.kind = agent): its backing identity row is created atomically with the agent — there is no separate machine-identity side record. The agent principal is for identity, ownership, and attribution; an agent's tools come from its own `tool_selectors`, not from roles.
+        Creates an agent. An agent IS a principal (principals.kind = agent): its backing identity row is created atomically with the agent — there is no separate machine-identity side record. The agent principal is for identity, ownership, and attribution; an agent's tools come from its own `action_selectors`, not from roles.
 
         By default (`if_exists: error`, the default), a duplicate `name` or `external_ref` returns 409. Set `if_exists: adopt` together with `external_ref` to make the call safely retryable: when a live agent already carries that `external_ref`, it is returned unchanged with `200` instead of erroring — mutable fields are ignored, since no write happens. `external_ref` is required to use `adopt`; omitting it returns 400. A soft-deleted agent still owns its `external_ref`: it is never resurrected and never replaced, so a match against a deleted agent returns 409 even with `adopt`.
       requestBody:
@@ -1940,9 +2287,9 @@ paths:
       - agents
       summary: Replace agent skill assignments
       description: 'Replaces the agent''s skill assignment set as a whole. Assigning a skill
-        does not change the agent''s tools: a skill''s `allowed_tools` grant takes effect
-        only once the agent invokes that skill, and never widens the set beyond the agent''s
-        own tool selectors.'
+        does not change the agent''s tools: a skill''s `allowed_actions` constraint takes
+        effect only once the agent invokes that skill, and never widens the set beyond the
+        agent''s own action selectors.'
       parameters:
       - $ref: '#/components/parameters/IDParam'
       requestBody:
@@ -1978,20 +2325,20 @@ paths:
       - agents
       summary: Get agent tools
       description: |-
-        Resolves the effective set of tools an agent can invoke: its tool selectors expanded against the live action catalog, optionally restricted by tool filters.
+        Resolves the effective set of tools an agent can invoke: its action selectors expanded against the live action catalog, optionally restricted by requested action names.
 
-        Assigned skills do not narrow this set — a skill's `allowed_tools` grant applies only once the agent invokes that skill at runtime. Pass `skill_name` to preview the tools the agent would be left with while that one skill is loaded.
+        Assigned skills do not narrow this set — a skill's `allowed_actions` constraint applies only once the agent invokes that skill at runtime. Pass `skill_name` to preview the tools the agent would be left with while that one skill is loaded.
       parameters:
       - $ref: '#/components/parameters/IDParam'
       - name: skill_name
         in: query
         description: Optional assigned skill name to simulate as invoked, so the response
           shows the tool scope a turn would run under once that skill is loaded. Omitted means
-          no skill grant is applied; the resolved set still reflects the other filters on
-          this request (`allowed_tools`).
+          no skill action constraint is applied; the resolved set still reflects the other
+          filters on this request (`allowed_actions`).
         schema:
           type: string
-      - name: allowed_tools
+      - name: allowed_actions
         in: query
         description: Optional comma-separated canonical action names, wildcard selectors,
           or group references to apply as a per-invocation filter against the resolved tool
@@ -2608,6 +2955,59 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+  /v1/sessions/{session_id}/references:
+    post:
+      operationId: createSessionArtifactReference
+      tags:
+      - sessions
+      summary: Create session artifact reference
+      description: |-
+        Authorizes an existing library artifact for delivery to this session's turns and returns the same `content_block` shape the attachment endpoint returns. Nothing is uploaded or copied: the library file stays the single stored copy, and the server records the authorization so prompt-time delivery can re-check it without a caller.
+
+        The file must be readable by the caller, must not itself be another session's attachment, and must satisfy the same delivery limits as an upload: PDF (up to 5 MiB and 50 pages), DOCX, XLSX, PPTX (up to 5 MiB), Markdown or plain text (up to 100 KiB), and PNG, JPEG, WebP, or GIF images (up to 5 MiB). Content type is confirmed from the stored bytes. A private session may reference only its owner's own files; an organization-visible session may reference only organization-visible files.
+      parameters:
+      - $ref: '#/components/parameters/SessionIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionArtifactReferenceRequest'
+      responses:
+        '200':
+          description: The session already referenced this file.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionAttachmentResponse'
+        '201':
+          description: File referenced into the session.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionAttachmentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '413':
+          description: The file exceeds its per-type size or PDF page limit for model delivery.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Artifact storage is unavailable (`artifact_storage_unavailable`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /v1/sessions/{session_id}/messages:
     get:
       operationId: listSessionMessages
@@ -2919,6 +3319,191 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+  /v1/sessions/{session_id}/event-subscriptions:
+    get:
+      operationId: listSessionEventSubscriptions
+      tags:
+      - sessions
+      summary: List session event subscriptions
+      description: Returns durable, session-bound subscriptions in creation order. These registrations
+        receive only public source-event envelopes and remain visible after they stop, expire,
+        or pause for funding.
+      parameters:
+      - $ref: '#/components/parameters/SessionIdParam'
+      - name: status
+        in: query
+        description: Filter by one or more subscription states.
+        schema:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionEventSubscriptionStatus'
+        style: form
+        explode: true
+      - $ref: '#/components/parameters/OrderParam'
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionEventSubscriptionListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: createSessionEventSubscription
+      tags:
+      - sessions
+      summary: Create a session event subscription
+      description: 'Creates a long-lived public-event subscription for this conversation.
+        It returns immediately; matching occurrences are queued durably and reach a live turn
+        only at safe model-input boundaries, or start a new ordinary session turn when idle.
+        `idempotency_key` is session-scoped: an identical retry returns the original registration,
+        while changed arguments conflict. Routine-origin sessions cannot subscribe.'
+      parameters:
+      - $ref: '#/components/parameters/SessionIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionEventSubscriptionRequest'
+      responses:
+        '200':
+          description: Existing idempotent subscription returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionEventSubscriptionCreateResponse'
+        '201':
+          description: Subscription created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionEventSubscriptionCreateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/sessions/{session_id}/event-subscriptions/{subscription_id}:
+    get:
+      operationId: getSessionEventSubscription
+      tags:
+      - sessions
+      summary: Get a session event subscription
+      description: Returns one durable subscription, including its activation boundary and
+        server-recorded authority scope.
+      parameters:
+      - $ref: '#/components/parameters/SessionIdParam'
+      - $ref: '#/components/parameters/SessionEventSubscriptionIdParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionEventSubscription'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/sessions/{session_id}/event-subscriptions/{subscription_id}/unsubscribe:
+    post:
+      operationId: unsubscribeSessionEventSubscription
+      tags:
+      - sessions
+      summary: Stop a session event subscription
+      description: Stops new intake and cancels pending external input. A row already committed
+        to a model boundary remains reported as delivered.
+      parameters:
+      - $ref: '#/components/parameters/SessionIdParam'
+      - $ref: '#/components/parameters/SessionEventSubscriptionIdParam'
+      responses:
+        '200':
+          description: The stopped subscription.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionEventSubscription'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/sessions/{session_id}/event-subscriptions/stop:
+    post:
+      operationId: stopSessionEventSubscriptions
+      tags:
+      - sessions
+      summary: Stop all session event subscriptions
+      description: Stops every active session subscription and cancels its pending external-event
+        input. Repeating the request is idempotent.
+      parameters:
+      - $ref: '#/components/parameters/SessionIdParam'
+      responses:
+        '204':
+          description: Subscriptions stopped.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/sessions/{session_id}/event-subscriptions/{subscription_id}/deliveries:
+    get:
+      operationId: listSessionEventDeliveries
+      tags:
+      - sessions
+      summary: List public-event deliveries
+      description: Returns this subscription's durable intake records. Event and metadata
+        values are the public envelope, not raw provider input. Their combined persisted/model-visible
+        representation is capped at 64 KiB; larger or non-serializable values use an explicit
+        bounded representation with a delivery diagnostic.
+      parameters:
+      - $ref: '#/components/parameters/SessionIdParam'
+      - $ref: '#/components/parameters/SessionEventSubscriptionIdParam'
+      - name: status
+        in: query
+        schema:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionEventDeliveryStatus'
+        style: form
+        explode: true
+      - $ref: '#/components/parameters/OrderParam'
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionEventDeliveryListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/sessions/{session_id}/turns/{turn_id}/live:
     get:
       operationId: getSessionTurnLive
@@ -3163,6 +3748,23 @@ paths:
           is not where they run.
         schema:
           type: string
+      - name: attention
+        in: query
+        description: Filter to persistent account-repair work assigned to the authenticated
+          human.
+        schema:
+          type: string
+          enum:
+          - account_repair
+      - name: status
+        in: query
+        schema:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoutineStatus'
+        explode: false
+        style: form
+        description: Narrow to these routine statuses. Omit for every status, cancelled included.
       - name: limit
         in: query
         schema:
@@ -3373,7 +3975,7 @@ paths:
 
         Read from the audit trail but authorized as the routine, not as the audit log: anyone who can see the routine can see its history. Per-run records are excluded; the occurrence ledger is the place for those.
 
-        Instructions are withheld on a private routine, where an administrator who can reach the metadata is not meant to read the content. On any other routine the instructions are already on the detail page and are shown here too.
+        Private authored values are withheld from the audit representation. Ordinary administrators cannot read another person's private routine or its history without a confirmed invitation.
       parameters:
       - $ref: '#/components/parameters/RoutineID'
       - name: limit
@@ -3580,6 +4182,12 @@ paths:
       description: Atomically materializes a pending proposal as a routine after human approval.
       parameters:
       - $ref: '#/components/parameters/RoutineProposalID'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoutineSharingConfirmation'
       responses:
         '200':
           description: Existing routine returned for an idempotent replay.
@@ -3656,7 +4264,7 @@ paths:
       tags:
       - skills
       summary: Create skill
-      description: Creates a skill with instructions and requested tool filters.
+      description: Creates a skill with instructions and action constraints.
       requestBody:
         required: true
         content:
@@ -3667,7 +4275,7 @@ paths:
               name: Pull request review
               description: Review pull requests for correctness and risk.
               instructions: Check the diff and leave concise findings.
-              allowed_tools:
+              allowed_actions:
               - github.create_review_comment
               tags:
                 owner: product
@@ -3684,7 +4292,7 @@ paths:
                 description: Review pull requests for correctness and risk.
                 source: custom
                 instructions: Check the diff and leave concise findings.
-                allowed_tools:
+                allowed_actions:
                 - github.create_review_comment
                 tags:
                   owner: product
@@ -3728,7 +4336,7 @@ paths:
               name: Pull request review
               content: |
                 ---
-                allowed_tools:
+                allowed_actions:
                   - github.create_review_comment
                 ---
                 Check the diff and leave concise findings.
@@ -3745,7 +4353,7 @@ paths:
                 description: Review pull requests for correctness and risk.
                 source: custom
                 instructions: Check the diff and leave concise findings.
-                allowed_tools:
+                allowed_actions:
                 - github.create_review_comment
                 tags:
                   owner: product
@@ -3822,7 +4430,7 @@ paths:
               name: Pull request review
               description: Review pull requests for correctness and risk.
               instructions: Check the diff and leave concise findings.
-              allowed_tools:
+              allowed_actions:
               - github.create_review_comment
               tags:
                 owner: product
@@ -4822,15 +5430,32 @@ paths:
       - artifacts
       summary: List artifacts
       description: Returns ready artifacts in the org, ordered (created_at desc, id desc).
-        Optional filters narrow by mime prefix. Deleted or unfinished artifacts are excluded
-        from API reads.
+        Optional filters narrow by name and mime prefix. Deleted or unfinished artifacts are
+        excluded from API reads.
       parameters:
+      - name: latest_only
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+        description: Return the latest accessible available version per root before filtering
+          and pagination. The Library uses true; omitted preserves the full listing.
       - name: mime
         in: query
         required: false
         schema:
           type: string
         description: Mime prefix filter (e.g. `image/`)
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 256
+        description: Case-insensitive substring match on the artifact name. Filenames are
+          how people and agents refer to a file, so this is the search key for "find the file
+          called ...".
       - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
       responses:
@@ -4850,7 +5475,7 @@ paths:
       - artifacts
       summary: Create artifact
       description: |-
-        Accepts an org-authorized multipart file upload. Without a worker lease, the caller needs `mobius.resource.build`; the artifact is private to the authenticated principal and has no run or step lineage. A worker may instead supply `X-Mobius-Lease-Token` with `mobius.job.execute`; Mobius then derives run, step, job, worker session, attempt, and shared visibility from the active claim. Caller-supplied lineage, ownership, and visibility fields are rejected in both modes.
+        Accepts an org-authorized multipart file upload. Without a worker lease, the caller needs `mobius.resource.build`; the artifact is private to the authenticated principal and has no run or step lineage. A worker may instead supply `X-Mobius-Lease-Token` with `mobius.job.execute`; Mobius then derives run, step, job, worker session, attempt, and shared visibility from the active claim. Execution attribution is server-derived. Version lineage is declared only with previous_artifact_id (or the leased publish action source_artifact_id). A version requires edit access to the exact parent and inherits its custody and visibility.
 
         DOCX, XLSX, and PPTX uploads may pass `convert=true` to start asynchronous Markdown extraction for later model delivery.
       parameters:
@@ -5033,6 +5658,31 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /v1/artifacts/{artifact_id}/artifact-versions:
+    get:
+      operationId: listArtifactVersions
+      tags:
+      - artifacts
+      summary: List artifact versions
+      description: Returns accessible available versions in the artifact's lineage, oldest
+        first. Each version keeps its exact ID.
+      parameters:
+      - $ref: '#/components/parameters/ArtifactIdParam'
+      responses:
+        '200':
+          description: Artifact lineage
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArtifactVersionList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 components:
   securitySchemes:
     BearerAuth:
@@ -5165,6 +5815,15 @@ components:
       description: Reference type name, such as `slack.channel` or `table.table`.
       schema:
         type: string
+    IntegrationIDQueryParam:
+      name: integration_id
+      in: query
+      required: true
+      description: Exact integration connection this account-scoped operation acts on. Invalid,
+        inaccessible, stale, or wrong-provider IDs never fall back to another connection.
+      schema:
+        type: string
+        pattern: ^intg_[A-Za-z0-9]+$
     IntegrationIDParam:
       name: integration_id
       in: path
@@ -5241,6 +5900,13 @@ components:
       description: Session nudge identifier.
       schema:
         type: string
+    SessionEventSubscriptionIdParam:
+      name: subscription_id
+      in: path
+      required: true
+      description: Durable session event subscription identifier.
+      schema:
+        type: string
     ArtifactIdParam:
       name: artifact_id
       in: path
@@ -5278,6 +5944,16 @@ components:
         maxLength: 64
       description: Filter tables by name. Table names are unique within an org; use this as
         a discovery filter and use the returned table `id` for follow-up operations.
+    DocumentTemplateFormatParam:
+      name: format
+      in: path
+      required: true
+      schema:
+        type: string
+        enum:
+        - docx
+        - pptx
+      description: Authoring format the template applies to
   responses:
     BadRequest:
       description: Bad Request
@@ -5516,7 +6192,6 @@ components:
       - permission_missing
       - not_implemented
       - credentials_unreadable
-      - agent_owned_only
       description: Why a capability is `needs_setup`. Present only when readiness is `needs_setup`.
         `not_configured` — no integration or credential is connected yet. `inactive` — the
         backing integration is manually disabled. `expired` — the backing credential has expired.
@@ -5632,18 +6307,19 @@ components:
       - flat
       - meta
       description: |-
-        Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
+        Controls how selected actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
 
-        The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise. Existing agents retain their stored mode; the default applies when creating an agent without one.
+        The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are selected, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise. Existing agents retain their stored mode; the default applies when creating an agent without one.
     ActionSelectorType:
       type: string
-      description: How one entry in an agent's tool grant names the actions it covers. `exact`
-        is a single action name; `group` a dotted prefix; `platform` every action of an integration;
-        `custom` org-defined actions; `wildcard` everything. Omitting the type means `exact`.
+      description: How one entry in an agent's action selection names the actions it covers.
+        `exact` is a single action name; `group` a dotted prefix; `provider` every action
+        of an integration; `custom` org-defined actions; `wildcard` everything. Omitting the
+        type means `exact`.
       enum:
       - exact
       - group
-      - platform
+      - provider
       - custom
       - wildcard
     ActionSelector:
@@ -5651,9 +6327,9 @@ components:
       additionalProperties: false
       required:
       - selector
-      description: 'One entry in an agent''s tool grant. Selectors are expanded against the
-        live action catalog at every build, so `platform: gmail` keeps meaning "every Gmail
-        action" as the catalog grows.'
+      description: 'One entry in an agent''s action selection. Selectors are expanded against
+        the live action catalog at every build, so `provider: gmail` keeps meaning "every
+        Gmail action" as the catalog grows.'
       properties:
         selector_type:
           $ref: '#/components/schemas/ActionSelectorType'
@@ -5663,30 +6339,6 @@ components:
           maxLength: 512
           description: The selector value, read according to `selector_type`. Ignored for
             `wildcard`.
-    AgentIntegrationAccess:
-      type: object
-      additionalProperties: false
-      required:
-      - provider
-      description: One provider's connection rules for an agent. Both fields are decisions
-        about the agent, not about any one connection.
-      properties:
-        provider:
-          type: string
-          description: The provider these rules apply to (`gmail`, `slack`, …).
-        act_as_user:
-          type: boolean
-          default: false
-          description: 'Whether the agent may resolve the personal connection of the person
-            it is acting for. Defaults to false and is never implied: reaching somebody''s
-            own account is what a person consents to when they talk to this agent, so it is
-            shown on its page as "acts through your Gmail".'
-        pin:
-          type: string
-          description: The one connection this agent uses for this provider, which also suppresses
-            the runtime account choice. May name only an org-shared or agent-owned connection
-            — a shared agent pinned to one person's mailbox would send as that person for
-            everybody.
     SessionCompactionThreshold:
       type: string
       enum:
@@ -5786,7 +6438,9 @@ components:
       description: |-
         Who, inside the org that owns this agent, may reach it at all.
 
-        `organization` (the default) is reachable by any org member — the behavior every agent had before visibility existed. `restricted` is reachable only by the agent's listed members. `private` is reachable only by its single member.
+        `organization` is reachable by any org member. `restricted` is reachable only by the agent's listed members. `private` is reachable only by its single member.
+
+        Agent create requests default to `private` when this field is omitted.
 
         Visibility is not a permission: what a member may DO with an agent stays governed by their org role. A principal outside an agent's audience gets `404` from every path — list, read, session, invoke, memory — so an agent's existence never leaks through a status code.
 
@@ -5794,7 +6448,7 @@ components:
     Agent:
       type: object
       additionalProperties: false
-      description: AI actor identity. An agent IS a principal (its permissions are role grants
+      description: AI actor identity. An agent IS a principal (its permissions are role assignments
         on that principal) with instructions, configuration, and session presence.
       required:
       - id
@@ -5858,18 +6512,12 @@ components:
           $ref: '#/components/schemas/AgentToolPresentation'
           description: Default tool presentation used by this agent's turns and built-in channel-message
             replies.
-        tool_selectors:
+        action_selectors:
           type: array
-          description: 'The agent''s tool grant: the action selectors it may call, expanded
+          description: 'The agent''s action selection: the action selectors it may call, expanded
             against the live action catalog at each build.'
           items:
             $ref: '#/components/schemas/ActionSelector'
-        integration_access:
-          type: array
-          description: 'Per-provider connection rules. Absent means the defaults: the agent
-            reaches org-shared and its own connections, and nothing is pinned.'
-          items:
-            $ref: '#/components/schemas/AgentIntegrationAccess'
         system_prompt:
           type: string
           description: Custom system prompt for agents. Empty string uses the generated default
@@ -7140,6 +7788,27 @@ components:
         agent_id:
           type: string
           description: Agent resource ID when the actor was an agent.
+        owner_kind:
+          type: string
+          enum:
+          - person
+          - team
+          description: 'Custody of the work this invocation belongs to: the session owner
+            when it ran in a session, else the agent owner, else the human actor.'
+        owner_id:
+          type: string
+          description: Principal that holds custody when `owner_kind` is `person`.
+        visibility:
+          type: string
+          enum:
+          - private
+          - organization
+          description: Who may read the record's content, following the owning session or
+            agent.
+        parameters_redacted:
+          type: boolean
+          description: True when `parameters` were withheld because the record is private
+            to someone else and the caller is reading it as an administrator.
         channel_exchange_id:
           type: string
           description: Channel exchange correlated with this invocation, when applicable.
@@ -7175,11 +7844,13 @@ components:
         parameters:
           type: object
           additionalProperties: true
-          description: Input parameters passed to the action.
+          description: Input parameters passed to the action, with credential-like keys redacted.
+            Absent when `parameters_redacted` is true.
         output_summary:
           type: object
           additionalProperties: true
-          description: Truncated or summarized action output for audit purposes.
+          description: The terminal job status and the top-level keys of the result. Result
+            bodies are never stored here; open the session for them.
         status:
           type: string
           description: Terminal invocation status ("success", "failed", etc.).
@@ -8004,6 +8675,374 @@ components:
           $ref: '#/components/schemas/WorkerSocketMessageID'
         error:
           $ref: '#/components/schemas/WorkerSocketProtocolError'
+    ConnectionGovernance:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - provider
+      - status
+      - controller
+      properties:
+        id:
+          type: string
+        provider:
+          type: string
+        status:
+          $ref: '#/components/schemas/IntegrationStatus'
+        controller:
+          $ref: '#/components/schemas/ConnectionController'
+    ConnectionGovernanceListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - has_more
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConnectionGovernance'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+    ConnectionBindings:
+      type: object
+      description: Exact accounts available to routine actions, keyed by provider. Each call
+        selects one account and revalidates its live grant. Event watches are separate.
+      additionalProperties:
+        type: array
+        minItems: 1
+        maxItems: 20
+        uniqueItems: true
+        items:
+          $ref: '#/components/schemas/ConnectionBinding'
+    ConnectionBinding:
+      type: object
+      additionalProperties: false
+      required:
+      - connection_id
+      - grant_id
+      description: A frozen selection of one connection and its explicit grant.
+      properties:
+        connection_id:
+          type: string
+        grant_id:
+          type: string
+    ConnectionExecutionMode:
+      type: string
+      enum:
+      - authenticated_human
+      - controller_background
+      - organization_background
+    ConnectionGrantAudience:
+      type: object
+      additionalProperties: false
+      required:
+      - organization
+      - principal_ids
+      properties:
+        organization:
+          type: boolean
+        principal_ids:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+    ConnectionGrant:
+      type: object
+      additionalProperties: false
+      description: Access for one assistant in conversations and routines, subject to connection
+        ownership and result audience restrictions.
+      required:
+      - id
+      - connection_id
+      - agent_id
+      - audience
+      - created_at
+      - connection_label
+      - provider
+      - controlled_by_organization
+      - can_manage
+      properties:
+        id:
+          type: string
+        connection_id:
+          type: string
+        agent_id:
+          type: string
+        audience:
+          $ref: '#/components/schemas/ConnectionGrantAudience'
+        created_at:
+          type: string
+          format: date-time
+        connection_label:
+          type: string
+        provider:
+          type: string
+        controlled_by_organization:
+          type: boolean
+        represented_actor:
+          type: string
+        can_manage:
+          type: boolean
+    ConnectionGrantListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConnectionGrant'
+    MaterializeConnectionGrantsRequest:
+      type: object
+      additionalProperties: false
+      description: Grant current assistants access for both conversations and routines within
+        the specified audience and connection ownership restrictions. Does not assign tools.
+      required:
+      - agent_ids
+      - audience
+      properties:
+        agent_ids:
+          type: array
+          minItems: 1
+          maxItems: 500
+          uniqueItems: true
+          items:
+            type: string
+        audience:
+          $ref: '#/components/schemas/ConnectionGrantAudience'
+    SetConnectionDefaultRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - connection_id
+      - grant_id
+      - execution_mode
+      - context
+      properties:
+        connection_id:
+          type: string
+        grant_id:
+          type: string
+        execution_mode:
+          $ref: '#/components/schemas/ConnectionExecutionMode'
+        context:
+          $ref: '#/components/schemas/ConnectionDefaultContext'
+    ConnectionDefaultContext:
+      type: string
+      enum:
+      - self
+      - organization
+    ConnectionDefaultChoice:
+      type: object
+      additionalProperties: false
+      required:
+      - connection_id
+      - grant_id
+      - connection_label
+      - controlled_by_organization
+      properties:
+        connection_id:
+          type: string
+        grant_id:
+          type: string
+        connection_label:
+          type: string
+        represented_actor:
+          type: string
+        controlled_by_organization:
+          type: boolean
+    ConnectionDefaultPreference:
+      type: object
+      additionalProperties: false
+      required:
+      - provider
+      - state
+      - choices
+      properties:
+        provider:
+          type: string
+        state:
+          type: string
+          enum:
+          - unset
+          - selected
+          - unavailable
+        selection:
+          $ref: '#/components/schemas/ConnectionDefaultChoice'
+        choices:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConnectionDefaultChoice'
+    ConnectionDefaultPreferenceListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConnectionDefaultPreference'
+    IntegrationStatus:
+      type: string
+      enum:
+      - active
+      - inactive
+      - expired
+      - confirmation_required
+      description: '`active` — integration is enabled and usable by agents. `inactive` — manually
+        disabled; no automatic expiry behavior. `expired` — token/credential has expired (e.g.,
+        OAuth token not refreshed).'
+    IntegrationTeamManagement:
+      type: object
+      additionalProperties: false
+      required:
+      - supported
+      - can_start
+      description: Server-evaluated eligibility for making this account team-managed in place.
+      properties:
+        supported:
+          type: boolean
+        can_start:
+          type: boolean
+        unavailable_reason:
+          type: string
+    Integration:
+      type: object
+      additionalProperties: false
+      description: Connection to an external provider such as Slack, GitHub, or a model service.
+        Agents and actions use integrations to find provider configuration without embedding
+        secrets in definitions. External identity is unique per (organization, owner, provider);
+        the same external account may have distinct personal, agent, and business rows.
+      required:
+      - id
+      - name
+      - provider
+      - status
+      - controller
+      - created_at
+      - updated_at
+      properties:
+        team_management:
+          $ref: '#/components/schemas/IntegrationTeamManagement'
+        connection_mode:
+          type: string
+          description: Immutable provider authorization mode.
+        represented_actor:
+          type: string
+          description: Verified actor represented by this connection.
+        confirmation_expires_at:
+          type: string
+          format: date-time
+          description: Deadline for confirming fresh replacement evidence, when required.
+        identity_label:
+          type: string
+          description: External account identity; safe metadata available in the governance
+            view.
+        id:
+          type: string
+          description: Unique identifier for this integration.
+        name:
+          type: string
+          description: 'Human-readable name, chosen by whoever connected it. Unique per `(org,
+            owner, provider)`: two people may each call their own mailbox "work", but two
+            org-shared connections may not.'
+        provider:
+          type: string
+          description: Free-form provider identifier (e.g. `openai`, `slack`, `github`). Immutable
+            after creation.
+        config:
+          type: object
+          additionalProperties: true
+          description: Provider-specific non-sensitive configuration stored as JSON. The shape
+            is provider-defined. Sensitive credentials are never returned in this field.
+        status:
+          $ref: '#/components/schemas/IntegrationStatus'
+          description: 'Current integration lifecycle state: `active`, `inactive`, or `expired`.'
+        credentials_unreadable:
+          type: boolean
+          description: True when the stored credential cannot be decrypted by the running
+            platform. The connection still exists and its `status` is unchanged, but nothing
+            that needs the credential will work until an admin reconnects the integration.
+            Absent or `false` in the normal case.
+        controller:
+          allOf:
+          - $ref: '#/components/schemas/ConnectionController'
+          description: Who this connection belongs to, and the only axis that decides who
+            may use it. Absent means org-shared.
+        account_model:
+          allOf:
+          - $ref: '#/components/schemas/IntegrationAccountModel'
+          description: The provider's account model, repeated here so a client can render
+            a connection without also fetching the catalog.
+        created_by:
+          type: string
+          description: User ID of the org member who created this integration.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when this integration was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when this integration was last updated.
+    IntegrationConnectResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      description: Unified integration-framework connect response. Redirect-style providers
+        return `kind=redirect` plus `redirect_url`; inline API-key and service-credential
+        providers return `kind=complete` plus the persisted integration row.
+      properties:
+        kind:
+          type: string
+          enum:
+          - redirect
+          - complete
+        redirect_url:
+          type: string
+          description: OAuth or install URL to visit when `kind=redirect`.
+        integration:
+          $ref: '#/components/schemas/Integration'
+    IntegrationAccountModel:
+      type: string
+      enum:
+      - personal
+      - workspace
+      - capability
+      description: |-
+        What one connection to a provider represents.
+
+        `personal` — one human's own account, and acting through it acts as that person (Gmail, Google Calendar, X). `workspace` — a shared external workspace the whole org acts within (Slack, Jira, GitHub). `capability` — a keyed service with no account identity behind it (Firecrawl, a model provider, a database).
+
+        It decides the default owner of a new connection and whether the connection is offered to an agent by default.
+    ConnectionController:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      description: Lifecycle and grant authority. Control does not authorize organization-provider
+        content or agent execution.
+      properties:
+        kind:
+          type: string
+          enum:
+          - person
+          - organization
+        principal_id:
+          type: string
+          description: Human controller ID, present only for person control.
+        display_name:
+          type: string
+          description: Human controller display name, when available.
     BillingUsageEvent:
       type: object
       additionalProperties: false
@@ -9727,18 +10766,18 @@ components:
         active:
           type: boolean
           description: Whether this skill is the one being simulated as invoked, i.e. it matched
-            the `skill_name` parameter and its `allowed_tools` grant was applied to this manifest.
-            False for every assigned skill when `skill_name` is omitted.
+            the `skill_name` parameter and its `allowed_actions` constraint was applied to
+            this manifest. False for every assigned skill when `skill_name` is omitted.
         missing_required:
           type: array
-          description: Tool selectors the skill requires but that are not available to the
+          description: Action selectors the skill requires but that are not available to the
             agent.
           items:
             type: string
         missing_recommended:
           type: array
-          description: Tool selectors the skill recommends but that are not available to the
-            agent.
+          description: Action selectors the skill recommends but that are not available to
+            the agent.
           items:
             type: string
     AgentManifestWarning:
@@ -9760,7 +10799,7 @@ components:
           description: Skill the warning relates to, when applicable.
         tool:
           type: string
-          description: Tool selector the warning relates to, when applicable.
+          description: Action selector the warning relates to, when applicable.
         action:
           type: string
           description: Action name the warning relates to, when applicable.
@@ -9799,7 +10838,7 @@ components:
         policy_hash:
           type: string
           description: Stable hash over the resolved tool + skill set; bumps when the agent's
-            tool selectors or skills change.
+            action selectors or skills change.
         tools:
           type: array
           description: Catalog entries the agent can invoke. Each entry surfaces to the LLM
@@ -9816,7 +10855,7 @@ components:
         skills:
           type: array
           description: Skills assigned to this agent, as resolved for this manifest. See each
-            entry's `active` property for which one's grant was applied.
+            entry's `active` property for which one's action constraint was applied.
           items:
             $ref: '#/components/schemas/SkillManifestEntry'
         warnings:
@@ -9866,17 +10905,12 @@ components:
         tool_presentation:
           $ref: '#/components/schemas/AgentToolPresentation'
           description: Omit to use the create-time default, `flat`.
-        tool_selectors:
+        action_selectors:
           type: array
-          description: The agent's tool grant. Omit for an agent with no granted actions;
-            its intrinsic tools are unaffected.
+          description: The agent's action selection. Omit for an agent with no selected catalog
+            actions.
           items:
             $ref: '#/components/schemas/ActionSelector'
-        integration_access:
-          type: array
-          description: Per-provider connection rules. Omit for the defaults.
-          items:
-            $ref: '#/components/schemas/AgentIntegrationAccess'
         system_prompt:
           type: string
           description: Custom system prompt for agents. Empty uses the generated default.
@@ -9970,16 +11004,10 @@ components:
           $ref: '#/components/schemas/AgentToolPresentation'
           description: Replacement tool presentation used by this agent's turns and channel
             replies.
-        integration_access:
+        action_selectors:
           type: array
-          description: Replacement per-provider connection rules, as a whole. Omit to leave
-            them untouched; send an empty array to clear them.
-          items:
-            $ref: '#/components/schemas/AgentIntegrationAccess'
-        tool_selectors:
-          type: array
-          description: Replacement tool grant, as a whole. Omit to leave the agent's current
-            grant untouched; send an empty array to revoke it.
+          description: Replacement action selection, as a whole. Omit to leave the agent's
+            current selection untouched; send an empty array to select none.
           items:
             $ref: '#/components/schemas/ActionSelector'
         system_prompt:
@@ -10599,6 +11627,74 @@ components:
         content:
           type: string
           description: Reminder content rendered to the model.
+    SessionEventProjectionKind:
+      type: string
+      enum:
+      - generic
+      - repository_change
+      - file_change
+      - email
+      - calendar_event
+      - message
+      - work_item
+      - content_change
+      - business_record
+      description: Stable UI treatment for a projected external event.
+    SessionEventProjectionAttribute:
+      type: object
+      additionalProperties: false
+      required:
+      - label
+      - value
+      properties:
+        label:
+          type: string
+          description: Short fact label selected by the server-side formatter.
+        value:
+          type: string
+          description: Plain-text, bounded fact value.
+    SessionEventProjection:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - event_type
+      - title
+      description: Bounded, display-safe projection of the external event associated with
+        a session message. The complete provider payload is deliberately absent.
+      properties:
+        kind:
+          $ref: '#/components/schemas/SessionEventProjectionKind'
+        event_type:
+          type: string
+          description: Concrete event type that started the work.
+        provider:
+          type: string
+          description: Provider identifier when the event came from an integration.
+        title:
+          type: string
+          description: Short human-readable description of what happened.
+        summary:
+          type: string
+          description: Optional provider-specific change summary.
+        resource_name:
+          type: string
+          description: Human-readable affected resource name, never an internal event or source
+            ID.
+        resource_url:
+          type: string
+          format: uri
+          description: Optional http(s) link to the affected provider resource.
+        occurred_at:
+          type: string
+          format: date-time
+          description: Upstream occurrence time, falling back to receipt time.
+        attributes:
+          type: array
+          maxItems: 4
+          description: Small provider-selected facts; never arbitrary payload fields.
+          items:
+            $ref: '#/components/schemas/SessionEventProjectionAttribute'
     SessionMessage:
       type: object
       additionalProperties: false
@@ -10650,6 +11746,10 @@ components:
           type: object
           additionalProperties: true
           description: Free-form caller metadata for this message.
+        event_projection:
+          $ref: '#/components/schemas/SessionEventProjection'
+          description: Server-owned safe display projection when this message was triggered
+            by an external event.
         created_at:
           type: string
           format: date-time
@@ -10724,12 +11824,24 @@ components:
           $ref: '#/components/schemas/ResourceContainer'
         posture:
           $ref: '#/components/schemas/ResourcePosture'
-        allowed_tools:
+        allowed_actions:
           type: array
           description: |-
-            Canonical action names, wildcard selectors, or group references naming the actions this skill needs. Uses the same selector vocabulary as agent tool grants.
+            Canonical action names, wildcard selectors, or group references naming the actions this skill needs. Uses the same selector vocabulary as agent action selections.
 
-            The grant takes effect when an agent invokes the skill, and lasts for the rest of that turn: calls to actions outside it are refused with an error naming the skill. Assigning a skill narrows nothing on its own, and an empty list declares nothing and narrows nothing. Skills invoked in the same turn compose as a union, so this keeps a skill on task rather than sandboxing it. Mobius memory and self-awareness tools are always exempt, and a skill can never widen an agent beyond its own tool selectors.
+            The constraint takes effect when an agent invokes the skill and lasts for the rest of that turn. Assigning a skill narrows nothing on its own, and an empty list declares nothing and narrows nothing. Lists from skills invoked in the same turn compose as a union, then intersect with the agent's selected actions. No catalog action is exempt, and a skill can never widen an agent's selection.
+          items:
+            type: string
+        required_actions:
+          type: array
+          description: Action selectors that must match the agent's effective selected catalog
+            set. A skill with any missing requirement is unavailable and cannot be invoked.
+          items:
+            type: string
+        recommended_actions:
+          type: array
+          description: Action selectors that improve this skill. Missing recommendations produce
+            warnings only; they never select or present actions.
           items:
             type: string
         tags:
@@ -10755,7 +11867,7 @@ components:
         description: Review pull requests for correctness and risk.
         source: custom
         instructions: Check the diff and leave concise findings.
-        allowed_tools:
+        allowed_actions:
         - github.create_review_comment
         tags:
           owner: product
@@ -10999,6 +12111,10 @@ components:
         metadata:
           type: object
           additionalProperties: true
+        event_projection:
+          $ref: '#/components/schemas/SessionEventProjection'
+          description: Server-owned safe display projection when this message was triggered
+            by an external event.
         created_at:
           type: string
           format: date-time
@@ -11714,6 +12830,15 @@ components:
           minimum: 0
           description: Optional declared byte size; when supplied it must match the uploaded
             bytes.
+    CreateSessionArtifactReferenceRequest:
+      type: object
+      required:
+      - artifact_id
+      additionalProperties: false
+      properties:
+        artifact_id:
+          type: string
+          description: Identifier of an existing library artifact the caller can read.
     SessionAttachmentResponse:
       type: object
       additionalProperties: false
@@ -12258,6 +13383,244 @@ components:
         woke_turn:
           type: boolean
           description: True when wake interrupted a waiting tool and requeued this turn.
+    SessionEventSubscriptionFilter:
+      type: object
+      additionalProperties: false
+      required:
+      - event_type
+      description: One OR branch. All populated fields in this object match together.
+      properties:
+        event_type:
+          type: string
+          minLength: 1
+          description: A public exact event type or a supported provider wildcard such as
+            `github.pull_request.*`.
+        source_id:
+          type: string
+          description: Optional public source identifier restriction.
+        integration_id:
+          type: string
+          description: Optional integration connection restriction.
+        match:
+          type: object
+          additionalProperties: true
+          description: Optional equality constraints over event payload fields. Dot paths
+            address nested objects.
+        condition:
+          type: string
+          maxLength: 4096
+          description: Optional Boolean expression over `event` and `meta`. Errors fail closed.
+    CreateSessionEventSubscriptionRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - filters
+      properties:
+        filters:
+          type: array
+          minItems: 1
+          maxItems: 16
+          description: ORed public-event filter branches.
+          items:
+            $ref: '#/components/schemas/SessionEventSubscriptionFilter'
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Optional future stop time.
+        idempotency_key:
+          type: string
+          maxLength: 255
+          description: Retry key scoped to this session.
+    SessionEventSubscriptionStatus:
+      type: string
+      enum:
+      - active
+      - funding_paused
+      - stopped
+      - expired
+    SessionEventSubscription:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - session_id
+      - agent_id
+      - created_by
+      - execution_scope
+      - status
+      - pending_delivery_count
+      - filters
+      - activation_at
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        session_id:
+          type: string
+        agent_id:
+          type: string
+        created_by:
+          type: string
+          description: Authorizing principal recorded at creation.
+        execution_scope:
+          type: object
+          additionalProperties: true
+          description: Server-resolved authority and billing scope; not event-controlled.
+        status:
+          $ref: '#/components/schemas/SessionEventSubscriptionStatus'
+        stop_reason:
+          type: string
+        last_diagnostic:
+          type: string
+          description: Most recent fail-closed match or delivery diagnostic.
+        last_diagnostic_at:
+          type: string
+          format: date-time
+          nullable: true
+        pending_delivery_count:
+          type: integer
+          minimum: 0
+          description: Reserved, not-yet-injected event inputs. The subscription stops visibly
+            at 256.
+        coverage_cutoff_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: First observed time intake stopped because the pending-input limit
+            was reached.
+        filters:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionEventSubscriptionFilter'
+        activation_at:
+          type: string
+          format: date-time
+        activation_reconciled_at:
+          type: string
+          format: date-time
+          nullable: true
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        stopped_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    SessionEventSubscriptionCreateResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - subscription
+      - deduped
+      properties:
+        subscription:
+          $ref: '#/components/schemas/SessionEventSubscription'
+        deduped:
+          type: boolean
+    SessionEventSubscriptionListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - has_more
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionEventSubscription'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+          nullable: true
+    SessionEventDeliveryStatus:
+      type: string
+      enum:
+      - pending
+      - delivered
+      - cancelled
+      - failed
+    SessionEventDelivery:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - subscription_id
+      - session_id
+      - source_event_id
+      - event_type
+      - source_id
+      - event
+      - meta
+      - status
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        subscription_id:
+          type: string
+        session_id:
+          type: string
+        source_event_id:
+          type: string
+        event_type:
+          type: string
+        source_id:
+          type: string
+        event:
+          type: object
+          additionalProperties: true
+        meta:
+          type: object
+          additionalProperties: true
+        target_turn_id:
+          type: string
+        message_id:
+          type: string
+        status:
+          $ref: '#/components/schemas/SessionEventDeliveryStatus'
+        diagnostic:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        delivered_at:
+          type: string
+          format: date-time
+          nullable: true
+        cancelled_at:
+          type: string
+          format: date-time
+          nullable: true
+    SessionEventDeliveryListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - has_more
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionEventDelivery'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+          nullable: true
     ArtifactConversionSummary:
       type: object
       description: Markdown-extraction state for an Office upload that requested conversion.
@@ -12276,7 +13639,9 @@ components:
           description: Failure reason when state is failed.
     Artifact:
       type: object
-      description: Stored file or generated artifact metadata.
+      description: Stored file or generated artifact metadata. Lineage fields are included
+        by artifact-versions, latest_only=true listings, and uploads declaring previous_artifact_id.
+        Ordinary calls omit the new fields for existing SDKs with strict response decoders.
       required:
       - id
       - owner
@@ -12291,6 +13656,19 @@ components:
         id:
           type: string
           description: Unique artifact identifier.
+        root_id:
+          type: string
+          description: First artifact ID in this version chain. Always returned by current
+            servers.
+        previous_id:
+          type: string
+          description: Exact parent artifact ID; empty for version one. May point to a deleted
+            version.
+        version:
+          type: integer
+          minimum: 1
+          description: Parent version plus one. Concurrent revisions may share a number; creation
+            time and ID break ties.
         owner:
           $ref: '#/components/schemas/ResourceOwner'
         visibility:
@@ -12437,6 +13815,10 @@ components:
       - principal_id
       - relationship
       properties:
+        confirm_audience_expansion:
+          type: boolean
+          description: Confirm access to existing and future routine results and the selected
+            manager powers. Required when inviting another person to private work.
         principal_id:
           type: string
         relationship:
@@ -12482,6 +13864,7 @@ components:
       additionalProperties: false
       required:
       - event_type
+      - source_bindings
       description: 'Runs the routine when a matching integration event arrives. Each matched
         event is one run on the ledger, one at a time per routine: an event arriving while
         a run is in flight waits behind it, and a run still waiting six hours later is closed
@@ -12494,10 +13877,15 @@ components:
             catalog (`github.issues.opened`) or a wildcard on a prefix (`github.issues.*`,
             `github.*`). The first segment must name a registered integration provider; built-in
             Mobius events are not accepted here.'
-        integration_id:
-          type: string
-          description: Optional. Only events from this connection start a run. Omitted, an
-            event from any of the organization's connections for the provider does.
+        source_bindings:
+          type: array
+          minItems: 1
+          maxItems: 20
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/ConnectionBinding'
+          description: Exact connection and grant pairs whose matching events may start this
+            routine. This selection does not authorize provider actions.
         condition:
           type: string
           example: event.repository.full_name == "acme/api"
@@ -12516,6 +13904,12 @@ components:
       description: 'Exactly one of `schedule` and `event` is required: a routine runs on a
         schedule or when an event arrives, not both.'
       properties:
+        connection_bindings:
+          $ref: '#/components/schemas/ConnectionBindings'
+        confirm_audience_expansion:
+          type: boolean
+          description: Confirm access to existing and future routine results and the selected
+            manager powers. Required when inviting another person to private work.
         session_id:
           type: string
           description: Optional conversation this routine was proposed in, kept as provenance.
@@ -12566,6 +13960,8 @@ components:
       additionalProperties: false
       minProperties: 1
       properties:
+        connection_bindings:
+          $ref: '#/components/schemas/ConnectionBindings'
         name:
           type: string
         instructions:
@@ -12618,6 +14014,27 @@ components:
       - created_at
       - updated_at
       properties:
+        available_actions:
+          type: array
+          description: Actions permitted for this caller; the server rechecks each request.
+          items:
+            type: string
+            enum:
+            - edit
+            - run
+            - pause
+            - resume
+            - delete
+            - invite
+        posture:
+          $ref: '#/components/schemas/ResourcePosture'
+        audience:
+          type: string
+          enum:
+          - private
+          - named
+          - organization
+          - team
         id:
           type: string
         org_id:
@@ -12659,7 +14076,7 @@ components:
           type: string
         instructions:
           type: string
-          description: Omitted from administrator metadata-only projections.
+          description: Present only after ordinary content access is authorized.
         kind:
           $ref: '#/components/schemas/RoutineKind'
         trigger:
@@ -12678,6 +14095,12 @@ components:
           $ref: '#/components/schemas/RoutineStatus'
         pause_reason:
           type: string
+        attention:
+          type: string
+          enum:
+          - account_repair
+          description: Caller-specific persistent attention state. Absence does not prove
+            provider connectivity.
         next_fire_at:
           type: string
           format: date-time
@@ -12696,10 +14119,8 @@ components:
         daily_ceiling_milli:
           type: integer
           format: int64
-        act_as_user_providers:
-          type: array
-          items:
-            type: string
+        connection_bindings:
+          $ref: '#/components/schemas/ConnectionBindings'
         created_at:
           type: string
           format: date-time
@@ -12780,6 +14201,11 @@ components:
           type: string
           description: The source event that started this run. Present only when `trigger`
             is `event`; it is the row the integration events list shows for the delivery.
+        event_source_binding:
+          allOf:
+          - $ref: '#/components/schemas/ConnectionBinding'
+          description: The exact connection and grant pair whose event started this run. Immutable
+            server-authored provenance, not action authority.
         event_type:
           type: string
           description: The concrete event type that arrived (`github.issues.opened`), not
@@ -12934,6 +14360,14 @@ components:
         payload:
           type: object
           additionalProperties: true
+    RoutineSharingConfirmation:
+      type: object
+      additionalProperties: false
+      properties:
+        confirm_audience_expansion:
+          type: boolean
+          description: Confirm sharing existing and future routine results with the proposed
+            named people.
     SkillRequest:
       type: object
       additionalProperties: false
@@ -12954,12 +14388,25 @@ components:
           type: string
           minLength: 1
           description: Markdown instructions loaded when the skill is active.
-        allowed_tools:
+        allowed_actions:
           type: array
           default: []
-          description: Tool selectors naming the actions this skill needs. The grant applies
-            once an agent invokes the skill and lasts for the rest of that turn. Empty declares
-            nothing and narrows nothing.
+          description: Action selectors naming the actions this skill permits after it is
+            invoked. Empty declares nothing and narrows nothing.
+          items:
+            type: string
+        required_actions:
+          type: array
+          default: []
+          description: Action selectors that must already be effective for this skill to be
+            invoked.
+          items:
+            type: string
+        recommended_actions:
+          type: array
+          default: []
+          description: Optional action selectors that produce warnings when absent and never
+            select actions.
           items:
             type: string
         owner:
@@ -12976,7 +14423,7 @@ components:
         name: Pull request review
         description: Review pull requests for correctness and risk.
         instructions: Check the diff and leave concise findings.
-        allowed_tools:
+        allowed_actions:
         - github.create_review_comment
         tags:
           owner: product
@@ -13169,11 +14616,21 @@ components:
           type: string
         instructions:
           type: string
-        allowed_tools:
+        allowed_actions:
           type: array
-          description: Tool selectors naming the actions this skill needs. The grant applies
-            once an agent invokes the skill and lasts for the rest of that turn. Empty declares
-            nothing and narrows nothing.
+          description: Action selectors naming the actions this skill permits after it is
+            invoked. Empty declares nothing and narrows nothing.
+          items:
+            type: string
+        required_actions:
+          type: array
+          description: Action selectors that must already be effective for this skill to be
+            invoked.
+          items:
+            type: string
+        recommended_actions:
+          type: array
+          description: Optional action selectors that warn when absent and never select actions.
           items:
             type: string
         tags:
@@ -13200,7 +14657,14 @@ components:
           description: Default route for model calls made by this agent.
         tool_presentation:
           $ref: '#/components/schemas/AgentToolPresentation'
-          description: How granted actions are presented to the model.
+          description: How selected actions are presented to the model.
+        action_selectors:
+          type: array
+          description: Exact reviewed actions selected for this agent. Templates should use
+            exact selectors so the proposed authority is visible during review. An empty array
+            selects no catalog actions.
+          items:
+            $ref: '#/components/schemas/ActionSelector'
         system_prompt:
           type: string
         timeout_seconds:
@@ -14125,6 +15589,11 @@ components:
           maxLength: 256
           description: Display name or relative virtual path. Forward slash may be used to
             organize artifacts inside private or organization-visible space.
+        previous_artifact_id:
+          type: string
+          description: Optional exact parent artifact ID. Requires edit access and inherits
+            its custody and visibility. Creates new bytes and a new ID; never changes existing
+            references.
         mime:
           type: string
           description: Optional MIME type override. Defaults to the uploaded file part content
@@ -14206,6 +15675,21 @@ components:
           type: string
           format: date-time
           description: Time this quota snapshot was generated.
+    ArtifactVersionList:
+      type: object
+      required:
+      - root_id
+      - versions
+      additionalProperties: false
+      properties:
+        root_id:
+          type: string
+        versions:
+          type: array
+          description: Accessible available versions ordered oldest to newest. Deleted versions
+            are omitted.
+          items:
+            $ref: '#/components/schemas/Artifact'
   requestBodies:
     SignedActionInvocationV1:
       required: true
@@ -14230,6 +15714,9 @@ x-tagGroups:
 - name: Jobs
   tags:
   - jobs
+- name: Integrations
+  tags:
+  - integrations
 - name: Billing Endpoints
   tags:
   - billing

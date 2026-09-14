@@ -17,7 +17,6 @@ function skill(id = "skill_1", source: Skill["source"] = "custom"): Skill {
     name: "Pull request review",
     source,
     instructions: "Check the diff and leave concise findings.",
-    allowed_tools: ["github.create_review_comment"],
     created_at: "2026-07-17T00:00:00Z",
     updated_at: "2026-07-17T00:00:00Z",
   };

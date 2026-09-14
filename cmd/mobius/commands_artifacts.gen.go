@@ -116,7 +116,9 @@ func registerArtifactsCommands(app *cli.App) {
 	artifactsGrp.Command("list").
 		Description("List artifacts").
 		Flags(
+			cli.Bool("latest-only", "").Help("Return the latest accessible available version per root before filtering and pagination. The Library uses true; omitted preserves the full…"),
 			cli.String("mime", "").Help("Mime prefix filter (e.g. `image/`)"),
+			cli.String("q", "").Help("Case-insensitive substring match on the artifact name. Filenames are how people and agents refer to a file, so this is the search key for…"),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
@@ -128,9 +130,17 @@ func registerArtifactsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			params := &api.ListArtifactsParams{}
+			if ctx.IsSet("latest-only") {
+				v := ctx.Bool("latest-only")
+				params.LatestOnly = &v
+			}
 			if ctx.IsSet("mime") {
 				v := ctx.String("mime")
 				params.Mime = &v
+			}
+			if ctx.IsSet("q") {
+				v := ctx.String("q")
+				params.Q = &v
 			}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))
@@ -145,6 +155,24 @@ func registerArtifactsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "listArtifacts", resp.StatusCode(), resp.Body)
+		})
+
+	artifactsGrp.Command("list-versions").
+		Description("List artifact versions").
+		AddArg(&cli.Arg{Name: "artifact-id", Description: "ID of the artifact", Required: true}).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.ArtifactIdParam(ctx.Arg(0))
+			resp, err := client.ListArtifactVersionsWithResponse(ctx.Context(), p0)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listArtifactVersions", resp.StatusCode(), resp.Body)
 		})
 
 }

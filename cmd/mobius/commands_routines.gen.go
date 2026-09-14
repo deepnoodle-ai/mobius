@@ -23,6 +23,7 @@ func registerRoutinesCommands(app *cli.App) {
 		Description("Add a principal to a routine's roster").
 		Args("routine-id").
 		Flags(
+			cli.Bool("confirm-audience-expansion", "").Help("Confirm access to existing and future routine results and the selected manager powers. Required when inviting another person to private…"),
 			cli.String("level", "").Help("Narrows what a follower is notified about. Ignored on the other relationships, which are always notified."),
 			cli.String("principal-id", "").Help("[required] principal-id"),
 			cli.String("relationship", "").Help("[required] The relationship a principal holds to a routine. `follower` is opt-in attention, `responsible` is the person the routine waits on…"),
@@ -40,6 +41,10 @@ func registerRoutinesCommands(app *cli.App) {
 			var body api.AddRoutinePrincipalJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
+			}
+			if ctx.IsSet("confirm-audience-expansion") {
+				v := ctx.Bool("confirm-audience-expansion")
+				body.ConfirmAudienceExpansion = &v
 			}
 			if ctx.IsSet("level") {
 				v := api.RoutineFollowLevel(ctx.String("level"))
@@ -70,6 +75,11 @@ func registerRoutinesCommands(app *cli.App) {
 	routinesGrp.Command("approve-proposal").
 		Description("Approve a pending proposal as its proposed human owner").
 		Args("proposal-id").
+		Flags(
+			cli.Bool("confirm-audience-expansion", "").Help("Confirm sharing existing and future routine results with the proposed named people."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -78,7 +88,18 @@ func registerRoutinesCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := api.RoutineProposalID(ctx.Arg(0))
-			resp, err := client.ApproveRoutineProposalWithResponse(ctx.Context(), p0)
+			var body api.ApproveRoutineProposalJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("confirm-audience-expansion") {
+				v := ctx.Bool("confirm-audience-expansion")
+				body.ConfirmAudienceExpansion = &v
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.ApproveRoutineProposalWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -89,6 +110,8 @@ func registerRoutinesCommands(app *cli.App) {
 		Description("Create a routine owned by the authenticated human").
 		Flags(
 			cli.String("agent-id", "").Help("[required] agent-id"),
+			cli.Bool("confirm-audience-expansion", "").Help("Confirm access to existing and future routine results and the selected manager powers. Required when inviting another person to private…"),
+			cli.String("connection-bindings", "").Help("Exact accounts available to routine actions, keyed by provider. Each call selects one account and revalidates its live grant. Event watches… Accepts JSON, @file, or @-."),
 			cli.Int("daily-ceiling-milli", "").Help("[required] daily-ceiling-milli"),
 			cli.String("event", "").Help("Runs the routine when a matching integration event arrives. Each matched event is one run on the ledger, one at a time per routine: an… Accepts JSON, @file, or @-."),
 			cli.Strings("follower-principal-ids", "").Help("Principals who opt into the routine's results. The creator is added automatically."),
@@ -117,6 +140,15 @@ func registerRoutinesCommands(app *cli.App) {
 			}
 			if ctx.IsSet("agent-id") {
 				body.AgentId = ctx.String("agent-id")
+			}
+			if ctx.IsSet("confirm-audience-expansion") {
+				v := ctx.Bool("confirm-audience-expansion")
+				body.ConfirmAudienceExpansion = &v
+			}
+			if ctx.IsSet("connection-bindings") {
+				if err := decodeFlagJSON(ctx, "connection-bindings", ctx.String("connection-bindings"), &body.ConnectionBindings); err != nil {
+					return err
+				}
 			}
 			if ctx.IsSet("daily-ceiling-milli") {
 				body.DailyCeilingMilli = int64(ctx.Int("daily-ceiling-milli"))
@@ -182,7 +214,7 @@ func registerRoutinesCommands(app *cli.App) {
 				return fmt.Errorf("--per-occurrence-ceiling-milli is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body, "event", "schedule")
+				return printDryRun(ctx, body, "connection_bindings", "event", "schedule")
 			}
 			resp, err := client.CreateRoutineWithResponse(ctx.Context(), body)
 			if err != nil {
@@ -251,6 +283,8 @@ func registerRoutinesCommands(app *cli.App) {
 			cli.String("owner-id", "").Help("owner-id"),
 			cli.String("agent-id", "").Help("agent-id"),
 			cli.String("origin-session-id", "").Help("Filter to routines proposed in one conversation. Provenance only; it is not where they run."),
+			cli.String("attention", "").Help("Filter to persistent account-repair work assigned to the authenticated human."),
+			cli.Strings("status", "").Help("Narrow to these routine statuses. Omit for every status, cancelled included."),
 			cli.Int("limit", "").Help("limit"),
 			cli.String("cursor", "").Help("next_cursor from the previous page."),
 		).
@@ -273,6 +307,18 @@ func registerRoutinesCommands(app *cli.App) {
 			if ctx.IsSet("origin-session-id") {
 				v := ctx.String("origin-session-id")
 				params.OriginSessionId = &v
+			}
+			if ctx.IsSet("attention") {
+				v := api.ListRoutinesParamsAttention(ctx.String("attention"))
+				params.Attention = &v
+			}
+			if ctx.IsSet("status") {
+				raw := ctx.Strings("status")
+				v := make([]api.RoutineStatus, len(raw))
+				for i, item := range raw {
+					v[i] = api.RoutineStatus(item)
+				}
+				params.Status = &v
 			}
 			if ctx.IsSet("limit") {
 				v := ctx.Int("limit")
@@ -487,6 +533,7 @@ func registerRoutinesCommands(app *cli.App) {
 		Description("Update mutable routine fields").
 		Args("routine-id").
 		Flags(
+			cli.String("connection-bindings", "").Help("Exact accounts available to routine actions, keyed by provider. Each call selects one account and revalidates its live grant. Event watches… Accepts JSON, @file, or @-."),
 			cli.Int("daily-ceiling-milli", "").Help("Must remain at least the per-occurrence ceiling. A person may move it either way; an agent may only lower it."),
 			cli.String("event", "").Help("Makes this an event routine, dropping any schedule it had. Rejected together with `schedule`. Accepts JSON, @file, or @-."),
 			cli.String("instructions", "").Help("instructions Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
@@ -508,6 +555,11 @@ func registerRoutinesCommands(app *cli.App) {
 			var body api.UpdateRoutineJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
+			}
+			if ctx.IsSet("connection-bindings") {
+				if err := decodeFlagJSON(ctx, "connection-bindings", ctx.String("connection-bindings"), &body.ConnectionBindings); err != nil {
+					return err
+				}
 			}
 			if ctx.IsSet("daily-ceiling-milli") {
 				v := int64(ctx.Int("daily-ceiling-milli"))
@@ -542,11 +594,11 @@ func registerRoutinesCommands(app *cli.App) {
 					return err
 				}
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("daily-ceiling-milli") && !ctx.IsSet("event") && !ctx.IsSet("instructions") && !ctx.IsSet("managed-by") && !ctx.IsSet("name") && !ctx.IsSet("per-occurrence-ceiling-milli") && !ctx.IsSet("schedule") {
+			if ctx.String("file") == "" && !ctx.IsSet("connection-bindings") && !ctx.IsSet("daily-ceiling-milli") && !ctx.IsSet("event") && !ctx.IsSet("instructions") && !ctx.IsSet("managed-by") && !ctx.IsSet("name") && !ctx.IsSet("per-occurrence-ceiling-milli") && !ctx.IsSet("schedule") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body, "event", "schedule")
+				return printDryRun(ctx, body, "connection_bindings", "event", "schedule")
 			}
 			resp, err := client.UpdateRoutineWithResponse(ctx.Context(), p0, body)
 			if err != nil {

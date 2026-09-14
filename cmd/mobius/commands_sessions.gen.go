@@ -251,6 +251,91 @@ func registerSessionsCommands(app *cli.App) {
 			return printResponse(ctx, "createSession", resp.StatusCode(), resp.Body)
 		})
 
+	sessionsGrp.Command("create-artifact-reference").
+		Description("Create session artifact reference").
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
+		Flags(
+			cli.String("artifact-id", "").Help("[required] Identifier of an existing library artifact the caller can read."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.SessionIdParam(ctx.Arg(0))
+			var body api.CreateSessionArtifactReferenceJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("artifact-id") {
+				body.ArtifactId = ctx.String("artifact-id")
+			}
+			if body.ArtifactId == "" {
+				return fmt.Errorf("--artifact-id is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.CreateSessionArtifactReferenceWithResponse(ctx.Context(), p0, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "createSessionArtifactReference", resp.StatusCode(), resp.Body)
+		})
+
+	sessionsGrp.Command("create-event-subscription").
+		Description("Create a session event subscription").
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
+		Flags(
+			cli.String("expires-at", "").Help("Optional future stop time. Accepts JSON, @file, or @-."),
+			cli.String("filters", "").Help("[required] ORed public-event filter branches. Accepts JSON, @file, or @-."),
+			cli.String("idempotency-key", "").Help("Retry key scoped to this session."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.SessionIdParam(ctx.Arg(0))
+			var body api.CreateSessionEventSubscriptionJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("expires-at") {
+				if err := decodeFlagJSON(ctx, "expires-at", ctx.String("expires-at"), &body.ExpiresAt); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("filters") {
+				if err := decodeFlagJSON(ctx, "filters", ctx.String("filters"), &body.Filters); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("idempotency-key") {
+				v := ctx.String("idempotency-key")
+				body.IdempotencyKey = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("filters") {
+				return fmt.Errorf("--filters is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body, "expires_at", "filters")
+			}
+			resp, err := client.CreateSessionEventSubscriptionWithResponse(ctx.Context(), p0, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "createSessionEventSubscription", resp.StatusCode(), resp.Body)
+		})
+
 	sessionsGrp.Command("delete").
 		Description("Delete session").
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
@@ -305,6 +390,26 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "getSession", resp.StatusCode(), resp.Body)
+		})
+
+	sessionsGrp.Command("get-event-subscription").
+		Description("Get a session event subscription").
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
+		AddArg(&cli.Arg{Name: "subscription-id", Description: "Durable session event subscription identifier.", Required: true}).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.SessionIdParam(ctx.Arg(0))
+			p1 := api.SessionEventSubscriptionIdParam(ctx.Arg(1))
+			resp, err := client.GetSessionEventSubscriptionWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "getSessionEventSubscription", resp.StatusCode(), resp.Body)
 		})
 
 	sessionsGrp.Command("get-nudge").
@@ -473,6 +578,98 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "listSessions", resp.StatusCode(), resp.Body)
+		})
+
+	sessionsGrp.Command("list-event-deliveries").
+		Description("List public-event deliveries").
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
+		AddArg(&cli.Arg{Name: "subscription-id", Description: "Durable session event subscription identifier.", Required: true}).
+		Flags(
+			cli.Strings("status", "").Help("status"),
+			cli.String("order", "").Help("Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first — the way to fetch the latest rows of…"),
+			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
+			cli.Int("limit", "").Help("Maximum number of items to return"),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.SessionIdParam(ctx.Arg(0))
+			p1 := api.SessionEventSubscriptionIdParam(ctx.Arg(1))
+			params := &api.ListSessionEventDeliveriesParams{}
+			if ctx.IsSet("status") {
+				raw := ctx.Strings("status")
+				v := make([]api.SessionEventDeliveryStatus, len(raw))
+				for i, item := range raw {
+					v[i] = api.SessionEventDeliveryStatus(item)
+				}
+				params.Status = &v
+			}
+			if ctx.IsSet("order") {
+				v := api.ListSessionEventDeliveriesParamsOrder(ctx.String("order"))
+				params.Order = &v
+			}
+			if ctx.IsSet("cursor") {
+				v := api.CursorParam(ctx.String("cursor"))
+				params.Cursor = &v
+			}
+			if ctx.IsSet("limit") {
+				v := api.LimitParam(ctx.Int("limit"))
+				params.Limit = &v
+			}
+			resp, err := client.ListSessionEventDeliveriesWithResponse(ctx.Context(), p0, p1, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listSessionEventDeliveries", resp.StatusCode(), resp.Body)
+		})
+
+	sessionsGrp.Command("list-event-subscriptions").
+		Description("List session event subscriptions").
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
+		Flags(
+			cli.Strings("status", "").Help("Filter by one or more subscription states."),
+			cli.String("order", "").Help("Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first — the way to fetch the latest rows of…"),
+			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
+			cli.Int("limit", "").Help("Maximum number of items to return"),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.SessionIdParam(ctx.Arg(0))
+			params := &api.ListSessionEventSubscriptionsParams{}
+			if ctx.IsSet("status") {
+				raw := ctx.Strings("status")
+				v := make([]api.SessionEventSubscriptionStatus, len(raw))
+				for i, item := range raw {
+					v[i] = api.SessionEventSubscriptionStatus(item)
+				}
+				params.Status = &v
+			}
+			if ctx.IsSet("order") {
+				v := api.ListSessionEventSubscriptionsParamsOrder(ctx.String("order"))
+				params.Order = &v
+			}
+			if ctx.IsSet("cursor") {
+				v := api.CursorParam(ctx.String("cursor"))
+				params.Cursor = &v
+			}
+			if ctx.IsSet("limit") {
+				v := api.LimitParam(ctx.Int("limit"))
+				params.Limit = &v
+			}
+			resp, err := client.ListSessionEventSubscriptionsWithResponse(ctx.Context(), p0, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listSessionEventSubscriptions", resp.StatusCode(), resp.Body)
 		})
 
 	sessionsGrp.Command("list-messages").
@@ -730,6 +927,24 @@ func registerSessionsCommands(app *cli.App) {
 			return printResponse(ctx, "startTurn", resp.StatusCode(), resp.Body)
 		})
 
+	sessionsGrp.Command("stop-session-event-subscriptions").
+		Description("Stop all session event subscriptions").
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.SessionIdParam(ctx.Arg(0))
+			resp, err := client.StopSessionEventSubscriptionsWithResponse(ctx.Context(), p0)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "stopSessionEventSubscriptions", resp.StatusCode(), resp.Body)
+		})
+
 	sessionsGrp.Command("stream").
 		Description("Stream a session's activity").
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
@@ -790,6 +1005,26 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "streamSessionTranscript", resp.StatusCode(), resp.Body)
+		})
+
+	sessionsGrp.Command("unsubscribe-session-event-subscription").
+		Description("Stop a session event subscription").
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
+		AddArg(&cli.Arg{Name: "subscription-id", Description: "Durable session event subscription identifier.", Required: true}).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.SessionIdParam(ctx.Arg(0))
+			p1 := api.SessionEventSubscriptionIdParam(ctx.Arg(1))
+			resp, err := client.UnsubscribeSessionEventSubscriptionWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "unsubscribeSessionEventSubscription", resp.StatusCode(), resp.Body)
 		})
 
 	sessionsGrp.Command("update").

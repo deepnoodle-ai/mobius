@@ -37,7 +37,6 @@ def _skill(skill_id: str = "skill_1", source: str = "custom") -> dict:
         "name": "Pull request review",
         "source": source,
         "instructions": "Check the diff and leave concise findings.",
-        "allowed_tools": ["github.create_review_comment"],
         "owner": {"kind": "team"},
         "visibility": "organization",
         "container": None,
