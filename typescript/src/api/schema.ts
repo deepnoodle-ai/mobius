@@ -6510,6 +6510,8 @@ export interface components {
             message_id?: string;
             /** @description Source attachment ID. */
             attachment_id?: string;
+            /** @description Gmail MIME part ID, scoped to the source message. */
+            part_id?: string;
             /** @description Original attachment filename. */
             filename?: string;
             /** @description Provider message receipt time. */

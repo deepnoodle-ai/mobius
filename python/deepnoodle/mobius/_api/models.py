@@ -5158,6 +5158,9 @@ class ArtifactSource(BaseModel):
     )
     message_id: str | None = Field(None, description='Source message ID.')
     attachment_id: str | None = Field(None, description='Source attachment ID.')
+    part_id: str | None = Field(
+        None, description='Gmail MIME part ID, scoped to the source message.'
+    )
     filename: str | None = Field(None, description='Original attachment filename.')
     received_at: str | None = Field(None, description='Provider message receipt time.')
     file_id: str | None = Field(None, description='Google Drive file ID.')

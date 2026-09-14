@@ -13663,6 +13663,9 @@ components:
         attachment_id:
           type: string
           description: Source attachment ID.
+        part_id:
+          type: string
+          description: Gmail MIME part ID, scoped to the source message.
         filename:
           type: string
           description: Original attachment filename.

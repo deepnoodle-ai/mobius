@@ -4985,6 +4985,9 @@ type ArtifactSource struct {
 	// MessageId Source message ID.
 	MessageId *string `json:"message_id,omitempty"`
 
+	// PartId Gmail MIME part ID, scoped to the source message.
+	PartId *string `json:"part_id,omitempty"`
+
 	// Provider Source provider.
 	Provider string `json:"provider"`
 
