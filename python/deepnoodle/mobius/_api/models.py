@@ -5140,6 +5140,65 @@ class ArtifactConversionSummary(BaseModel):
     error: str | None = Field(None, description='Failure reason when state is failed.')
 
 
+class ArtifactSource(BaseModel):
+    """
+    Server-owned file exchange provenance.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: str = Field(
+        ...,
+        description='Origin type, such as email_attachment, drive_file or onedrive_item.',
+    )
+    provider: str = Field(..., description='Source provider.')
+    connection_id: str = Field(
+        ..., description='Exact connection used to save the file.'
+    )
+    message_id: str | None = Field(None, description='Source message ID.')
+    attachment_id: str | None = Field(None, description='Source attachment ID.')
+    filename: str | None = Field(None, description='Original attachment filename.')
+    received_at: str | None = Field(None, description='Provider message receipt time.')
+    file_id: str | None = Field(None, description='Google Drive file ID.')
+    web_view_link: str | None = Field(None, description='Google Drive browser URL.')
+    export_mime: str | None = Field(
+        None, description='Google-native export format used for this snapshot.'
+    )
+    version: str | None = Field(None, description='Observed Google Drive version.')
+    head_revision_id: str | None = Field(
+        None, description='Observed Google Drive head revision.'
+    )
+    md5_checksum: str | None = Field(
+        None, description='Observed binary Drive checksum.'
+    )
+    drive_id: str | None = Field(None, description='OneDrive or SharePoint drive ID.')
+    item_id: str | None = Field(None, description='OneDrive or SharePoint item ID.')
+    web_url: str | None = Field(None, description='Provider browser URL.')
+    etag: str | None = Field(None, description='Observed OneDrive entity tag.')
+    ctag: str | None = Field(None, description='Observed OneDrive content tag.')
+    saved_at: AwareDatetime = Field(..., description='Time the copy was saved.')
+
+
+class ArtifactDelivery(BaseModel):
+    """
+    Server-owned file exchange provenance.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    provider: str = Field(..., description='Destination provider.')
+    connection_id: str = Field(..., description='Exact connection used to publish.')
+    drive_id: str | None = Field(None, description='OneDrive or SharePoint drive ID.')
+    item_id: str | None = Field(None, description='OneDrive or SharePoint item ID.')
+    file_id: str | None = Field(None, description='Google Drive file ID.')
+    name: str | None = Field(None, description='Published filename.')
+    web_url: str | None = Field(None, description='Destination browser URL.')
+    sha256: str = Field(..., description='Checksum of the delivered library bytes.')
+    delivered_at: AwareDatetime = Field(..., description='Time publishing completed.')
+
+
 class Artifact(BaseModel):
     """
     Stored file or generated artifact metadata. Lineage fields are included by artifact-versions, latest_only=true listings, and uploads declaring previous_artifact_id. Ordinary calls omit the new fields for existing SDKs with strict response decoders.
@@ -5147,6 +5206,12 @@ class Artifact(BaseModel):
 
     model_config = ConfigDict(
         extra='forbid',
+    )
+    source: ArtifactSource | None = None
+    delivered_to: list[ArtifactDelivery] | None = Field(
+        None,
+        description='The newest successful publish destinations, in chronological order.',
+        max_length=20,
     )
     id: str = Field(..., description='Unique artifact identifier.')
     root_id: str | None = Field(

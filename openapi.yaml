@@ -13637,6 +13637,114 @@ components:
         error:
           type: string
           description: Failure reason when state is failed.
+    ArtifactSource:
+      type: object
+      additionalProperties: false
+      readOnly: true
+      description: Server-owned file exchange provenance.
+      required:
+      - kind
+      - provider
+      - connection_id
+      - saved_at
+      properties:
+        kind:
+          type: string
+          description: Origin type, such as email_attachment, drive_file or onedrive_item.
+        provider:
+          type: string
+          description: Source provider.
+        connection_id:
+          type: string
+          description: Exact connection used to save the file.
+        message_id:
+          type: string
+          description: Source message ID.
+        attachment_id:
+          type: string
+          description: Source attachment ID.
+        filename:
+          type: string
+          description: Original attachment filename.
+        received_at:
+          type: string
+          description: Provider message receipt time.
+        file_id:
+          type: string
+          description: Google Drive file ID.
+        web_view_link:
+          type: string
+          description: Google Drive browser URL.
+        export_mime:
+          type: string
+          description: Google-native export format used for this snapshot.
+        version:
+          type: string
+          description: Observed Google Drive version.
+        head_revision_id:
+          type: string
+          description: Observed Google Drive head revision.
+        md5_checksum:
+          type: string
+          description: Observed binary Drive checksum.
+        drive_id:
+          type: string
+          description: OneDrive or SharePoint drive ID.
+        item_id:
+          type: string
+          description: OneDrive or SharePoint item ID.
+        web_url:
+          type: string
+          description: Provider browser URL.
+        etag:
+          type: string
+          description: Observed OneDrive entity tag.
+        ctag:
+          type: string
+          description: Observed OneDrive content tag.
+        saved_at:
+          type: string
+          format: date-time
+          description: Time the copy was saved.
+    ArtifactDelivery:
+      type: object
+      additionalProperties: false
+      readOnly: true
+      description: Server-owned file exchange provenance.
+      required:
+      - provider
+      - connection_id
+      - sha256
+      - delivered_at
+      properties:
+        provider:
+          type: string
+          description: Destination provider.
+        connection_id:
+          type: string
+          description: Exact connection used to publish.
+        drive_id:
+          type: string
+          description: OneDrive or SharePoint drive ID.
+        item_id:
+          type: string
+          description: OneDrive or SharePoint item ID.
+        file_id:
+          type: string
+          description: Google Drive file ID.
+        name:
+          type: string
+          description: Published filename.
+        web_url:
+          type: string
+          description: Destination browser URL.
+        sha256:
+          type: string
+          description: Checksum of the delivered library bytes.
+        delivered_at:
+          type: string
+          format: date-time
+          description: Time publishing completed.
     Artifact:
       type: object
       description: Stored file or generated artifact metadata. Lineage fields are included
@@ -13653,6 +13761,15 @@ components:
       - created_at
       additionalProperties: false
       properties:
+        source:
+          $ref: '#/components/schemas/ArtifactSource'
+        delivered_to:
+          type: array
+          readOnly: true
+          maxItems: 20
+          description: The newest successful publish destinations, in chronological order.
+          items:
+            $ref: '#/components/schemas/ArtifactDelivery'
         id:
           type: string
           description: Unique artifact identifier.

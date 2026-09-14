@@ -4810,6 +4810,9 @@ type Artifact struct {
 	// CreatedBy Principal ID of the actor who created this artifact. Empty for system-initiated writes.
 	CreatedBy *string `json:"created_by,omitempty"`
 
+	// DeliveredTo The newest successful publish destinations, in chronological order.
+	DeliveredTo *[]ArtifactDelivery `json:"delivered_to,omitempty"`
+
 	// Id Unique artifact identifier.
 	Id string `json:"id"`
 
@@ -4840,6 +4843,9 @@ type Artifact struct {
 	// SizeBytes Artifact content size in bytes.
 	SizeBytes int64 `json:"size_bytes"`
 
+	// Source Server-owned file exchange provenance.
+	Source *ArtifactSource `json:"source,omitempty"`
+
 	// UpdatedAt Time the artifact metadata was last updated.
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 
@@ -4862,6 +4868,36 @@ type ArtifactConversionSummary struct {
 
 // ArtifactConversionSummaryState defines model for ArtifactConversionSummary.State.
 type ArtifactConversionSummaryState string
+
+// ArtifactDelivery Server-owned file exchange provenance.
+type ArtifactDelivery struct {
+	// ConnectionId Exact connection used to publish.
+	ConnectionId string `json:"connection_id"`
+
+	// DeliveredAt Time publishing completed.
+	DeliveredAt time.Time `json:"delivered_at"`
+
+	// DriveId OneDrive or SharePoint drive ID.
+	DriveId *string `json:"drive_id,omitempty"`
+
+	// FileId Google Drive file ID.
+	FileId *string `json:"file_id,omitempty"`
+
+	// ItemId OneDrive or SharePoint item ID.
+	ItemId *string `json:"item_id,omitempty"`
+
+	// Name Published filename.
+	Name *string `json:"name,omitempty"`
+
+	// Provider Destination provider.
+	Provider string `json:"provider"`
+
+	// Sha256 Checksum of the delivered library bytes.
+	Sha256 string `json:"sha256"`
+
+	// WebUrl Destination browser URL.
+	WebUrl *string `json:"web_url,omitempty"`
+}
 
 // ArtifactListResponse defines model for ArtifactListResponse.
 type ArtifactListResponse struct {
@@ -4907,6 +4943,66 @@ type ArtifactSignedUrl struct {
 
 // ArtifactSignedUrlMethod HTTP method to use with `url`; currently `GET`.
 type ArtifactSignedUrlMethod string
+
+// ArtifactSource Server-owned file exchange provenance.
+type ArtifactSource struct {
+	// AttachmentId Source attachment ID.
+	AttachmentId *string `json:"attachment_id,omitempty"`
+
+	// ConnectionId Exact connection used to save the file.
+	ConnectionId string `json:"connection_id"`
+
+	// Ctag Observed OneDrive content tag.
+	Ctag *string `json:"ctag,omitempty"`
+
+	// DriveId OneDrive or SharePoint drive ID.
+	DriveId *string `json:"drive_id,omitempty"`
+
+	// Etag Observed OneDrive entity tag.
+	Etag *string `json:"etag,omitempty"`
+
+	// ExportMime Google-native export format used for this snapshot.
+	ExportMime *string `json:"export_mime,omitempty"`
+
+	// FileId Google Drive file ID.
+	FileId *string `json:"file_id,omitempty"`
+
+	// Filename Original attachment filename.
+	Filename *string `json:"filename,omitempty"`
+
+	// HeadRevisionId Observed Google Drive head revision.
+	HeadRevisionId *string `json:"head_revision_id,omitempty"`
+
+	// ItemId OneDrive or SharePoint item ID.
+	ItemId *string `json:"item_id,omitempty"`
+
+	// Kind Origin type, such as email_attachment, drive_file or onedrive_item.
+	Kind string `json:"kind"`
+
+	// Md5Checksum Observed binary Drive checksum.
+	Md5Checksum *string `json:"md5_checksum,omitempty"`
+
+	// MessageId Source message ID.
+	MessageId *string `json:"message_id,omitempty"`
+
+	// Provider Source provider.
+	Provider string `json:"provider"`
+
+	// ReceivedAt Provider message receipt time.
+	ReceivedAt *string `json:"received_at,omitempty"`
+
+	// SavedAt Time the copy was saved.
+	SavedAt time.Time `json:"saved_at"`
+
+	// Version Observed Google Drive version.
+	Version *string `json:"version,omitempty"`
+
+	// WebUrl Provider browser URL.
+	WebUrl *string `json:"web_url,omitempty"`
+
+	// WebViewLink Google Drive browser URL.
+	WebViewLink *string `json:"web_view_link,omitempty"`
+}
 
 // ArtifactVersionList defines model for ArtifactVersionList.
 type ArtifactVersionList struct {
