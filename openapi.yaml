@@ -3723,6 +3723,129 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /v1/routines/{routine_id}/threads:
+    get:
+      operationId: listRoutineThreads
+      tags:
+      - routines
+      summary: List a routine's threads
+      description: Lists followed items with live routine reach and keyset pagination by last
+        activity.
+      parameters:
+      - $ref: '#/components/parameters/RoutineID'
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 50
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Threads ordered by last activity.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoutineThreadList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/routines/{routine_id}/threads/{key}:
+    get:
+      parameters:
+      - $ref: '#/components/parameters/RoutineID'
+      - name: key
+        in: path
+        required: true
+        schema:
+          type: string
+      operationId: getRoutineThread
+      tags:
+      - routines
+      summary: Get a followed thread
+      description: Returns a thread under the same custody and reach policy as its routine.
+      responses:
+        '200':
+          description: Thread record.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoutineThread'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/routines/{routine_id}/threads/{key}/resume:
+    post:
+      parameters:
+      - $ref: '#/components/parameters/RoutineID'
+      - name: key
+        in: path
+        required: true
+        schema:
+          type: string
+      operationId: resumeRoutineThread
+      tags:
+      - routines
+      summary: Resume a thread at its turn cap
+      description: A human manager grants one additional allowance of the routine's current
+        turn cap. Repeated requests before that allowance is consumed are idempotent. Skipped
+        events are not replayed.
+      responses:
+        '200':
+          description: Resumed thread.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoutineThread'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/routines/follow-preview:
+    post:
+      operationId: previewRoutineFollowKey
+      tags:
+      - routines
+      summary: Preview a custom thread key
+      description: Evaluates the custom expression against one recent integration event the
+        caller can read. Does not create or change a routine.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoutineFollowPreviewRequest'
+      responses:
+        '200':
+          description: Resolved custom thread key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoutineFollowPreview'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/routines:
     get:
       operationId: listRoutines
@@ -3830,6 +3953,11 @@ paths:
         going while has_more is true. A page may hold fewer than limit rows once unreachable
         routines are dropped; has_more, not the row count, says whether more remain.'
       parameters:
+      - name: thread_key
+        in: query
+        schema:
+          type: string
+        description: Narrow to one thread; requires routine_id.
       - name: routine_id
         in: query
         schema:
@@ -6642,6 +6770,7 @@ components:
       - manual
       - api
       - interaction
+      - routine
       description: 'Surface that created the session: `manual`, `api`, or `interaction`.'
     SessionScope:
       type: string
@@ -7924,6 +8053,11 @@ components:
         are open-set (any `<prefix>.<resource>.<event>` matches); `event_types` lists the
         currently-active, documented members.
       properties:
+        follow_targets:
+          type: array
+          description: Provider-defined kinds of items a routine can follow.
+          items:
+            $ref: '#/components/schemas/RoutineFollowTarget'
         prefix:
           type: string
           description: Top-level dotted segment that names the source (`table`, `github`).
@@ -8138,6 +8272,25 @@ components:
         model:
           type: string
           description: Model identifier advertised by the local worker.
+    RoutineFollowTarget:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - label
+      - description
+      - event_types
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        description:
+          type: string
+        event_types:
+          type: array
+          items:
+            type: string
     WorkerSocketModelCapability:
       type: object
       additionalProperties: false
@@ -13764,15 +13917,6 @@ components:
       - created_at
       additionalProperties: false
       properties:
-        source:
-          $ref: '#/components/schemas/ArtifactSource'
-        delivered_to:
-          type: array
-          readOnly: true
-          maxItems: 20
-          description: The newest successful publish destinations, in chronological order.
-          items:
-            $ref: '#/components/schemas/ArtifactDelivery'
         id:
           type: string
           description: Unique artifact identifier.
@@ -13836,6 +13980,15 @@ components:
           $ref: '#/components/schemas/ArtifactConversionSummary'
           description: Conversion summary for an Office artifact that requested conversion.
             Absent for artifacts with no conversion.
+        source:
+          $ref: '#/components/schemas/ArtifactSource'
+        delivered_to:
+          type: array
+          readOnly: true
+          maxItems: 20
+          description: The newest successful publish destinations, in chronological order.
+          items:
+            $ref: '#/components/schemas/ArtifactDelivery'
       example:
         id: art_2m7q9x5v3p8n4r6t
         owner:
@@ -13983,7 +14136,6 @@ components:
       type: object
       additionalProperties: false
       required:
-      - event_type
       - source_bindings
       description: 'Runs the routine when a matching integration event arrives. Each matched
         event is one run on the ledger, one at a time per routine: an event arriving while
@@ -13992,6 +14144,7 @@ components:
       properties:
         event_type:
           type: string
+          x-go-type-skip-optional-pointer: true
           example: github.issues.opened
           description: 'The integration event to react to: a concrete type from the event
             catalog (`github.issues.opened`) or a wildcard on a prefix (`github.issues.*`,
@@ -14024,6 +14177,36 @@ components:
       description: 'Exactly one of `schedule` and `event` is required: a routine runs on a
         schedule or when an event arrives, not both.'
       properties:
+        follow_target:
+          type: string
+          nullable: true
+          description: Immutable follow target from the event catalog. Null or event creates
+            a conversation per event; routine shares one conversation; custom evaluates follow_key.
+            Provider targets derive the event subscription.
+        follow_key:
+          type: string
+          nullable: true
+          maxLength: 4096
+          description: Immutable expr over event and meta; required only with custom. Must
+            yield a non-empty string of at most 2048 bytes.
+        idle_after:
+          type: integer
+          minimum: 60
+          maximum: 31536000
+          default: 1209600
+          description: Seconds without events before an open thread is shown as idle.
+        max_turns_per_thread:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          default: 25
+          description: Turn allowance per thread. Only a human can raise it.
+        concurrency:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 5
+          description: Maximum concurrent threads. Only a human can raise it.
         connection_bindings:
           $ref: '#/components/schemas/ConnectionBindings'
         confirm_audience_expansion:
@@ -14080,6 +14263,36 @@ components:
       additionalProperties: false
       minProperties: 1
       properties:
+        follow_target:
+          type: string
+          nullable: true
+          description: Immutable follow target from the event catalog. Null or event creates
+            a conversation per event; routine shares one conversation; custom evaluates follow_key.
+            Provider targets derive the event subscription.
+        follow_key:
+          type: string
+          nullable: true
+          maxLength: 4096
+          description: Immutable expr over event and meta; required only with custom. Must
+            yield a non-empty string of at most 2048 bytes.
+        idle_after:
+          type: integer
+          minimum: 60
+          maximum: 31536000
+          default: 1209600
+          description: Seconds without events before an open thread is shown as idle.
+        max_turns_per_thread:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          default: 25
+          description: Turn allowance per thread. Only a human can raise it.
+        concurrency:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 5
+          description: Maximum concurrent threads. Only a human can raise it.
         connection_bindings:
           $ref: '#/components/schemas/ConnectionBindings'
         name:
@@ -14134,6 +14347,36 @@ components:
       - created_at
       - updated_at
       properties:
+        follow_target:
+          type: string
+          nullable: true
+          description: Immutable follow target from the event catalog. Null or event creates
+            a conversation per event; routine shares one conversation; custom evaluates follow_key.
+            Provider targets derive the event subscription.
+        follow_key:
+          type: string
+          nullable: true
+          maxLength: 4096
+          description: Immutable expr over event and meta; required only with custom. Must
+            yield a non-empty string of at most 2048 bytes.
+        idle_after:
+          type: integer
+          minimum: 60
+          maximum: 31536000
+          default: 1209600
+          description: Seconds without events before an open thread is shown as idle.
+        max_turns_per_thread:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          default: 25
+          description: Turn allowance per thread. Only a human can raise it.
+        concurrency:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 5
+          description: Maximum concurrent threads. Only a human can raise it.
         available_actions:
           type: array
           description: Actions permitted for this caller; the server rechecks each request.
@@ -14278,6 +14521,15 @@ components:
         credits, and timing all live here, so a run whose transcript is gone is still a complete
         row.
       properties:
+        thread_key:
+          type: string
+          description: Stable URL-safe key of the followed thread.
+        thread_title:
+          type: string
+          description: Followed item title at event intake.
+        coalesced_into:
+          type: string
+          description: Occurrence ID retaining this event when skipped as coalesced.
         id:
           type: string
         routine_id:
@@ -14488,6 +14740,105 @@ components:
           type: boolean
           description: Confirm sharing existing and future routine results with the proposed
             named people.
+    RoutineThread:
+      type: object
+      additionalProperties: false
+      required:
+      - key
+      - routine_id
+      - state
+      - title
+      - adopted
+      - event_count
+      - turn_count
+      - credits_spent_milli
+      - opened_at
+      - last_event_at
+      - paused
+      properties:
+        key:
+          type: string
+          description: Opaque stable URL-safe thread key.
+        routine_id:
+          type: string
+        session_id:
+          type: string
+        state:
+          type: string
+          enum:
+          - open
+          - idle
+          - closed
+        outcome:
+          type: string
+        title:
+          type: string
+        url:
+          type: string
+        author:
+          type: string
+        adopted:
+          type: boolean
+        event_count:
+          type: integer
+        turn_count:
+          type: integer
+        paused:
+          type: boolean
+          description: The turn allowance is exhausted; a human manager can resume the thread
+            or raise the routine cap.
+        credits_spent_milli:
+          type: integer
+          format: int64
+        opened_at:
+          type: string
+          format: date-time
+        last_event_at:
+          type: string
+          format: date-time
+        closed_at:
+          type: string
+          format: date-time
+    RoutineThreadList:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - has_more
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoutineThread'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+    RoutineFollowPreviewRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - integration_event_id
+      - follow_key
+      properties:
+        integration_event_id:
+          type: string
+        follow_key:
+          type: string
+          minLength: 1
+          maxLength: 4096
+    RoutineFollowPreview:
+      type: object
+      additionalProperties: false
+      required:
+      - key
+      - title
+      properties:
+        key:
+          type: string
+        title:
+          type: string
+          description: The expression's resolved value.
     SkillRequest:
       type: object
       additionalProperties: false

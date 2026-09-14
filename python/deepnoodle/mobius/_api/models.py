@@ -603,6 +603,7 @@ class SessionOrigin(StrEnum):
     manual = 'manual'
     api = 'api'
     interaction = 'interaction'
+    routine = 'routine'
 
 
 class SessionScope(StrEnum):
@@ -1701,6 +1702,16 @@ class WorkerModelRoute(BaseModel):
     model: str = Field(
         ..., description='Model identifier advertised by the local worker.'
     )
+
+
+class RoutineFollowTarget(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    label: str
+    description: str
+    event_types: list[str]
 
 
 class WorkerSocketModelCapability(BaseModel):
@@ -5210,12 +5221,6 @@ class Artifact(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    source: ArtifactSource | None = None
-    delivered_to: list[ArtifactDelivery] | None = Field(
-        None,
-        description='The newest successful publish destinations, in chronological order.',
-        max_length=20,
-    )
     id: str = Field(..., description='Unique artifact identifier.')
     root_id: str | None = Field(
         None,
@@ -5266,6 +5271,12 @@ class Artifact(BaseModel):
     conversion: ArtifactConversionSummary | None = Field(
         None,
         description='Conversion summary for an Office artifact that requested conversion. Absent for artifacts with no conversion.',
+    )
+    source: ArtifactSource | None = None
+    delivered_to: list[ArtifactDelivery] | None = Field(
+        None,
+        description='The newest successful publish destinations, in chronological order.',
+        max_length=20,
     )
 
 
@@ -5395,8 +5406,8 @@ class RoutineEventTrigger(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    event_type: str = Field(
-        ...,
+    event_type: str | None = Field(
+        None,
         description='The integration event to react to: a concrete type from the event catalog (`github.issues.opened`) or a wildcard on a prefix (`github.issues.*`, `github.*`). The first segment must name a registered integration provider; built-in Mobius events are not accepted here.',
         examples=['github.issues.opened'],
     )
@@ -5463,6 +5474,16 @@ class RoutineOccurrence(BaseModel):
 
     model_config = ConfigDict(
         extra='forbid',
+    )
+    thread_key: str | None = Field(
+        None, description='Stable URL-safe key of the followed thread.'
+    )
+    thread_title: str | None = Field(
+        None, description='Followed item title at event intake.'
+    )
+    coalesced_into: str | None = Field(
+        None,
+        description='Occurrence ID retaining this event when skipped as coalesced.',
     )
     id: str
     routine_id: str
@@ -5615,6 +5636,62 @@ class RoutineSharingConfirmation(BaseModel):
         None,
         description='Confirm sharing existing and future routine results with the proposed named people.',
     )
+
+
+class State3(StrEnum):
+    open = 'open'
+    idle = 'idle'
+    closed = 'closed'
+
+
+class RoutineThread(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    key: str = Field(..., description='Opaque stable URL-safe thread key.')
+    routine_id: str
+    session_id: str | None = None
+    state: State3
+    outcome: str | None = None
+    title: str
+    url: str | None = None
+    author: str | None = None
+    adopted: bool
+    event_count: int
+    turn_count: int
+    paused: bool = Field(
+        ...,
+        description='The turn allowance is exhausted; a human manager can resume the thread or raise the routine cap.',
+    )
+    credits_spent_milli: int
+    opened_at: AwareDatetime
+    last_event_at: AwareDatetime
+    closed_at: AwareDatetime | None = None
+
+
+class RoutineThreadList(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[RoutineThread]
+    has_more: bool
+    next_cursor: str | None = None
+
+
+class RoutineFollowPreviewRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    integration_event_id: str
+    follow_key: str = Field(..., max_length=4096, min_length=1)
+
+
+class RoutineFollowPreview(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    key: str
+    title: str = Field(..., description="The expression's resolved value.")
 
 
 class SkillRequest(BaseModel):
@@ -6656,6 +6733,9 @@ class EventCatalogSource(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
+    follow_targets: list[RoutineFollowTarget] | None = Field(
+        None, description='Provider-defined kinds of items a routine can follow.'
+    )
     prefix: str = Field(
         ...,
         description='Top-level dotted segment that names the source (`table`, `github`).',
@@ -7253,6 +7333,33 @@ class RoutineCreateRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
+    follow_target: str | None = Field(
+        None,
+        description='Immutable follow target from the event catalog. Null or event creates a conversation per event; routine shares one conversation; custom evaluates follow_key. Provider targets derive the event subscription.',
+    )
+    follow_key: str | None = Field(
+        None,
+        description='Immutable expr over event and meta; required only with custom. Must yield a non-empty string of at most 2048 bytes.',
+        max_length=4096,
+    )
+    idle_after: int = Field(
+        1209600,
+        description='Seconds without events before an open thread is shown as idle.',
+        ge=60,
+        le=31536000,
+    )
+    max_turns_per_thread: int = Field(
+        25,
+        description='Turn allowance per thread. Only a human can raise it.',
+        ge=1,
+        le=1000,
+    )
+    concurrency: int = Field(
+        5,
+        description='Maximum concurrent threads. Only a human can raise it.',
+        ge=1,
+        le=20,
+    )
     connection_bindings: ConnectionBindings | None = None
     confirm_audience_expansion: bool | None = Field(
         None,
@@ -7291,6 +7398,33 @@ class RoutineUpdateRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
+    follow_target: str | None = Field(
+        None,
+        description='Immutable follow target from the event catalog. Null or event creates a conversation per event; routine shares one conversation; custom evaluates follow_key. Provider targets derive the event subscription.',
+    )
+    follow_key: str | None = Field(
+        None,
+        description='Immutable expr over event and meta; required only with custom. Must yield a non-empty string of at most 2048 bytes.',
+        max_length=4096,
+    )
+    idle_after: int = Field(
+        1209600,
+        description='Seconds without events before an open thread is shown as idle.',
+        ge=60,
+        le=31536000,
+    )
+    max_turns_per_thread: int = Field(
+        25,
+        description='Turn allowance per thread. Only a human can raise it.',
+        ge=1,
+        le=1000,
+    )
+    concurrency: int = Field(
+        5,
+        description='Maximum concurrent threads. Only a human can raise it.',
+        ge=1,
+        le=20,
+    )
     connection_bindings: ConnectionBindings | None = None
     name: str | None = None
     instructions: str | None = None
@@ -7321,6 +7455,33 @@ class RoutineUpdateRequest(BaseModel):
 class Routine(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
+    )
+    follow_target: str | None = Field(
+        None,
+        description='Immutable follow target from the event catalog. Null or event creates a conversation per event; routine shares one conversation; custom evaluates follow_key. Provider targets derive the event subscription.',
+    )
+    follow_key: str | None = Field(
+        None,
+        description='Immutable expr over event and meta; required only with custom. Must yield a non-empty string of at most 2048 bytes.',
+        max_length=4096,
+    )
+    idle_after: int = Field(
+        1209600,
+        description='Seconds without events before an open thread is shown as idle.',
+        ge=60,
+        le=31536000,
+    )
+    max_turns_per_thread: int = Field(
+        25,
+        description='Turn allowance per thread. Only a human can raise it.',
+        ge=1,
+        le=1000,
+    )
+    concurrency: int = Field(
+        5,
+        description='Maximum concurrent threads. Only a human can raise it.',
+        ge=1,
+        le=20,
     )
     available_actions: list[AvailableAction] | None = Field(
         None,
