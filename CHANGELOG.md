@@ -10,6 +10,33 @@ the minor version.
 
 ## [Unreleased]
 
+### Added
+
+- Connection governance, explicit agent grants and defaults, and multi-account
+  routine bindings are available across the generated clients and CLI
+  ([#216](https://github.com/deepnoodle-ai/mobius/pull/216)).
+- Sessions can manage durable event subscriptions and inspect deliveries, and
+  clients can create session artifact references and list artifact versions
+  ([#216](https://github.com/deepnoodle-ai/mobius/pull/216)).
+- Artifact lineage and explicit parent-version uploads are exposed alongside
+  Library source and delivery provenance
+  ([#216](https://github.com/deepnoodle-ai/mobius/pull/216),
+  [#217](https://github.com/deepnoodle-ai/mobius/pull/217)).
+- Event routines can follow, list, and resume stable threads and preview custom
+  follow keys
+  ([#218](https://github.com/deepnoodle-ai/mobius/pull/218),
+  [#219](https://github.com/deepnoodle-ai/mobius/pull/219)).
+
+### Changed
+
+- **Breaking.** Integration connect responses use `kind` instead of `type`;
+  agent `integration_access` is replaced by explicit grants and defaults; and
+  routines use exact `source_bindings` and `connection_bindings` instead of
+  `integration_id` and `act_as_user_providers` ([#216](https://github.com/deepnoodle-ai/mobius/pull/216)).
+- Routine responses expose custody posture, audience, and caller actions, and
+  private sharing accepts explicit audience-expansion confirmation
+  ([#216](https://github.com/deepnoodle-ai/mobius/pull/216)).
+
 ## [0.1.0] - 2026-09-09
 
 ### Added
