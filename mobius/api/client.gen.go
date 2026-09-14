@@ -7490,7 +7490,7 @@ type RoutineCreateRequest struct {
 	ConnectionBindings *ConnectionBindings `json:"connection_bindings,omitempty"`
 	DailyCeilingMilli  int64               `json:"daily_ceiling_milli"`
 
-	// Event Runs the routine when a matching integration event arrives. Each matched event is one run on the ledger, one at a time per routine: an event arriving while a run is in flight waits behind it, and a run still waiting six hours later is closed `skipped` with `error_code` `stale`.
+	// Event Runs the routine when a matching integration event arrives. Each matched event creates a ledger entry for each followed thread. Runs serialize within a thread, with concurrent threads bounded by the routine's concurrency setting; each-event routines serialize per routine. Waiting thread events may be coalesced into the newest entry. A run still waiting six hours later is closed `skipped` with `error_code` `stale`.
 	Event *RoutineEventTrigger `json:"event,omitempty"`
 
 	// FollowKey Immutable expr over event and meta; required only with custom. Must yield a non-empty string of at most 2048 bytes.
@@ -7530,12 +7530,12 @@ type RoutineCreateRequest struct {
 	SessionId *string `json:"session_id,omitempty"`
 }
 
-// RoutineEventTrigger Runs the routine when a matching integration event arrives. Each matched event is one run on the ledger, one at a time per routine: an event arriving while a run is in flight waits behind it, and a run still waiting six hours later is closed `skipped` with `error_code` `stale`.
+// RoutineEventTrigger Runs the routine when a matching integration event arrives. Each matched event creates a ledger entry for each followed thread. Runs serialize within a thread, with concurrent threads bounded by the routine's concurrency setting; each-event routines serialize per routine. Waiting thread events may be coalesced into the newest entry. A run still waiting six hours later is closed `skipped` with `error_code` `stale`.
 type RoutineEventTrigger struct {
 	// Condition Optional expression over the event's `{event, meta}` envelope. The run starts only when it returns true. A condition that cannot be evaluated against an event records a `failed` run with `error_code` `trigger_condition_error` and starts nothing.
 	Condition *string `json:"condition,omitempty"`
 
-	// EventType The integration event to react to: a concrete type from the event catalog (`github.issues.opened`) or a wildcard on a prefix (`github.issues.*`, `github.*`). The first segment must name a registered integration provider; built-in Mobius events are not accepted here.
+	// EventType The integration event to react to: a concrete type from the event catalog (`github.issues.opened`) or a wildcard on a prefix (`github.issues.*`, `github.*`). The first segment must name a registered integration provider; built-in Mobius events are not accepted here. Required unless `follow_target` names a provider target, which derives the subscription when omitted. The `event`, `routine`, and `custom` follow targets require an explicit event type.
 	EventType string `json:"event_type,omitempty"`
 
 	// SourceBindings Exact connection and grant pairs whose matching events may start this routine. This selection does not authorize provider actions.
@@ -7764,10 +7764,10 @@ type RoutineUpdateRequest struct {
 	// Event Makes this an event routine, dropping any schedule it had. Rejected together with `schedule`.
 	Event *RoutineEventTrigger `json:"event,omitempty"`
 
-	// FollowKey Immutable expr over event and meta; required only with custom. Must yield a non-empty string of at most 2048 bytes.
+	// FollowKey Immutable custom follow expression. May be omitted or echo the current value; changing it is rejected. Create a new routine to use a different expression.
 	FollowKey *string `json:"follow_key,omitempty"`
 
-	// FollowTarget Immutable follow target from the event catalog. Null or event creates a conversation per event; routine shares one conversation; custom evaluates follow_key. Provider targets derive the event subscription.
+	// FollowTarget Immutable follow target. May be omitted or echo the current value; changing it is rejected. Create a new routine to follow a different target.
 	FollowTarget *string `json:"follow_target,omitempty"`
 
 	// IdleAfter Seconds without events before an open thread is shown as idle.
@@ -7910,7 +7910,7 @@ type Session struct {
 	// ModelProvider Provider for the recorded `model`.
 	ModelProvider *string `json:"model_provider,omitempty"`
 
-	// Origin Surface that created the session: `manual`, `api`, or `interaction`.
+	// Origin Surface that created the session: `manual`, `api`, `interaction`, or `routine`.
 	Origin SessionOrigin `json:"origin"`
 
 	// Owner The human or team responsible for this resource.
@@ -8466,7 +8466,7 @@ type SessionNudgeTurn struct {
 	Status AgentTurnStatus `json:"status"`
 }
 
-// SessionOrigin Surface that created the session: `manual`, `api`, or `interaction`.
+// SessionOrigin Surface that created the session: `manual`, `api`, `interaction`, or `routine`.
 type SessionOrigin string
 
 // SessionReminderBlock Host-managed runtime context returned only when the request explicitly includes caller-supplied context.
