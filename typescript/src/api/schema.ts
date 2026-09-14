@@ -6498,6 +6498,76 @@ export interface components {
             /** @description Failure reason when state is failed. */
             error?: string;
         };
+        /** @description Server-owned file exchange provenance. */
+        ArtifactSource: {
+            /** @description Origin type, such as email_attachment, drive_file or onedrive_item. */
+            kind: string;
+            /** @description Source provider. */
+            provider: string;
+            /** @description Exact connection used to save the file. */
+            connection_id: string;
+            /** @description Source message ID. */
+            message_id?: string;
+            /** @description Source attachment ID. */
+            attachment_id?: string;
+            /** @description Gmail MIME part ID, scoped to the source message. */
+            part_id?: string;
+            /** @description Original attachment filename. */
+            filename?: string;
+            /** @description Provider message receipt time. */
+            received_at?: string;
+            /** @description Google Drive file ID. */
+            file_id?: string;
+            /** @description Google Drive browser URL. */
+            web_view_link?: string;
+            /** @description Google-native export format used for this snapshot. */
+            export_mime?: string;
+            /** @description Observed Google Drive version. */
+            version?: string;
+            /** @description Observed Google Drive head revision. */
+            head_revision_id?: string;
+            /** @description Observed binary Drive checksum. */
+            md5_checksum?: string;
+            /** @description OneDrive or SharePoint drive ID. */
+            drive_id?: string;
+            /** @description OneDrive or SharePoint item ID. */
+            item_id?: string;
+            /** @description Provider browser URL. */
+            web_url?: string;
+            /** @description Observed OneDrive entity tag. */
+            etag?: string;
+            /** @description Observed OneDrive content tag. */
+            ctag?: string;
+            /**
+             * Format: date-time
+             * @description Time the copy was saved.
+             */
+            saved_at: string;
+        };
+        /** @description Server-owned file exchange provenance. */
+        ArtifactDelivery: {
+            /** @description Destination provider. */
+            provider: string;
+            /** @description Exact connection used to publish. */
+            connection_id: string;
+            /** @description OneDrive or SharePoint drive ID. */
+            drive_id?: string;
+            /** @description OneDrive or SharePoint item ID. */
+            item_id?: string;
+            /** @description Google Drive file ID. */
+            file_id?: string;
+            /** @description Published filename. */
+            name?: string;
+            /** @description Destination browser URL. */
+            web_url?: string;
+            /** @description Checksum of the delivered library bytes. */
+            sha256: string;
+            /**
+             * Format: date-time
+             * @description Time publishing completed.
+             */
+            delivered_at: string;
+        };
         /**
          * @description Stored file or generated artifact metadata. Lineage fields are included by artifact-versions, latest_only=true listings, and uploads declaring previous_artifact_id. Ordinary calls omit the new fields for existing SDKs with strict response decoders.
          * @example {
@@ -6516,6 +6586,9 @@ export interface components {
          *     }
          */
         Artifact: {
+            source?: components["schemas"]["ArtifactSource"];
+            /** @description The newest successful publish destinations, in chronological order. */
+            readonly delivered_to?: components["schemas"]["ArtifactDelivery"][];
             /** @description Unique artifact identifier. */
             id: string;
             /** @description First artifact ID in this version chain. Always returned by current servers. */
