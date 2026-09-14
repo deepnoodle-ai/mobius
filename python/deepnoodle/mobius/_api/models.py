@@ -597,7 +597,7 @@ class AgentTurnStatus(StrEnum):
 
 class SessionOrigin(StrEnum):
     """
-    Surface that created the session: `manual`, `api`, or `interaction`.
+    Surface that created the session: `manual`, `api`, `interaction`, or `routine`.
     """
 
     manual = 'manual'
@@ -5400,7 +5400,7 @@ class RoutineTrigger(StrEnum):
 
 class RoutineEventTrigger(BaseModel):
     """
-    Runs the routine when a matching integration event arrives. Each matched event is one run on the ledger, one at a time per routine: an event arriving while a run is in flight waits behind it, and a run still waiting six hours later is closed `skipped` with `error_code` `stale`.
+    Runs the routine when a matching integration event arrives. Each matched event creates a ledger entry for each followed thread. Runs serialize within a thread, with concurrent threads bounded by the routine's concurrency setting; each-event routines serialize per routine. Waiting thread events may be coalesced into the newest entry. A run still waiting six hours later is closed `skipped` with `error_code` `stale`.
     """
 
     model_config = ConfigDict(
@@ -5408,7 +5408,7 @@ class RoutineEventTrigger(BaseModel):
     )
     event_type: str | None = Field(
         None,
-        description='The integration event to react to: a concrete type from the event catalog (`github.issues.opened`) or a wildcard on a prefix (`github.issues.*`, `github.*`). The first segment must name a registered integration provider; built-in Mobius events are not accepted here.',
+        description='The integration event to react to: a concrete type from the event catalog (`github.issues.opened`) or a wildcard on a prefix (`github.issues.*`, `github.*`). The first segment must name a registered integration provider; built-in Mobius events are not accepted here. Required unless `follow_target` names a provider target, which derives the subscription when omitted. The `event`, `routine`, and `custom` follow targets require an explicit event type.',
         examples=['github.issues.opened'],
     )
     source_bindings: list[ConnectionBinding] = Field(
@@ -7400,11 +7400,11 @@ class RoutineUpdateRequest(BaseModel):
     )
     follow_target: str | None = Field(
         None,
-        description='Immutable follow target from the event catalog. Null or event creates a conversation per event; routine shares one conversation; custom evaluates follow_key. Provider targets derive the event subscription.',
+        description='Immutable follow target. May be omitted or echo the current value; changing it is rejected. Create a new routine to follow a different target.',
     )
     follow_key: str | None = Field(
         None,
-        description='Immutable expr over event and meta; required only with custom. Must yield a non-empty string of at most 2048 bytes.',
+        description='Immutable custom follow expression. May be omitted or echo the current value; changing it is rejected. Create a new routine to use a different expression.',
         max_length=4096,
     )
     idle_after: int = Field(
