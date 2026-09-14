@@ -13,7 +13,7 @@ from deepnoodle.mobius import (
 
 SKILL_DOC = (
     "---\n"
-    "allowed_tools:\n"
+    "allowed_actions:\n"
     "  - github.create_review_comment\n"
     "---\n"
     "Check the diff and leave concise findings.\n"
@@ -37,6 +37,7 @@ def _skill(skill_id: str = "skill_1", source: str = "custom") -> dict:
         "name": "Pull request review",
         "source": source,
         "instructions": "Check the diff and leave concise findings.",
+        "allowed_actions": ["github.create_review_comment"],
         "owner": {"kind": "team"},
         "visibility": "organization",
         "container": None,

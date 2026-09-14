@@ -1684,6 +1684,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/routines/{routine_id}/threads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a routine's threads
+         * @description Lists followed items with live routine reach and keyset pagination by last activity.
+         */
+        get: operations["listRoutineThreads"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/routines/{routine_id}/threads/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a followed thread
+         * @description Returns a thread under the same custody and reach policy as its routine.
+         */
+        get: operations["getRoutineThread"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/routines/{routine_id}/threads/{key}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resume a thread at its turn cap
+         * @description A human manager grants one additional allowance of the routine's current turn cap. Repeated requests before that allowance is consumed are idempotent. Skipped events are not replayed.
+         */
+        post: operations["resumeRoutineThread"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/routines/follow-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview a custom thread key
+         * @description Evaluates the custom expression against one recent integration event the caller can read. Does not create or change a routine.
+         */
+        post: operations["previewRoutineFollowKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/routines": {
         parameters: {
             query?: never;
@@ -2795,7 +2875,7 @@ export interface components {
          * @description Surface that created the session: `manual`, `api`, or `interaction`.
          * @enum {string}
          */
-        SessionOrigin: "manual" | "api" | "interaction";
+        SessionOrigin: "manual" | "api" | "interaction" | "routine";
         /**
          * @description Boundary used to resolve named sessions.
          * @enum {string}
@@ -3637,6 +3717,8 @@ export interface components {
         };
         /** @description One event source rooted at a top-level dotted prefix. Integration sources are open-set (any `<prefix>.<resource>.<event>` matches); `event_types` lists the currently-active, documented members. */
         EventCatalogSource: {
+            /** @description Provider-defined kinds of items a routine can follow. */
+            follow_targets?: components["schemas"]["RoutineFollowTarget"][];
             /** @description Top-level dotted segment that names the source (`table`, `github`). */
             prefix: string;
             /**
@@ -3749,6 +3831,12 @@ export interface components {
             provider: string;
             /** @description Model identifier advertised by the local worker. */
             model: string;
+        };
+        RoutineFollowTarget: {
+            id: string;
+            label: string;
+            description: string;
+            event_types: string[];
         };
         WorkerSocketModelCapability: {
             /** @description LLM provider identifier, such as `ollama`. */
@@ -6586,9 +6674,6 @@ export interface components {
          *     }
          */
         Artifact: {
-            source?: components["schemas"]["ArtifactSource"];
-            /** @description The newest successful publish destinations, in chronological order. */
-            readonly delivered_to?: components["schemas"]["ArtifactDelivery"][];
             /** @description Unique artifact identifier. */
             id: string;
             /** @description First artifact ID in this version chain. Always returned by current servers. */
@@ -6632,6 +6717,9 @@ export interface components {
             };
             /** @description Conversion summary for an Office artifact that requested conversion. Absent for artifacts with no conversion. */
             conversion?: components["schemas"]["ArtifactConversionSummary"];
+            source?: components["schemas"]["ArtifactSource"];
+            /** @description The newest successful publish destinations, in chronological order. */
+            readonly delivered_to?: components["schemas"]["ArtifactDelivery"][];
         };
         /**
          * @description V1 accepts invoke; notify is reserved and returns unsupported_routine_kind.
@@ -6710,7 +6798,7 @@ export interface components {
              * @description The integration event to react to: a concrete type from the event catalog (`github.issues.opened`) or a wildcard on a prefix (`github.issues.*`, `github.*`). The first segment must name a registered integration provider; built-in Mobius events are not accepted here.
              * @example github.issues.opened
              */
-            event_type: string;
+            event_type?: string;
             /** @description Exact connection and grant pairs whose matching events may start this routine. This selection does not authorize provider actions. */
             source_bindings: components["schemas"]["ConnectionBinding"][];
             /**
@@ -6721,6 +6809,25 @@ export interface components {
         };
         /** @description Exactly one of `schedule` and `event` is required: a routine runs on a schedule or when an event arrives, not both. */
         RoutineCreateRequest: {
+            /** @description Immutable follow target from the event catalog. Null or event creates a conversation per event; routine shares one conversation; custom evaluates follow_key. Provider targets derive the event subscription. */
+            follow_target?: string | null;
+            /** @description Immutable expr over event and meta; required only with custom. Must yield a non-empty string of at most 2048 bytes. */
+            follow_key?: string | null;
+            /**
+             * @description Seconds without events before an open thread is shown as idle.
+             * @default 1209600
+             */
+            idle_after?: number;
+            /**
+             * @description Turn allowance per thread. Only a human can raise it.
+             * @default 25
+             */
+            max_turns_per_thread?: number;
+            /**
+             * @description Maximum concurrent threads. Only a human can raise it.
+             * @default 5
+             */
+            concurrency?: number;
             connection_bindings?: components["schemas"]["ConnectionBindings"];
             /** @description Confirm access to existing and future routine results and the selected manager powers. Required when inviting another person to private work. */
             confirm_audience_expansion?: boolean;
@@ -6746,6 +6853,25 @@ export interface components {
             follower_principal_ids?: string[];
         };
         RoutineUpdateRequest: {
+            /** @description Immutable follow target from the event catalog. Null or event creates a conversation per event; routine shares one conversation; custom evaluates follow_key. Provider targets derive the event subscription. */
+            follow_target?: string | null;
+            /** @description Immutable expr over event and meta; required only with custom. Must yield a non-empty string of at most 2048 bytes. */
+            follow_key?: string | null;
+            /**
+             * @description Seconds without events before an open thread is shown as idle.
+             * @default 1209600
+             */
+            idle_after?: number;
+            /**
+             * @description Turn allowance per thread. Only a human can raise it.
+             * @default 25
+             */
+            max_turns_per_thread?: number;
+            /**
+             * @description Maximum concurrent threads. Only a human can raise it.
+             * @default 5
+             */
+            concurrency?: number;
             connection_bindings?: components["schemas"]["ConnectionBindings"];
             name?: string;
             instructions?: string;
@@ -6767,6 +6893,25 @@ export interface components {
             managed_by?: components["schemas"]["RoutineManagedBy"];
         };
         Routine: {
+            /** @description Immutable follow target from the event catalog. Null or event creates a conversation per event; routine shares one conversation; custom evaluates follow_key. Provider targets derive the event subscription. */
+            follow_target?: string | null;
+            /** @description Immutable expr over event and meta; required only with custom. Must yield a non-empty string of at most 2048 bytes. */
+            follow_key?: string | null;
+            /**
+             * @description Seconds without events before an open thread is shown as idle.
+             * @default 1209600
+             */
+            idle_after?: number;
+            /**
+             * @description Turn allowance per thread. Only a human can raise it.
+             * @default 25
+             */
+            max_turns_per_thread?: number;
+            /**
+             * @description Maximum concurrent threads. Only a human can raise it.
+             * @default 5
+             */
+            concurrency?: number;
             /** @description Actions permitted for this caller; the server rechecks each request. */
             available_actions?: ("edit" | "run" | "pause" | "resume" | "delete" | "invite")[];
             posture?: components["schemas"]["ResourcePosture"];
@@ -6833,6 +6978,12 @@ export interface components {
         };
         /** @description One run of a routine, and the durable record of it. Status, outcome, error, credits, and timing all live here, so a run whose transcript is gone is still a complete row. */
         RoutineOccurrence: {
+            /** @description Stable URL-safe key of the followed thread. */
+            thread_key?: string;
+            /** @description Followed item title at event intake. */
+            thread_title?: string;
+            /** @description Occurrence ID retaining this event when skipped as coalesced. */
+            coalesced_into?: string;
             id: string;
             routine_id: string;
             /** @description The routine's current name, carried on the row so a cross-routine ledger renders without joining against every routine in the organization. */
@@ -6929,6 +7080,45 @@ export interface components {
         RoutineSharingConfirmation: {
             /** @description Confirm sharing existing and future routine results with the proposed named people. */
             confirm_audience_expansion?: boolean;
+        };
+        RoutineThread: {
+            /** @description Opaque stable URL-safe thread key. */
+            key: string;
+            routine_id: string;
+            session_id?: string;
+            /** @enum {string} */
+            state: "open" | "idle" | "closed";
+            outcome?: string;
+            title: string;
+            url?: string;
+            author?: string;
+            adopted: boolean;
+            event_count: number;
+            turn_count: number;
+            /** @description The turn allowance is exhausted; a human manager can resume the thread or raise the routine cap. */
+            paused: boolean;
+            /** Format: int64 */
+            credits_spent_milli: number;
+            /** Format: date-time */
+            opened_at: string;
+            /** Format: date-time */
+            last_event_at: string;
+            /** Format: date-time */
+            closed_at?: string;
+        };
+        RoutineThreadList: {
+            items: components["schemas"]["RoutineThread"][];
+            has_more: boolean;
+            next_cursor?: string;
+        };
+        RoutineFollowPreviewRequest: {
+            integration_event_id: string;
+            follow_key: string;
+        };
+        RoutineFollowPreview: {
+            key: string;
+            /** @description The expression's resolved value. */
+            title: string;
         };
         /**
          * @example {
@@ -11459,6 +11649,116 @@ export interface operations {
             429: components["responses"]["TooManyRequests"];
         };
     };
+    listRoutineThreads: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                routine_id: components["parameters"]["RoutineID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Threads ordered by last activity. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoutineThreadList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getRoutineThread: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                routine_id: components["parameters"]["RoutineID"];
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Thread record. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoutineThread"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    resumeRoutineThread: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                routine_id: components["parameters"]["RoutineID"];
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Resumed thread. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoutineThread"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    previewRoutineFollowKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoutineFollowPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Resolved custom thread key. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoutineFollowPreview"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     listRoutines: {
         parameters: {
             query?: {
@@ -11525,6 +11825,8 @@ export interface operations {
     listRoutineOccurrences: {
         parameters: {
             query?: {
+                /** @description Narrow to one thread; requires routine_id. */
+                thread_key?: string;
                 /** @description Narrow to one routine. This is what the deleted nested route was. */
                 routine_id?: string;
                 /** @description Narrow to routines one person is the custodian of. Team-custody routines have no owner and never match. */

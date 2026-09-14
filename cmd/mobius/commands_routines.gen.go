@@ -110,14 +110,19 @@ func registerRoutinesCommands(app *cli.App) {
 		Description("Create a routine owned by the authenticated human").
 		Flags(
 			cli.String("agent-id", "").Help("[required] agent-id"),
+			cli.Int("concurrency", "").Help("Maximum concurrent threads. Only a human can raise it."),
 			cli.Bool("confirm-audience-expansion", "").Help("Confirm access to existing and future routine results and the selected manager powers. Required when inviting another person to private…"),
 			cli.String("connection-bindings", "").Help("Exact accounts available to routine actions, keyed by provider. Each call selects one account and revalidates its live grant. Event watches… Accepts JSON, @file, or @-."),
 			cli.Int("daily-ceiling-milli", "").Help("[required] daily-ceiling-milli"),
 			cli.String("event", "").Help("Runs the routine when a matching integration event arrives. Each matched event is one run on the ledger, one at a time per routine: an… Accepts JSON, @file, or @-."),
+			cli.String("follow-key", "").Help("Immutable expr over event and meta; required only with custom. Must yield a non-empty string of at most 2048 bytes."),
+			cli.String("follow-target", "").Help("Immutable follow target from the event catalog. Null or event creates a conversation per event; routine shares one conversation; custom…"),
 			cli.Strings("follower-principal-ids", "").Help("Principals who opt into the routine's results. The creator is added automatically."),
+			cli.Int("idle-after", "").Help("Seconds without events before an open thread is shown as idle."),
 			cli.String("instructions", "").Help("[required] instructions Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
 			cli.String("kind", "").Help("V1 accepts invoke; notify is reserved and returns unsupported_routine_kind."),
 			cli.String("managed-by", "").Help("Defaults to `named`."),
+			cli.Int("max-turns-per-thread", "").Help("Turn allowance per thread. Only a human can raise it."),
 			cli.String("name", "").Help("name"),
 			cli.String("owner-kind", "").Help("Defaults to `person`. `team` requires organization administration."),
 			cli.Int("per-occurrence-ceiling-milli", "").Help("[required] per-occurrence-ceiling-milli"),
@@ -141,6 +146,10 @@ func registerRoutinesCommands(app *cli.App) {
 			if ctx.IsSet("agent-id") {
 				body.AgentId = ctx.String("agent-id")
 			}
+			if ctx.IsSet("concurrency") {
+				v := ctx.Int("concurrency")
+				body.Concurrency = &v
+			}
 			if ctx.IsSet("confirm-audience-expansion") {
 				v := ctx.Bool("confirm-audience-expansion")
 				body.ConfirmAudienceExpansion = &v
@@ -158,9 +167,21 @@ func registerRoutinesCommands(app *cli.App) {
 					return err
 				}
 			}
+			if ctx.IsSet("follow-key") {
+				v := ctx.String("follow-key")
+				body.FollowKey = &v
+			}
+			if ctx.IsSet("follow-target") {
+				v := ctx.String("follow-target")
+				body.FollowTarget = &v
+			}
 			if ctx.IsSet("follower-principal-ids") {
 				v := ctx.Strings("follower-principal-ids")
 				body.FollowerPrincipalIds = &v
+			}
+			if ctx.IsSet("idle-after") {
+				v := ctx.Int("idle-after")
+				body.IdleAfter = &v
 			}
 			if ctx.IsSet("instructions") {
 				v, err := decodeFlagText(ctx, "instructions", ctx.String("instructions"))
@@ -176,6 +197,10 @@ func registerRoutinesCommands(app *cli.App) {
 			if ctx.IsSet("managed-by") {
 				v := api.RoutineManagedBy(ctx.String("managed-by"))
 				body.ManagedBy = &v
+			}
+			if ctx.IsSet("max-turns-per-thread") {
+				v := ctx.Int("max-turns-per-thread")
+				body.MaxTurnsPerThread = &v
 			}
 			if ctx.IsSet("name") {
 				v := ctx.String("name")
@@ -277,6 +302,25 @@ func registerRoutinesCommands(app *cli.App) {
 			return printResponse(ctx, "getRoutine", resp.StatusCode(), resp.Body)
 		})
 
+	routinesGrp.Command("get-thread").
+		Description("Get a followed thread").
+		Args("routine-id", "key").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.RoutineID(ctx.Arg(0))
+			p1 := ctx.Arg(1)
+			resp, err := client.GetRoutineThreadWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "getRoutineThread", resp.StatusCode(), resp.Body)
+		})
+
 	routinesGrp.Command("list").
 		Description("List reachable routines").
 		Flags(
@@ -369,6 +413,7 @@ func registerRoutinesCommands(app *cli.App) {
 	routinesGrp.Command("list-occurrences").
 		Description("List the occurrence ledger").
 		Flags(
+			cli.String("thread-key", "").Help("Narrow to one thread; requires routine_id."),
 			cli.String("routine-id", "").Help("Narrow to one routine. This is what the deleted nested route was."),
 			cli.String("owner-id", "").Help("Narrow to routines one person is the custodian of. Team-custody routines have no owner and never match."),
 			cli.Strings("status", "").Help("Narrow to these occurrence statuses."),
@@ -385,6 +430,10 @@ func registerRoutinesCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			params := &api.ListRoutineOccurrencesParams{}
+			if ctx.IsSet("thread-key") {
+				v := ctx.String("thread-key")
+				params.ThreadKey = &v
+			}
 			if ctx.IsSet("routine-id") {
 				v := ctx.String("routine-id")
 				params.RoutineId = &v
@@ -448,6 +497,37 @@ func registerRoutinesCommands(app *cli.App) {
 			return printResponse(ctx, "listRoutinePrincipals", resp.StatusCode(), resp.Body)
 		})
 
+	routinesGrp.Command("list-threads").
+		Description("List a routine's threads").
+		Args("routine-id").
+		Flags(
+			cli.Int("limit", "").Help("limit"),
+			cli.String("cursor", "").Help("cursor"),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.RoutineID(ctx.Arg(0))
+			params := &api.ListRoutineThreadsParams{}
+			if ctx.IsSet("limit") {
+				v := ctx.Int("limit")
+				params.Limit = &v
+			}
+			if ctx.IsSet("cursor") {
+				v := ctx.String("cursor")
+				params.Cursor = &v
+			}
+			resp, err := client.ListRoutineThreadsWithResponse(ctx.Context(), p0, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listRoutineThreads", resp.StatusCode(), resp.Body)
+		})
+
 	routinesGrp.Command("pause").
 		Description("Pause a routine").
 		Args("routine-id").
@@ -464,6 +544,47 @@ func registerRoutinesCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "pauseRoutine", resp.StatusCode(), resp.Body)
+		})
+
+	routinesGrp.Command("preview-routine-follow-key").
+		Description("Preview a custom thread key").
+		Flags(
+			cli.String("follow-key", "").Help("[required] follow-key"),
+			cli.String("integration-event-id", "").Help("[required] integration-event-id"),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			var body api.PreviewRoutineFollowKeyJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("follow-key") {
+				body.FollowKey = ctx.String("follow-key")
+			}
+			if ctx.IsSet("integration-event-id") {
+				body.IntegrationEventId = ctx.String("integration-event-id")
+			}
+			if body.FollowKey == "" {
+				return fmt.Errorf("--follow-key is required (or supply it via --file)")
+			}
+			if body.IntegrationEventId == "" {
+				return fmt.Errorf("--integration-event-id is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.PreviewRoutineFollowKeyWithResponse(ctx.Context(), body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "previewRoutineFollowKey", resp.StatusCode(), resp.Body)
 		})
 
 	routinesGrp.Command("remove-principal").
@@ -511,6 +632,25 @@ func registerRoutinesCommands(app *cli.App) {
 			return printResponse(ctx, "resumeRoutine", resp.StatusCode(), resp.Body)
 		})
 
+	routinesGrp.Command("resume-routine-thread").
+		Description("Resume a thread at its turn cap").
+		Args("routine-id", "key").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.RoutineID(ctx.Arg(0))
+			p1 := ctx.Arg(1)
+			resp, err := client.ResumeRoutineThreadWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "resumeRoutineThread", resp.StatusCode(), resp.Body)
+		})
+
 	routinesGrp.Command("run-now").
 		Description("Run a routine now").
 		Args("routine-id").
@@ -533,11 +673,16 @@ func registerRoutinesCommands(app *cli.App) {
 		Description("Update mutable routine fields").
 		Args("routine-id").
 		Flags(
+			cli.Int("concurrency", "").Help("Maximum concurrent threads. Only a human can raise it."),
 			cli.String("connection-bindings", "").Help("Exact accounts available to routine actions, keyed by provider. Each call selects one account and revalidates its live grant. Event watches… Accepts JSON, @file, or @-."),
 			cli.Int("daily-ceiling-milli", "").Help("Must remain at least the per-occurrence ceiling. A person may move it either way; an agent may only lower it."),
 			cli.String("event", "").Help("Makes this an event routine, dropping any schedule it had. Rejected together with `schedule`. Accepts JSON, @file, or @-."),
+			cli.String("follow-key", "").Help("Immutable expr over event and meta; required only with custom. Must yield a non-empty string of at most 2048 bytes."),
+			cli.String("follow-target", "").Help("Immutable follow target from the event catalog. Null or event creates a conversation per event; routine shares one conversation; custom…"),
+			cli.Int("idle-after", "").Help("Seconds without events before an open thread is shown as idle."),
 			cli.String("instructions", "").Help("instructions Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
 			cli.String("managed-by", "").Help("Only a person may change this. An agent manager receives 403."),
+			cli.Int("max-turns-per-thread", "").Help("Turn allowance per thread. Only a human can raise it."),
 			cli.String("name", "").Help("name"),
 			cli.Int("per-occurrence-ceiling-milli", "").Help("A person may move this either way. An agent may only lower it, so no agent widens the budget it runs under; raising it as an agent receives…"),
 			cli.String("schedule", "").Help("Makes this a scheduled routine, dropping any event trigger it had. Rejected together with `event`. Accepts JSON, @file, or @-."),
@@ -556,6 +701,10 @@ func registerRoutinesCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
+			if ctx.IsSet("concurrency") {
+				v := ctx.Int("concurrency")
+				body.Concurrency = &v
+			}
 			if ctx.IsSet("connection-bindings") {
 				if err := decodeFlagJSON(ctx, "connection-bindings", ctx.String("connection-bindings"), &body.ConnectionBindings); err != nil {
 					return err
@@ -570,6 +719,18 @@ func registerRoutinesCommands(app *cli.App) {
 					return err
 				}
 			}
+			if ctx.IsSet("follow-key") {
+				v := ctx.String("follow-key")
+				body.FollowKey = &v
+			}
+			if ctx.IsSet("follow-target") {
+				v := ctx.String("follow-target")
+				body.FollowTarget = &v
+			}
+			if ctx.IsSet("idle-after") {
+				v := ctx.Int("idle-after")
+				body.IdleAfter = &v
+			}
 			if ctx.IsSet("instructions") {
 				v, err := decodeFlagText(ctx, "instructions", ctx.String("instructions"))
 				if err != nil {
@@ -580,6 +741,10 @@ func registerRoutinesCommands(app *cli.App) {
 			if ctx.IsSet("managed-by") {
 				v := api.RoutineManagedBy(ctx.String("managed-by"))
 				body.ManagedBy = &v
+			}
+			if ctx.IsSet("max-turns-per-thread") {
+				v := ctx.Int("max-turns-per-thread")
+				body.MaxTurnsPerThread = &v
 			}
 			if ctx.IsSet("name") {
 				v := ctx.String("name")
@@ -594,7 +759,7 @@ func registerRoutinesCommands(app *cli.App) {
 					return err
 				}
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("connection-bindings") && !ctx.IsSet("daily-ceiling-milli") && !ctx.IsSet("event") && !ctx.IsSet("instructions") && !ctx.IsSet("managed-by") && !ctx.IsSet("name") && !ctx.IsSet("per-occurrence-ceiling-milli") && !ctx.IsSet("schedule") {
+			if ctx.String("file") == "" && !ctx.IsSet("concurrency") && !ctx.IsSet("connection-bindings") && !ctx.IsSet("daily-ceiling-milli") && !ctx.IsSet("event") && !ctx.IsSet("follow-key") && !ctx.IsSet("follow-target") && !ctx.IsSet("idle-after") && !ctx.IsSet("instructions") && !ctx.IsSet("managed-by") && !ctx.IsSet("max-turns-per-thread") && !ctx.IsSet("name") && !ctx.IsSet("per-occurrence-ceiling-milli") && !ctx.IsSet("schedule") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
