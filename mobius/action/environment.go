@@ -158,10 +158,11 @@ type GitDiffInput struct {
 }
 
 type ArtifactPublishInput struct {
-	Path string            `json:"path"`
-	Name string            `json:"name,omitempty"`
-	Mime string            `json:"mime,omitempty"`
-	Tags map[string]string `json:"tags,omitempty"`
+	SourceArtifactID string            `json:"source_artifact_id,omitempty"`
+	Path             string            `json:"path"`
+	Name             string            `json:"name,omitempty"`
+	Mime             string            `json:"mime,omitempty"`
+	Tags             map[string]string `json:"tags,omitempty"`
 }
 
 type ArtifactDownloadInput struct {
@@ -895,7 +896,7 @@ func NewEnvironmentArtifactPublishAction() mobius.Action {
 		}
 		// Without a lease the API cannot attach run/step lineage; fall back to
 		// an org-authorized private upload with the tags kept as metadata.
-		opts := mobius.CreateArtifactOptions{Path: path, Name: in.Name, Mime: in.Mime}
+		opts := mobius.CreateArtifactOptions{Path: path, Name: in.Name, Mime: in.Mime, PreviousArtifactID: in.SourceArtifactID}
 		if len(in.Tags) > 0 {
 			opts.Metadata = make(map[string]any, len(in.Tags))
 			for k, v := range in.Tags {

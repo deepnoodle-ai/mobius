@@ -247,3 +247,22 @@ func captureMultipartUpload(t *testing.T, r *http.Request) artifactUploadCapture
 	}
 	return got
 }
+
+func TestCreateArtifactVersionSendsExplicitParentAndReadsLineage(t *testing.T) {
+	var got artifactUploadCapture
+	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got = captureArtifactUpload(t, r)
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"id":"art_2","root_id":"art_1","previous_id":"art_1","version":2,"name":"report.txt"}`))
+	}))
+	artifact, err := c.CreateArtifact(context.Background(), CreateArtifactOptions{Reader: strings.NewReader("revised"), Name: "report.txt", PreviousArtifactID: "art_1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.fields["previous_artifact_id"] != "art_1" || got.fileBody != "revised" {
+		t.Fatalf("upload = %#v", got)
+	}
+	if artifact.RootID != "art_1" || artifact.PreviousID != "art_1" || artifact.Version != 2 {
+		t.Fatalf("lineage = %#v", artifact)
+	}
+}

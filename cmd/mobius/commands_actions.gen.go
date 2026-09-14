@@ -89,6 +89,10 @@ func registerActionsCommands(app *cli.App) {
 			cli.String("environment-id", "").Help("Filter to invocations executed in a specific environment."),
 			cli.String("action-name", "").Help("Filter to invocations of a specific action."),
 			cli.String("action-id", "").Help("Filter to an immutable custom Action ID."),
+			cli.String("integration", "").Help("Action name prefix; the provider or built-in namespace. Matches invocations whose action name begins with `<integration>.` — a provider…"),
+			cli.String("agent-id", "").Help("Filter to invocations made by a specific agent."),
+			cli.String("started-after", "").Help("Only include invocations started at or after this time (inclusive). Accepts an RFC3339 timestamp (for example: 2026-07-22T12:00:00Z)."),
+			cli.String("started-before", "").Help("Only include invocations started strictly before this time (exclusive). Accepts an RFC3339 timestamp (for example: 2026-07-22T12:00:00Z)."),
 			cli.String("definition-scope", "").Help("Filter by the scope that owned the selected definition."),
 			cli.Int("secret-version", "").Help("Filter to deliveries signed with a specific secret version."),
 			cli.String("delivery-id", "").Help("Filter to a signed delivery identity."),
@@ -126,6 +130,28 @@ func registerActionsCommands(app *cli.App) {
 			if ctx.IsSet("action-id") {
 				v := ctx.String("action-id")
 				params.ActionId = &v
+			}
+			if ctx.IsSet("integration") {
+				v := ctx.String("integration")
+				params.Integration = &v
+			}
+			if ctx.IsSet("agent-id") {
+				v := ctx.String("agent-id")
+				params.AgentId = &v
+			}
+			if ctx.IsSet("started-after") {
+				v, err := parseTimeFlag("started-after", ctx.String("started-after"))
+				if err != nil {
+					return err
+				}
+				params.StartedAfter = &v
+			}
+			if ctx.IsSet("started-before") {
+				v, err := parseTimeFlag("started-before", ctx.String("started-before"))
+				if err != nil {
+					return err
+				}
+				params.StartedBefore = &v
 			}
 			if ctx.IsSet("definition-scope") {
 				v := api.ListActionInvocationsParamsDefinitionScope(ctx.String("definition-scope"))

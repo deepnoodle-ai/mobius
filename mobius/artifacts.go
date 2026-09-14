@@ -17,6 +17,9 @@ import (
 )
 
 type Artifact struct {
+	RootID      string         `json:"root_id,omitempty"`
+	PreviousID  string         `json:"previous_id,omitempty"`
+	Version     int            `json:"version,omitempty"`
 	ID          string         `json:"id"`
 	Name        string         `json:"name"`
 	Mime        string         `json:"mime,omitempty"`
@@ -68,6 +71,9 @@ type ArtifactDownload struct {
 // CreateArtifactOptions configures an org-authorized artifact upload.
 // Exactly one of Path or Reader must supply the artifact bytes.
 type CreateArtifactOptions struct {
+	// PreviousArtifactID explicitly creates a version of this exact artifact.
+	// The server checks edit access and inherits the parent's custody.
+	PreviousArtifactID string
 	// Path streams the artifact from a file without buffering it in memory.
 	Path string
 	// Reader streams the artifact from an arbitrary source. Name is required
@@ -111,6 +117,7 @@ func (c *Client) CreateArtifact(ctx context.Context, opts CreateArtifactOptions)
 		return nil, err
 	}
 	defer closeSource()
+	upload.previousArtifactID = strings.TrimSpace(opts.PreviousArtifactID)
 	upload.idempotencyKey = opts.IdempotencyKey
 	if opts.Metadata != nil {
 		raw, err := json.Marshal(opts.Metadata)
@@ -191,14 +198,15 @@ func (c *Client) CreateArtifactFromFile(ctx context.Context, path, name, mime, r
 // fields permitted by the CreateArtifactRequest contract are represented:
 // lineage and visibility are always server-derived.
 type artifactUpload struct {
-	name           string
-	fileName       string
-	mime           string
-	sizeBytes      int64
-	metadataJSON   []byte
-	leaseToken     string
-	idempotencyKey string
-	source         io.Reader
+	previousArtifactID string
+	name               string
+	fileName           string
+	mime               string
+	sizeBytes          int64
+	metadataJSON       []byte
+	leaseToken         string
+	idempotencyKey     string
+	source             io.Reader
 }
 
 // uploadSource is the caller-supplied byte source shared by the artifact and
@@ -307,6 +315,9 @@ func (c *Client) postArtifactMultipart(ctx context.Context, path string, upload 
 // the server can stream the bytes to storage without spooling them first.
 func writeArtifactMultipart(writer *multipart.Writer, upload artifactUpload) error {
 	_ = writer.WriteField("name", upload.name)
+	if upload.previousArtifactID != "" {
+		_ = writer.WriteField("previous_artifact_id", upload.previousArtifactID)
+	}
 	if upload.mime != "" {
 		_ = writer.WriteField("mime", upload.mime)
 	}

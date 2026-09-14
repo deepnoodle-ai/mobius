@@ -206,6 +206,42 @@ func (e ActionInvocationEntryDefinitionScope) Valid() bool {
 	}
 }
 
+// Defines values for ActionInvocationEntryOwnerKind.
+const (
+	ActionInvocationEntryOwnerKindPerson ActionInvocationEntryOwnerKind = "person"
+	ActionInvocationEntryOwnerKindTeam   ActionInvocationEntryOwnerKind = "team"
+)
+
+// Valid indicates whether the value is a known member of the ActionInvocationEntryOwnerKind enum.
+func (e ActionInvocationEntryOwnerKind) Valid() bool {
+	switch e {
+	case ActionInvocationEntryOwnerKindPerson:
+		return true
+	case ActionInvocationEntryOwnerKindTeam:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ActionInvocationEntryVisibility.
+const (
+	ActionInvocationEntryVisibilityOrganization ActionInvocationEntryVisibility = "organization"
+	ActionInvocationEntryVisibilityPrivate      ActionInvocationEntryVisibility = "private"
+)
+
+// Valid indicates whether the value is a known member of the ActionInvocationEntryVisibility enum.
+func (e ActionInvocationEntryVisibility) Valid() bool {
+	switch e {
+	case ActionInvocationEntryVisibilityOrganization:
+		return true
+	case ActionInvocationEntryVisibilityPrivate:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ActionInvocationFormat.
 const (
 	ActionInvocationFormatLegacy          ActionInvocationFormat = "legacy"
@@ -271,7 +307,7 @@ const (
 	ActionSelectorTypeCustom   ActionSelectorType = "custom"
 	ActionSelectorTypeExact    ActionSelectorType = "exact"
 	ActionSelectorTypeGroup    ActionSelectorType = "group"
-	ActionSelectorTypePlatform ActionSelectorType = "platform"
+	ActionSelectorTypeProvider ActionSelectorType = "provider"
 	ActionSelectorTypeWildcard ActionSelectorType = "wildcard"
 )
 
@@ -284,7 +320,7 @@ func (e ActionSelectorType) Valid() bool {
 		return true
 	case ActionSelectorTypeGroup:
 		return true
-	case ActionSelectorTypePlatform:
+	case ActionSelectorTypeProvider:
 		return true
 	case ActionSelectorTypeWildcard:
 		return true
@@ -877,7 +913,6 @@ func (e CapabilityReadiness) Valid() bool {
 
 // Defines values for CapabilityReadinessReason.
 const (
-	CapabilityReadinessReasonAgentOwnedOnly        CapabilityReadinessReason = "agent_owned_only"
 	CapabilityReadinessReasonCredentialsUnreadable CapabilityReadinessReason = "credentials_unreadable"
 	CapabilityReadinessReasonExpired               CapabilityReadinessReason = "expired"
 	CapabilityReadinessReasonInactive              CapabilityReadinessReason = "inactive"
@@ -890,8 +925,6 @@ const (
 // Valid indicates whether the value is a known member of the CapabilityReadinessReason enum.
 func (e CapabilityReadinessReason) Valid() bool {
 	switch e {
-	case CapabilityReadinessReasonAgentOwnedOnly:
-		return true
 	case CapabilityReadinessReasonCredentialsUnreadable:
 		return true
 	case CapabilityReadinessReasonExpired:
@@ -959,6 +992,84 @@ func (e CompactionTrigger) Valid() bool {
 	case CompactionTriggerAuto:
 		return true
 	case CompactionTriggerManual:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ConnectionControllerKind.
+const (
+	ConnectionControllerKindOrganization ConnectionControllerKind = "organization"
+	ConnectionControllerKindPerson       ConnectionControllerKind = "person"
+)
+
+// Valid indicates whether the value is a known member of the ConnectionControllerKind enum.
+func (e ConnectionControllerKind) Valid() bool {
+	switch e {
+	case ConnectionControllerKindOrganization:
+		return true
+	case ConnectionControllerKindPerson:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ConnectionDefaultContext.
+const (
+	ConnectionDefaultContextOrganization ConnectionDefaultContext = "organization"
+	ConnectionDefaultContextSelf         ConnectionDefaultContext = "self"
+)
+
+// Valid indicates whether the value is a known member of the ConnectionDefaultContext enum.
+func (e ConnectionDefaultContext) Valid() bool {
+	switch e {
+	case ConnectionDefaultContextOrganization:
+		return true
+	case ConnectionDefaultContextSelf:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ConnectionDefaultPreferenceState.
+const (
+	ConnectionDefaultPreferenceStateSelected    ConnectionDefaultPreferenceState = "selected"
+	ConnectionDefaultPreferenceStateUnavailable ConnectionDefaultPreferenceState = "unavailable"
+	ConnectionDefaultPreferenceStateUnset       ConnectionDefaultPreferenceState = "unset"
+)
+
+// Valid indicates whether the value is a known member of the ConnectionDefaultPreferenceState enum.
+func (e ConnectionDefaultPreferenceState) Valid() bool {
+	switch e {
+	case ConnectionDefaultPreferenceStateSelected:
+		return true
+	case ConnectionDefaultPreferenceStateUnavailable:
+		return true
+	case ConnectionDefaultPreferenceStateUnset:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ConnectionExecutionMode.
+const (
+	ConnectionExecutionModeAuthenticatedHuman     ConnectionExecutionMode = "authenticated_human"
+	ConnectionExecutionModeControllerBackground   ConnectionExecutionMode = "controller_background"
+	ConnectionExecutionModeOrganizationBackground ConnectionExecutionMode = "organization_background"
+)
+
+// Valid indicates whether the value is a known member of the ConnectionExecutionMode enum.
+func (e ConnectionExecutionMode) Valid() bool {
+	switch e {
+	case ConnectionExecutionModeAuthenticatedHuman:
+		return true
+	case ConnectionExecutionModeControllerBackground:
+		return true
+	case ConnectionExecutionModeOrganizationBackground:
 		return true
 	default:
 		return false
@@ -1166,6 +1277,69 @@ func (e IfExists) Valid() bool {
 	case IfExistsAdopt:
 		return true
 	case IfExistsError:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IntegrationAccountModel.
+const (
+	IntegrationAccountModelCapability IntegrationAccountModel = "capability"
+	IntegrationAccountModelPersonal   IntegrationAccountModel = "personal"
+	IntegrationAccountModelWorkspace  IntegrationAccountModel = "workspace"
+)
+
+// Valid indicates whether the value is a known member of the IntegrationAccountModel enum.
+func (e IntegrationAccountModel) Valid() bool {
+	switch e {
+	case IntegrationAccountModelCapability:
+		return true
+	case IntegrationAccountModelPersonal:
+		return true
+	case IntegrationAccountModelWorkspace:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IntegrationConnectResponseKind.
+const (
+	IntegrationConnectResponseKindComplete IntegrationConnectResponseKind = "complete"
+	IntegrationConnectResponseKindRedirect IntegrationConnectResponseKind = "redirect"
+)
+
+// Valid indicates whether the value is a known member of the IntegrationConnectResponseKind enum.
+func (e IntegrationConnectResponseKind) Valid() bool {
+	switch e {
+	case IntegrationConnectResponseKindComplete:
+		return true
+	case IntegrationConnectResponseKindRedirect:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IntegrationStatus.
+const (
+	IntegrationStatusActive               IntegrationStatus = "active"
+	IntegrationStatusConfirmationRequired IntegrationStatus = "confirmation_required"
+	IntegrationStatusExpired              IntegrationStatus = "expired"
+	IntegrationStatusInactive             IntegrationStatus = "inactive"
+)
+
+// Valid indicates whether the value is a known member of the IntegrationStatus enum.
+func (e IntegrationStatus) Valid() bool {
+	switch e {
+	case IntegrationStatusActive:
+		return true
+	case IntegrationStatusConfirmationRequired:
+		return true
+	case IntegrationStatusExpired:
+		return true
+	case IntegrationStatusInactive:
 		return true
 	default:
 		return false
@@ -1835,6 +2009,75 @@ func (e ReviewInteractionRequestAction) Valid() bool {
 	}
 }
 
+// Defines values for RoutineAttention.
+const (
+	RoutineAttentionAccountRepair RoutineAttention = "account_repair"
+)
+
+// Valid indicates whether the value is a known member of the RoutineAttention enum.
+func (e RoutineAttention) Valid() bool {
+	switch e {
+	case RoutineAttentionAccountRepair:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RoutineAudience.
+const (
+	RoutineAudienceNamed        RoutineAudience = "named"
+	RoutineAudienceOrganization RoutineAudience = "organization"
+	RoutineAudiencePrivate      RoutineAudience = "private"
+	RoutineAudienceTeam         RoutineAudience = "team"
+)
+
+// Valid indicates whether the value is a known member of the RoutineAudience enum.
+func (e RoutineAudience) Valid() bool {
+	switch e {
+	case RoutineAudienceNamed:
+		return true
+	case RoutineAudienceOrganization:
+		return true
+	case RoutineAudiencePrivate:
+		return true
+	case RoutineAudienceTeam:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RoutineAvailableActions.
+const (
+	RoutineAvailableActionsDelete RoutineAvailableActions = "delete"
+	RoutineAvailableActionsEdit   RoutineAvailableActions = "edit"
+	RoutineAvailableActionsInvite RoutineAvailableActions = "invite"
+	RoutineAvailableActionsPause  RoutineAvailableActions = "pause"
+	RoutineAvailableActionsResume RoutineAvailableActions = "resume"
+	RoutineAvailableActionsRun    RoutineAvailableActions = "run"
+)
+
+// Valid indicates whether the value is a known member of the RoutineAvailableActions enum.
+func (e RoutineAvailableActions) Valid() bool {
+	switch e {
+	case RoutineAvailableActionsDelete:
+		return true
+	case RoutineAvailableActionsEdit:
+		return true
+	case RoutineAvailableActionsInvite:
+		return true
+	case RoutineAvailableActionsPause:
+		return true
+	case RoutineAvailableActionsResume:
+		return true
+	case RoutineAvailableActionsRun:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RoutineChangeStatus.
 const (
 	RoutineChangeStatusFailure RoutineChangeStatus = "failure"
@@ -2195,6 +2438,93 @@ func (e SessionDocumentSourceType) Valid() bool {
 	case SessionDocumentSourceTypeText:
 		return true
 	case SessionDocumentSourceTypeUrl:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SessionEventDeliveryStatus.
+const (
+	SessionEventDeliveryStatusCancelled SessionEventDeliveryStatus = "cancelled"
+	SessionEventDeliveryStatusDelivered SessionEventDeliveryStatus = "delivered"
+	SessionEventDeliveryStatusFailed    SessionEventDeliveryStatus = "failed"
+	SessionEventDeliveryStatusPending   SessionEventDeliveryStatus = "pending"
+)
+
+// Valid indicates whether the value is a known member of the SessionEventDeliveryStatus enum.
+func (e SessionEventDeliveryStatus) Valid() bool {
+	switch e {
+	case SessionEventDeliveryStatusCancelled:
+		return true
+	case SessionEventDeliveryStatusDelivered:
+		return true
+	case SessionEventDeliveryStatusFailed:
+		return true
+	case SessionEventDeliveryStatusPending:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SessionEventProjectionKind.
+const (
+	SessionEventProjectionKindBusinessRecord   SessionEventProjectionKind = "business_record"
+	SessionEventProjectionKindCalendarEvent    SessionEventProjectionKind = "calendar_event"
+	SessionEventProjectionKindContentChange    SessionEventProjectionKind = "content_change"
+	SessionEventProjectionKindEmail            SessionEventProjectionKind = "email"
+	SessionEventProjectionKindFileChange       SessionEventProjectionKind = "file_change"
+	SessionEventProjectionKindGeneric          SessionEventProjectionKind = "generic"
+	SessionEventProjectionKindMessage          SessionEventProjectionKind = "message"
+	SessionEventProjectionKindRepositoryChange SessionEventProjectionKind = "repository_change"
+	SessionEventProjectionKindWorkItem         SessionEventProjectionKind = "work_item"
+)
+
+// Valid indicates whether the value is a known member of the SessionEventProjectionKind enum.
+func (e SessionEventProjectionKind) Valid() bool {
+	switch e {
+	case SessionEventProjectionKindBusinessRecord:
+		return true
+	case SessionEventProjectionKindCalendarEvent:
+		return true
+	case SessionEventProjectionKindContentChange:
+		return true
+	case SessionEventProjectionKindEmail:
+		return true
+	case SessionEventProjectionKindFileChange:
+		return true
+	case SessionEventProjectionKindGeneric:
+		return true
+	case SessionEventProjectionKindMessage:
+		return true
+	case SessionEventProjectionKindRepositoryChange:
+		return true
+	case SessionEventProjectionKindWorkItem:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SessionEventSubscriptionStatus.
+const (
+	SessionEventSubscriptionStatusActive        SessionEventSubscriptionStatus = "active"
+	SessionEventSubscriptionStatusExpired       SessionEventSubscriptionStatus = "expired"
+	SessionEventSubscriptionStatusFundingPaused SessionEventSubscriptionStatus = "funding_paused"
+	SessionEventSubscriptionStatusStopped       SessionEventSubscriptionStatus = "stopped"
+)
+
+// Valid indicates whether the value is a known member of the SessionEventSubscriptionStatus enum.
+func (e SessionEventSubscriptionStatus) Valid() bool {
+	switch e {
+	case SessionEventSubscriptionStatusActive:
+		return true
+	case SessionEventSubscriptionStatusExpired:
+		return true
+	case SessionEventSubscriptionStatusFundingPaused:
+		return true
+	case SessionEventSubscriptionStatusStopped:
 		return true
 	default:
 		return false
@@ -3146,6 +3476,21 @@ func (e UpdateResourceOwnershipParamsResourceType) Valid() bool {
 	}
 }
 
+// Defines values for ListRoutinesParamsAttention.
+const (
+	ListRoutinesParamsAttentionAccountRepair ListRoutinesParamsAttention = "account_repair"
+)
+
+// Valid indicates whether the value is a known member of the ListRoutinesParamsAttention enum.
+func (e ListRoutinesParamsAttention) Valid() bool {
+	switch e {
+	case ListRoutinesParamsAttentionAccountRepair:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListRoutineOccurrencesParamsStatus.
 const (
 	ListRoutineOccurrencesParamsStatusAdmitted  ListRoutineOccurrencesParamsStatus = "admitted"
@@ -3170,6 +3515,42 @@ func (e ListRoutineOccurrencesParamsStatus) Valid() bool {
 	case ListRoutineOccurrencesParamsStatusPending:
 		return true
 	case ListRoutineOccurrencesParamsStatusSkipped:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListSessionEventSubscriptionsParamsOrder.
+const (
+	ListSessionEventSubscriptionsParamsOrderAsc  ListSessionEventSubscriptionsParamsOrder = "asc"
+	ListSessionEventSubscriptionsParamsOrderDesc ListSessionEventSubscriptionsParamsOrder = "desc"
+)
+
+// Valid indicates whether the value is a known member of the ListSessionEventSubscriptionsParamsOrder enum.
+func (e ListSessionEventSubscriptionsParamsOrder) Valid() bool {
+	switch e {
+	case ListSessionEventSubscriptionsParamsOrderAsc:
+		return true
+	case ListSessionEventSubscriptionsParamsOrderDesc:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListSessionEventDeliveriesParamsOrder.
+const (
+	ListSessionEventDeliveriesParamsOrderAsc  ListSessionEventDeliveriesParamsOrder = "asc"
+	ListSessionEventDeliveriesParamsOrderDesc ListSessionEventDeliveriesParamsOrder = "desc"
+)
+
+// Valid indicates whether the value is a known member of the ListSessionEventDeliveriesParamsOrder enum.
+func (e ListSessionEventDeliveriesParamsOrder) Valid() bool {
+	switch e {
+	case ListSessionEventDeliveriesParamsOrderAsc:
+		return true
+	case ListSessionEventDeliveriesParamsOrderDesc:
 		return true
 	default:
 		return false
@@ -3563,11 +3944,20 @@ type ActionInvocationEntry struct {
 	// JobId Job that triggered this invocation, if job-backed.
 	JobId *string `json:"job_id,omitempty"`
 
-	// OutputSummary Truncated or summarized action output for audit purposes.
+	// OutputSummary The terminal job status and the top-level keys of the result. Result bodies are never stored here; open the session for them.
 	OutputSummary *map[string]interface{} `json:"output_summary,omitempty"`
 
-	// Parameters Input parameters passed to the action.
+	// OwnerId Principal that holds custody when `owner_kind` is `person`.
+	OwnerId *string `json:"owner_id,omitempty"`
+
+	// OwnerKind Custody of the work this invocation belongs to: the session owner when it ran in a session, else the agent owner, else the human actor.
+	OwnerKind *ActionInvocationEntryOwnerKind `json:"owner_kind,omitempty"`
+
+	// Parameters Input parameters passed to the action, with credential-like keys redacted. Absent when `parameters_redacted` is true.
 	Parameters *map[string]interface{} `json:"parameters,omitempty"`
+
+	// ParametersRedacted True when `parameters` were withheld because the record is private to someone else and the caller is reading it as an administrator.
+	ParametersRedacted *bool `json:"parameters_redacted,omitempty"`
 
 	// RetryCount Number of retry attempts before this terminal status was reached.
 	RetryCount int `json:"retry_count"`
@@ -3595,6 +3985,9 @@ type ActionInvocationEntry struct {
 
 	// ToolCallId Provider tool-call ID correlated with this invocation, when applicable.
 	ToolCallId *string `json:"tool_call_id,omitempty"`
+
+	// Visibility Who may read the record's content, following the owning session or agent.
+	Visibility *ActionInvocationEntryVisibility `json:"visibility,omitempty"`
 }
 
 // ActionInvocationEntryActorPrincipalType Kind of principal attributed as the executing actor.
@@ -3602,6 +3995,12 @@ type ActionInvocationEntryActorPrincipalType string
 
 // ActionInvocationEntryDefinitionScope Scope that owned the selected action definition.
 type ActionInvocationEntryDefinitionScope string
+
+// ActionInvocationEntryOwnerKind Custody of the work this invocation belongs to: the session owner when it ran in a session, else the agent owner, else the human actor.
+type ActionInvocationEntryOwnerKind string
+
+// ActionInvocationEntryVisibility Who may read the record's content, following the owning session or agent.
+type ActionInvocationEntryVisibility string
 
 // ActionInvocationFormat Outbound request-body contract for an HTTP action. `legacy` sends the unversioned `{step_key, parameters}` body. `signed_context_v1` sends a versioned envelope whose org, action, actor, and origin claims are derived by Mobius and covered by the existing HMAC signature. Worker-backed actions must use `legacy`.
 type ActionInvocationFormat string
@@ -3650,16 +4049,16 @@ type ActionPermissionGroup struct {
 // ActionPermissionGroupSource defines model for ActionPermissionGroup.Source.
 type ActionPermissionGroupSource string
 
-// ActionSelector One entry in an agent's tool grant. Selectors are expanded against the live action catalog at every build, so `platform: gmail` keeps meaning "every Gmail action" as the catalog grows.
+// ActionSelector One entry in an agent's action selection. Selectors are expanded against the live action catalog at every build, so `provider: gmail` keeps meaning "every Gmail action" as the catalog grows.
 type ActionSelector struct {
 	// Selector The selector value, read according to `selector_type`. Ignored for `wildcard`.
 	Selector string `json:"selector"`
 
-	// SelectorType How one entry in an agent's tool grant names the actions it covers. `exact` is a single action name; `group` a dotted prefix; `platform` every action of an integration; `custom` org-defined actions; `wildcard` everything. Omitting the type means `exact`.
+	// SelectorType How one entry in an agent's action selection names the actions it covers. `exact` is a single action name; `group` a dotted prefix; `provider` every action of an integration; `custom` org-defined actions; `wildcard` everything. Omitting the type means `exact`.
 	SelectorType *ActionSelectorType `json:"selector_type,omitempty"`
 }
 
-// ActionSelectorType How one entry in an agent's tool grant names the actions it covers. `exact` is a single action name; `group` a dotted prefix; `platform` every action of an integration; `custom` org-defined actions; `wildcard` everything. Omitting the type means `exact`.
+// ActionSelectorType How one entry in an agent's action selection names the actions it covers. `exact` is a single action name; `group` a dotted prefix; `provider` every action of an integration; `custom` org-defined actions; `wildcard` everything. Omitting the type means `exact`.
 type ActionSelectorType string
 
 // AddAgentMembersRequest defines model for AddAgentMembersRequest.
@@ -3670,6 +4069,9 @@ type AddAgentMembersRequest struct {
 
 // AddRoutinePrincipalRequest defines model for AddRoutinePrincipalRequest.
 type AddRoutinePrincipalRequest struct {
+	// ConfirmAudienceExpansion Confirm access to existing and future routine results and the selected manager powers. Required when inviting another person to private work.
+	ConfirmAudienceExpansion *bool `json:"confirm_audience_expansion,omitempty"`
+
 	// Level Narrows what a follower is notified about. Ignored on the other relationships, which are always notified.
 	Level       *RoutineFollowLevel `json:"level,omitempty"`
 	PrincipalId string              `json:"principal_id"`
@@ -3678,8 +4080,11 @@ type AddRoutinePrincipalRequest struct {
 	Relationship RoutineRelationship `json:"relationship"`
 }
 
-// Agent AI actor identity. An agent IS a principal (its permissions are role grants on that principal) with instructions, configuration, and session presence.
+// Agent AI actor identity. An agent IS a principal (its permissions are role assignments on that principal) with instructions, configuration, and session presence.
 type Agent struct {
+	// ActionSelectors The agent's action selection: the action selectors it may call, expanded against the live action catalog at each build.
+	ActionSelectors *[]ActionSelector `json:"action_selectors,omitempty"`
+
 	// Color Display color for this agent in UI surfaces. One of the Mantine color palette keys (e.g. `indigo`, `teal`, `grape`); empty string falls back to a hash-derived color.
 	Color *string `json:"color,omitempty"`
 
@@ -3703,9 +4108,6 @@ type Agent struct {
 
 	// Id Unique identifier for this agent.
 	Id string `json:"id"`
-
-	// IntegrationAccess Per-provider connection rules. Absent means the defaults: the agent reaches org-shared and its own connections, and nothing is pinned.
-	IntegrationAccess *[]AgentIntegrationAccess `json:"integration_access,omitempty"`
 
 	// MemberCount How many principals are in this agent's audience. Zero for an `organization` agent, which carries no member rows.
 	MemberCount *int `json:"member_count,omitempty"`
@@ -3749,13 +4151,10 @@ type Agent struct {
 	// TimeoutSeconds Execution timeout, in seconds, for a single turn of this agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A request's `operation.timeout_seconds` overrides this for that turn.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 
-	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
+	// ToolPresentation Controls how selected actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
 	//
-	// The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise. Existing agents retain their stored mode; the default applies when creating an agent without one.
+	// The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are selected, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise. Existing agents retain their stored mode; the default applies when creating an agent without one.
 	ToolPresentation *AgentToolPresentation `json:"tool_presentation,omitempty"`
-
-	// ToolSelectors The agent's tool grant: the action selectors it may call, expanded against the live action catalog at each build.
-	ToolSelectors *[]ActionSelector `json:"tool_selectors,omitempty"`
 
 	// UpdatedAt Timestamp when this agent was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
@@ -3765,7 +4164,9 @@ type Agent struct {
 
 	// Visibility Who, inside the org that owns this agent, may reach it at all.
 	//
-	// `organization` (the default) is reachable by any org member — the behavior every agent had before visibility existed. `restricted` is reachable only by the agent's listed members. `private` is reachable only by its single member.
+	// `organization` is reachable by any org member. `restricted` is reachable only by the agent's listed members. `private` is reachable only by its single member.
+	//
+	// Agent create requests default to `private` when this field is omitted.
 	//
 	// Visibility is not a permission: what a member may DO with an agent stays governed by their org role. A principal outside an agent's audience gets `404` from every path — list, read, session, invoke, memory — so an agent's existence never leaks through a status code.
 	//
@@ -3785,18 +4186,6 @@ type AgentAudienceResourceDispositionAction string
 
 // AgentAudienceResourceDispositionResourceType defines model for AgentAudienceResourceDisposition.ResourceType.
 type AgentAudienceResourceDispositionResourceType string
-
-// AgentIntegrationAccess One provider's connection rules for an agent. Both fields are decisions about the agent, not about any one connection.
-type AgentIntegrationAccess struct {
-	// ActAsUser Whether the agent may resolve the personal connection of the person it is acting for. Defaults to false and is never implied: reaching somebody's own account is what a person consents to when they talk to this agent, so it is shown on its page as "acts through your Gmail".
-	ActAsUser *bool `json:"act_as_user,omitempty"`
-
-	// Pin The one connection this agent uses for this provider, which also suppresses the runtime account choice. May name only an org-shared or agent-owned connection — a shared agent pinned to one person's mailbox would send as that person for everybody.
-	Pin *string `json:"pin,omitempty"`
-
-	// Provider The provider these rules apply to (`gmail`, `slack`, …).
-	Provider string `json:"provider"`
-}
 
 // AgentListResponse defines model for AgentListResponse.
 type AgentListResponse struct {
@@ -3824,7 +4213,7 @@ type AgentManifestWarning struct {
 	// SkillId Skill the warning relates to, when applicable.
 	SkillId *string `json:"skill_id,omitempty"`
 
-	// Tool Tool selector the warning relates to, when applicable.
+	// Tool Action selector the warning relates to, when applicable.
 	Tool *string `json:"tool,omitempty"`
 }
 
@@ -4139,10 +4528,10 @@ type AgentToolManifest struct {
 	// GroupsResolved Audit trail of group selectors that contributed to the resolved tool set. Operators see groups; the LLM only sees the flat `tools` list.
 	GroupsResolved *[]ResolvedActionGroup `json:"groups_resolved,omitempty"`
 
-	// PolicyHash Stable hash over the resolved tool + skill set; bumps when the agent's tool selectors or skills change.
+	// PolicyHash Stable hash over the resolved tool + skill set; bumps when the agent's action selectors or skills change.
 	PolicyHash string `json:"policy_hash"`
 
-	// Skills Skills assigned to this agent, as resolved for this manifest. See each entry's `active` property for which one's grant was applied.
+	// Skills Skills assigned to this agent, as resolved for this manifest. See each entry's `active` property for which one's action constraint was applied.
 	Skills []SkillManifestEntry `json:"skills"`
 
 	// Tools Catalog entries the agent can invoke. Each entry surfaces to the LLM as its own named tool. Built-in, integration, and custom-HTTP actions are intermingled here.
@@ -4152,9 +4541,9 @@ type AgentToolManifest struct {
 	Warnings []AgentManifestWarning `json:"warnings"`
 }
 
-// AgentToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
+// AgentToolPresentation Controls how selected actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
 //
-// The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise. Existing agents retain their stored mode; the default applies when creating an agent without one.
+// The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are selected, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise. Existing agents retain their stored mode; the default applies when creating an agent without one.
 type AgentToolPresentation string
 
 // AgentTurn One attempt of an agent working on the session — the unit that produces a transcript. A turn is triggered by a direct send to the session or an inbound channel message (channel_exchange_id). Its messages are read via the turn's transcript endpoint.
@@ -4268,7 +4657,9 @@ type AgentTurnUsage struct {
 
 // AgentVisibility Who, inside the org that owns this agent, may reach it at all.
 //
-// `organization` (the default) is reachable by any org member — the behavior every agent had before visibility existed. `restricted` is reachable only by the agent's listed members. `private` is reachable only by its single member.
+// `organization` is reachable by any org member. `restricted` is reachable only by the agent's listed members. `private` is reachable only by its single member.
+//
+// Agent create requests default to `private` when this field is omitted.
 //
 // Visibility is not a permission: what a member may DO with an agent stays governed by their org role. A principal outside an agent's audience gets `404` from every path — list, read, session, invoke, memory — so an agent's existence never leaks through a status code.
 //
@@ -4313,7 +4704,9 @@ type AgentVisibilityImpact struct {
 
 	// From Who, inside the org that owns this agent, may reach it at all.
 	//
-	// `organization` (the default) is reachable by any org member — the behavior every agent had before visibility existed. `restricted` is reachable only by the agent's listed members. `private` is reachable only by its single member.
+	// `organization` is reachable by any org member. `restricted` is reachable only by the agent's listed members. `private` is reachable only by its single member.
+	//
+	// Agent create requests default to `private` when this field is omitted.
 	//
 	// Visibility is not a permission: what a member may DO with an agent stays governed by their org role. A principal outside an agent's audience gets `404` from every path — list, read, session, invoke, memory — so an agent's existence never leaks through a status code.
 	//
@@ -4330,7 +4723,9 @@ type AgentVisibilityImpact struct {
 
 	// To Who, inside the org that owns this agent, may reach it at all.
 	//
-	// `organization` (the default) is reachable by any org member — the behavior every agent had before visibility existed. `restricted` is reachable only by the agent's listed members. `private` is reachable only by its single member.
+	// `organization` is reachable by any org member. `restricted` is reachable only by the agent's listed members. `private` is reachable only by its single member.
+	//
+	// Agent create requests default to `private` when this field is omitted.
 	//
 	// Visibility is not a permission: what a member may DO with an agent stays governed by their org role. A principal outside an agent's audience gets `404` from every path — list, read, session, invoke, memory — so an agent's existence never leaks through a status code.
 	//
@@ -4433,6 +4828,12 @@ type Artifact struct {
 	// Posture Employee-facing effective ownership and audience posture for the current caller.
 	Posture ResourcePosture `json:"posture"`
 
+	// PreviousId Exact parent artifact ID; empty for version one. May point to a deleted version.
+	PreviousId *string `json:"previous_id,omitempty"`
+
+	// RootId First artifact ID in this version chain. Always returned by current servers.
+	RootId *string `json:"root_id,omitempty"`
+
 	// Sha256 SHA-256 digest of the artifact content, when available.
 	Sha256 *string `json:"sha256,omitempty"`
 
@@ -4444,6 +4845,9 @@ type Artifact struct {
 
 	// UpdatedBy Principal ID of the actor who last updated this artifact. Empty for system-initiated writes.
 	UpdatedBy *string `json:"updated_by,omitempty"`
+
+	// Version Parent version plus one. Concurrent revisions may share a number; creation time and ID break ties.
+	Version *int `json:"version,omitempty"`
 
 	// Visibility Who the custodian chose to share the resource with.
 	Visibility ResourceVisibility `json:"visibility"`
@@ -4503,6 +4907,14 @@ type ArtifactSignedUrl struct {
 
 // ArtifactSignedUrlMethod HTTP method to use with `url`; currently `GET`.
 type ArtifactSignedUrlMethod string
+
+// ArtifactVersionList defines model for ArtifactVersionList.
+type ArtifactVersionList struct {
+	RootId string `json:"root_id"`
+
+	// Versions Accessible available versions ordered oldest to newest. Deleted versions are omitted.
+	Versions []Artifact `json:"versions"`
+}
 
 // BillingUsageEvent defines model for BillingUsageEvent.
 type BillingUsageEvent struct {
@@ -4597,7 +5009,9 @@ type BlueprintActionInputType string
 
 // BlueprintAgentInput A desired agent. `skills`, when present, replaces the agent's full assignment set; omit it to leave existing assignments untouched.
 type BlueprintAgentInput struct {
-	Color *string `json:"color,omitempty"`
+	// ActionSelectors Exact reviewed actions selected for this agent. Templates should use exact selectors so the proposed authority is visible during review. An empty array selects no catalog actions.
+	ActionSelectors *[]ActionSelector `json:"action_selectors,omitempty"`
+	Color           *string           `json:"color,omitempty"`
 
 	// CompactionPolicy Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values.
 	CompactionPolicy *SessionCompactionPolicy `json:"compaction_policy,omitempty"`
@@ -4623,9 +5037,9 @@ type BlueprintAgentInput struct {
 	// TimeoutSeconds Per-turn execution timeout; `0` uses the platform default.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 
-	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
+	// ToolPresentation Controls how selected actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
 	//
-	// The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise. Existing agents retain their stored mode; the default applies when creating an agent without one.
+	// The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are selected, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise. Existing agents retain their stored mode; the default applies when creating an agent without one.
 	ToolPresentation *AgentToolPresentation `json:"tool_presentation,omitempty"`
 }
 
@@ -4733,12 +5147,18 @@ type BlueprintResources struct {
 
 // BlueprintSkillInput A desired skill.
 type BlueprintSkillInput struct {
-	// AllowedTools Tool selectors naming the actions this skill needs. The grant applies once an agent invokes the skill and lasts for the rest of that turn. Empty declares nothing and narrows nothing.
-	AllowedTools *[]string `json:"allowed_tools,omitempty"`
-	Description  *string   `json:"description,omitempty"`
-	Instructions *string   `json:"instructions,omitempty"`
-	Key          string    `json:"key"`
-	Name         string    `json:"name"`
+	// AllowedActions Action selectors naming the actions this skill permits after it is invoked. Empty declares nothing and narrows nothing.
+	AllowedActions *[]string `json:"allowed_actions,omitempty"`
+	Description    *string   `json:"description,omitempty"`
+	Instructions   *string   `json:"instructions,omitempty"`
+	Key            string    `json:"key"`
+	Name           string    `json:"name"`
+
+	// RecommendedActions Optional action selectors that warn when absent and never select actions.
+	RecommendedActions *[]string `json:"recommended_actions,omitempty"`
+
+	// RequiredActions Action selectors that must already be effective for this skill to be invoked.
+	RequiredActions *[]string `json:"required_actions,omitempty"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags  *TagMap `json:"tags,omitempty"`
@@ -4902,6 +5322,102 @@ type CompactionStartedPayload struct {
 // CompactionTrigger What started a compaction pass. `auto` is the threshold-gated pass that runs after a turn commits; `append` is the threshold-gated pass that runs inline on a message append; `manual` is an explicit compact request.
 type CompactionTrigger string
 
+// ConnectionBinding A frozen selection of one connection and its explicit grant.
+type ConnectionBinding struct {
+	ConnectionId string `json:"connection_id"`
+	GrantId      string `json:"grant_id"`
+}
+
+// ConnectionBindings Exact accounts available to routine actions, keyed by provider. Each call selects one account and revalidates its live grant. Event watches are separate.
+type ConnectionBindings map[string][]ConnectionBinding
+
+// ConnectionController Lifecycle and grant authority. Control does not authorize organization-provider content or agent execution.
+type ConnectionController struct {
+	// DisplayName Human controller display name, when available.
+	DisplayName *string                  `json:"display_name,omitempty"`
+	Kind        ConnectionControllerKind `json:"kind"`
+
+	// PrincipalId Human controller ID, present only for person control.
+	PrincipalId *string `json:"principal_id,omitempty"`
+}
+
+// ConnectionControllerKind defines model for ConnectionController.Kind.
+type ConnectionControllerKind string
+
+// ConnectionDefaultChoice defines model for ConnectionDefaultChoice.
+type ConnectionDefaultChoice struct {
+	ConnectionId             string  `json:"connection_id"`
+	ConnectionLabel          string  `json:"connection_label"`
+	ControlledByOrganization bool    `json:"controlled_by_organization"`
+	GrantId                  string  `json:"grant_id"`
+	RepresentedActor         *string `json:"represented_actor,omitempty"`
+}
+
+// ConnectionDefaultContext defines model for ConnectionDefaultContext.
+type ConnectionDefaultContext string
+
+// ConnectionDefaultPreference defines model for ConnectionDefaultPreference.
+type ConnectionDefaultPreference struct {
+	Choices   []ConnectionDefaultChoice        `json:"choices"`
+	Provider  string                           `json:"provider"`
+	Selection *ConnectionDefaultChoice         `json:"selection,omitempty"`
+	State     ConnectionDefaultPreferenceState `json:"state"`
+}
+
+// ConnectionDefaultPreferenceState defines model for ConnectionDefaultPreference.State.
+type ConnectionDefaultPreferenceState string
+
+// ConnectionDefaultPreferenceListResponse defines model for ConnectionDefaultPreferenceListResponse.
+type ConnectionDefaultPreferenceListResponse struct {
+	Items []ConnectionDefaultPreference `json:"items"`
+}
+
+// ConnectionExecutionMode defines model for ConnectionExecutionMode.
+type ConnectionExecutionMode string
+
+// ConnectionGovernance defines model for ConnectionGovernance.
+type ConnectionGovernance struct {
+	// Controller Lifecycle and grant authority. Control does not authorize organization-provider content or agent execution.
+	Controller ConnectionController `json:"controller"`
+	Id         string               `json:"id"`
+	Provider   string               `json:"provider"`
+
+	// Status `active` — integration is enabled and usable by agents. `inactive` — manually disabled; no automatic expiry behavior. `expired` — token/credential has expired (e.g., OAuth token not refreshed).
+	Status IntegrationStatus `json:"status"`
+}
+
+// ConnectionGovernanceListResponse defines model for ConnectionGovernanceListResponse.
+type ConnectionGovernanceListResponse struct {
+	HasMore    bool                   `json:"has_more"`
+	Items      []ConnectionGovernance `json:"items"`
+	NextCursor *string                `json:"next_cursor,omitempty"`
+}
+
+// ConnectionGrant Access for one assistant in conversations and routines, subject to connection ownership and result audience restrictions.
+type ConnectionGrant struct {
+	AgentId                  string                  `json:"agent_id"`
+	Audience                 ConnectionGrantAudience `json:"audience"`
+	CanManage                bool                    `json:"can_manage"`
+	ConnectionId             string                  `json:"connection_id"`
+	ConnectionLabel          string                  `json:"connection_label"`
+	ControlledByOrganization bool                    `json:"controlled_by_organization"`
+	CreatedAt                time.Time               `json:"created_at"`
+	Id                       string                  `json:"id"`
+	Provider                 string                  `json:"provider"`
+	RepresentedActor         *string                 `json:"represented_actor,omitempty"`
+}
+
+// ConnectionGrantAudience defines model for ConnectionGrantAudience.
+type ConnectionGrantAudience struct {
+	Organization bool     `json:"organization"`
+	PrincipalIds []string `json:"principal_ids"`
+}
+
+// ConnectionGrantListResponse defines model for ConnectionGrantListResponse.
+type ConnectionGrantListResponse struct {
+	Items []ConnectionGrant `json:"items"`
+}
+
 // Consumer Polymorphic identifier of what is waiting on this interaction's resolution. `http_subscriber` requires `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved org signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Version` and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers.
 type Consumer struct {
 	// AgentTool Agent tool continuation target when `kind=agent_tool`; null for other consumer kinds.
@@ -4996,6 +5512,9 @@ type CreateActionRequest struct {
 
 // CreateAgentRequest defines model for CreateAgentRequest.
 type CreateAgentRequest struct {
+	// ActionSelectors The agent's action selection. Omit for an agent with no selected catalog actions.
+	ActionSelectors *[]ActionSelector `json:"action_selectors,omitempty"`
+
 	// Color Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a hash-derived color.
 	Color *string `json:"color,omitempty"`
 
@@ -5010,9 +5529,6 @@ type CreateAgentRequest struct {
 
 	// IfExists Create-or-adopt behavior when a request's `external_ref` matches an existing resource. `error` (the default) rejects the request with 409. `adopt` returns the existing resource unchanged instead — mutable fields in the request are ignored, since no write happens — and requires `external_ref` to be set; omitting it returns 400.
 	IfExists *IfExists `json:"if_exists,omitempty"`
-
-	// IntegrationAccess Per-provider connection rules. Omit for the defaults.
-	IntegrationAccess *[]AgentIntegrationAccess `json:"integration_access,omitempty"`
 
 	// Members The audience for a `restricted` or `private` agent, written in the same transaction as the agent row.
 	//
@@ -5049,17 +5565,16 @@ type CreateAgentRequest struct {
 	// TimeoutSeconds Per-turn execution timeout in seconds for this agent. Omit or `0` to use the platform default (600s / 10 minutes); a request's `operation.timeout_seconds` overrides it for that turn.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 
-	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
+	// ToolPresentation Controls how selected actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
 	//
-	// The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise. Existing agents retain their stored mode; the default applies when creating an agent without one.
+	// The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are selected, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise. Existing agents retain their stored mode; the default applies when creating an agent without one.
 	ToolPresentation *AgentToolPresentation `json:"tool_presentation,omitempty"`
-
-	// ToolSelectors The agent's tool grant. Omit for an agent with no granted actions; its intrinsic tools are unaffected.
-	ToolSelectors *[]ActionSelector `json:"tool_selectors,omitempty"`
 
 	// Visibility Who, inside the org that owns this agent, may reach it at all.
 	//
-	// `organization` (the default) is reachable by any org member — the behavior every agent had before visibility existed. `restricted` is reachable only by the agent's listed members. `private` is reachable only by its single member.
+	// `organization` is reachable by any org member. `restricted` is reachable only by the agent's listed members. `private` is reachable only by its single member.
+	//
+	// Agent create requests default to `private` when this field is omitted.
 	//
 	// Visibility is not a permission: what a member may DO with an agent stays governed by their org role. A principal outside an agent's audience gets `404` from every path — list, read, session, invoke, memory — so an agent's existence never leaks through a status code.
 	//
@@ -5086,6 +5601,9 @@ type CreateArtifactRequest struct {
 
 	// Owner The human or team responsible for this resource.
 	Owner *ResourceOwner `json:"owner,omitempty"`
+
+	// PreviousArtifactId Optional exact parent artifact ID. Requires edit access and inherits its custody and visibility. Creates new bytes and a new ID; never changes existing references.
+	PreviousArtifactId *string `json:"previous_artifact_id,omitempty"`
 
 	// SizeBytes Optional declared file size. When supplied, Mobius verifies the streamed byte count exactly matches this value.
 	SizeBytes *int64 `json:"size_bytes,omitempty"`
@@ -5215,6 +5733,12 @@ type CreateRoleRequest struct {
 	Tags *TagMap `json:"tags,omitempty"`
 }
 
+// CreateSessionArtifactReferenceRequest defines model for CreateSessionArtifactReferenceRequest.
+type CreateSessionArtifactReferenceRequest struct {
+	// ArtifactId Identifier of an existing library artifact the caller can read.
+	ArtifactId string `json:"artifact_id"`
+}
+
 // CreateSessionAttachmentRequest defines model for CreateSessionAttachmentRequest.
 type CreateSessionAttachmentRequest struct {
 	// File The document or image bytes. Multipart parts may arrive in any order.
@@ -5228,6 +5752,18 @@ type CreateSessionAttachmentRequest struct {
 
 	// SizeBytes Optional declared byte size; when supplied it must match the uploaded bytes.
 	SizeBytes *int64 `json:"size_bytes,omitempty"`
+}
+
+// CreateSessionEventSubscriptionRequest defines model for CreateSessionEventSubscriptionRequest.
+type CreateSessionEventSubscriptionRequest struct {
+	// ExpiresAt Optional future stop time.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// Filters ORed public-event filter branches.
+	Filters []SessionEventSubscriptionFilter `json:"filters"`
+
+	// IdempotencyKey Retry key scoped to this session.
+	IdempotencyKey *string `json:"idempotency_key,omitempty"`
 }
 
 // CreateSessionRequest Resolve-or-create policy for a session.
@@ -5458,6 +5994,90 @@ type IndexDef struct {
 type InsertRowRequest struct {
 	// Data JSON object keyed by table column name.
 	Data map[string]interface{} `json:"data"`
+}
+
+// Integration Connection to an external provider such as Slack, GitHub, or a model service. Agents and actions use integrations to find provider configuration without embedding secrets in definitions. External identity is unique per (organization, owner, provider); the same external account may have distinct personal, agent, and business rows.
+type Integration struct {
+	// AccountModel The provider's account model, repeated here so a client can render a connection without also fetching the catalog.
+	AccountModel *IntegrationAccountModel `json:"account_model,omitempty"`
+
+	// Config Provider-specific non-sensitive configuration stored as JSON. The shape is provider-defined. Sensitive credentials are never returned in this field.
+	Config *map[string]interface{} `json:"config,omitempty"`
+
+	// ConfirmationExpiresAt Deadline for confirming fresh replacement evidence, when required.
+	ConfirmationExpiresAt *time.Time `json:"confirmation_expires_at,omitempty"`
+
+	// ConnectionMode Immutable provider authorization mode.
+	ConnectionMode *string `json:"connection_mode,omitempty"`
+
+	// Controller Who this connection belongs to, and the only axis that decides who may use it. Absent means org-shared.
+	Controller ConnectionController `json:"controller"`
+
+	// CreatedAt Timestamp when this integration was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// CreatedBy User ID of the org member who created this integration.
+	CreatedBy *string `json:"created_by,omitempty"`
+
+	// CredentialsUnreadable True when the stored credential cannot be decrypted by the running platform. The connection still exists and its `status` is unchanged, but nothing that needs the credential will work until an admin reconnects the integration. Absent or `false` in the normal case.
+	CredentialsUnreadable *bool `json:"credentials_unreadable,omitempty"`
+
+	// Id Unique identifier for this integration.
+	Id string `json:"id"`
+
+	// IdentityLabel External account identity; safe metadata available in the governance view.
+	IdentityLabel *string `json:"identity_label,omitempty"`
+
+	// Name Human-readable name, chosen by whoever connected it. Unique per `(org, owner, provider)`: two people may each call their own mailbox "work", but two org-shared connections may not.
+	Name string `json:"name"`
+
+	// Provider Free-form provider identifier (e.g. `openai`, `slack`, `github`). Immutable after creation.
+	Provider string `json:"provider"`
+
+	// RepresentedActor Verified actor represented by this connection.
+	RepresentedActor *string `json:"represented_actor,omitempty"`
+
+	// Status `active` — integration is enabled and usable by agents. `inactive` — manually disabled; no automatic expiry behavior. `expired` — token/credential has expired (e.g., OAuth token not refreshed).
+	Status IntegrationStatus `json:"status"`
+
+	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
+	Tags *TagMap `json:"tags,omitempty"`
+
+	// TeamManagement Server-evaluated eligibility for making this account team-managed in place.
+	TeamManagement *IntegrationTeamManagement `json:"team_management,omitempty"`
+
+	// UpdatedAt Timestamp when this integration was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// IntegrationAccountModel What one connection to a provider represents.
+//
+// `personal` — one human's own account, and acting through it acts as that person (Gmail, Google Calendar, X). `workspace` — a shared external workspace the whole org acts within (Slack, Jira, GitHub). `capability` — a keyed service with no account identity behind it (Firecrawl, a model provider, a database).
+//
+// It decides the default owner of a new connection and whether the connection is offered to an agent by default.
+type IntegrationAccountModel string
+
+// IntegrationConnectResponse Unified integration-framework connect response. Redirect-style providers return `kind=redirect` plus `redirect_url`; inline API-key and service-credential providers return `kind=complete` plus the persisted integration row.
+type IntegrationConnectResponse struct {
+	// Integration Connection to an external provider such as Slack, GitHub, or a model service. Agents and actions use integrations to find provider configuration without embedding secrets in definitions. External identity is unique per (organization, owner, provider); the same external account may have distinct personal, agent, and business rows.
+	Integration *Integration                   `json:"integration,omitempty"`
+	Kind        IntegrationConnectResponseKind `json:"kind"`
+
+	// RedirectUrl OAuth or install URL to visit when `kind=redirect`.
+	RedirectUrl *string `json:"redirect_url,omitempty"`
+}
+
+// IntegrationConnectResponseKind defines model for IntegrationConnectResponse.Kind.
+type IntegrationConnectResponseKind string
+
+// IntegrationStatus `active` — integration is enabled and usable by agents. `inactive` — manually disabled; no automatic expiry behavior. `expired` — token/credential has expired (e.g., OAuth token not refreshed).
+type IntegrationStatus string
+
+// IntegrationTeamManagement Server-evaluated eligibility for making this account team-managed in place.
+type IntegrationTeamManagement struct {
+	CanStart          bool    `json:"can_start"`
+	Supported         bool    `json:"supported"`
+	UnavailableReason *string `json:"unavailable_reason,omitempty"`
 }
 
 // Interaction Human or agent interaction request and its current response state.
@@ -6028,6 +6648,12 @@ type InvokeSessionSpec struct {
 // InvokeSessionSpecMode `continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.
 type InvokeSessionSpecMode string
 
+// MaterializeConnectionGrantsRequest Grant current assistants access for both conversations and routines within the specified audience and connection ownership restrictions. Does not assign tools.
+type MaterializeConnectionGrantsRequest struct {
+	AgentIds []string                `json:"agent_ids"`
+	Audience ConnectionGrantAudience `json:"audience"`
+}
+
 // MemoryContextMode Automatic memory delivery mode for agent turns.
 type MemoryContextMode string
 
@@ -6110,10 +6736,13 @@ type MessageUpsertFrame struct {
 	CreatedAt             time.Time             `json:"created_at"`
 
 	// EntryType Known values include message and compaction; unknown values must be preserved.
-	EntryType string                      `json:"entry_type"`
-	EventType MessageUpsertFrameEventType `json:"event_type"`
-	Id        string                      `json:"id"`
-	Metadata  *map[string]interface{}     `json:"metadata,omitempty"`
+	EntryType string `json:"entry_type"`
+
+	// EventProjection Bounded, display-safe projection of the external event associated with a session message. The complete provider payload is deliberately absent.
+	EventProjection *SessionEventProjection     `json:"event_projection,omitempty"`
+	EventType       MessageUpsertFrameEventType `json:"event_type"`
+	Id              string                      `json:"id"`
+	Metadata        *map[string]interface{}     `json:"metadata,omitempty"`
 
 	// Role Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
 	Role      SessionMessageRole `json:"role"`
@@ -6589,11 +7218,20 @@ type RotateSecretResult struct {
 
 // Routine defines model for Routine.
 type Routine struct {
-	ActAsUserProviders *[]string  `json:"act_as_user_providers,omitempty"`
-	AgentId            string     `json:"agent_id"`
-	CompletedAt        *time.Time `json:"completed_at,omitempty"`
-	CreatedAt          time.Time  `json:"created_at"`
-	DailyCeilingMilli  int64      `json:"daily_ceiling_milli"`
+	AgentId string `json:"agent_id"`
+
+	// Attention Caller-specific persistent attention state. Absence does not prove provider connectivity.
+	Attention *RoutineAttention `json:"attention,omitempty"`
+	Audience  *RoutineAudience  `json:"audience,omitempty"`
+
+	// AvailableActions Actions permitted for this caller; the server rechecks each request.
+	AvailableActions *[]RoutineAvailableActions `json:"available_actions,omitempty"`
+	CompletedAt      *time.Time                 `json:"completed_at,omitempty"`
+
+	// ConnectionBindings Exact accounts available to routine actions, keyed by provider. Each call selects one account and revalidates its live grant. Event watches are separate.
+	ConnectionBindings *ConnectionBindings `json:"connection_bindings,omitempty"`
+	CreatedAt          time.Time           `json:"created_at"`
+	DailyCeilingMilli  int64               `json:"daily_ceiling_milli"`
 
 	// Event Present when `trigger` is `event`.
 	Event *RoutineEventTrigger `json:"event,omitempty"`
@@ -6605,7 +7243,7 @@ type Routine struct {
 	Following bool   `json:"following"`
 	Id        string `json:"id"`
 
-	// Instructions Omitted from administrator metadata-only projections.
+	// Instructions Present only after ordinary content access is authorized.
 	Instructions *string `json:"instructions,omitempty"`
 
 	// Kind V1 accepts invoke; notify is reserved and returns unsupported_routine_kind.
@@ -6632,6 +7270,9 @@ type Routine struct {
 	PauseReason               *string          `json:"pause_reason,omitempty"`
 	PerOccurrenceCeilingMilli int64            `json:"per_occurrence_ceiling_milli"`
 
+	// Posture Employee-facing effective ownership and audience posture for the current caller.
+	Posture *ResourcePosture `json:"posture,omitempty"`
+
 	// Responsible The people this routine waits on. Non-empty under team custody.
 	Responsible *[]RoutinePrincipal `json:"responsible,omitempty"`
 
@@ -6647,6 +7288,15 @@ type Routine struct {
 	Unread    *bool     `json:"unread,omitempty"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
+
+// RoutineAttention Caller-specific persistent attention state. Absence does not prove provider connectivity.
+type RoutineAttention string
+
+// RoutineAudience defines model for Routine.Audience.
+type RoutineAudience string
+
+// RoutineAvailableActions defines model for Routine.AvailableActions.
+type RoutineAvailableActions string
 
 // RoutineChange One recorded change to a routine, read from the audit trail.
 //
@@ -6687,8 +7337,14 @@ type RoutineChangeList struct {
 
 // RoutineCreateRequest Exactly one of `schedule` and `event` is required: a routine runs on a schedule or when an event arrives, not both.
 type RoutineCreateRequest struct {
-	AgentId           string `json:"agent_id"`
-	DailyCeilingMilli int64  `json:"daily_ceiling_milli"`
+	AgentId string `json:"agent_id"`
+
+	// ConfirmAudienceExpansion Confirm access to existing and future routine results and the selected manager powers. Required when inviting another person to private work.
+	ConfirmAudienceExpansion *bool `json:"confirm_audience_expansion,omitempty"`
+
+	// ConnectionBindings Exact accounts available to routine actions, keyed by provider. Each call selects one account and revalidates its live grant. Event watches are separate.
+	ConnectionBindings *ConnectionBindings `json:"connection_bindings,omitempty"`
+	DailyCeilingMilli  int64               `json:"daily_ceiling_milli"`
 
 	// Event Runs the routine when a matching integration event arrives. Each matched event is one run on the ledger, one at a time per routine: an event arriving while a run is in flight waits behind it, and a run still waiting six hours later is closed `skipped` with `error_code` `stale`.
 	Event *RoutineEventTrigger `json:"event,omitempty"`
@@ -6726,8 +7382,8 @@ type RoutineEventTrigger struct {
 	// EventType The integration event to react to: a concrete type from the event catalog (`github.issues.opened`) or a wildcard on a prefix (`github.issues.*`, `github.*`). The first segment must name a registered integration provider; built-in Mobius events are not accepted here.
 	EventType string `json:"event_type"`
 
-	// IntegrationId Optional. Only events from this connection start a run. Omitted, an event from any of the organization's connections for the provider does.
-	IntegrationId *string `json:"integration_id,omitempty"`
+	// SourceBindings Exact connection and grant pairs whose matching events may start this routine. This selection does not authorize provider actions.
+	SourceBindings []ConnectionBinding `json:"source_bindings"`
 }
 
 // RoutineFollowLevel Narrows what a follower is notified about. Ignored on the other relationships, which are always notified.
@@ -6751,6 +7407,9 @@ type RoutineOccurrence struct {
 	CreditsSpentMilli int64   `json:"credits_spent_milli"`
 	ErrorCode         *string `json:"error_code,omitempty"`
 	ErrorMessage      *string `json:"error_message,omitempty"`
+
+	// EventSourceBinding The exact connection and grant pair whose event started this run. Immutable server-authored provenance, not action authority.
+	EventSourceBinding *ConnectionBinding `json:"event_source_binding,omitempty"`
 
 	// EventType The concrete event type that arrived (`github.issues.opened`), not the pattern the routine subscribed to. Present only when `trigger` is `event`.
 	EventType            *string   `json:"event_type,omitempty"`
@@ -6859,6 +7518,12 @@ type RoutineSchedule struct {
 	Timezone       *string    `json:"timezone,omitempty"`
 }
 
+// RoutineSharingConfirmation defines model for RoutineSharingConfirmation.
+type RoutineSharingConfirmation struct {
+	// ConfirmAudienceExpansion Confirm sharing existing and future routine results with the proposed named people.
+	ConfirmAudienceExpansion *bool `json:"confirm_audience_expansion,omitempty"`
+}
+
 // RoutineStatus defines model for RoutineStatus.
 type RoutineStatus string
 
@@ -6867,6 +7532,9 @@ type RoutineTrigger string
 
 // RoutineUpdateRequest defines model for RoutineUpdateRequest.
 type RoutineUpdateRequest struct {
+	// ConnectionBindings Exact accounts available to routine actions, keyed by provider. Each call selects one account and revalidates its live grant. Event watches are separate.
+	ConnectionBindings *ConnectionBindings `json:"connection_bindings,omitempty"`
+
 	// DailyCeilingMilli Must remain at least the per-occurrence ceiling. A person may move it either way; an agent may only lower it.
 	DailyCeilingMilli *int64 `json:"daily_ceiling_milli,omitempty"`
 
@@ -7188,6 +7856,144 @@ type SessionDocumentSource struct {
 // SessionDocumentSourceType Source discriminator; known values are base64, url, text, file, and artifact.
 type SessionDocumentSourceType string
 
+// SessionEventDelivery defines model for SessionEventDelivery.
+type SessionEventDelivery struct {
+	CancelledAt    *time.Time                 `json:"cancelled_at,omitempty"`
+	CreatedAt      time.Time                  `json:"created_at"`
+	DeliveredAt    *time.Time                 `json:"delivered_at,omitempty"`
+	Diagnostic     *string                    `json:"diagnostic,omitempty"`
+	Event          map[string]interface{}     `json:"event"`
+	EventType      string                     `json:"event_type"`
+	Id             string                     `json:"id"`
+	MessageId      *string                    `json:"message_id,omitempty"`
+	Meta           map[string]interface{}     `json:"meta"`
+	SessionId      string                     `json:"session_id"`
+	SourceEventId  string                     `json:"source_event_id"`
+	SourceId       string                     `json:"source_id"`
+	Status         SessionEventDeliveryStatus `json:"status"`
+	SubscriptionId string                     `json:"subscription_id"`
+	TargetTurnId   *string                    `json:"target_turn_id,omitempty"`
+	UpdatedAt      time.Time                  `json:"updated_at"`
+}
+
+// SessionEventDeliveryListResponse defines model for SessionEventDeliveryListResponse.
+type SessionEventDeliveryListResponse struct {
+	HasMore    bool                   `json:"has_more"`
+	Items      []SessionEventDelivery `json:"items"`
+	NextCursor *string                `json:"next_cursor,omitempty"`
+}
+
+// SessionEventDeliveryStatus defines model for SessionEventDeliveryStatus.
+type SessionEventDeliveryStatus string
+
+// SessionEventProjection Bounded, display-safe projection of the external event associated with a session message. The complete provider payload is deliberately absent.
+type SessionEventProjection struct {
+	// Attributes Small provider-selected facts; never arbitrary payload fields.
+	Attributes *[]SessionEventProjectionAttribute `json:"attributes,omitempty"`
+
+	// EventType Concrete event type that started the work.
+	EventType string `json:"event_type"`
+
+	// Kind Stable UI treatment for a projected external event.
+	Kind SessionEventProjectionKind `json:"kind"`
+
+	// OccurredAt Upstream occurrence time, falling back to receipt time.
+	OccurredAt *time.Time `json:"occurred_at,omitempty"`
+
+	// Provider Provider identifier when the event came from an integration.
+	Provider *string `json:"provider,omitempty"`
+
+	// ResourceName Human-readable affected resource name, never an internal event or source ID.
+	ResourceName *string `json:"resource_name,omitempty"`
+
+	// ResourceUrl Optional http(s) link to the affected provider resource.
+	ResourceUrl *string `json:"resource_url,omitempty"`
+
+	// Summary Optional provider-specific change summary.
+	Summary *string `json:"summary,omitempty"`
+
+	// Title Short human-readable description of what happened.
+	Title string `json:"title"`
+}
+
+// SessionEventProjectionAttribute defines model for SessionEventProjectionAttribute.
+type SessionEventProjectionAttribute struct {
+	// Label Short fact label selected by the server-side formatter.
+	Label string `json:"label"`
+
+	// Value Plain-text, bounded fact value.
+	Value string `json:"value"`
+}
+
+// SessionEventProjectionKind Stable UI treatment for a projected external event.
+type SessionEventProjectionKind string
+
+// SessionEventSubscription defines model for SessionEventSubscription.
+type SessionEventSubscription struct {
+	ActivationAt           time.Time  `json:"activation_at"`
+	ActivationReconciledAt *time.Time `json:"activation_reconciled_at,omitempty"`
+	AgentId                string     `json:"agent_id"`
+
+	// CoverageCutoffAt First observed time intake stopped because the pending-input limit was reached.
+	CoverageCutoffAt *time.Time `json:"coverage_cutoff_at,omitempty"`
+	CreatedAt        time.Time  `json:"created_at"`
+
+	// CreatedBy Authorizing principal recorded at creation.
+	CreatedBy string `json:"created_by"`
+
+	// ExecutionScope Server-resolved authority and billing scope; not event-controlled.
+	ExecutionScope map[string]interface{}           `json:"execution_scope"`
+	ExpiresAt      *time.Time                       `json:"expires_at,omitempty"`
+	Filters        []SessionEventSubscriptionFilter `json:"filters"`
+	Id             string                           `json:"id"`
+
+	// LastDiagnostic Most recent fail-closed match or delivery diagnostic.
+	LastDiagnostic   *string    `json:"last_diagnostic,omitempty"`
+	LastDiagnosticAt *time.Time `json:"last_diagnostic_at,omitempty"`
+
+	// PendingDeliveryCount Reserved, not-yet-injected event inputs. The subscription stops visibly at 256.
+	PendingDeliveryCount int                            `json:"pending_delivery_count"`
+	SessionId            string                         `json:"session_id"`
+	Status               SessionEventSubscriptionStatus `json:"status"`
+	StopReason           *string                        `json:"stop_reason,omitempty"`
+	StoppedAt            *time.Time                     `json:"stopped_at,omitempty"`
+	UpdatedAt            time.Time                      `json:"updated_at"`
+}
+
+// SessionEventSubscriptionCreateResponse defines model for SessionEventSubscriptionCreateResponse.
+type SessionEventSubscriptionCreateResponse struct {
+	Deduped      bool                     `json:"deduped"`
+	Subscription SessionEventSubscription `json:"subscription"`
+}
+
+// SessionEventSubscriptionFilter One OR branch. All populated fields in this object match together.
+type SessionEventSubscriptionFilter struct {
+	// Condition Optional Boolean expression over `event` and `meta`. Errors fail closed.
+	Condition *string `json:"condition,omitempty"`
+
+	// EventType A public exact event type or a supported provider wildcard such as `github.pull_request.*`.
+	EventType string `json:"event_type"`
+
+	// IntegrationId Optional integration connection restriction.
+	IntegrationId *string `json:"integration_id,omitempty"`
+
+	// Match Optional equality constraints over event payload fields. Dot paths address nested objects.
+	Match *map[string]interface{} `json:"match,omitempty"`
+
+	// SourceId Optional public source identifier restriction.
+	SourceId *string `json:"source_id,omitempty"`
+}
+
+// SessionEventSubscriptionListResponse defines model for SessionEventSubscriptionListResponse.
+type SessionEventSubscriptionListResponse struct {
+	HasMore    bool                       `json:"has_more"`
+	Items      []SessionEventSubscription `json:"items"`
+	NextCursor *string                    `json:"next_cursor,omitempty"`
+}
+
+// SessionEventSubscriptionStatus defines model for SessionEventSubscriptionStatus.
+type SessionEventSubscriptionStatus string
+
 // SessionImageBlock An image block, e.g. multimodal caller input.
 type SessionImageBlock struct {
 	// MediaType Server-detected MIME type for an artifact-backed image.
@@ -7270,6 +8076,9 @@ type SessionMessage struct {
 
 	// EntryType Transcript entry type: `message` or `compaction`.
 	EntryType SessionMessageEntryType `json:"entry_type"`
+
+	// EventProjection Bounded, display-safe projection of the external event associated with a session message. The complete provider payload is deliberately absent.
+	EventProjection *SessionEventProjection `json:"event_projection,omitempty"`
 
 	// Id Stable message identifier.
 	Id string `json:"id"`
@@ -7587,9 +8396,12 @@ type SessionTranscriptMessage struct {
 	CreatedAt             time.Time             `json:"created_at"`
 
 	// EntryType Known values include message and compaction; unknown values must be preserved.
-	EntryType string                  `json:"entry_type"`
-	Id        string                  `json:"id"`
-	Metadata  *map[string]interface{} `json:"metadata,omitempty"`
+	EntryType string `json:"entry_type"`
+
+	// EventProjection Bounded, display-safe projection of the external event associated with a session message. The complete provider payload is deliberately absent.
+	EventProjection *SessionEventProjection `json:"event_projection,omitempty"`
+	Id              string                  `json:"id"`
+	Metadata        *map[string]interface{} `json:"metadata,omitempty"`
 
 	// Role Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
 	Role      SessionMessageRole `json:"role"`
@@ -7680,12 +8492,20 @@ type SetBlueprintProtectionRequest struct {
 	Protected bool `json:"protected"`
 }
 
+// SetConnectionDefaultRequest defines model for SetConnectionDefaultRequest.
+type SetConnectionDefaultRequest struct {
+	ConnectionId  string                   `json:"connection_id"`
+	Context       ConnectionDefaultContext `json:"context"`
+	ExecutionMode ConnectionExecutionMode  `json:"execution_mode"`
+	GrantId       string                   `json:"grant_id"`
+}
+
 // Skill Reusable instruction bundle assignable to agents.
 type Skill struct {
-	// AllowedTools Canonical action names, wildcard selectors, or group references naming the actions this skill needs. Uses the same selector vocabulary as agent tool grants.
+	// AllowedActions Canonical action names, wildcard selectors, or group references naming the actions this skill needs. Uses the same selector vocabulary as agent action selections.
 	//
-	// The grant takes effect when an agent invokes the skill, and lasts for the rest of that turn: calls to actions outside it are refused with an error naming the skill. Assigning a skill narrows nothing on its own, and an empty list declares nothing and narrows nothing. Skills invoked in the same turn compose as a union, so this keeps a skill on task rather than sandboxing it. Mobius memory and self-awareness tools are always exempt, and a skill can never widen an agent beyond its own tool selectors.
-	AllowedTools *[]string `json:"allowed_tools,omitempty"`
+	// The constraint takes effect when an agent invokes the skill and lasts for the rest of that turn. Assigning a skill narrows nothing on its own, and an empty list declares nothing and narrows nothing. Lists from skills invoked in the same turn compose as a union, then intersect with the agent's selected actions. No catalog action is exempt, and a skill can never widen an agent's selection.
+	AllowedActions *[]string `json:"allowed_actions,omitempty"`
 
 	// Container The agent that contains this resource and may further narrow who can reach it.
 	Container *ResourceContainer `json:"container"`
@@ -7713,6 +8533,12 @@ type Skill struct {
 
 	// Posture Employee-facing effective ownership and audience posture for the current caller.
 	Posture ResourcePosture `json:"posture"`
+
+	// RecommendedActions Action selectors that improve this skill. Missing recommendations produce warnings only; they never select or present actions.
+	RecommendedActions *[]string `json:"recommended_actions,omitempty"`
+
+	// RequiredActions Action selectors that must match the agent's effective selected catalog set. A skill with any missing requirement is unavailable and cannot be invoked.
+	RequiredActions *[]string `json:"required_actions,omitempty"`
 
 	// Source Ownership and mutability of the Skill. `system` is built-in and `custom` is user-managed.
 	Source SkillSource `json:"source"`
@@ -7768,7 +8594,7 @@ type SkillListResponse struct {
 
 // SkillManifestEntry Skill metadata included in a resolved agent tool manifest. Full instructions are loaded at runtime through the invoke_skill tool.
 type SkillManifestEntry struct {
-	// Active Whether this skill is the one being simulated as invoked, i.e. it matched the `skill_name` parameter and its `allowed_tools` grant was applied to this manifest. False for every assigned skill when `skill_name` is omitted.
+	// Active Whether this skill is the one being simulated as invoked, i.e. it matched the `skill_name` parameter and its `allowed_actions` constraint was applied to this manifest. False for every assigned skill when `skill_name` is omitted.
 	Active bool `json:"active"`
 
 	// Description Markdown description of the skill's purpose.
@@ -7777,10 +8603,10 @@ type SkillManifestEntry struct {
 	// Id Skill ID this manifest entry resolved to.
 	Id string `json:"id"`
 
-	// MissingRecommended Tool selectors the skill recommends but that are not available to the agent.
+	// MissingRecommended Action selectors the skill recommends but that are not available to the agent.
 	MissingRecommended *[]string `json:"missing_recommended,omitempty"`
 
-	// MissingRequired Tool selectors the skill requires but that are not available to the agent.
+	// MissingRequired Action selectors the skill requires but that are not available to the agent.
 	MissingRequired *[]string `json:"missing_required,omitempty"`
 
 	// Name Display name of the skill.
@@ -7789,8 +8615,8 @@ type SkillManifestEntry struct {
 
 // SkillRequest defines model for SkillRequest.
 type SkillRequest struct {
-	// AllowedTools Tool selectors naming the actions this skill needs. The grant applies once an agent invokes the skill and lasts for the rest of that turn. Empty declares nothing and narrows nothing.
-	AllowedTools *[]string `json:"allowed_tools,omitempty"`
+	// AllowedActions Action selectors naming the actions this skill permits after it is invoked. Empty declares nothing and narrows nothing.
+	AllowedActions *[]string `json:"allowed_actions,omitempty"`
 
 	// Description Markdown description of the skill's purpose.
 	Description *string `json:"description,omitempty"`
@@ -7803,6 +8629,12 @@ type SkillRequest struct {
 
 	// Owner The human or team responsible for this resource.
 	Owner *ResourceOwner `json:"owner,omitempty"`
+
+	// RecommendedActions Optional action selectors that produce warnings when absent and never select actions.
+	RecommendedActions *[]string `json:"recommended_actions,omitempty"`
+
+	// RequiredActions Action selectors that must already be effective for this skill to be invoked.
+	RequiredActions *[]string `json:"required_actions,omitempty"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
@@ -8177,6 +9009,9 @@ type UpdateActionRequest struct {
 
 // UpdateAgentRequest Mutable agent fields. The agent's backing identity (`principal_id`, the machine principal created atomically with the agent) is intentionally absent: it is immutable. Reassigning identity is delete-and-recreate.
 type UpdateAgentRequest struct {
+	// ActionSelectors Replacement action selection, as a whole. Omit to leave the agent's current selection untouched; send an empty array to select none.
+	ActionSelectors *[]ActionSelector `json:"action_selectors,omitempty"`
+
 	// AffectedResourceDispositions Exactly one decision for every row returned by the visibility impact preview. Delegations may be revoked or explicitly widened; contained rows may be made private or explicitly widened. Extra, duplicate, and omitted rows are refused.
 	AffectedResourceDispositions *[]AgentAudienceResourceDisposition `json:"affected_resource_dispositions,omitempty"`
 
@@ -8194,9 +9029,6 @@ type UpdateAgentRequest struct {
 
 	// ExternalRef Assign-once client identity key, unique within the org. Accepted when the agent has no external_ref, or when it repeats the current value idempotently. Changing an already-set value returns 409.
 	ExternalRef *string `json:"external_ref,omitempty"`
-
-	// IntegrationAccess Replacement per-provider connection rules, as a whole. Omit to leave them untouched; send an empty array to clear them.
-	IntegrationAccess *[]AgentIntegrationAccess `json:"integration_access,omitempty"`
 
 	// Members Replacement audience for a `restricted` or `private` agent: the exact set after this call. Omit to leave membership unchanged. Ignored when the resulting visibility is `organization`, which deletes the member rows outright — "org-visible with a leftover member list" is not a representable state.
 	Members *[]string `json:"members,omitempty"`
@@ -8236,17 +9068,16 @@ type UpdateAgentRequest struct {
 	// TimeoutSeconds Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (600s / 10 minutes); a request's `operation.timeout_seconds` overrides it for that turn.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 
-	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
+	// ToolPresentation Controls how selected actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
 	//
-	// The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise. Existing agents retain their stored mode; the default applies when creating an agent without one.
+	// The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are selected, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise. Existing agents retain their stored mode; the default applies when creating an agent without one.
 	ToolPresentation *AgentToolPresentation `json:"tool_presentation,omitempty"`
-
-	// ToolSelectors Replacement tool grant, as a whole. Omit to leave the agent's current grant untouched; send an empty array to revoke it.
-	ToolSelectors *[]ActionSelector `json:"tool_selectors,omitempty"`
 
 	// Visibility Who, inside the org that owns this agent, may reach it at all.
 	//
-	// `organization` (the default) is reachable by any org member — the behavior every agent had before visibility existed. `restricted` is reachable only by the agent's listed members. `private` is reachable only by its single member.
+	// `organization` is reachable by any org member. `restricted` is reachable only by the agent's listed members. `private` is reachable only by its single member.
+	//
+	// Agent create requests default to `private` when this field is omitted.
 	//
 	// Visibility is not a permission: what a member may DO with an agent stays governed by their org role. A principal outside an agent's audience gets `404` from every path — list, read, session, invoke, memory — so an agent's existence never leaks through a status code.
 	//
@@ -8787,6 +9618,9 @@ type RoutineID = string
 // RoutineProposalID defines model for RoutineProposalID.
 type RoutineProposalID = string
 
+// SessionEventSubscriptionIdParam defines model for SessionEventSubscriptionIdParam.
+type SessionEventSubscriptionIdParam = string
+
 // SessionIdParam defines model for SessionIdParam.
 type SessionIdParam = string
 
@@ -8846,6 +9680,18 @@ type ListActionInvocationsParams struct {
 	// ActionId Filter to an immutable custom Action ID.
 	ActionId *string `form:"action_id,omitempty" json:"action_id,omitempty"`
 
+	// Integration Action name prefix; the provider or built-in namespace. Matches invocations whose action name begins with `<integration>.` — a provider slug (`gmail`), a built-in namespace (`mobius`, `environment`), or an MCP server slug. The trailing dot is implied, so `gmail` does not match `gmail_extra.send`.
+	Integration *string `form:"integration,omitempty" json:"integration,omitempty"`
+
+	// AgentId Filter to invocations made by a specific agent.
+	AgentId *string `form:"agent_id,omitempty" json:"agent_id,omitempty"`
+
+	// StartedAfter Only include invocations started at or after this time (inclusive).
+	StartedAfter *time.Time `form:"started_after,omitempty" json:"started_after,omitempty"`
+
+	// StartedBefore Only include invocations started strictly before this time (exclusive).
+	StartedBefore *time.Time `form:"started_before,omitempty" json:"started_before,omitempty"`
+
 	// DefinitionScope Filter by the scope that owned the selected definition.
 	DefinitionScope *ListActionInvocationsParamsDefinitionScope `form:"definition_scope,omitempty" json:"definition_scope,omitempty"`
 
@@ -8883,6 +9729,18 @@ type ListAgentsParams struct {
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// ListAgentConnectionDefaultsParams defines parameters for ListAgentConnectionDefaults.
+type ListAgentConnectionDefaultsParams struct {
+	Context       ConnectionDefaultContext `form:"context" json:"context"`
+	ExecutionMode ConnectionExecutionMode  `form:"execution_mode" json:"execution_mode"`
+}
+
+// ClearAgentConnectionDefaultParams defines parameters for ClearAgentConnectionDefault.
+type ClearAgentConnectionDefaultParams struct {
+	Context       ConnectionDefaultContext `form:"context" json:"context"`
+	ExecutionMode ConnectionExecutionMode  `form:"execution_mode" json:"execution_mode"`
+}
+
 // ListAgentMemoryChangesParams defines parameters for ListAgentMemoryChanges.
 type ListAgentMemoryChangesParams struct {
 	// After Opaque cursor returned as `next_cursor` by the previous response. Omit on the first request to read retained changes oldest-first. When no retained changes exist, the empty response still returns a stable bootstrap cursor that observes future mutations.
@@ -8918,11 +9776,11 @@ type DeleteAgentMemoryEntryParams struct {
 
 // GetAgentToolsParams defines parameters for GetAgentTools.
 type GetAgentToolsParams struct {
-	// SkillName Optional assigned skill name to simulate as invoked, so the response shows the tool scope a turn would run under once that skill is loaded. Omitted means no skill grant is applied; the resolved set still reflects the other filters on this request (`allowed_tools`).
+	// SkillName Optional assigned skill name to simulate as invoked, so the response shows the tool scope a turn would run under once that skill is loaded. Omitted means no skill action constraint is applied; the resolved set still reflects the other filters on this request (`allowed_actions`).
 	SkillName *string `form:"skill_name,omitempty" json:"skill_name,omitempty"`
 
-	// AllowedTools Optional comma-separated canonical action names, wildcard selectors, or group references to apply as a per-invocation filter against the resolved tool set.
-	AllowedTools *string `form:"allowed_tools,omitempty" json:"allowed_tools,omitempty"`
+	// AllowedActions Optional comma-separated canonical action names, wildcard selectors, or group references to apply as a per-invocation filter against the resolved tool set.
+	AllowedActions *string `form:"allowed_actions,omitempty" json:"allowed_actions,omitempty"`
 }
 
 // PreviewAgentVisibilityChangeParams defines parameters for PreviewAgentVisibilityChange.
@@ -8945,8 +9803,14 @@ type ListAPIKeysParams struct {
 
 // ListArtifactsParams defines parameters for ListArtifacts.
 type ListArtifactsParams struct {
+	// LatestOnly Return the latest accessible available version per root before filtering and pagination. The Library uses true; omitted preserves the full listing.
+	LatestOnly *bool `form:"latest_only,omitempty" json:"latest_only,omitempty"`
+
 	// Mime Mime prefix filter (e.g. `image/`)
 	Mime *string `form:"mime,omitempty" json:"mime,omitempty"`
+
+	// Q Case-insensitive substring match on the artifact name. Filenames are how people and agents refer to a file, so this is the search key for "find the file called ...".
+	Q *string `form:"q,omitempty" json:"q,omitempty"`
 
 	// Cursor Cursor for pagination (opaque string from previous response)
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
@@ -9024,6 +9888,17 @@ type SetBlueprintProtectionParams struct {
 	Namespace *string `form:"namespace,omitempty" json:"namespace,omitempty"`
 }
 
+// ListConnectionGovernanceParams defines parameters for ListConnectionGovernance.
+type ListConnectionGovernanceParams struct {
+	Provider *string `form:"provider,omitempty" json:"provider,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor Cursor for pagination (opaque string from previous response)
+	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
 // ListInteractionsParams defines parameters for ListInteractions.
 type ListInteractionsParams struct {
 	// Status Filter by status
@@ -9088,11 +9963,20 @@ type ListRoutinesParams struct {
 
 	// OriginSessionId Filter to routines proposed in one conversation. Provenance only; it is not where they run.
 	OriginSessionId *string `form:"origin_session_id,omitempty" json:"origin_session_id,omitempty"`
-	Limit           *int    `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Attention Filter to persistent account-repair work assigned to the authenticated human.
+	Attention *ListRoutinesParamsAttention `form:"attention,omitempty" json:"attention,omitempty"`
+
+	// Status Narrow to these routine statuses. Omit for every status, cancelled included.
+	Status *[]RoutineStatus `form:"status,omitempty" json:"status,omitempty"`
+	Limit  *int             `form:"limit,omitempty" json:"limit,omitempty"`
 
 	// Cursor next_cursor from the previous page.
 	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
 }
+
+// ListRoutinesParamsAttention defines parameters for ListRoutines.
+type ListRoutinesParamsAttention string
 
 // ListRoutineOccurrencesParams defines parameters for ListRoutineOccurrences.
 type ListRoutineOccurrencesParams struct {
@@ -9171,6 +10055,41 @@ type CreateSessionAttachmentParams struct {
 	// IdempotencyKey Optional retry key, scoped to this session and caller. An identical retry returns the original attachment. Reusing the key with different file bytes, filename, or MIME hint is rejected with a conflict.
 	IdempotencyKey *string `json:"Idempotency-Key,omitempty"`
 }
+
+// ListSessionEventSubscriptionsParams defines parameters for ListSessionEventSubscriptions.
+type ListSessionEventSubscriptionsParams struct {
+	// Status Filter by one or more subscription states.
+	Status *[]SessionEventSubscriptionStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// Order Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first — the way to fetch the latest rows of a long list (the tail) in a single request. Items in the response are always ordered ascending regardless of this value; `order` only selects which end of the list the page is taken from.
+	Order *ListSessionEventSubscriptionsParamsOrder `form:"order,omitempty" json:"order,omitempty"`
+
+	// Cursor Cursor for pagination (opaque string from previous response)
+	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListSessionEventSubscriptionsParamsOrder defines parameters for ListSessionEventSubscriptions.
+type ListSessionEventSubscriptionsParamsOrder string
+
+// ListSessionEventDeliveriesParams defines parameters for ListSessionEventDeliveries.
+type ListSessionEventDeliveriesParams struct {
+	Status *[]SessionEventDeliveryStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// Order Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first — the way to fetch the latest rows of a long list (the tail) in a single request. Items in the response are always ordered ascending regardless of this value; `order` only selects which end of the list the page is taken from.
+	Order *ListSessionEventDeliveriesParamsOrder `form:"order,omitempty" json:"order,omitempty"`
+
+	// Cursor Cursor for pagination (opaque string from previous response)
+	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListSessionEventDeliveriesParamsOrder defines parameters for ListSessionEventDeliveries.
+type ListSessionEventDeliveriesParamsOrder string
 
 // ListSessionMessagesParams defines parameters for ListSessionMessages.
 type ListSessionMessagesParams struct {
@@ -9307,6 +10226,9 @@ type CreateAgentJSONRequestBody = CreateAgentRequest
 // InvokeAgentJSONRequestBody defines body for InvokeAgent for application/json ContentType.
 type InvokeAgentJSONRequestBody = InvokeAgentRequest
 
+// SetAgentConnectionDefaultJSONRequestBody defines body for SetAgentConnectionDefault for application/json ContentType.
+type SetAgentConnectionDefaultJSONRequestBody = SetConnectionDefaultRequest
+
 // UpdateAgentJSONRequestBody defines body for UpdateAgent for application/json ContentType.
 type UpdateAgentJSONRequestBody = UpdateAgentRequest
 
@@ -9339,6 +10261,9 @@ type ApplyBlueprintJSONRequestBody = ApplyBlueprintRequest
 
 // SetBlueprintProtectionJSONRequestBody defines body for SetBlueprintProtection for application/json ContentType.
 type SetBlueprintProtectionJSONRequestBody = SetBlueprintProtectionRequest
+
+// MaterializeConnectionGrantsJSONRequestBody defines body for MaterializeConnectionGrants for application/json ContentType.
+type MaterializeConnectionGrantsJSONRequestBody = MaterializeConnectionGrantsRequest
 
 // CreateInteractionJSONRequestBody defines body for CreateInteraction for application/json ContentType.
 type CreateInteractionJSONRequestBody = CreateInteractionRequest
@@ -9379,6 +10304,9 @@ type UpdateRoleJSONRequestBody = UpdateRoleRequest
 // CreateRoutineJSONRequestBody defines body for CreateRoutine for application/json ContentType.
 type CreateRoutineJSONRequestBody = RoutineCreateRequest
 
+// ApproveRoutineProposalJSONRequestBody defines body for ApproveRoutineProposal for application/json ContentType.
+type ApproveRoutineProposalJSONRequestBody = RoutineSharingConfirmation
+
 // UpdateRoutineJSONRequestBody defines body for UpdateRoutine for application/json ContentType.
 type UpdateRoutineJSONRequestBody = RoutineUpdateRequest
 
@@ -9394,11 +10322,17 @@ type UpdateSessionJSONRequestBody = UpdateSessionRequest
 // CreateSessionAttachmentMultipartRequestBody defines body for CreateSessionAttachment for multipart/form-data ContentType.
 type CreateSessionAttachmentMultipartRequestBody = CreateSessionAttachmentRequest
 
+// CreateSessionEventSubscriptionJSONRequestBody defines body for CreateSessionEventSubscription for application/json ContentType.
+type CreateSessionEventSubscriptionJSONRequestBody = CreateSessionEventSubscriptionRequest
+
 // AppendSessionMessagesJSONRequestBody defines body for AppendSessionMessages for application/json ContentType.
 type AppendSessionMessagesJSONRequestBody = AppendSessionMessagesRequest
 
 // NudgeSessionJSONRequestBody defines body for NudgeSession for application/json ContentType.
 type NudgeSessionJSONRequestBody = NudgeSessionRequest
+
+// CreateSessionArtifactReferenceJSONRequestBody defines body for CreateSessionArtifactReference for application/json ContentType.
+type CreateSessionArtifactReferenceJSONRequestBody = CreateSessionArtifactReferenceRequest
 
 // StartTurnJSONRequestBody defines body for StartTurn for application/json ContentType.
 type StartTurnJSONRequestBody = StartTurnRequest
@@ -14647,6 +15581,20 @@ type ClientInterface interface {
 
 	InvokeAgent(ctx context.Context, body InvokeAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListAgentConnectionDefaults request
+	ListAgentConnectionDefaults(ctx context.Context, agentId string, params *ListAgentConnectionDefaultsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ClearAgentConnectionDefault request
+	ClearAgentConnectionDefault(ctx context.Context, agentId string, provider string, params *ClearAgentConnectionDefaultParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetAgentConnectionDefaultWithBody request with any body
+	SetAgentConnectionDefaultWithBody(ctx context.Context, agentId string, provider string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SetAgentConnectionDefault(ctx context.Context, agentId string, provider string, body SetAgentConnectionDefaultJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListAgentConnectionGrants request
+	ListAgentConnectionGrants(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// DeleteAgent request
 	DeleteAgent(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -14753,6 +15701,9 @@ type ClientInterface interface {
 	// GetArtifact request
 	GetArtifact(ctx context.Context, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListArtifactVersions request
+	ListArtifactVersions(ctx context.Context, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetArtifactContent request
 	GetArtifactContent(ctx context.Context, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -14792,6 +15743,29 @@ type ClientInterface interface {
 
 	// ListCatalogWorkerModels request
 	ListCatalogWorkerModels(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ConfirmConnectionReplacement request
+	ConfirmConnectionReplacement(ctx context.Context, integrationId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListConnectionGrants request
+	ListConnectionGrants(ctx context.Context, integrationId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// MaterializeConnectionGrantsWithBody request with any body
+	MaterializeConnectionGrantsWithBody(ctx context.Context, integrationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	MaterializeConnectionGrants(ctx context.Context, integrationId string, body MaterializeConnectionGrantsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RevokeConnectionGrant request
+	RevokeConnectionGrant(ctx context.Context, integrationId string, grantId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// StartConnectionTeamManagement request
+	StartConnectionTeamManagement(ctx context.Context, integrationId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListConnectionGovernance request
+	ListConnectionGovernance(ctx context.Context, params *ListConnectionGovernanceParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeactivateConnectionGovernance request
+	DeactivateConnectionGovernance(ctx context.Context, integrationId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListInteractions request
 	ListInteractions(ctx context.Context, params *ListInteractionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -14906,8 +15880,10 @@ type ClientInterface interface {
 	// ListRoutineOccurrences request
 	ListRoutineOccurrences(ctx context.Context, params *ListRoutineOccurrencesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ApproveRoutineProposal request
-	ApproveRoutineProposal(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ApproveRoutineProposalWithBody request with any body
+	ApproveRoutineProposalWithBody(ctx context.Context, proposalId RoutineProposalID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ApproveRoutineProposal(ctx context.Context, proposalId RoutineProposalID, body ApproveRoutineProposalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DismissRoutineProposal request
 	DismissRoutineProposal(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -14977,6 +15953,26 @@ type ClientInterface interface {
 	// CompactSession request
 	CompactSession(ctx context.Context, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListSessionEventSubscriptions request
+	ListSessionEventSubscriptions(ctx context.Context, sessionId SessionIdParam, params *ListSessionEventSubscriptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateSessionEventSubscriptionWithBody request with any body
+	CreateSessionEventSubscriptionWithBody(ctx context.Context, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateSessionEventSubscription(ctx context.Context, sessionId SessionIdParam, body CreateSessionEventSubscriptionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// StopSessionEventSubscriptions request
+	StopSessionEventSubscriptions(ctx context.Context, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetSessionEventSubscription request
+	GetSessionEventSubscription(ctx context.Context, sessionId SessionIdParam, subscriptionId SessionEventSubscriptionIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListSessionEventDeliveries request
+	ListSessionEventDeliveries(ctx context.Context, sessionId SessionIdParam, subscriptionId SessionEventSubscriptionIdParam, params *ListSessionEventDeliveriesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UnsubscribeSessionEventSubscription request
+	UnsubscribeSessionEventSubscription(ctx context.Context, sessionId SessionIdParam, subscriptionId SessionEventSubscriptionIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListSessionMessages request
 	ListSessionMessages(ctx context.Context, sessionId SessionIdParam, params *ListSessionMessagesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -14998,6 +15994,11 @@ type ClientInterface interface {
 
 	// CancelNudge request
 	CancelNudge(ctx context.Context, sessionId SessionIdParam, nudgeId NudgeIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateSessionArtifactReferenceWithBody request with any body
+	CreateSessionArtifactReferenceWithBody(ctx context.Context, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateSessionArtifactReference(ctx context.Context, sessionId SessionIdParam, body CreateSessionArtifactReferenceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// StreamSession request
 	StreamSession(ctx context.Context, sessionId SessionIdParam, params *StreamSessionParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -15275,6 +16276,66 @@ func (c *Client) InvokeAgentWithBody(ctx context.Context, contentType string, bo
 
 func (c *Client) InvokeAgent(ctx context.Context, body InvokeAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewInvokeAgentRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListAgentConnectionDefaults(ctx context.Context, agentId string, params *ListAgentConnectionDefaultsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListAgentConnectionDefaultsRequest(c.Server, agentId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ClearAgentConnectionDefault(ctx context.Context, agentId string, provider string, params *ClearAgentConnectionDefaultParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewClearAgentConnectionDefaultRequest(c.Server, agentId, provider, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SetAgentConnectionDefaultWithBody(ctx context.Context, agentId string, provider string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetAgentConnectionDefaultRequestWithBody(c.Server, agentId, provider, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SetAgentConnectionDefault(ctx context.Context, agentId string, provider string, body SetAgentConnectionDefaultJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetAgentConnectionDefaultRequest(c.Server, agentId, provider, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListAgentConnectionGrants(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListAgentConnectionGrantsRequest(c.Server, agentId)
 	if err != nil {
 		return nil, err
 	}
@@ -15741,6 +16802,18 @@ func (c *Client) GetArtifact(ctx context.Context, artifactId ArtifactIdParam, re
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListArtifactVersions(ctx context.Context, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListArtifactVersionsRequest(c.Server, artifactId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetArtifactContent(ctx context.Context, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetArtifactContentRequest(c.Server, artifactId)
 	if err != nil {
@@ -15899,6 +16972,102 @@ func (c *Client) ListCatalogModels(ctx context.Context, reqEditors ...RequestEdi
 
 func (c *Client) ListCatalogWorkerModels(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListCatalogWorkerModelsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ConfirmConnectionReplacement(ctx context.Context, integrationId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewConfirmConnectionReplacementRequest(c.Server, integrationId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListConnectionGrants(ctx context.Context, integrationId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListConnectionGrantsRequest(c.Server, integrationId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) MaterializeConnectionGrantsWithBody(ctx context.Context, integrationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewMaterializeConnectionGrantsRequestWithBody(c.Server, integrationId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) MaterializeConnectionGrants(ctx context.Context, integrationId string, body MaterializeConnectionGrantsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewMaterializeConnectionGrantsRequest(c.Server, integrationId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RevokeConnectionGrant(ctx context.Context, integrationId string, grantId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRevokeConnectionGrantRequest(c.Server, integrationId, grantId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) StartConnectionTeamManagement(ctx context.Context, integrationId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStartConnectionTeamManagementRequest(c.Server, integrationId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListConnectionGovernance(ctx context.Context, params *ListConnectionGovernanceParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListConnectionGovernanceRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeactivateConnectionGovernance(ctx context.Context, integrationId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeactivateConnectionGovernanceRequest(c.Server, integrationId)
 	if err != nil {
 		return nil, err
 	}
@@ -16413,8 +17582,20 @@ func (c *Client) ListRoutineOccurrences(ctx context.Context, params *ListRoutine
 	return c.Client.Do(req)
 }
 
-func (c *Client) ApproveRoutineProposal(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewApproveRoutineProposalRequest(c.Server, proposalId)
+func (c *Client) ApproveRoutineProposalWithBody(ctx context.Context, proposalId RoutineProposalID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewApproveRoutineProposalRequestWithBody(c.Server, proposalId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ApproveRoutineProposal(ctx context.Context, proposalId RoutineProposalID, body ApproveRoutineProposalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewApproveRoutineProposalRequest(c.Server, proposalId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16713,6 +17894,90 @@ func (c *Client) CompactSession(ctx context.Context, sessionId SessionIdParam, r
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListSessionEventSubscriptions(ctx context.Context, sessionId SessionIdParam, params *ListSessionEventSubscriptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListSessionEventSubscriptionsRequest(c.Server, sessionId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateSessionEventSubscriptionWithBody(ctx context.Context, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateSessionEventSubscriptionRequestWithBody(c.Server, sessionId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateSessionEventSubscription(ctx context.Context, sessionId SessionIdParam, body CreateSessionEventSubscriptionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateSessionEventSubscriptionRequest(c.Server, sessionId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) StopSessionEventSubscriptions(ctx context.Context, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStopSessionEventSubscriptionsRequest(c.Server, sessionId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetSessionEventSubscription(ctx context.Context, sessionId SessionIdParam, subscriptionId SessionEventSubscriptionIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSessionEventSubscriptionRequest(c.Server, sessionId, subscriptionId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListSessionEventDeliveries(ctx context.Context, sessionId SessionIdParam, subscriptionId SessionEventSubscriptionIdParam, params *ListSessionEventDeliveriesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListSessionEventDeliveriesRequest(c.Server, sessionId, subscriptionId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UnsubscribeSessionEventSubscription(ctx context.Context, sessionId SessionIdParam, subscriptionId SessionEventSubscriptionIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUnsubscribeSessionEventSubscriptionRequest(c.Server, sessionId, subscriptionId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListSessionMessages(ctx context.Context, sessionId SessionIdParam, params *ListSessionMessagesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListSessionMessagesRequest(c.Server, sessionId, params)
 	if err != nil {
@@ -16799,6 +18064,30 @@ func (c *Client) GetSessionNudge(ctx context.Context, sessionId SessionIdParam, 
 
 func (c *Client) CancelNudge(ctx context.Context, sessionId SessionIdParam, nudgeId NudgeIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCancelNudgeRequest(c.Server, sessionId, nudgeId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateSessionArtifactReferenceWithBody(ctx context.Context, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateSessionArtifactReferenceRequestWithBody(c.Server, sessionId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateSessionArtifactReference(ctx context.Context, sessionId SessionIdParam, body CreateSessionArtifactReferenceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateSessionArtifactReferenceRequest(c.Server, sessionId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -17425,6 +18714,54 @@ func NewListActionInvocationsRequest(server string, params *ListActionInvocation
 
 		}
 
+		if params.Integration != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "integration", *params.Integration, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.AgentId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "agent_id", *params.AgentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.StartedAfter != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "started_after", *params.StartedAfter, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.StartedBefore != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "started_before", *params.StartedBefore, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if params.DefinitionScope != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "definition_scope", *params.DefinitionScope, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
@@ -17879,6 +19216,231 @@ func NewInvokeAgentRequestWithBody(server string, contentType string, body io.Re
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListAgentConnectionDefaultsRequest generates requests for ListAgentConnectionDefaults
+func NewListAgentConnectionDefaultsRequest(server string, agentId string, params *ListAgentConnectionDefaultsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "agent_id", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/agents/%s/connection-defaults", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "context", params.Context, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "execution_mode", params.ExecutionMode, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewClearAgentConnectionDefaultRequest generates requests for ClearAgentConnectionDefault
+func NewClearAgentConnectionDefaultRequest(server string, agentId string, provider string, params *ClearAgentConnectionDefaultParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "agent_id", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "provider", provider, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/agents/%s/connection-defaults/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "context", params.Context, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "execution_mode", params.ExecutionMode, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewSetAgentConnectionDefaultRequest calls the generic SetAgentConnectionDefault builder with application/json body
+func NewSetAgentConnectionDefaultRequest(server string, agentId string, provider string, body SetAgentConnectionDefaultJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetAgentConnectionDefaultRequestWithBody(server, agentId, provider, "application/json", bodyReader)
+}
+
+// NewSetAgentConnectionDefaultRequestWithBody generates requests for SetAgentConnectionDefault with any type of body
+func NewSetAgentConnectionDefaultRequestWithBody(server string, agentId string, provider string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "agent_id", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "provider", provider, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/agents/%s/connection-defaults/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListAgentConnectionGrantsRequest generates requests for ListAgentConnectionGrants
+func NewListAgentConnectionGrantsRequest(server string, agentId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "agent_id", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/agents/%s/connection-grants", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -18884,9 +20446,9 @@ func NewGetAgentToolsRequest(server string, resourceId IDParam, params *GetAgent
 
 		}
 
-		if params.AllowedTools != nil {
+		if params.AllowedActions != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "allowed_tools", *params.AllowedTools, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "allowed_actions", *params.AllowedActions, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -19181,9 +20743,33 @@ func NewListArtifactsRequest(server string, params *ListArtifactsParams) (*http.
 		// per the OpenAPI spec (e.g. "color=blue,black,brown").
 		var rawQueryFragments []string
 
+		if params.LatestOnly != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "latest_only", *params.LatestOnly, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if params.Mime != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "mime", *params.Mime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Q != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "q", *params.Q, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -19337,6 +20923,40 @@ func NewGetArtifactRequest(server string, artifactId ArtifactIdParam) (*http.Req
 	}
 
 	operationPath := fmt.Sprintf("/v1/artifacts/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListArtifactVersionsRequest generates requests for ListArtifactVersions
+func NewListArtifactVersionsRequest(server string, artifactId ArtifactIdParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "artifact_id", artifactId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/artifacts/%s/artifact-versions", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -19987,6 +21607,308 @@ func NewListCatalogWorkerModelsRequest(server string) (*http.Request, error) {
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewConfirmConnectionReplacementRequest generates requests for ConfirmConnectionReplacement
+func NewConfirmConnectionReplacementRequest(server string, integrationId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "integration_id", integrationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/integrations/connections/%s/confirm-replacement", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListConnectionGrantsRequest generates requests for ListConnectionGrants
+func NewListConnectionGrantsRequest(server string, integrationId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "integration_id", integrationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/integrations/connections/%s/grants", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewMaterializeConnectionGrantsRequest calls the generic MaterializeConnectionGrants builder with application/json body
+func NewMaterializeConnectionGrantsRequest(server string, integrationId string, body MaterializeConnectionGrantsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewMaterializeConnectionGrantsRequestWithBody(server, integrationId, "application/json", bodyReader)
+}
+
+// NewMaterializeConnectionGrantsRequestWithBody generates requests for MaterializeConnectionGrants with any type of body
+func NewMaterializeConnectionGrantsRequestWithBody(server string, integrationId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "integration_id", integrationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/integrations/connections/%s/grants", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRevokeConnectionGrantRequest generates requests for RevokeConnectionGrant
+func NewRevokeConnectionGrantRequest(server string, integrationId string, grantId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "integration_id", integrationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "grant_id", grantId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/integrations/connections/%s/grants/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewStartConnectionTeamManagementRequest generates requests for StartConnectionTeamManagement
+func NewStartConnectionTeamManagementRequest(server string, integrationId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "integration_id", integrationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/integrations/connections/%s/team-management", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListConnectionGovernanceRequest generates requests for ListConnectionGovernance
+func NewListConnectionGovernanceRequest(server string, params *ListConnectionGovernanceParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/integrations/governance")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Provider != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "provider", *params.Provider, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewDeactivateConnectionGovernanceRequest generates requests for DeactivateConnectionGovernance
+func NewDeactivateConnectionGovernanceRequest(server string, integrationId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "integration_id", integrationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/integrations/governance/%s/deactivate", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -21242,6 +23164,30 @@ func NewListRoutinesRequest(server string, params *ListRoutinesParams) (*http.Re
 
 		}
 
+		if params.Attention != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "attention", *params.Attention, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if params.Limit != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
@@ -21446,8 +23392,19 @@ func NewListRoutineOccurrencesRequest(server string, params *ListRoutineOccurren
 	return req, nil
 }
 
-// NewApproveRoutineProposalRequest generates requests for ApproveRoutineProposal
-func NewApproveRoutineProposalRequest(server string, proposalId RoutineProposalID) (*http.Request, error) {
+// NewApproveRoutineProposalRequest calls the generic ApproveRoutineProposal builder with application/json body
+func NewApproveRoutineProposalRequest(server string, proposalId RoutineProposalID, body ApproveRoutineProposalJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewApproveRoutineProposalRequestWithBody(server, proposalId, "application/json", bodyReader)
+}
+
+// NewApproveRoutineProposalRequestWithBody generates requests for ApproveRoutineProposal with any type of body
+func NewApproveRoutineProposalRequestWithBody(server string, proposalId RoutineProposalID, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -21472,10 +23429,12 @@ func NewApproveRoutineProposalRequest(server string, proposalId RoutineProposalI
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -22430,6 +24389,370 @@ func NewCompactSessionRequest(server string, sessionId SessionIdParam) (*http.Re
 	return req, nil
 }
 
+// NewListSessionEventSubscriptionsRequest generates requests for ListSessionEventSubscriptions
+func NewListSessionEventSubscriptionsRequest(server string, sessionId SessionIdParam, params *ListSessionEventSubscriptionsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/sessions/%s/event-subscriptions", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Order != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "order", *params.Order, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateSessionEventSubscriptionRequest calls the generic CreateSessionEventSubscription builder with application/json body
+func NewCreateSessionEventSubscriptionRequest(server string, sessionId SessionIdParam, body CreateSessionEventSubscriptionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateSessionEventSubscriptionRequestWithBody(server, sessionId, "application/json", bodyReader)
+}
+
+// NewCreateSessionEventSubscriptionRequestWithBody generates requests for CreateSessionEventSubscription with any type of body
+func NewCreateSessionEventSubscriptionRequestWithBody(server string, sessionId SessionIdParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/sessions/%s/event-subscriptions", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewStopSessionEventSubscriptionsRequest generates requests for StopSessionEventSubscriptions
+func NewStopSessionEventSubscriptionsRequest(server string, sessionId SessionIdParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/sessions/%s/event-subscriptions/stop", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetSessionEventSubscriptionRequest generates requests for GetSessionEventSubscription
+func NewGetSessionEventSubscriptionRequest(server string, sessionId SessionIdParam, subscriptionId SessionEventSubscriptionIdParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "subscription_id", subscriptionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/sessions/%s/event-subscriptions/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListSessionEventDeliveriesRequest generates requests for ListSessionEventDeliveries
+func NewListSessionEventDeliveriesRequest(server string, sessionId SessionIdParam, subscriptionId SessionEventSubscriptionIdParam, params *ListSessionEventDeliveriesParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "subscription_id", subscriptionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/sessions/%s/event-subscriptions/%s/deliveries", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Order != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "order", *params.Order, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUnsubscribeSessionEventSubscriptionRequest generates requests for UnsubscribeSessionEventSubscription
+func NewUnsubscribeSessionEventSubscriptionRequest(server string, sessionId SessionIdParam, subscriptionId SessionEventSubscriptionIdParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "subscription_id", subscriptionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/sessions/%s/event-subscriptions/%s/unsubscribe", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListSessionMessagesRequest generates requests for ListSessionMessages
 func NewListSessionMessagesRequest(server string, sessionId SessionIdParam, params *ListSessionMessagesParams) (*http.Request, error) {
 	var err error
@@ -22820,6 +25143,53 @@ func NewCancelNudgeRequest(server string, sessionId SessionIdParam, nudgeId Nudg
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewCreateSessionArtifactReferenceRequest calls the generic CreateSessionArtifactReference builder with application/json body
+func NewCreateSessionArtifactReferenceRequest(server string, sessionId SessionIdParam, body CreateSessionArtifactReferenceJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateSessionArtifactReferenceRequestWithBody(server, sessionId, "application/json", bodyReader)
+}
+
+// NewCreateSessionArtifactReferenceRequestWithBody generates requests for CreateSessionArtifactReference with any type of body
+func NewCreateSessionArtifactReferenceRequestWithBody(server string, sessionId SessionIdParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/sessions/%s/references", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -24434,6 +26804,20 @@ type ClientWithResponsesInterface interface {
 
 	InvokeAgentWithResponse(ctx context.Context, body InvokeAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*InvokeAgentResponse, error)
 
+	// ListAgentConnectionDefaultsWithResponse request
+	ListAgentConnectionDefaultsWithResponse(ctx context.Context, agentId string, params *ListAgentConnectionDefaultsParams, reqEditors ...RequestEditorFn) (*ListAgentConnectionDefaultsResponse, error)
+
+	// ClearAgentConnectionDefaultWithResponse request
+	ClearAgentConnectionDefaultWithResponse(ctx context.Context, agentId string, provider string, params *ClearAgentConnectionDefaultParams, reqEditors ...RequestEditorFn) (*ClearAgentConnectionDefaultResponse, error)
+
+	// SetAgentConnectionDefaultWithBodyWithResponse request with any body
+	SetAgentConnectionDefaultWithBodyWithResponse(ctx context.Context, agentId string, provider string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetAgentConnectionDefaultResponse, error)
+
+	SetAgentConnectionDefaultWithResponse(ctx context.Context, agentId string, provider string, body SetAgentConnectionDefaultJSONRequestBody, reqEditors ...RequestEditorFn) (*SetAgentConnectionDefaultResponse, error)
+
+	// ListAgentConnectionGrantsWithResponse request
+	ListAgentConnectionGrantsWithResponse(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*ListAgentConnectionGrantsResponse, error)
+
 	// DeleteAgentWithResponse request
 	DeleteAgentWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*DeleteAgentResponse, error)
 
@@ -24540,6 +26924,9 @@ type ClientWithResponsesInterface interface {
 	// GetArtifactWithResponse request
 	GetArtifactWithResponse(ctx context.Context, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*GetArtifactResponse, error)
 
+	// ListArtifactVersionsWithResponse request
+	ListArtifactVersionsWithResponse(ctx context.Context, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*ListArtifactVersionsResponse, error)
+
 	// GetArtifactContentWithResponse request
 	GetArtifactContentWithResponse(ctx context.Context, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*GetArtifactContentResponse, error)
 
@@ -24579,6 +26966,29 @@ type ClientWithResponsesInterface interface {
 
 	// ListCatalogWorkerModelsWithResponse request
 	ListCatalogWorkerModelsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListCatalogWorkerModelsResponse, error)
+
+	// ConfirmConnectionReplacementWithResponse request
+	ConfirmConnectionReplacementWithResponse(ctx context.Context, integrationId string, reqEditors ...RequestEditorFn) (*ConfirmConnectionReplacementResponse, error)
+
+	// ListConnectionGrantsWithResponse request
+	ListConnectionGrantsWithResponse(ctx context.Context, integrationId string, reqEditors ...RequestEditorFn) (*ListConnectionGrantsResponse, error)
+
+	// MaterializeConnectionGrantsWithBodyWithResponse request with any body
+	MaterializeConnectionGrantsWithBodyWithResponse(ctx context.Context, integrationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*MaterializeConnectionGrantsResponse, error)
+
+	MaterializeConnectionGrantsWithResponse(ctx context.Context, integrationId string, body MaterializeConnectionGrantsJSONRequestBody, reqEditors ...RequestEditorFn) (*MaterializeConnectionGrantsResponse, error)
+
+	// RevokeConnectionGrantWithResponse request
+	RevokeConnectionGrantWithResponse(ctx context.Context, integrationId string, grantId string, reqEditors ...RequestEditorFn) (*RevokeConnectionGrantResponse, error)
+
+	// StartConnectionTeamManagementWithResponse request
+	StartConnectionTeamManagementWithResponse(ctx context.Context, integrationId string, reqEditors ...RequestEditorFn) (*StartConnectionTeamManagementResponse, error)
+
+	// ListConnectionGovernanceWithResponse request
+	ListConnectionGovernanceWithResponse(ctx context.Context, params *ListConnectionGovernanceParams, reqEditors ...RequestEditorFn) (*ListConnectionGovernanceResponse, error)
+
+	// DeactivateConnectionGovernanceWithResponse request
+	DeactivateConnectionGovernanceWithResponse(ctx context.Context, integrationId string, reqEditors ...RequestEditorFn) (*DeactivateConnectionGovernanceResponse, error)
 
 	// ListInteractionsWithResponse request
 	ListInteractionsWithResponse(ctx context.Context, params *ListInteractionsParams, reqEditors ...RequestEditorFn) (*ListInteractionsResponse, error)
@@ -24693,8 +27103,10 @@ type ClientWithResponsesInterface interface {
 	// ListRoutineOccurrencesWithResponse request
 	ListRoutineOccurrencesWithResponse(ctx context.Context, params *ListRoutineOccurrencesParams, reqEditors ...RequestEditorFn) (*ListRoutineOccurrencesResponse, error)
 
-	// ApproveRoutineProposalWithResponse request
-	ApproveRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*ApproveRoutineProposalResponse, error)
+	// ApproveRoutineProposalWithBodyWithResponse request with any body
+	ApproveRoutineProposalWithBodyWithResponse(ctx context.Context, proposalId RoutineProposalID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ApproveRoutineProposalResponse, error)
+
+	ApproveRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, body ApproveRoutineProposalJSONRequestBody, reqEditors ...RequestEditorFn) (*ApproveRoutineProposalResponse, error)
 
 	// DismissRoutineProposalWithResponse request
 	DismissRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*DismissRoutineProposalResponse, error)
@@ -24764,6 +27176,26 @@ type ClientWithResponsesInterface interface {
 	// CompactSessionWithResponse request
 	CompactSessionWithResponse(ctx context.Context, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*CompactSessionResponse, error)
 
+	// ListSessionEventSubscriptionsWithResponse request
+	ListSessionEventSubscriptionsWithResponse(ctx context.Context, sessionId SessionIdParam, params *ListSessionEventSubscriptionsParams, reqEditors ...RequestEditorFn) (*ListSessionEventSubscriptionsResponse, error)
+
+	// CreateSessionEventSubscriptionWithBodyWithResponse request with any body
+	CreateSessionEventSubscriptionWithBodyWithResponse(ctx context.Context, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSessionEventSubscriptionResponse, error)
+
+	CreateSessionEventSubscriptionWithResponse(ctx context.Context, sessionId SessionIdParam, body CreateSessionEventSubscriptionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSessionEventSubscriptionResponse, error)
+
+	// StopSessionEventSubscriptionsWithResponse request
+	StopSessionEventSubscriptionsWithResponse(ctx context.Context, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*StopSessionEventSubscriptionsResponse, error)
+
+	// GetSessionEventSubscriptionWithResponse request
+	GetSessionEventSubscriptionWithResponse(ctx context.Context, sessionId SessionIdParam, subscriptionId SessionEventSubscriptionIdParam, reqEditors ...RequestEditorFn) (*GetSessionEventSubscriptionResponse, error)
+
+	// ListSessionEventDeliveriesWithResponse request
+	ListSessionEventDeliveriesWithResponse(ctx context.Context, sessionId SessionIdParam, subscriptionId SessionEventSubscriptionIdParam, params *ListSessionEventDeliveriesParams, reqEditors ...RequestEditorFn) (*ListSessionEventDeliveriesResponse, error)
+
+	// UnsubscribeSessionEventSubscriptionWithResponse request
+	UnsubscribeSessionEventSubscriptionWithResponse(ctx context.Context, sessionId SessionIdParam, subscriptionId SessionEventSubscriptionIdParam, reqEditors ...RequestEditorFn) (*UnsubscribeSessionEventSubscriptionResponse, error)
+
 	// ListSessionMessagesWithResponse request
 	ListSessionMessagesWithResponse(ctx context.Context, sessionId SessionIdParam, params *ListSessionMessagesParams, reqEditors ...RequestEditorFn) (*ListSessionMessagesResponse, error)
 
@@ -24785,6 +27217,11 @@ type ClientWithResponsesInterface interface {
 
 	// CancelNudgeWithResponse request
 	CancelNudgeWithResponse(ctx context.Context, sessionId SessionIdParam, nudgeId NudgeIdParam, reqEditors ...RequestEditorFn) (*CancelNudgeResponse, error)
+
+	// CreateSessionArtifactReferenceWithBodyWithResponse request with any body
+	CreateSessionArtifactReferenceWithBodyWithResponse(ctx context.Context, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSessionArtifactReferenceResponse, error)
+
+	CreateSessionArtifactReferenceWithResponse(ctx context.Context, sessionId SessionIdParam, body CreateSessionArtifactReferenceJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSessionArtifactReferenceResponse, error)
 
 	// StreamSessionWithResponse request
 	StreamSessionWithResponse(ctx context.Context, sessionId SessionIdParam, params *StreamSessionParams, reqEditors ...RequestEditorFn) (*StreamSessionResponse, error)
@@ -25211,6 +27648,134 @@ func (r InvokeAgentResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r InvokeAgentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListAgentConnectionDefaultsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ConnectionDefaultPreferenceListResponse
+	JSON400      *BadRequest
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListAgentConnectionDefaultsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListAgentConnectionDefaultsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListAgentConnectionDefaultsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ClearAgentConnectionDefaultResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *BadRequest
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ClearAgentConnectionDefaultResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ClearAgentConnectionDefaultResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ClearAgentConnectionDefaultResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type SetAgentConnectionDefaultResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *BadRequest
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r SetAgentConnectionDefaultResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetAgentConnectionDefaultResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SetAgentConnectionDefaultResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListAgentConnectionGrantsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ConnectionGrantListResponse
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListAgentConnectionGrantsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListAgentConnectionGrantsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListAgentConnectionGrantsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -26235,6 +28800,40 @@ func (r GetArtifactResponse) ContentType() string {
 	return ""
 }
 
+type ListArtifactVersionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ArtifactVersionList
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListArtifactVersionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListArtifactVersionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListArtifactVersionsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type GetArtifactContentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -26635,6 +29234,224 @@ func (r ListCatalogWorkerModelsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListCatalogWorkerModelsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ConfirmConnectionReplacementResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ConfirmConnectionReplacementResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ConfirmConnectionReplacementResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ConfirmConnectionReplacementResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListConnectionGrantsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ConnectionGrantListResponse
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListConnectionGrantsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListConnectionGrantsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListConnectionGrantsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type MaterializeConnectionGrantsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ConnectionGrantListResponse
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r MaterializeConnectionGrantsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r MaterializeConnectionGrantsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r MaterializeConnectionGrantsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type RevokeConnectionGrantResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r RevokeConnectionGrantResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RevokeConnectionGrantResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RevokeConnectionGrantResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type StartConnectionTeamManagementResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *IntegrationConnectResponse
+	JSON400      *BadRequest
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r StartConnectionTeamManagementResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r StartConnectionTeamManagementResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r StartConnectionTeamManagementResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListConnectionGovernanceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ConnectionGovernanceListResponse
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ListConnectionGovernanceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListConnectionGovernanceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListConnectionGovernanceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeactivateConnectionGovernanceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r DeactivateConnectionGovernanceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeactivateConnectionGovernanceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeactivateConnectionGovernanceResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -28320,6 +31137,208 @@ func (r CompactSessionResponse) ContentType() string {
 	return ""
 }
 
+type ListSessionEventSubscriptionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SessionEventSubscriptionListResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListSessionEventSubscriptionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListSessionEventSubscriptionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListSessionEventSubscriptionsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateSessionEventSubscriptionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SessionEventSubscriptionCreateResponse
+	JSON201      *SessionEventSubscriptionCreateResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateSessionEventSubscriptionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateSessionEventSubscriptionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateSessionEventSubscriptionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type StopSessionEventSubscriptionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r StopSessionEventSubscriptionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r StopSessionEventSubscriptionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r StopSessionEventSubscriptionsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetSessionEventSubscriptionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SessionEventSubscription
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSessionEventSubscriptionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSessionEventSubscriptionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetSessionEventSubscriptionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListSessionEventDeliveriesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SessionEventDeliveryListResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListSessionEventDeliveriesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListSessionEventDeliveriesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListSessionEventDeliveriesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UnsubscribeSessionEventSubscriptionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SessionEventSubscription
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r UnsubscribeSessionEventSubscriptionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UnsubscribeSessionEventSubscriptionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UnsubscribeSessionEventSubscriptionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListSessionMessagesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -28519,6 +31538,44 @@ func (r CancelNudgeResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r CancelNudgeResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateSessionArtifactReferenceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SessionAttachmentResponse
+	JSON201      *SessionAttachmentResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+	JSON413      *ErrorResponse
+	JSON503      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateSessionArtifactReferenceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateSessionArtifactReferenceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateSessionArtifactReferenceResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -29699,6 +32756,50 @@ func (c *ClientWithResponses) InvokeAgentWithResponse(ctx context.Context, body 
 	return ParseInvokeAgentResponse(rsp)
 }
 
+// ListAgentConnectionDefaultsWithResponse request returning *ListAgentConnectionDefaultsResponse
+func (c *ClientWithResponses) ListAgentConnectionDefaultsWithResponse(ctx context.Context, agentId string, params *ListAgentConnectionDefaultsParams, reqEditors ...RequestEditorFn) (*ListAgentConnectionDefaultsResponse, error) {
+	rsp, err := c.ListAgentConnectionDefaults(ctx, agentId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListAgentConnectionDefaultsResponse(rsp)
+}
+
+// ClearAgentConnectionDefaultWithResponse request returning *ClearAgentConnectionDefaultResponse
+func (c *ClientWithResponses) ClearAgentConnectionDefaultWithResponse(ctx context.Context, agentId string, provider string, params *ClearAgentConnectionDefaultParams, reqEditors ...RequestEditorFn) (*ClearAgentConnectionDefaultResponse, error) {
+	rsp, err := c.ClearAgentConnectionDefault(ctx, agentId, provider, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseClearAgentConnectionDefaultResponse(rsp)
+}
+
+// SetAgentConnectionDefaultWithBodyWithResponse request with arbitrary body returning *SetAgentConnectionDefaultResponse
+func (c *ClientWithResponses) SetAgentConnectionDefaultWithBodyWithResponse(ctx context.Context, agentId string, provider string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetAgentConnectionDefaultResponse, error) {
+	rsp, err := c.SetAgentConnectionDefaultWithBody(ctx, agentId, provider, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetAgentConnectionDefaultResponse(rsp)
+}
+
+func (c *ClientWithResponses) SetAgentConnectionDefaultWithResponse(ctx context.Context, agentId string, provider string, body SetAgentConnectionDefaultJSONRequestBody, reqEditors ...RequestEditorFn) (*SetAgentConnectionDefaultResponse, error) {
+	rsp, err := c.SetAgentConnectionDefault(ctx, agentId, provider, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetAgentConnectionDefaultResponse(rsp)
+}
+
+// ListAgentConnectionGrantsWithResponse request returning *ListAgentConnectionGrantsResponse
+func (c *ClientWithResponses) ListAgentConnectionGrantsWithResponse(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*ListAgentConnectionGrantsResponse, error) {
+	rsp, err := c.ListAgentConnectionGrants(ctx, agentId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListAgentConnectionGrantsResponse(rsp)
+}
+
 // DeleteAgentWithResponse request returning *DeleteAgentResponse
 func (c *ClientWithResponses) DeleteAgentWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*DeleteAgentResponse, error) {
 	rsp, err := c.DeleteAgent(ctx, resourceId, reqEditors...)
@@ -30033,6 +33134,15 @@ func (c *ClientWithResponses) GetArtifactWithResponse(ctx context.Context, artif
 	return ParseGetArtifactResponse(rsp)
 }
 
+// ListArtifactVersionsWithResponse request returning *ListArtifactVersionsResponse
+func (c *ClientWithResponses) ListArtifactVersionsWithResponse(ctx context.Context, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*ListArtifactVersionsResponse, error) {
+	rsp, err := c.ListArtifactVersions(ctx, artifactId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListArtifactVersionsResponse(rsp)
+}
+
 // GetArtifactContentWithResponse request returning *GetArtifactContentResponse
 func (c *ClientWithResponses) GetArtifactContentWithResponse(ctx context.Context, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*GetArtifactContentResponse, error) {
 	rsp, err := c.GetArtifactContent(ctx, artifactId, reqEditors...)
@@ -30155,6 +33265,77 @@ func (c *ClientWithResponses) ListCatalogWorkerModelsWithResponse(ctx context.Co
 		return nil, err
 	}
 	return ParseListCatalogWorkerModelsResponse(rsp)
+}
+
+// ConfirmConnectionReplacementWithResponse request returning *ConfirmConnectionReplacementResponse
+func (c *ClientWithResponses) ConfirmConnectionReplacementWithResponse(ctx context.Context, integrationId string, reqEditors ...RequestEditorFn) (*ConfirmConnectionReplacementResponse, error) {
+	rsp, err := c.ConfirmConnectionReplacement(ctx, integrationId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseConfirmConnectionReplacementResponse(rsp)
+}
+
+// ListConnectionGrantsWithResponse request returning *ListConnectionGrantsResponse
+func (c *ClientWithResponses) ListConnectionGrantsWithResponse(ctx context.Context, integrationId string, reqEditors ...RequestEditorFn) (*ListConnectionGrantsResponse, error) {
+	rsp, err := c.ListConnectionGrants(ctx, integrationId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListConnectionGrantsResponse(rsp)
+}
+
+// MaterializeConnectionGrantsWithBodyWithResponse request with arbitrary body returning *MaterializeConnectionGrantsResponse
+func (c *ClientWithResponses) MaterializeConnectionGrantsWithBodyWithResponse(ctx context.Context, integrationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*MaterializeConnectionGrantsResponse, error) {
+	rsp, err := c.MaterializeConnectionGrantsWithBody(ctx, integrationId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseMaterializeConnectionGrantsResponse(rsp)
+}
+
+func (c *ClientWithResponses) MaterializeConnectionGrantsWithResponse(ctx context.Context, integrationId string, body MaterializeConnectionGrantsJSONRequestBody, reqEditors ...RequestEditorFn) (*MaterializeConnectionGrantsResponse, error) {
+	rsp, err := c.MaterializeConnectionGrants(ctx, integrationId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseMaterializeConnectionGrantsResponse(rsp)
+}
+
+// RevokeConnectionGrantWithResponse request returning *RevokeConnectionGrantResponse
+func (c *ClientWithResponses) RevokeConnectionGrantWithResponse(ctx context.Context, integrationId string, grantId string, reqEditors ...RequestEditorFn) (*RevokeConnectionGrantResponse, error) {
+	rsp, err := c.RevokeConnectionGrant(ctx, integrationId, grantId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRevokeConnectionGrantResponse(rsp)
+}
+
+// StartConnectionTeamManagementWithResponse request returning *StartConnectionTeamManagementResponse
+func (c *ClientWithResponses) StartConnectionTeamManagementWithResponse(ctx context.Context, integrationId string, reqEditors ...RequestEditorFn) (*StartConnectionTeamManagementResponse, error) {
+	rsp, err := c.StartConnectionTeamManagement(ctx, integrationId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseStartConnectionTeamManagementResponse(rsp)
+}
+
+// ListConnectionGovernanceWithResponse request returning *ListConnectionGovernanceResponse
+func (c *ClientWithResponses) ListConnectionGovernanceWithResponse(ctx context.Context, params *ListConnectionGovernanceParams, reqEditors ...RequestEditorFn) (*ListConnectionGovernanceResponse, error) {
+	rsp, err := c.ListConnectionGovernance(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListConnectionGovernanceResponse(rsp)
+}
+
+// DeactivateConnectionGovernanceWithResponse request returning *DeactivateConnectionGovernanceResponse
+func (c *ClientWithResponses) DeactivateConnectionGovernanceWithResponse(ctx context.Context, integrationId string, reqEditors ...RequestEditorFn) (*DeactivateConnectionGovernanceResponse, error) {
+	rsp, err := c.DeactivateConnectionGovernance(ctx, integrationId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeactivateConnectionGovernanceResponse(rsp)
 }
 
 // ListInteractionsWithResponse request returning *ListInteractionsResponse
@@ -30522,9 +33703,17 @@ func (c *ClientWithResponses) ListRoutineOccurrencesWithResponse(ctx context.Con
 	return ParseListRoutineOccurrencesResponse(rsp)
 }
 
-// ApproveRoutineProposalWithResponse request returning *ApproveRoutineProposalResponse
-func (c *ClientWithResponses) ApproveRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*ApproveRoutineProposalResponse, error) {
-	rsp, err := c.ApproveRoutineProposal(ctx, proposalId, reqEditors...)
+// ApproveRoutineProposalWithBodyWithResponse request with arbitrary body returning *ApproveRoutineProposalResponse
+func (c *ClientWithResponses) ApproveRoutineProposalWithBodyWithResponse(ctx context.Context, proposalId RoutineProposalID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ApproveRoutineProposalResponse, error) {
+	rsp, err := c.ApproveRoutineProposalWithBody(ctx, proposalId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseApproveRoutineProposalResponse(rsp)
+}
+
+func (c *ClientWithResponses) ApproveRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, body ApproveRoutineProposalJSONRequestBody, reqEditors ...RequestEditorFn) (*ApproveRoutineProposalResponse, error) {
+	rsp, err := c.ApproveRoutineProposal(ctx, proposalId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -30743,6 +33932,68 @@ func (c *ClientWithResponses) CompactSessionWithResponse(ctx context.Context, se
 	return ParseCompactSessionResponse(rsp)
 }
 
+// ListSessionEventSubscriptionsWithResponse request returning *ListSessionEventSubscriptionsResponse
+func (c *ClientWithResponses) ListSessionEventSubscriptionsWithResponse(ctx context.Context, sessionId SessionIdParam, params *ListSessionEventSubscriptionsParams, reqEditors ...RequestEditorFn) (*ListSessionEventSubscriptionsResponse, error) {
+	rsp, err := c.ListSessionEventSubscriptions(ctx, sessionId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListSessionEventSubscriptionsResponse(rsp)
+}
+
+// CreateSessionEventSubscriptionWithBodyWithResponse request with arbitrary body returning *CreateSessionEventSubscriptionResponse
+func (c *ClientWithResponses) CreateSessionEventSubscriptionWithBodyWithResponse(ctx context.Context, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSessionEventSubscriptionResponse, error) {
+	rsp, err := c.CreateSessionEventSubscriptionWithBody(ctx, sessionId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateSessionEventSubscriptionResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateSessionEventSubscriptionWithResponse(ctx context.Context, sessionId SessionIdParam, body CreateSessionEventSubscriptionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSessionEventSubscriptionResponse, error) {
+	rsp, err := c.CreateSessionEventSubscription(ctx, sessionId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateSessionEventSubscriptionResponse(rsp)
+}
+
+// StopSessionEventSubscriptionsWithResponse request returning *StopSessionEventSubscriptionsResponse
+func (c *ClientWithResponses) StopSessionEventSubscriptionsWithResponse(ctx context.Context, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*StopSessionEventSubscriptionsResponse, error) {
+	rsp, err := c.StopSessionEventSubscriptions(ctx, sessionId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseStopSessionEventSubscriptionsResponse(rsp)
+}
+
+// GetSessionEventSubscriptionWithResponse request returning *GetSessionEventSubscriptionResponse
+func (c *ClientWithResponses) GetSessionEventSubscriptionWithResponse(ctx context.Context, sessionId SessionIdParam, subscriptionId SessionEventSubscriptionIdParam, reqEditors ...RequestEditorFn) (*GetSessionEventSubscriptionResponse, error) {
+	rsp, err := c.GetSessionEventSubscription(ctx, sessionId, subscriptionId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSessionEventSubscriptionResponse(rsp)
+}
+
+// ListSessionEventDeliveriesWithResponse request returning *ListSessionEventDeliveriesResponse
+func (c *ClientWithResponses) ListSessionEventDeliveriesWithResponse(ctx context.Context, sessionId SessionIdParam, subscriptionId SessionEventSubscriptionIdParam, params *ListSessionEventDeliveriesParams, reqEditors ...RequestEditorFn) (*ListSessionEventDeliveriesResponse, error) {
+	rsp, err := c.ListSessionEventDeliveries(ctx, sessionId, subscriptionId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListSessionEventDeliveriesResponse(rsp)
+}
+
+// UnsubscribeSessionEventSubscriptionWithResponse request returning *UnsubscribeSessionEventSubscriptionResponse
+func (c *ClientWithResponses) UnsubscribeSessionEventSubscriptionWithResponse(ctx context.Context, sessionId SessionIdParam, subscriptionId SessionEventSubscriptionIdParam, reqEditors ...RequestEditorFn) (*UnsubscribeSessionEventSubscriptionResponse, error) {
+	rsp, err := c.UnsubscribeSessionEventSubscription(ctx, sessionId, subscriptionId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUnsubscribeSessionEventSubscriptionResponse(rsp)
+}
+
 // ListSessionMessagesWithResponse request returning *ListSessionMessagesResponse
 func (c *ClientWithResponses) ListSessionMessagesWithResponse(ctx context.Context, sessionId SessionIdParam, params *ListSessionMessagesParams, reqEditors ...RequestEditorFn) (*ListSessionMessagesResponse, error) {
 	rsp, err := c.ListSessionMessages(ctx, sessionId, params, reqEditors...)
@@ -30811,6 +34062,23 @@ func (c *ClientWithResponses) CancelNudgeWithResponse(ctx context.Context, sessi
 		return nil, err
 	}
 	return ParseCancelNudgeResponse(rsp)
+}
+
+// CreateSessionArtifactReferenceWithBodyWithResponse request with arbitrary body returning *CreateSessionArtifactReferenceResponse
+func (c *ClientWithResponses) CreateSessionArtifactReferenceWithBodyWithResponse(ctx context.Context, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSessionArtifactReferenceResponse, error) {
+	rsp, err := c.CreateSessionArtifactReferenceWithBody(ctx, sessionId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateSessionArtifactReferenceResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateSessionArtifactReferenceWithResponse(ctx context.Context, sessionId SessionIdParam, body CreateSessionArtifactReferenceJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSessionArtifactReferenceResponse, error) {
+	rsp, err := c.CreateSessionArtifactReference(ctx, sessionId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateSessionArtifactReferenceResponse(rsp)
 }
 
 // StreamSessionWithResponse request returning *StreamSessionResponse
@@ -31717,6 +34985,166 @@ func ParseInvokeAgentResponse(rsp *http.Response) (*InvokeAgentResponse, error) 
 			return nil, err
 		}
 		response.JSON429 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListAgentConnectionDefaultsResponse parses an HTTP response from a ListAgentConnectionDefaultsWithResponse call
+func ParseListAgentConnectionDefaultsResponse(rsp *http.Response) (*ListAgentConnectionDefaultsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListAgentConnectionDefaultsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ConnectionDefaultPreferenceListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseClearAgentConnectionDefaultResponse parses an HTTP response from a ClearAgentConnectionDefaultWithResponse call
+func ParseClearAgentConnectionDefaultResponse(rsp *http.Response) (*ClearAgentConnectionDefaultResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ClearAgentConnectionDefaultResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSetAgentConnectionDefaultResponse parses an HTTP response from a SetAgentConnectionDefaultWithResponse call
+func ParseSetAgentConnectionDefaultResponse(rsp *http.Response) (*SetAgentConnectionDefaultResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetAgentConnectionDefaultResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListAgentConnectionGrantsResponse parses an HTTP response from a ListAgentConnectionGrantsWithResponse call
+func ParseListAgentConnectionGrantsResponse(rsp *http.Response) (*ListAgentConnectionGrantsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListAgentConnectionGrantsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ConnectionGrantListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -33329,6 +36757,60 @@ func ParseGetArtifactResponse(rsp *http.Response) (*GetArtifactResponse, error) 
 	return response, nil
 }
 
+// ParseListArtifactVersionsResponse parses an HTTP response from a ListArtifactVersionsWithResponse call
+func ParseListArtifactVersionsResponse(rsp *http.Response) (*ListArtifactVersionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListArtifactVersionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ArtifactVersionList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetArtifactContentResponse parses an HTTP response from a GetArtifactContentWithResponse call
 func ParseGetArtifactContentResponse(rsp *http.Response) (*GetArtifactContentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -33944,6 +37426,244 @@ func ParseListCatalogWorkerModelsResponse(rsp *http.Response) (*ListCatalogWorke
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseConfirmConnectionReplacementResponse parses an HTTP response from a ConfirmConnectionReplacementWithResponse call
+func ParseConfirmConnectionReplacementResponse(rsp *http.Response) (*ConfirmConnectionReplacementResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ConfirmConnectionReplacementResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListConnectionGrantsResponse parses an HTTP response from a ListConnectionGrantsWithResponse call
+func ParseListConnectionGrantsResponse(rsp *http.Response) (*ListConnectionGrantsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListConnectionGrantsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ConnectionGrantListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseMaterializeConnectionGrantsResponse parses an HTTP response from a MaterializeConnectionGrantsWithResponse call
+func ParseMaterializeConnectionGrantsResponse(rsp *http.Response) (*MaterializeConnectionGrantsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &MaterializeConnectionGrantsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ConnectionGrantListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRevokeConnectionGrantResponse parses an HTTP response from a RevokeConnectionGrantWithResponse call
+func ParseRevokeConnectionGrantResponse(rsp *http.Response) (*RevokeConnectionGrantResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RevokeConnectionGrantResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseStartConnectionTeamManagementResponse parses an HTTP response from a StartConnectionTeamManagementWithResponse call
+func ParseStartConnectionTeamManagementResponse(rsp *http.Response) (*StartConnectionTeamManagementResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &StartConnectionTeamManagementResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest IntegrationConnectResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListConnectionGovernanceResponse parses an HTTP response from a ListConnectionGovernanceWithResponse call
+func ParseListConnectionGovernanceResponse(rsp *http.Response) (*ListConnectionGovernanceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListConnectionGovernanceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ConnectionGovernanceListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeactivateConnectionGovernanceResponse parses an HTTP response from a DeactivateConnectionGovernanceWithResponse call
+func ParseDeactivateConnectionGovernanceResponse(rsp *http.Response) (*DeactivateConnectionGovernanceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeactivateConnectionGovernanceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
 		var dest Forbidden
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -36516,6 +40236,316 @@ func ParseCompactSessionResponse(rsp *http.Response) (*CompactSessionResponse, e
 	return response, nil
 }
 
+// ParseListSessionEventSubscriptionsResponse parses an HTTP response from a ListSessionEventSubscriptionsWithResponse call
+func ParseListSessionEventSubscriptionsResponse(rsp *http.Response) (*ListSessionEventSubscriptionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListSessionEventSubscriptionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SessionEventSubscriptionListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateSessionEventSubscriptionResponse parses an HTTP response from a CreateSessionEventSubscriptionWithResponse call
+func ParseCreateSessionEventSubscriptionResponse(rsp *http.Response) (*CreateSessionEventSubscriptionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateSessionEventSubscriptionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SessionEventSubscriptionCreateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest SessionEventSubscriptionCreateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseStopSessionEventSubscriptionsResponse parses an HTTP response from a StopSessionEventSubscriptionsWithResponse call
+func ParseStopSessionEventSubscriptionsResponse(rsp *http.Response) (*StopSessionEventSubscriptionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &StopSessionEventSubscriptionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetSessionEventSubscriptionResponse parses an HTTP response from a GetSessionEventSubscriptionWithResponse call
+func ParseGetSessionEventSubscriptionResponse(rsp *http.Response) (*GetSessionEventSubscriptionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSessionEventSubscriptionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SessionEventSubscription
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListSessionEventDeliveriesResponse parses an HTTP response from a ListSessionEventDeliveriesWithResponse call
+func ParseListSessionEventDeliveriesResponse(rsp *http.Response) (*ListSessionEventDeliveriesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListSessionEventDeliveriesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SessionEventDeliveryListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUnsubscribeSessionEventSubscriptionResponse parses an HTTP response from a UnsubscribeSessionEventSubscriptionWithResponse call
+func ParseUnsubscribeSessionEventSubscriptionResponse(rsp *http.Response) (*UnsubscribeSessionEventSubscriptionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UnsubscribeSessionEventSubscriptionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SessionEventSubscription
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListSessionMessagesResponse parses an HTTP response from a ListSessionMessagesWithResponse call
 func ParseListSessionMessagesResponse(rsp *http.Response) (*ListSessionMessagesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -36841,6 +40871,88 @@ func ParseCancelNudgeResponse(rsp *http.Response) (*CancelNudgeResponse, error) 
 			return nil, err
 		}
 		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateSessionArtifactReferenceResponse parses an HTTP response from a CreateSessionArtifactReferenceWithResponse call
+func ParseCreateSessionArtifactReferenceResponse(rsp *http.Response) (*CreateSessionArtifactReferenceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateSessionArtifactReferenceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SessionAttachmentResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest SessionAttachmentResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
 
 	}
 

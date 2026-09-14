@@ -162,7 +162,6 @@ class CapabilityReadinessReason(StrEnum):
     permission_missing = 'permission_missing'
     not_implemented = 'not_implemented'
     credentials_unreadable = 'credentials_unreadable'
-    agent_owned_only = 'agent_owned_only'
 
 
 class TagMap(RootModel[dict[str, str]]):
@@ -304,9 +303,9 @@ class AgentModelRoute(BaseModel):
 
 class AgentToolPresentation(StrEnum):
     """
-    Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
+    Controls how selected actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
 
-    The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise. Existing agents retain their stored mode; the default applies when creating an agent without one.
+    The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are selected, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise. Existing agents retain their stored mode; the default applies when creating an agent without one.
     """
 
     flat = 'flat'
@@ -315,19 +314,19 @@ class AgentToolPresentation(StrEnum):
 
 class ActionSelectorType(StrEnum):
     """
-    How one entry in an agent's tool grant names the actions it covers. `exact` is a single action name; `group` a dotted prefix; `platform` every action of an integration; `custom` org-defined actions; `wildcard` everything. Omitting the type means `exact`.
+    How one entry in an agent's action selection names the actions it covers. `exact` is a single action name; `group` a dotted prefix; `provider` every action of an integration; `custom` org-defined actions; `wildcard` everything. Omitting the type means `exact`.
     """
 
     exact = 'exact'
     group = 'group'
-    platform = 'platform'
+    provider = 'provider'
     custom = 'custom'
     wildcard = 'wildcard'
 
 
 class ActionSelector(BaseModel):
     """
-    One entry in an agent's tool grant. Selectors are expanded against the live action catalog at every build, so `platform: gmail` keeps meaning "every Gmail action" as the catalog grows.
+    One entry in an agent's action selection. Selectors are expanded against the live action catalog at every build, so `provider: gmail` keeps meaning "every Gmail action" as the catalog grows.
     """
 
     model_config = ConfigDict(
@@ -340,27 +339,6 @@ class ActionSelector(BaseModel):
         ...,
         description='The selector value, read according to `selector_type`. Ignored for `wildcard`.',
         max_length=512,
-    )
-
-
-class AgentIntegrationAccess(BaseModel):
-    """
-    One provider's connection rules for an agent. Both fields are decisions about the agent, not about any one connection.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    provider: str = Field(
-        ..., description='The provider these rules apply to (`gmail`, `slack`, …).'
-    )
-    act_as_user: bool = Field(
-        False,
-        description='Whether the agent may resolve the personal connection of the person it is acting for. Defaults to false and is never implied: reaching somebody\'s own account is what a person consents to when they talk to this agent, so it is shown on its page as "acts through your Gmail".',
-    )
-    pin: str | None = Field(
-        None,
-        description="The one connection this agent uses for this provider, which also suppresses the runtime account choice. May name only an org-shared or agent-owned connection — a shared agent pinned to one person's mailbox would send as that person for everybody.",
     )
 
 
@@ -458,7 +436,9 @@ class AgentVisibility(StrEnum):
     """
     Who, inside the org that owns this agent, may reach it at all.
 
-    `organization` (the default) is reachable by any org member — the behavior every agent had before visibility existed. `restricted` is reachable only by the agent's listed members. `private` is reachable only by its single member.
+    `organization` is reachable by any org member. `restricted` is reachable only by the agent's listed members. `private` is reachable only by its single member.
+
+    Agent create requests default to `private` when this field is omitted.
 
     Visibility is not a permission: what a member may DO with an agent stays governed by their org role. A principal outside an agent's audience gets `404` from every path — list, read, session, invoke, memory — so an agent's existence never leaks through a status code.
 
@@ -472,7 +452,7 @@ class AgentVisibility(StrEnum):
 
 class Agent(BaseModel):
     """
-    AI actor identity. An agent IS a principal (its permissions are role grants on that principal) with instructions, configuration, and session presence.
+    AI actor identity. An agent IS a principal (its permissions are role assignments on that principal) with instructions, configuration, and session presence.
     """
 
     model_config = ConfigDict(
@@ -516,13 +496,9 @@ class Agent(BaseModel):
         None,
         description="Default tool presentation used by this agent's turns and built-in channel-message replies.",
     )
-    tool_selectors: list[ActionSelector] | None = Field(
+    action_selectors: list[ActionSelector] | None = Field(
         None,
-        description="The agent's tool grant: the action selectors it may call, expanded against the live action catalog at each build.",
-    )
-    integration_access: list[AgentIntegrationAccess] | None = Field(
-        None,
-        description='Per-provider connection rules. Absent means the defaults: the agent reaches org-shared and its own connections, and nothing is pinned.',
+        description="The agent's action selection: the action selectors it may call, expanded against the live action catalog at each build.",
     )
     system_prompt: str | None = Field(
         None,
@@ -1438,6 +1414,24 @@ class ActorPrincipalType(StrEnum):
     system = 'system'
 
 
+class OwnerKind(StrEnum):
+    """
+    Custody of the work this invocation belongs to: the session owner when it ran in a session, else the agent owner, else the human actor.
+    """
+
+    person = 'person'
+    team = 'team'
+
+
+class Visibility(StrEnum):
+    """
+    Who may read the record's content, following the owning session or agent.
+    """
+
+    private = 'private'
+    organization = 'organization'
+
+
 class ActionInvocationEntry(BaseModel):
     """
     Per-invocation telemetry record for one action execution.
@@ -1479,6 +1473,21 @@ class ActionInvocationEntry(BaseModel):
     agent_id: str | None = Field(
         None, description='Agent resource ID when the actor was an agent.'
     )
+    owner_kind: OwnerKind | None = Field(
+        None,
+        description='Custody of the work this invocation belongs to: the session owner when it ran in a session, else the agent owner, else the human actor.',
+    )
+    owner_id: str | None = Field(
+        None, description='Principal that holds custody when `owner_kind` is `person`.'
+    )
+    visibility: Visibility | None = Field(
+        None,
+        description="Who may read the record's content, following the owning session or agent.",
+    )
+    parameters_redacted: bool | None = Field(
+        None,
+        description='True when `parameters` were withheld because the record is private to someone else and the caller is reading it as an administrator.',
+    )
     channel_exchange_id: str | None = Field(
         None,
         description='Channel exchange correlated with this invocation, when applicable.',
@@ -1515,10 +1524,12 @@ class ActionInvocationEntry(BaseModel):
         description='The job origin that produced this invocation: `agent_tool_call`, `loop_action_step`, `direct_action_invoke`, or `server_internal`.',
     )
     parameters: dict[str, Any] | None = Field(
-        None, description='Input parameters passed to the action.'
+        None,
+        description='Input parameters passed to the action, with credential-like keys redacted. Absent when `parameters_redacted` is true.',
     )
     output_summary: dict[str, Any] | None = Field(
-        None, description='Truncated or summarized action output for audit purposes.'
+        None,
+        description='The terminal job status and the top-level keys of the result. Result bodies are never stored here; open the session for them.',
     )
     status: str = Field(
         ..., description='Terminal invocation status ("success", "failed", etc.).'
@@ -2103,6 +2114,175 @@ class WorkerSocketErrorFrame(BaseModel):
     error: WorkerSocketProtocolError
 
 
+class ConnectionBinding(BaseModel):
+    """
+    A frozen selection of one connection and its explicit grant.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    connection_id: str
+    grant_id: str
+
+
+class ConnectionExecutionMode(StrEnum):
+    authenticated_human = 'authenticated_human'
+    controller_background = 'controller_background'
+    organization_background = 'organization_background'
+
+
+class ConnectionGrantAudience(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    organization: bool
+    principal_ids: list[str]
+
+
+class ConnectionGrant(BaseModel):
+    """
+    Access for one assistant in conversations and routines, subject to connection ownership and result audience restrictions.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    connection_id: str
+    agent_id: str
+    audience: ConnectionGrantAudience
+    created_at: AwareDatetime
+    connection_label: str
+    provider: str
+    controlled_by_organization: bool
+    represented_actor: str | None = None
+    can_manage: bool
+
+
+class ConnectionGrantListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[ConnectionGrant]
+
+
+class MaterializeConnectionGrantsRequest(BaseModel):
+    """
+    Grant current assistants access for both conversations and routines within the specified audience and connection ownership restrictions. Does not assign tools.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    agent_ids: list[str] = Field(..., max_length=500, min_length=1)
+    audience: ConnectionGrantAudience
+
+
+class ConnectionDefaultContext(StrEnum):
+    self = 'self'
+    organization = 'organization'
+
+
+class ConnectionDefaultChoice(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    connection_id: str
+    grant_id: str
+    connection_label: str
+    represented_actor: str | None = None
+    controlled_by_organization: bool
+
+
+class State(StrEnum):
+    unset = 'unset'
+    selected = 'selected'
+    unavailable = 'unavailable'
+
+
+class ConnectionDefaultPreference(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    provider: str
+    state: State
+    selection: ConnectionDefaultChoice | None = None
+    choices: list[ConnectionDefaultChoice]
+
+
+class ConnectionDefaultPreferenceListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[ConnectionDefaultPreference]
+
+
+class IntegrationStatus(StrEnum):
+    """
+    `active` — integration is enabled and usable by agents. `inactive` — manually disabled; no automatic expiry behavior. `expired` — token/credential has expired (e.g., OAuth token not refreshed).
+    """
+
+    active = 'active'
+    inactive = 'inactive'
+    expired = 'expired'
+    confirmation_required = 'confirmation_required'
+
+
+class IntegrationTeamManagement(BaseModel):
+    """
+    Server-evaluated eligibility for making this account team-managed in place.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    supported: bool
+    can_start: bool
+    unavailable_reason: str | None = None
+
+
+class Kind6(StrEnum):
+    redirect = 'redirect'
+    complete = 'complete'
+
+
+class IntegrationAccountModel(StrEnum):
+    """
+    What one connection to a provider represents.
+
+    `personal` — one human's own account, and acting through it acts as that person (Gmail, Google Calendar, X). `workspace` — a shared external workspace the whole org acts within (Slack, Jira, GitHub). `capability` — a keyed service with no account identity behind it (Firecrawl, a model provider, a database).
+
+    It decides the default owner of a new connection and whether the connection is offered to an agent by default.
+    """
+
+    personal = 'personal'
+    workspace = 'workspace'
+    capability = 'capability'
+
+
+class Kind7(StrEnum):
+    person = 'person'
+    organization = 'organization'
+
+
+class ConnectionController(BaseModel):
+    """
+    Lifecycle and grant authority. Control does not authorize organization-provider content or agent execution.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Kind7
+    principal_id: str | None = Field(
+        None, description='Human controller ID, present only for person control.'
+    )
+    display_name: str | None = Field(
+        None, description='Human controller display name, when available.'
+    )
+
+
 class BillingUsageEvent(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -2608,7 +2788,7 @@ class InteractionResponder(BaseModel):
     user_id: str = Field(..., description='Responder user ID.')
 
 
-class Kind6(StrEnum):
+class Kind8(StrEnum):
     external_url = 'external_url'
     mobius_entity = 'mobius_entity'
 
@@ -2621,7 +2801,7 @@ class InteractionReference(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind6
+    kind: Kind8
     url: AnyUrl | None = Field(
         None, description='Required when kind is `external_url`.'
     )
@@ -2637,7 +2817,7 @@ class InteractionReference(BaseModel):
     label: str | None = Field(None, description='User-facing label for display.')
 
 
-class Kind7(StrEnum):
+class Kind9(StrEnum):
     inbox_only = 'inbox_only'
     email = 'email'
 
@@ -2649,7 +2829,7 @@ class EmailDelivery(BaseModel):
     to: list[EmailStr] = Field(..., min_length=1)
 
 
-class Kind8(StrEnum):
+class Kind10(StrEnum):
     agent_tool = 'agent_tool'
     http_subscriber = 'http_subscriber'
     none = 'none'
@@ -2699,7 +2879,7 @@ class ResponseKind(StrEnum):
     response = 'response'
 
 
-class State(StrEnum):
+class State1(StrEnum):
     """
     Lifecycle state for this response row.
     """
@@ -2720,7 +2900,7 @@ class InteractionResponse(BaseModel):
         ..., description='ID of the interaction this response belongs to.'
     )
     response_kind: ResponseKind = Field(..., description='Answer response.')
-    state: State = Field(..., description='Lifecycle state for this response row.')
+    state: State1 = Field(..., description='Lifecycle state for this response row.')
     responder_user_id: str = Field(
         ..., description='User ID that submitted this response.'
     )
@@ -2896,7 +3076,7 @@ class CancelInteractionRequest(BaseModel):
     )
 
 
-class Kind10(StrEnum):
+class Kind12(StrEnum):
     """
     Principal kind, so a picker can distinguish a person from a coordinator agent.
     """
@@ -2920,7 +3100,7 @@ class AgentMember(BaseModel):
     principal_id: str = Field(
         ..., description="The human or agent principal in this agent's audience."
     )
-    kind: Kind10 = Field(
+    kind: Kind12 = Field(
         ...,
         description='Principal kind, so a picker can distinguish a person from a coordinator agent.',
     )
@@ -3223,15 +3403,15 @@ class SkillManifestEntry(BaseModel):
     )
     active: bool = Field(
         ...,
-        description='Whether this skill is the one being simulated as invoked, i.e. it matched the `skill_name` parameter and its `allowed_tools` grant was applied to this manifest. False for every assigned skill when `skill_name` is omitted.',
+        description='Whether this skill is the one being simulated as invoked, i.e. it matched the `skill_name` parameter and its `allowed_actions` constraint was applied to this manifest. False for every assigned skill when `skill_name` is omitted.',
     )
     missing_required: list[str] | None = Field(
         None,
-        description='Tool selectors the skill requires but that are not available to the agent.',
+        description='Action selectors the skill requires but that are not available to the agent.',
     )
     missing_recommended: list[str] | None = Field(
         None,
-        description='Tool selectors the skill recommends but that are not available to the agent.',
+        description='Action selectors the skill recommends but that are not available to the agent.',
     )
 
 
@@ -3249,7 +3429,7 @@ class AgentManifestWarning(BaseModel):
         None, description='Skill the warning relates to, when applicable.'
     )
     tool: str | None = Field(
-        None, description='Tool selector the warning relates to, when applicable.'
+        None, description='Action selector the warning relates to, when applicable.'
     )
     action: str | None = Field(
         None, description='Action name the warning relates to, when applicable.'
@@ -3307,12 +3487,9 @@ class CreateAgentRequest(BaseModel):
     tool_presentation: AgentToolPresentation | None = Field(
         None, description='Omit to use the create-time default, `flat`.'
     )
-    tool_selectors: list[ActionSelector] | None = Field(
+    action_selectors: list[ActionSelector] | None = Field(
         None,
-        description="The agent's tool grant. Omit for an agent with no granted actions; its intrinsic tools are unaffected.",
-    )
-    integration_access: list[AgentIntegrationAccess] | None = Field(
-        None, description='Per-provider connection rules. Omit for the defaults.'
+        description="The agent's action selection. Omit for an agent with no selected catalog actions.",
     )
     system_prompt: str | None = Field(
         None,
@@ -3417,13 +3594,9 @@ class UpdateAgentRequest(BaseModel):
         None,
         description="Replacement tool presentation used by this agent's turns and channel replies.",
     )
-    integration_access: list[AgentIntegrationAccess] | None = Field(
+    action_selectors: list[ActionSelector] | None = Field(
         None,
-        description='Replacement per-provider connection rules, as a whole. Omit to leave them untouched; send an empty array to clear them.',
-    )
-    tool_selectors: list[ActionSelector] | None = Field(
-        None,
-        description="Replacement tool grant, as a whole. Omit to leave the agent's current grant untouched; send an empty array to revoke it.",
+        description="Replacement action selection, as a whole. Omit to leave the agent's current selection untouched; send an empty array to select none.",
     )
     system_prompt: str | None = Field(
         None, description='Replacement system prompt for agents.'
@@ -3933,6 +4106,70 @@ class SessionReminderBlock(BaseModel):
     content: str = Field(..., description='Reminder content rendered to the model.')
 
 
+class SessionEventProjectionKind(StrEnum):
+    """
+    Stable UI treatment for a projected external event.
+    """
+
+    generic = 'generic'
+    repository_change = 'repository_change'
+    file_change = 'file_change'
+    email = 'email'
+    calendar_event = 'calendar_event'
+    message = 'message'
+    work_item = 'work_item'
+    content_change = 'content_change'
+    business_record = 'business_record'
+
+
+class SessionEventProjectionAttribute(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    label: str = Field(
+        ..., description='Short fact label selected by the server-side formatter.'
+    )
+    value: str = Field(..., description='Plain-text, bounded fact value.')
+
+
+class SessionEventProjection(BaseModel):
+    """
+    Bounded, display-safe projection of the external event associated with a session message. The complete provider payload is deliberately absent.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: SessionEventProjectionKind
+    event_type: str = Field(
+        ..., description='Concrete event type that started the work.'
+    )
+    provider: str | None = Field(
+        None, description='Provider identifier when the event came from an integration.'
+    )
+    title: str = Field(
+        ..., description='Short human-readable description of what happened.'
+    )
+    summary: str | None = Field(
+        None, description='Optional provider-specific change summary.'
+    )
+    resource_name: str | None = Field(
+        None,
+        description='Human-readable affected resource name, never an internal event or source ID.',
+    )
+    resource_url: AnyUrl | None = Field(
+        None, description='Optional http(s) link to the affected provider resource.'
+    )
+    occurred_at: AwareDatetime | None = Field(
+        None, description='Upstream occurrence time, falling back to receipt time.'
+    )
+    attributes: list[SessionEventProjectionAttribute] | None = Field(
+        None,
+        description='Small provider-selected facts; never arbitrary payload fields.',
+        max_length=4,
+    )
+
+
 class Source3(StrEnum):
     """
     Ownership and mutability of the Skill. `system` is built-in and `custom` is user-managed.
@@ -3966,9 +4203,17 @@ class Skill(BaseModel):
     visibility: ResourceVisibility
     container: ResourceContainer | None
     posture: ResourcePosture
-    allowed_tools: list[str] | None = Field(
+    allowed_actions: list[str] | None = Field(
         None,
-        description='Canonical action names, wildcard selectors, or group references naming the actions this skill needs. Uses the same selector vocabulary as agent tool grants.\n\nThe grant takes effect when an agent invokes the skill, and lasts for the rest of that turn: calls to actions outside it are refused with an error naming the skill. Assigning a skill narrows nothing on its own, and an empty list declares nothing and narrows nothing. Skills invoked in the same turn compose as a union, so this keeps a skill on task rather than sandboxing it. Mobius memory and self-awareness tools are always exempt, and a skill can never widen an agent beyond its own tool selectors.',
+        description="Canonical action names, wildcard selectors, or group references naming the actions this skill needs. Uses the same selector vocabulary as agent action selections.\n\nThe constraint takes effect when an agent invokes the skill and lasts for the rest of that turn. Assigning a skill narrows nothing on its own, and an empty list declares nothing and narrows nothing. Lists from skills invoked in the same turn compose as a union, then intersect with the agent's selected actions. No catalog action is exempt, and a skill can never widen an agent's selection.",
+    )
+    required_actions: list[str] | None = Field(
+        None,
+        description="Action selectors that must match the agent's effective selected catalog set. A skill with any missing requirement is unavailable and cannot be invoked.",
+    )
+    recommended_actions: list[str] | None = Field(
+        None,
+        description='Action selectors that improve this skill. Missing recommendations produce warnings only; they never select or present actions.',
     )
     tags: TagMap | None = Field(None, description='Labels to apply to the skill.')
     created_by: str | None = Field(
@@ -4237,7 +4482,7 @@ class ToolCallPayload(BaseModel):
     )
 
 
-class Kind11(StrEnum):
+class Kind13(StrEnum):
     interaction = 'interaction'
 
 
@@ -4245,7 +4490,7 @@ class SessionTranscriptWait(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind11
+    kind: Kind13
     interaction_id: str
     tool_call_id: str
     expires_at: AwareDatetime | None = None
@@ -4360,6 +4605,16 @@ class CreateSessionAttachmentRequest(BaseModel):
         None,
         description='Optional declared byte size; when supplied it must match the uploaded bytes.',
         ge=0,
+    )
+
+
+class CreateSessionArtifactReferenceRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    artifact_id: str = Field(
+        ...,
+        description='Identifier of an existing library artifact the caller can read.',
     )
 
 
@@ -4719,7 +4974,155 @@ class SessionNudgeListResponse(BaseModel):
     )
 
 
-class State1(StrEnum):
+class SessionEventSubscriptionFilter(BaseModel):
+    """
+    One OR branch. All populated fields in this object match together.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    event_type: str = Field(
+        ...,
+        description='A public exact event type or a supported provider wildcard such as `github.pull_request.*`.',
+        min_length=1,
+    )
+    source_id: str | None = Field(
+        None, description='Optional public source identifier restriction.'
+    )
+    integration_id: str | None = Field(
+        None, description='Optional integration connection restriction.'
+    )
+    match: dict[str, Any] | None = Field(
+        None,
+        description='Optional equality constraints over event payload fields. Dot paths address nested objects.',
+    )
+    condition: str | None = Field(
+        None,
+        description='Optional Boolean expression over `event` and `meta`. Errors fail closed.',
+        max_length=4096,
+    )
+
+
+class CreateSessionEventSubscriptionRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    filters: list[SessionEventSubscriptionFilter] = Field(
+        ...,
+        description='ORed public-event filter branches.',
+        max_length=16,
+        min_length=1,
+    )
+    expires_at: AwareDatetime | None = Field(
+        None, description='Optional future stop time.'
+    )
+    idempotency_key: str | None = Field(
+        None, description='Retry key scoped to this session.', max_length=255
+    )
+
+
+class SessionEventSubscriptionStatus(StrEnum):
+    active = 'active'
+    funding_paused = 'funding_paused'
+    stopped = 'stopped'
+    expired = 'expired'
+
+
+class SessionEventSubscription(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    session_id: str
+    agent_id: str
+    created_by: str = Field(
+        ..., description='Authorizing principal recorded at creation.'
+    )
+    execution_scope: dict[str, Any] = Field(
+        ...,
+        description='Server-resolved authority and billing scope; not event-controlled.',
+    )
+    status: SessionEventSubscriptionStatus
+    stop_reason: str | None = None
+    last_diagnostic: str | None = Field(
+        None, description='Most recent fail-closed match or delivery diagnostic.'
+    )
+    last_diagnostic_at: AwareDatetime | None = None
+    pending_delivery_count: int = Field(
+        ...,
+        description='Reserved, not-yet-injected event inputs. The subscription stops visibly at 256.',
+        ge=0,
+    )
+    coverage_cutoff_at: AwareDatetime | None = Field(
+        None,
+        description='First observed time intake stopped because the pending-input limit was reached.',
+    )
+    filters: list[SessionEventSubscriptionFilter]
+    activation_at: AwareDatetime
+    activation_reconciled_at: AwareDatetime | None = None
+    expires_at: AwareDatetime | None = None
+    stopped_at: AwareDatetime | None = None
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+
+
+class SessionEventSubscriptionCreateResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    subscription: SessionEventSubscription
+    deduped: bool
+
+
+class SessionEventSubscriptionListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[SessionEventSubscription]
+    has_more: bool
+    next_cursor: str | None = None
+
+
+class SessionEventDeliveryStatus(StrEnum):
+    pending = 'pending'
+    delivered = 'delivered'
+    cancelled = 'cancelled'
+    failed = 'failed'
+
+
+class SessionEventDelivery(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    subscription_id: str
+    session_id: str
+    source_event_id: str
+    event_type: str
+    source_id: str
+    event: dict[str, Any]
+    meta: dict[str, Any]
+    target_turn_id: str | None = None
+    message_id: str | None = None
+    status: SessionEventDeliveryStatus
+    diagnostic: str | None = None
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    delivered_at: AwareDatetime | None = None
+    cancelled_at: AwareDatetime | None = None
+
+
+class SessionEventDeliveryListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[SessionEventDelivery]
+    has_more: bool
+    next_cursor: str | None = None
+
+
+class State2(StrEnum):
     converting = 'converting'
     ready = 'ready'
     failed = 'failed'
@@ -4733,7 +5136,7 @@ class ArtifactConversionSummary(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    state: State1
+    state: State2
     error: str | None = Field(None, description='Failure reason when state is failed.')
 
 
@@ -4746,6 +5149,19 @@ class Artifact(BaseModel):
         extra='forbid',
     )
     id: str = Field(..., description='Unique artifact identifier.')
+    root_id: str | None = Field(
+        None,
+        description='First artifact ID in this version chain. Always returned by current servers.',
+    )
+    previous_id: str | None = Field(
+        None,
+        description='Exact parent artifact ID; empty for version one. May point to a deleted version.',
+    )
+    version: int | None = Field(
+        None,
+        description='Parent version plus one. Concurrent revisions may share a number; creation time and ID break ties.',
+        ge=1,
+    )
     owner: ResourceOwner
     visibility: ResourceVisibility
     container: ResourceContainer | None = None
@@ -4831,7 +5247,7 @@ class RoutineFollowLevel(StrEnum):
     failures_only = 'failures_only'
 
 
-class Kind12(StrEnum):
+class Kind14(StrEnum):
     """
     The principal's kind, resolved from the principal record.
     """
@@ -4849,7 +5265,7 @@ class RoutinePrincipal(BaseModel):
     principal_id: str
     relationship: RoutineRelationship
     level: RoutineFollowLevel | None = None
-    kind: Kind12 = Field(
+    kind: Kind14 = Field(
         ..., description="The principal's kind, resolved from the principal record."
     )
     display_name: str | None = None
@@ -4867,6 +5283,10 @@ class RoutinePrincipalList(BaseModel):
 class AddRoutinePrincipalRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
+    )
+    confirm_audience_expansion: bool | None = Field(
+        None,
+        description='Confirm access to existing and future routine results and the selected manager powers. Required when inviting another person to private work.',
     )
     principal_id: str
     relationship: RoutineRelationship
@@ -4912,9 +5332,11 @@ class RoutineEventTrigger(BaseModel):
         description='The integration event to react to: a concrete type from the event catalog (`github.issues.opened`) or a wildcard on a prefix (`github.issues.*`, `github.*`). The first segment must name a registered integration provider; built-in Mobius events are not accepted here.',
         examples=['github.issues.opened'],
     )
-    integration_id: str | None = Field(
-        None,
-        description="Optional. Only events from this connection start a run. Omitted, an event from any of the organization's connections for the provider does.",
+    source_bindings: list[ConnectionBinding] = Field(
+        ...,
+        description='Exact connection and grant pairs whose matching events may start this routine. This selection does not authorize provider actions.',
+        max_length=20,
+        min_length=1,
     )
     condition: str | None = Field(
         None,
@@ -4923,141 +5345,28 @@ class RoutineEventTrigger(BaseModel):
     )
 
 
-class RoutineCreateRequest(BaseModel):
+class AvailableAction(StrEnum):
+    edit = 'edit'
+    run = 'run'
+    pause = 'pause'
+    resume = 'resume'
+    delete = 'delete'
+    invite = 'invite'
+
+
+class Audience(StrEnum):
+    private = 'private'
+    named = 'named'
+    organization = 'organization'
+    team = 'team'
+
+
+class Attention(StrEnum):
     """
-    Exactly one of `schedule` and `event` is required: a routine runs on a schedule or when an event arrives, not both.
+    Caller-specific persistent attention state. Absence does not prove provider connectivity.
     """
 
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    session_id: str | None = Field(
-        None,
-        description='Optional conversation this routine was proposed in, kept as provenance. Occurrences run in their own sessions, so this never affects where results are delivered. Omitted for a routine created from the form.',
-    )
-    agent_id: str
-    name: str | None = None
-    instructions: str
-    kind: RoutineKind | None = None
-    schedule: RoutineSchedule | None = None
-    event: RoutineEventTrigger | None = None
-    per_occurrence_ceiling_milli: int = Field(..., ge=1)
-    daily_ceiling_milli: int = Field(..., ge=1)
-    owner_kind: RoutineOwnerKind | None = Field(
-        None,
-        description='Defaults to `person`. `team` requires organization administration.',
-    )
-    managed_by: RoutineManagedBy | None = Field(
-        None, description='Defaults to `named`.'
-    )
-    responsible_principal_ids: list[str] | None = Field(
-        None,
-        description='The people the routine waits on. Required and non-empty when `owner_kind` is `team`; rejected otherwise. Each must be a person.',
-    )
-    follower_principal_ids: list[str] | None = Field(
-        None,
-        description="Principals who opt into the routine's results. The creator is added automatically.",
-    )
-
-
-class RoutineUpdateRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str | None = None
-    instructions: str | None = None
-    schedule: RoutineSchedule | None = Field(
-        None,
-        description='Makes this a scheduled routine, dropping any event trigger it had. Rejected together with `event`.',
-    )
-    event: RoutineEventTrigger | None = Field(
-        None,
-        description='Makes this an event routine, dropping any schedule it had. Rejected together with `schedule`.',
-    )
-    per_occurrence_ceiling_milli: int | None = Field(
-        None,
-        description='A person may move this either way. An agent may only lower it, so no agent widens the budget it runs under; raising it as an agent receives 403.',
-        ge=1,
-    )
-    daily_ceiling_milli: int | None = Field(
-        None,
-        description='Must remain at least the per-occurrence ceiling. A person may move it either way; an agent may only lower it.',
-        ge=1,
-    )
-    managed_by: RoutineManagedBy | None = Field(
-        None,
-        description='Only a person may change this. An agent manager receives 403.',
-    )
-
-
-class Routine(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str
-    org_id: str
-    agent_id: str
-    origin_session_id: str | None = Field(
-        None,
-        description='The conversation the routine was proposed in, kept as provenance and nothing more. Each occurrence runs in its own session, so this is absent for a form-created routine and for one whose conversation has since been deleted. Archiving it does not stop the routine.',
-    )
-    owner_id: str | None = Field(
-        None,
-        description='The custodian. Absent under team custody, which has no owner.',
-    )
-    owner_kind: RoutineOwnerKind
-    managed_by: RoutineManagedBy
-    responsible: list[RoutinePrincipal] | None = Field(
-        None,
-        description='The people this routine waits on. Non-empty under team custody.',
-    )
-    following: bool = Field(
-        ..., description='Whether the calling principal follows this routine.'
-    )
-    unread: bool | None = Field(
-        None,
-        description='Whether a recent run has landed since the calling principal last opened its session. Computed per caller from their session read marks, never stored, and always false on a routine they do not follow — following is what opts you into the indicator.',
-    )
-    follower_count: int = Field(
-        ...,
-        description='Principals holding a follower row. Responsible people and managers are notified too, and are named separately.',
-    )
-    name: str
-    instructions: str | None = Field(
-        None, description='Omitted from administrator metadata-only projections.'
-    )
-    kind: RoutineKind
-    trigger: RoutineTrigger
-    schedule: RoutineSchedule | None = Field(
-        None, description='Present when `trigger` is `schedule`.'
-    )
-    event: RoutineEventTrigger | None = Field(
-        None, description='Present when `trigger` is `event`.'
-    )
-    timezone: str
-    status: RoutineStatus
-    pause_reason: str | None = None
-    next_fire_at: AwareDatetime | None = Field(
-        None,
-        description='Absent on an event routine, which has no next fire to predict.',
-    )
-    last_fire_at: AwareDatetime | None = None
-    occurrence_count: int
-    completed_at: AwareDatetime | None = None
-    per_occurrence_ceiling_milli: int
-    daily_ceiling_milli: int
-    act_as_user_providers: list[str] | None = None
-    created_at: AwareDatetime
-    updated_at: AwareDatetime
-
-
-class RoutineList(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[Routine]
-    has_more: bool
-    next_cursor: str | None = None
+    account_repair = 'account_repair'
 
 
 class Trigger(StrEnum):
@@ -5111,6 +5420,10 @@ class RoutineOccurrence(BaseModel):
     source_event_id: str | None = Field(
         None,
         description='The source event that started this run. Present only when `trigger` is `event`; it is the row the integration events list shows for the delivery.',
+    )
+    event_source_binding: ConnectionBinding | None = Field(
+        None,
+        description='The exact connection and grant pair whose event started this run. Immutable server-authored provenance, not action authority.',
     )
     event_type: str | None = Field(
         None,
@@ -5226,6 +5539,16 @@ class RoutineProposal(BaseModel):
     payload: dict[str, Any]
 
 
+class RoutineSharingConfirmation(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    confirm_audience_expansion: bool | None = Field(
+        None,
+        description='Confirm sharing existing and future routine results with the proposed named people.',
+    )
+
+
 class SkillRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -5243,9 +5566,17 @@ class SkillRequest(BaseModel):
         description='Markdown instructions loaded when the skill is active.',
         min_length=1,
     )
-    allowed_tools: list[str] = Field(
+    allowed_actions: list[str] = Field(
         [],
-        description='Tool selectors naming the actions this skill needs. The grant applies once an agent invokes the skill and lasts for the rest of that turn. Empty declares nothing and narrows nothing.',
+        description='Action selectors naming the actions this skill permits after it is invoked. Empty declares nothing and narrows nothing.',
+    )
+    required_actions: list[str] = Field(
+        [],
+        description='Action selectors that must already be effective for this skill to be invoked.',
+    )
+    recommended_actions: list[str] = Field(
+        [],
+        description='Optional action selectors that produce warnings when absent and never select actions.',
     )
     owner: ResourceOwner | None = Field(
         None,
@@ -5353,9 +5684,17 @@ class BlueprintSkillInput(BaseModel):
     title: str | None = None
     description: str | None = None
     instructions: str | None = None
-    allowed_tools: list[str] | None = Field(
+    allowed_actions: list[str] | None = Field(
         None,
-        description='Tool selectors naming the actions this skill needs. The grant applies once an agent invokes the skill and lasts for the rest of that turn. Empty declares nothing and narrows nothing.',
+        description='Action selectors naming the actions this skill permits after it is invoked. Empty declares nothing and narrows nothing.',
+    )
+    required_actions: list[str] | None = Field(
+        None,
+        description='Action selectors that must already be effective for this skill to be invoked.',
+    )
+    recommended_actions: list[str] | None = Field(
+        None,
+        description='Optional action selectors that warn when absent and never select actions.',
     )
     tags: TagMap | None = None
 
@@ -6042,6 +6381,10 @@ class CreateArtifactRequest(BaseModel):
         description='Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or organization-visible space.',
         max_length=256,
     )
+    previous_artifact_id: str | None = Field(
+        None,
+        description='Optional exact parent artifact ID. Requires edit access and inherits its custody and visibility. Creates new bytes and a new ID; never changes existing references.',
+    )
     mime: str | None = Field(
         None,
         description='Optional MIME type override. Defaults to the uploaded file part content type, then `application/octet-stream`.',
@@ -6113,6 +6456,17 @@ class ArtifactQuotaUsage(BaseModel):
     )
     generated_at: AwareDatetime = Field(
         ..., description='Time this quota snapshot was generated.'
+    )
+
+
+class ArtifactVersionList(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    root_id: str
+    versions: list[Artifact] = Field(
+        ...,
+        description='Accessible available versions ordered oldest to newest. Deleted versions are omitted.',
     )
 
 
@@ -6354,6 +6708,122 @@ class WorkerSocketFrame(
     )
 
 
+class ConnectionGovernance(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    provider: str
+    status: IntegrationStatus
+    controller: ConnectionController
+
+
+class ConnectionGovernanceListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[ConnectionGovernance]
+    has_more: bool
+    next_cursor: str | None = None
+
+
+class ConnectionBindings(RootModel[dict[str, list[ConnectionBinding]]]):
+    """
+    Exact accounts available to routine actions, keyed by provider. Each call selects one account and revalidates its live grant. Event watches are separate.
+    """
+
+    root: dict[str, list[ConnectionBinding]] = Field(..., max_length=20, min_length=1)
+
+
+class SetConnectionDefaultRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    connection_id: str
+    grant_id: str
+    execution_mode: ConnectionExecutionMode
+    context: ConnectionDefaultContext
+
+
+class Integration(BaseModel):
+    """
+    Connection to an external provider such as Slack, GitHub, or a model service. Agents and actions use integrations to find provider configuration without embedding secrets in definitions. External identity is unique per (organization, owner, provider); the same external account may have distinct personal, agent, and business rows.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    team_management: IntegrationTeamManagement | None = None
+    connection_mode: str | None = Field(
+        None, description='Immutable provider authorization mode.'
+    )
+    represented_actor: str | None = Field(
+        None, description='Verified actor represented by this connection.'
+    )
+    confirmation_expires_at: AwareDatetime | None = Field(
+        None,
+        description='Deadline for confirming fresh replacement evidence, when required.',
+    )
+    identity_label: str | None = Field(
+        None,
+        description='External account identity; safe metadata available in the governance view.',
+    )
+    id: str = Field(..., description='Unique identifier for this integration.')
+    name: str = Field(
+        ...,
+        description='Human-readable name, chosen by whoever connected it. Unique per `(org, owner, provider)`: two people may each call their own mailbox "work", but two org-shared connections may not.',
+    )
+    provider: str = Field(
+        ...,
+        description='Free-form provider identifier (e.g. `openai`, `slack`, `github`). Immutable after creation.',
+    )
+    config: dict[str, Any] | None = Field(
+        None,
+        description='Provider-specific non-sensitive configuration stored as JSON. The shape is provider-defined. Sensitive credentials are never returned in this field.',
+    )
+    status: IntegrationStatus = Field(
+        ...,
+        description='Current integration lifecycle state: `active`, `inactive`, or `expired`.',
+    )
+    credentials_unreadable: bool | None = Field(
+        None,
+        description='True when the stored credential cannot be decrypted by the running platform. The connection still exists and its `status` is unchanged, but nothing that needs the credential will work until an admin reconnects the integration. Absent or `false` in the normal case.',
+    )
+    controller: ConnectionController = Field(
+        ...,
+        description='Who this connection belongs to, and the only axis that decides who may use it. Absent means org-shared.',
+    )
+    account_model: IntegrationAccountModel | None = Field(
+        None,
+        description="The provider's account model, repeated here so a client can render a connection without also fetching the catalog.",
+    )
+    created_by: str | None = Field(
+        None, description='User ID of the org member who created this integration.'
+    )
+    tags: TagMap | None = None
+    created_at: AwareDatetime = Field(
+        ..., description='Timestamp when this integration was created.'
+    )
+    updated_at: AwareDatetime = Field(
+        ..., description='Timestamp when this integration was last updated.'
+    )
+
+
+class IntegrationConnectResponse(BaseModel):
+    """
+    Unified integration-framework connect response. Redirect-style providers return `kind=redirect` plus `redirect_url`; inline API-key and service-credential providers return `kind=complete` plus the persisted integration row.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Kind6
+    redirect_url: str | None = Field(
+        None, description='OAuth or install URL to visit when `kind=redirect`.'
+    )
+    integration: Integration | None = None
+
+
 class DeliveryChannel(BaseModel):
     """
     A single delivery destination. `inbox_only` carries no payload; `email` requires the `email` variant.
@@ -6362,7 +6832,7 @@ class DeliveryChannel(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind7
+    kind: Kind9
     email: EmailDelivery | None = Field(
         None,
         description='Email delivery payload when `kind=email`; null for inbox-only delivery.',
@@ -6377,7 +6847,7 @@ class Consumer(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind8
+    kind: Kind10
     agent_tool: AgentToolConsumer | None = Field(
         None,
         description='Agent tool continuation target when `kind=agent_tool`; null for other consumer kinds.',
@@ -6392,7 +6862,7 @@ class ConsumerInput(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind8
+    kind: Kind10
     agent_tool: AgentToolConsumer | None = None
     http_subscriber: HttpSubscriberConsumerInput | None = None
 
@@ -6474,7 +6944,7 @@ class AgentToolManifest(BaseModel):
     agent_id: str = Field(..., description='Agent this manifest was resolved for.')
     policy_hash: str = Field(
         ...,
-        description="Stable hash over the resolved tool + skill set; bumps when the agent's tool selectors or skills change.",
+        description="Stable hash over the resolved tool + skill set; bumps when the agent's action selectors or skills change.",
     )
     tools: list[ActionCatalogEntry] = Field(
         ...,
@@ -6486,7 +6956,7 @@ class AgentToolManifest(BaseModel):
     )
     skills: list[SkillManifestEntry] = Field(
         ...,
-        description="Skills assigned to this agent, as resolved for this manifest. See each entry's `active` property for which one's grant was applied.",
+        description="Skills assigned to this agent, as resolved for this manifest. See each entry's `active` property for which one's action constraint was applied.",
     )
     warnings: list[AgentManifestWarning] = Field(
         ..., description='Non-fatal issues encountered while resolving the manifest.'
@@ -6707,6 +7177,159 @@ class SessionNudgeAck(BaseModel):
     )
 
 
+class RoutineCreateRequest(BaseModel):
+    """
+    Exactly one of `schedule` and `event` is required: a routine runs on a schedule or when an event arrives, not both.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    connection_bindings: ConnectionBindings | None = None
+    confirm_audience_expansion: bool | None = Field(
+        None,
+        description='Confirm access to existing and future routine results and the selected manager powers. Required when inviting another person to private work.',
+    )
+    session_id: str | None = Field(
+        None,
+        description='Optional conversation this routine was proposed in, kept as provenance. Occurrences run in their own sessions, so this never affects where results are delivered. Omitted for a routine created from the form.',
+    )
+    agent_id: str
+    name: str | None = None
+    instructions: str
+    kind: RoutineKind | None = None
+    schedule: RoutineSchedule | None = None
+    event: RoutineEventTrigger | None = None
+    per_occurrence_ceiling_milli: int = Field(..., ge=1)
+    daily_ceiling_milli: int = Field(..., ge=1)
+    owner_kind: RoutineOwnerKind | None = Field(
+        None,
+        description='Defaults to `person`. `team` requires organization administration.',
+    )
+    managed_by: RoutineManagedBy | None = Field(
+        None, description='Defaults to `named`.'
+    )
+    responsible_principal_ids: list[str] | None = Field(
+        None,
+        description='The people the routine waits on. Required and non-empty when `owner_kind` is `team`; rejected otherwise. Each must be a person.',
+    )
+    follower_principal_ids: list[str] | None = Field(
+        None,
+        description="Principals who opt into the routine's results. The creator is added automatically.",
+    )
+
+
+class RoutineUpdateRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    connection_bindings: ConnectionBindings | None = None
+    name: str | None = None
+    instructions: str | None = None
+    schedule: RoutineSchedule | None = Field(
+        None,
+        description='Makes this a scheduled routine, dropping any event trigger it had. Rejected together with `event`.',
+    )
+    event: RoutineEventTrigger | None = Field(
+        None,
+        description='Makes this an event routine, dropping any schedule it had. Rejected together with `schedule`.',
+    )
+    per_occurrence_ceiling_milli: int | None = Field(
+        None,
+        description='A person may move this either way. An agent may only lower it, so no agent widens the budget it runs under; raising it as an agent receives 403.',
+        ge=1,
+    )
+    daily_ceiling_milli: int | None = Field(
+        None,
+        description='Must remain at least the per-occurrence ceiling. A person may move it either way; an agent may only lower it.',
+        ge=1,
+    )
+    managed_by: RoutineManagedBy | None = Field(
+        None,
+        description='Only a person may change this. An agent manager receives 403.',
+    )
+
+
+class Routine(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    available_actions: list[AvailableAction] | None = Field(
+        None,
+        description='Actions permitted for this caller; the server rechecks each request.',
+    )
+    posture: ResourcePosture | None = None
+    audience: Audience | None = None
+    id: str
+    org_id: str
+    agent_id: str
+    origin_session_id: str | None = Field(
+        None,
+        description='The conversation the routine was proposed in, kept as provenance and nothing more. Each occurrence runs in its own session, so this is absent for a form-created routine and for one whose conversation has since been deleted. Archiving it does not stop the routine.',
+    )
+    owner_id: str | None = Field(
+        None,
+        description='The custodian. Absent under team custody, which has no owner.',
+    )
+    owner_kind: RoutineOwnerKind
+    managed_by: RoutineManagedBy
+    responsible: list[RoutinePrincipal] | None = Field(
+        None,
+        description='The people this routine waits on. Non-empty under team custody.',
+    )
+    following: bool = Field(
+        ..., description='Whether the calling principal follows this routine.'
+    )
+    unread: bool | None = Field(
+        None,
+        description='Whether a recent run has landed since the calling principal last opened its session. Computed per caller from their session read marks, never stored, and always false on a routine they do not follow — following is what opts you into the indicator.',
+    )
+    follower_count: int = Field(
+        ...,
+        description='Principals holding a follower row. Responsible people and managers are notified too, and are named separately.',
+    )
+    name: str
+    instructions: str | None = Field(
+        None, description='Present only after ordinary content access is authorized.'
+    )
+    kind: RoutineKind
+    trigger: RoutineTrigger
+    schedule: RoutineSchedule | None = Field(
+        None, description='Present when `trigger` is `schedule`.'
+    )
+    event: RoutineEventTrigger | None = Field(
+        None, description='Present when `trigger` is `event`.'
+    )
+    timezone: str
+    status: RoutineStatus
+    pause_reason: str | None = None
+    attention: Attention | None = Field(
+        None,
+        description='Caller-specific persistent attention state. Absence does not prove provider connectivity.',
+    )
+    next_fire_at: AwareDatetime | None = Field(
+        None,
+        description='Absent on an event routine, which has no next fire to predict.',
+    )
+    last_fire_at: AwareDatetime | None = None
+    occurrence_count: int
+    completed_at: AwareDatetime | None = None
+    per_occurrence_ceiling_milli: int
+    daily_ceiling_milli: int
+    connection_bindings: ConnectionBindings | None = None
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+
+
+class RoutineList(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[Routine]
+    has_more: bool
+    next_cursor: str | None = None
+
+
 class BlueprintResourceRef(BaseModel):
     """
     A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved within this apply first, then against existing bindings), or by `blueprint_ref` (resolved by key; its namespace is recorded as provenance and is not used for reference resolution in this version).
@@ -6760,7 +7383,11 @@ class BlueprintAgentInput(BaseModel):
         None, description='Default route for model calls made by this agent.'
     )
     tool_presentation: AgentToolPresentation | None = Field(
-        None, description='How granted actions are presented to the model.'
+        None, description='How selected actions are presented to the model.'
+    )
+    action_selectors: list[ActionSelector] | None = Field(
+        None,
+        description='Exact reviewed actions selected for this agent. Templates should use exact selectors so the proposed authority is visible during review. An empty array selects no catalog actions.',
     )
     system_prompt: str | None = None
     timeout_seconds: int | None = Field(
@@ -7197,6 +7824,10 @@ class SessionMessage(BaseModel):
     metadata: dict[str, Any] | None = Field(
         None, description='Free-form caller metadata for this message.'
     )
+    event_projection: SessionEventProjection | None = Field(
+        None,
+        description='Server-owned safe display projection when this message was triggered by an external event.',
+    )
     created_at: AwareDatetime = Field(
         ..., description='Server timestamp when the message was appended.'
     )
@@ -7245,6 +7876,10 @@ class SessionTranscriptMessage(BaseModel):
     sequence: int | None = Field(...)
     covers_through_sequence: int | None = None
     metadata: dict[str, Any] | None = None
+    event_projection: SessionEventProjection | None = Field(
+        None,
+        description='Server-owned safe display projection when this message was triggered by an external event.',
+    )
     created_at: AwareDatetime
 
 

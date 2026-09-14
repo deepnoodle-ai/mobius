@@ -146,6 +146,8 @@ export interface paths {
         /**
          * List invocations
          * @description Lists recent action invocation audit records from agents, direct invocations, and job-backed execution.
+         *
+         *     Each record belongs to the conversation or configuration it ran under. A caller sees their own records, team-owned records, and organization-visible records. An organization administrator sees every record, but `parameters` are withheld on a private record the administrator does not own and `parameters_redacted` is set.
          */
         get: operations["listActionInvocations"];
         put?: never;
@@ -291,6 +293,194 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/integrations/governance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List minimal connection governance metadata
+         * @description Organization administrators can identify and deactivate connections without seeing personal configuration, account labels, credentials, or provider content.
+         */
+        get: operations["listConnectionGovernance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/integrations/governance/{integration_id}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Deactivate a connection through organization governance
+         * @description Deactivates the connection, revokes grants and defaults, and suspends dependent routines. It never transfers control or exposes provider content.
+         */
+        post: operations["deactivateConnectionGovernance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/integrations/connections/{integration_id}/team-management": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start team management of an existing account
+         * @description Explicitly transfers management of the existing active connection to the organization. Only its current human manager with live local organization administrator authority may make this change. Preserves the connection ID, credentials, provider identity, label, grants and their audiences, defaults, and routine bindings. Does not start provider authorization or broaden assistant access. Repeating the request for an already team-managed account is an administrator-only no-op.
+         */
+        post: operations["startConnectionTeamManagement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/integrations/connections/{integration_id}/confirm-replacement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm replacement using fresh provider authorization
+         * @description Consumes a short-lived candidate authorized by this human and atomically retires the former authority and its grants. The candidate receives no inherited grants.
+         */
+        post: operations["confirmConnectionReplacement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/integrations/connections/{integration_id}/grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List agents with access to a controlled connection
+         * @description Returns live grants only to the connection controller or an authorized organization administrator.
+         */
+        get: operations["listConnectionGrants"];
+        put?: never;
+        /**
+         * Give explicitly selected current agents access
+         * @description Materializes grants for the submitted agent IDs. Identical active grants are replay-safe; changed constraints revoke the previous grant ID.
+         */
+        post: operations["materializeConnectionGrants"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/integrations/connections/{integration_id}/grants/{grant_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke one grant and its context defaults
+         * @description Revokes the specified grant and removes only defaults bound to that grant. In-flight work must revalidate before its next dispatch.
+         */
+        delete: operations["revokeConnectionGrant"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agents/{agent_id}/connection-grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List this viewer's operational connection grants for an agent
+         * @description Returns operational labels for grants the viewer controls or belongs to, after verifying the viewer can reach the agent. Credentials and connection configuration are omitted.
+         */
+        get: operations["listAgentConnectionGrants"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agents/{agent_id}/connection-defaults": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List account preferences for one execution context
+         * @description Returns the union of saved and currently selectable provider preferences without exposing credentials or unavailable account identity.
+         */
+        get: operations["listAgentConnectionDefaults"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agents/{agent_id}/connection-defaults/{provider}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Select a default for one execution context
+         * @description Changes only the authenticated human context or an administrator-authorized organization background context. The selected active grant must satisfy connection ownership and audience restrictions for that context.
+         */
+        put: operations["setAgentConnectionDefault"];
+        post?: never;
+        /**
+         * Clear a default for one execution context
+         * @description Clears only the exact context preference. Repeated clears succeed and do not revoke account access.
+         */
+        delete: operations["clearAgentConnectionDefault"];
         options?: never;
         head?: never;
         patch?: never;
@@ -609,7 +799,7 @@ export interface paths {
         put?: never;
         /**
          * Create agent
-         * @description Creates an agent. An agent IS a principal (principals.kind = agent): its backing identity row is created atomically with the agent — there is no separate machine-identity side record. The agent principal is for identity, ownership, and attribution; an agent's tools come from its own `tool_selectors`, not from roles.
+         * @description Creates an agent. An agent IS a principal (principals.kind = agent): its backing identity row is created atomically with the agent — there is no separate machine-identity side record. The agent principal is for identity, ownership, and attribution; an agent's tools come from its own `action_selectors`, not from roles.
          *
          *     By default (`if_exists: error`, the default), a duplicate `name` or `external_ref` returns 409. Set `if_exists: adopt` together with `external_ref` to make the call safely retryable: when a live agent already carries that `external_ref`, it is returned unchanged with `200` instead of erroring — mutable fields are ignored, since no write happens. `external_ref` is required to use `adopt`; omitting it returns 400. A soft-deleted agent still owns its `external_ref`: it is never resurrected and never replaced, so a match against a deleted agent returns 409 even with `adopt`.
          */
@@ -822,7 +1012,7 @@ export interface paths {
         get: operations["listAgentSkillAssignments"];
         /**
          * Replace agent skill assignments
-         * @description Replaces the agent's skill assignment set as a whole. Assigning a skill does not change the agent's tools: a skill's `allowed_tools` grant takes effect only once the agent invokes that skill, and never widens the set beyond the agent's own tool selectors.
+         * @description Replaces the agent's skill assignment set as a whole. Assigning a skill does not change the agent's tools: a skill's `allowed_actions` constraint takes effect only once the agent invokes that skill, and never widens the set beyond the agent's own action selectors.
          */
         put: operations["replaceAgentSkillAssignments"];
         post?: never;
@@ -841,9 +1031,9 @@ export interface paths {
         };
         /**
          * Get agent tools
-         * @description Resolves the effective set of tools an agent can invoke: its tool selectors expanded against the live action catalog, optionally restricted by tool filters.
+         * @description Resolves the effective set of tools an agent can invoke: its action selectors expanded against the live action catalog, optionally restricted by requested action names.
          *
-         *     Assigned skills do not narrow this set — a skill's `allowed_tools` grant applies only once the agent invokes that skill at runtime. Pass `skill_name` to preview the tools the agent would be left with while that one skill is loaded.
+         *     Assigned skills do not narrow this set — a skill's `allowed_actions` constraint applies only once the agent invokes that skill at runtime. Pass `skill_name` to preview the tools the agent would be left with while that one skill is loaded.
          */
         get: operations["getAgentTools"];
         put?: never;
@@ -1086,6 +1276,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/sessions/{session_id}/references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create session artifact reference
+         * @description Authorizes an existing library artifact for delivery to this session's turns and returns the same `content_block` shape the attachment endpoint returns. Nothing is uploaded or copied: the library file stays the single stored copy, and the server records the authorization so prompt-time delivery can re-check it without a caller.
+         *
+         *     The file must be readable by the caller, must not itself be another session's attachment, and must satisfy the same delivery limits as an upload: PDF (up to 5 MiB and 50 pages), DOCX, XLSX, PPTX (up to 5 MiB), Markdown or plain text (up to 100 KiB), and PNG, JPEG, WebP, or GIF images (up to 5 MiB). Content type is confirmed from the stored bytes. A private session may reference only its owner's own files; an organization-visible session may reference only organization-visible files.
+         */
+        post: operations["createSessionArtifactReference"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/sessions/{session_id}/messages": {
         parameters: {
             query?: never;
@@ -1214,6 +1426,110 @@ export interface paths {
          * @description Cancels a pending nudge. Repeating cancellation is idempotent. If delivery wins the race, returns `409 nudge_already_delivered` with the current nudge resource in `error.details.nudge`.
          */
         post: operations["cancelNudge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sessions/{session_id}/event-subscriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List session event subscriptions
+         * @description Returns durable, session-bound subscriptions in creation order. These registrations receive only public source-event envelopes and remain visible after they stop, expire, or pause for funding.
+         */
+        get: operations["listSessionEventSubscriptions"];
+        put?: never;
+        /**
+         * Create a session event subscription
+         * @description Creates a long-lived public-event subscription for this conversation. It returns immediately; matching occurrences are queued durably and reach a live turn only at safe model-input boundaries, or start a new ordinary session turn when idle. `idempotency_key` is session-scoped: an identical retry returns the original registration, while changed arguments conflict. Routine-origin sessions cannot subscribe.
+         */
+        post: operations["createSessionEventSubscription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sessions/{session_id}/event-subscriptions/{subscription_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a session event subscription
+         * @description Returns one durable subscription, including its activation boundary and server-recorded authority scope.
+         */
+        get: operations["getSessionEventSubscription"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sessions/{session_id}/event-subscriptions/{subscription_id}/unsubscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stop a session event subscription
+         * @description Stops new intake and cancels pending external input. A row already committed to a model boundary remains reported as delivered.
+         */
+        post: operations["unsubscribeSessionEventSubscription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sessions/{session_id}/event-subscriptions/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stop all session event subscriptions
+         * @description Stops every active session subscription and cancels its pending external-event input. Repeating the request is idempotent.
+         */
+        post: operations["stopSessionEventSubscriptions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sessions/{session_id}/event-subscriptions/{subscription_id}/deliveries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List public-event deliveries
+         * @description Returns this subscription's durable intake records. Event and metadata values are the public envelope, not raw provider input. Their combined persisted/model-visible representation is capped at 64 KiB; larger or non-serializable values use an explicit bounded representation with a delivery diagnostic.
+         */
+        get: operations["listSessionEventDeliveries"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1453,7 +1769,7 @@ export interface paths {
          *
          *     Read from the audit trail but authorized as the routine, not as the audit log: anyone who can see the routine can see its history. Per-run records are excluded; the occurrence ledger is the place for those.
          *
-         *     Instructions are withheld on a private routine, where an administrator who can reach the metadata is not meant to read the content. On any other routine the instructions are already on the detail page and are shown here too.
+         *     Private authored values are withheld from the audit representation. Ordinary administrators cannot read another person's private routine or its history without a confirmed invitation.
          */
         get: operations["listRoutineChanges"];
         put?: never;
@@ -1635,7 +1951,7 @@ export interface paths {
         put?: never;
         /**
          * Create skill
-         * @description Creates a skill with instructions and requested tool filters.
+         * @description Creates a skill with instructions and action constraints.
          */
         post: operations["createSkill"];
         delete?: never;
@@ -2033,13 +2349,13 @@ export interface paths {
         };
         /**
          * List artifacts
-         * @description Returns ready artifacts in the org, ordered (created_at desc, id desc). Optional filters narrow by mime prefix. Deleted or unfinished artifacts are excluded from API reads.
+         * @description Returns ready artifacts in the org, ordered (created_at desc, id desc). Optional filters narrow by name and mime prefix. Deleted or unfinished artifacts are excluded from API reads.
          */
         get: operations["listArtifacts"];
         put?: never;
         /**
          * Create artifact
-         * @description Accepts an org-authorized multipart file upload. Without a worker lease, the caller needs `mobius.resource.build`; the artifact is private to the authenticated principal and has no run or step lineage. A worker may instead supply `X-Mobius-Lease-Token` with `mobius.job.execute`; Mobius then derives run, step, job, worker session, attempt, and shared visibility from the active claim. Caller-supplied lineage, ownership, and visibility fields are rejected in both modes.
+         * @description Accepts an org-authorized multipart file upload. Without a worker lease, the caller needs `mobius.resource.build`; the artifact is private to the authenticated principal and has no run or step lineage. A worker may instead supply `X-Mobius-Lease-Token` with `mobius.job.execute`; Mobius then derives run, step, job, worker session, attempt, and shared visibility from the active claim. Execution attribution is server-derived. Version lineage is declared only with previous_artifact_id (or the leased publish action source_artifact_id). A version requires edit access to the exact parent and inherits its custody and visibility.
          *
          *     DOCX, XLSX, and PPTX uploads may pass `convert=true` to start asynchronous Markdown extraction for later model delivery.
          */
@@ -2134,6 +2450,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/artifacts/{artifact_id}/artifact-versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List artifact versions
+         * @description Returns accessible available versions in the artifact's lineage, oldest first. Each version keeps its exact ID.
+         */
+        get: operations["listArtifactVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2217,7 +2553,7 @@ export interface components {
          * @description Why a capability is `needs_setup`. Present only when readiness is `needs_setup`. `not_configured` — no integration or credential is connected yet. `inactive` — the backing integration is manually disabled. `expired` — the backing credential has expired. `provider_unavailable` — the provider runtime is not currently available. `permission_missing` — the caller lacks permission to use it. `not_implemented` — a placeholder for a capability that is not yet available. `credentials_unreadable` — the stored credential cannot be decrypted by the running platform; reconnect the integration.
          * @enum {string}
          */
-        CapabilityReadinessReason: "not_configured" | "inactive" | "expired" | "provider_unavailable" | "permission_missing" | "not_implemented" | "credentials_unreadable" | "agent_owned_only";
+        CapabilityReadinessReason: "not_configured" | "inactive" | "expired" | "provider_unavailable" | "permission_missing" | "not_implemented" | "credentials_unreadable";
         /**
          * @description Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
          * @example {
@@ -2277,35 +2613,23 @@ export interface components {
             model?: string;
         };
         /**
-         * @description Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
+         * @description Controls how selected actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
          *
-         *     The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise. Existing agents retain their stored mode; the default applies when creating an agent without one.
+         *     The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are selected, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise. Existing agents retain their stored mode; the default applies when creating an agent without one.
          * @enum {string}
          */
         AgentToolPresentation: "flat" | "meta";
         /**
-         * @description How one entry in an agent's tool grant names the actions it covers. `exact` is a single action name; `group` a dotted prefix; `platform` every action of an integration; `custom` org-defined actions; `wildcard` everything. Omitting the type means `exact`.
+         * @description How one entry in an agent's action selection names the actions it covers. `exact` is a single action name; `group` a dotted prefix; `provider` every action of an integration; `custom` org-defined actions; `wildcard` everything. Omitting the type means `exact`.
          * @enum {string}
          */
-        ActionSelectorType: "exact" | "group" | "platform" | "custom" | "wildcard";
-        /** @description One entry in an agent's tool grant. Selectors are expanded against the live action catalog at every build, so `platform: gmail` keeps meaning "every Gmail action" as the catalog grows. */
+        ActionSelectorType: "exact" | "group" | "provider" | "custom" | "wildcard";
+        /** @description One entry in an agent's action selection. Selectors are expanded against the live action catalog at every build, so `provider: gmail` keeps meaning "every Gmail action" as the catalog grows. */
         ActionSelector: {
             /** @description Defaults to `exact` when omitted. */
             selector_type?: components["schemas"]["ActionSelectorType"];
             /** @description The selector value, read according to `selector_type`. Ignored for `wildcard`. */
             selector: string;
-        };
-        /** @description One provider's connection rules for an agent. Both fields are decisions about the agent, not about any one connection. */
-        AgentIntegrationAccess: {
-            /** @description The provider these rules apply to (`gmail`, `slack`, …). */
-            provider: string;
-            /**
-             * @description Whether the agent may resolve the personal connection of the person it is acting for. Defaults to false and is never implied: reaching somebody's own account is what a person consents to when they talk to this agent, so it is shown on its page as "acts through your Gmail".
-             * @default false
-             */
-            act_as_user?: boolean;
-            /** @description The one connection this agent uses for this provider, which also suppresses the runtime account choice. May name only an org-shared or agent-owned connection — a shared agent pinned to one person's mailbox would send as that person for everybody. */
-            pin?: string;
         };
         /**
          * @description T-shirt size selecting when `auto` compaction triggers as a percentage of the session model's input context window: `xs` 10%, `sm` 20%, `md` 40%, `lg` 60%, and `xl` 80%. Unknown/custom models use a conservative 200k-token context window. `sm` is the default.
@@ -2355,7 +2679,9 @@ export interface components {
         /**
          * @description Who, inside the org that owns this agent, may reach it at all.
          *
-         *     `organization` (the default) is reachable by any org member — the behavior every agent had before visibility existed. `restricted` is reachable only by the agent's listed members. `private` is reachable only by its single member.
+         *     `organization` is reachable by any org member. `restricted` is reachable only by the agent's listed members. `private` is reachable only by its single member.
+         *
+         *     Agent create requests default to `private` when this field is omitted.
          *
          *     Visibility is not a permission: what a member may DO with an agent stays governed by their org role. A principal outside an agent's audience gets `404` from every path — list, read, session, invoke, memory — so an agent's existence never leaks through a status code.
          *
@@ -2364,7 +2690,7 @@ export interface components {
          */
         AgentVisibility: "organization" | "restricted" | "private";
         /**
-         * @description AI actor identity. An agent IS a principal (its permissions are role grants on that principal) with instructions, configuration, and session presence.
+         * @description AI actor identity. An agent IS a principal (its permissions are role assignments on that principal) with instructions, configuration, and session presence.
          * @example {
          *       "id": "agent_5n8p2q7m4x9r3v6t",
          *       "principal_id": "agent_5n8p2q7m4x9r3v6t",
@@ -2405,10 +2731,8 @@ export interface components {
             model_route?: components["schemas"]["AgentModelRoute"];
             /** @description Default tool presentation used by this agent's turns and built-in channel-message replies. */
             tool_presentation?: components["schemas"]["AgentToolPresentation"];
-            /** @description The agent's tool grant: the action selectors it may call, expanded against the live action catalog at each build. */
-            tool_selectors?: components["schemas"]["ActionSelector"][];
-            /** @description Per-provider connection rules. Absent means the defaults: the agent reaches org-shared and its own connections, and nothing is pinned. */
-            integration_access?: components["schemas"]["AgentIntegrationAccess"][];
+            /** @description The agent's action selection: the action selectors it may call, expanded against the live action catalog at each build. */
+            action_selectors?: components["schemas"]["ActionSelector"][];
             /** @description Custom system prompt for agents. Empty string uses the generated default based on the agent name. */
             system_prompt?: string;
             /**
@@ -3233,6 +3557,20 @@ export interface components {
             actor_principal_type?: "human" | "agent" | "service" | "system";
             /** @description Agent resource ID when the actor was an agent. */
             agent_id?: string;
+            /**
+             * @description Custody of the work this invocation belongs to: the session owner when it ran in a session, else the agent owner, else the human actor.
+             * @enum {string}
+             */
+            owner_kind?: "person" | "team";
+            /** @description Principal that holds custody when `owner_kind` is `person`. */
+            owner_id?: string;
+            /**
+             * @description Who may read the record's content, following the owning session or agent.
+             * @enum {string}
+             */
+            visibility?: "private" | "organization";
+            /** @description True when `parameters` were withheld because the record is private to someone else and the caller is reading it as an administrator. */
+            parameters_redacted?: boolean;
             /** @description Channel exchange correlated with this invocation, when applicable. */
             channel_exchange_id?: string;
             /** @description Agent turn correlated with this invocation, when applicable. */
@@ -3254,11 +3592,11 @@ export interface components {
             http_status?: number;
             /** @description The job origin that produced this invocation: `agent_tool_call`, `loop_action_step`, `direct_action_invoke`, or `server_internal`. */
             source: string;
-            /** @description Input parameters passed to the action. */
+            /** @description Input parameters passed to the action, with credential-like keys redacted. Absent when `parameters_redacted` is true. */
             parameters?: {
                 [key: string]: unknown;
             };
-            /** @description Truncated or summarized action output for audit purposes. */
+            /** @description The terminal job status and the top-level keys of the result. Result bodies are never stored here; open the session for them. */
             output_summary?: {
                 [key: string]: unknown;
             };
@@ -3632,6 +3970,162 @@ export interface components {
             type: "error";
             message_id?: components["schemas"]["WorkerSocketMessageID"];
             error: components["schemas"]["WorkerSocketProtocolError"];
+        };
+        ConnectionGovernance: {
+            id: string;
+            provider: string;
+            status: components["schemas"]["IntegrationStatus"];
+            controller: components["schemas"]["ConnectionController"];
+        };
+        ConnectionGovernanceListResponse: {
+            items: components["schemas"]["ConnectionGovernance"][];
+            has_more: boolean;
+            next_cursor?: string;
+        };
+        /** @description Exact accounts available to routine actions, keyed by provider. Each call selects one account and revalidates its live grant. Event watches are separate. */
+        ConnectionBindings: {
+            [key: string]: components["schemas"]["ConnectionBinding"][];
+        };
+        /** @description A frozen selection of one connection and its explicit grant. */
+        ConnectionBinding: {
+            connection_id: string;
+            grant_id: string;
+        };
+        /** @enum {string} */
+        ConnectionExecutionMode: "authenticated_human" | "controller_background" | "organization_background";
+        ConnectionGrantAudience: {
+            organization: boolean;
+            principal_ids: string[];
+        };
+        /** @description Access for one assistant in conversations and routines, subject to connection ownership and result audience restrictions. */
+        ConnectionGrant: {
+            id: string;
+            connection_id: string;
+            agent_id: string;
+            audience: components["schemas"]["ConnectionGrantAudience"];
+            /** Format: date-time */
+            created_at: string;
+            connection_label: string;
+            provider: string;
+            controlled_by_organization: boolean;
+            represented_actor?: string;
+            can_manage: boolean;
+        };
+        ConnectionGrantListResponse: {
+            items: components["schemas"]["ConnectionGrant"][];
+        };
+        /** @description Grant current assistants access for both conversations and routines within the specified audience and connection ownership restrictions. Does not assign tools. */
+        MaterializeConnectionGrantsRequest: {
+            agent_ids: string[];
+            audience: components["schemas"]["ConnectionGrantAudience"];
+        };
+        SetConnectionDefaultRequest: {
+            connection_id: string;
+            grant_id: string;
+            execution_mode: components["schemas"]["ConnectionExecutionMode"];
+            context: components["schemas"]["ConnectionDefaultContext"];
+        };
+        /** @enum {string} */
+        ConnectionDefaultContext: "self" | "organization";
+        ConnectionDefaultChoice: {
+            connection_id: string;
+            grant_id: string;
+            connection_label: string;
+            represented_actor?: string;
+            controlled_by_organization: boolean;
+        };
+        ConnectionDefaultPreference: {
+            provider: string;
+            /** @enum {string} */
+            state: "unset" | "selected" | "unavailable";
+            selection?: components["schemas"]["ConnectionDefaultChoice"];
+            choices: components["schemas"]["ConnectionDefaultChoice"][];
+        };
+        ConnectionDefaultPreferenceListResponse: {
+            items: components["schemas"]["ConnectionDefaultPreference"][];
+        };
+        /**
+         * @description `active` — integration is enabled and usable by agents. `inactive` — manually disabled; no automatic expiry behavior. `expired` — token/credential has expired (e.g., OAuth token not refreshed).
+         * @enum {string}
+         */
+        IntegrationStatus: "active" | "inactive" | "expired" | "confirmation_required";
+        /** @description Server-evaluated eligibility for making this account team-managed in place. */
+        IntegrationTeamManagement: {
+            supported: boolean;
+            can_start: boolean;
+            unavailable_reason?: string;
+        };
+        /** @description Connection to an external provider such as Slack, GitHub, or a model service. Agents and actions use integrations to find provider configuration without embedding secrets in definitions. External identity is unique per (organization, owner, provider); the same external account may have distinct personal, agent, and business rows. */
+        Integration: {
+            team_management?: components["schemas"]["IntegrationTeamManagement"];
+            /** @description Immutable provider authorization mode. */
+            connection_mode?: string;
+            /** @description Verified actor represented by this connection. */
+            represented_actor?: string;
+            /**
+             * Format: date-time
+             * @description Deadline for confirming fresh replacement evidence, when required.
+             */
+            confirmation_expires_at?: string;
+            /** @description External account identity; safe metadata available in the governance view. */
+            identity_label?: string;
+            /** @description Unique identifier for this integration. */
+            id: string;
+            /** @description Human-readable name, chosen by whoever connected it. Unique per `(org, owner, provider)`: two people may each call their own mailbox "work", but two org-shared connections may not. */
+            name: string;
+            /** @description Free-form provider identifier (e.g. `openai`, `slack`, `github`). Immutable after creation. */
+            provider: string;
+            /** @description Provider-specific non-sensitive configuration stored as JSON. The shape is provider-defined. Sensitive credentials are never returned in this field. */
+            config?: {
+                [key: string]: unknown;
+            };
+            /** @description Current integration lifecycle state: `active`, `inactive`, or `expired`. */
+            status: components["schemas"]["IntegrationStatus"];
+            /** @description True when the stored credential cannot be decrypted by the running platform. The connection still exists and its `status` is unchanged, but nothing that needs the credential will work until an admin reconnects the integration. Absent or `false` in the normal case. */
+            credentials_unreadable?: boolean;
+            /** @description Who this connection belongs to, and the only axis that decides who may use it. Absent means org-shared. */
+            controller: components["schemas"]["ConnectionController"];
+            /** @description The provider's account model, repeated here so a client can render a connection without also fetching the catalog. */
+            account_model?: components["schemas"]["IntegrationAccountModel"];
+            /** @description User ID of the org member who created this integration. */
+            created_by?: string;
+            tags?: components["schemas"]["TagMap"];
+            /**
+             * Format: date-time
+             * @description Timestamp when this integration was created.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description Timestamp when this integration was last updated.
+             */
+            updated_at: string;
+        };
+        /** @description Unified integration-framework connect response. Redirect-style providers return `kind=redirect` plus `redirect_url`; inline API-key and service-credential providers return `kind=complete` plus the persisted integration row. */
+        IntegrationConnectResponse: {
+            /** @enum {string} */
+            kind: "redirect" | "complete";
+            /** @description OAuth or install URL to visit when `kind=redirect`. */
+            redirect_url?: string;
+            integration?: components["schemas"]["Integration"];
+        };
+        /**
+         * @description What one connection to a provider represents.
+         *
+         *     `personal` — one human's own account, and acting through it acts as that person (Gmail, Google Calendar, X). `workspace` — a shared external workspace the whole org acts within (Slack, Jira, GitHub). `capability` — a keyed service with no account identity behind it (Firecrawl, a model provider, a database).
+         *
+         *     It decides the default owner of a new connection and whether the connection is offered to an agent by default.
+         * @enum {string}
+         */
+        IntegrationAccountModel: "personal" | "workspace" | "capability";
+        /** @description Lifecycle and grant authority. Control does not authorize organization-provider content or agent execution. */
+        ConnectionController: {
+            /** @enum {string} */
+            kind: "person" | "organization";
+            /** @description Human controller ID, present only for person control. */
+            principal_id?: string;
+            /** @description Human controller display name, when available. */
+            display_name?: string;
         };
         BillingUsageEvent: {
             id: string;
@@ -4457,11 +4951,11 @@ export interface components {
             name: string;
             /** @description Markdown description of the skill's purpose. */
             description?: string;
-            /** @description Whether this skill is the one being simulated as invoked, i.e. it matched the `skill_name` parameter and its `allowed_tools` grant was applied to this manifest. False for every assigned skill when `skill_name` is omitted. */
+            /** @description Whether this skill is the one being simulated as invoked, i.e. it matched the `skill_name` parameter and its `allowed_actions` constraint was applied to this manifest. False for every assigned skill when `skill_name` is omitted. */
             active: boolean;
-            /** @description Tool selectors the skill requires but that are not available to the agent. */
+            /** @description Action selectors the skill requires but that are not available to the agent. */
             missing_required?: string[];
-            /** @description Tool selectors the skill recommends but that are not available to the agent. */
+            /** @description Action selectors the skill recommends but that are not available to the agent. */
             missing_recommended?: string[];
         };
         /** @description Non-fatal warning produced while resolving an agent tool manifest. */
@@ -4472,7 +4966,7 @@ export interface components {
             message: string;
             /** @description Skill the warning relates to, when applicable. */
             skill_id?: string;
-            /** @description Tool selector the warning relates to, when applicable. */
+            /** @description Action selector the warning relates to, when applicable. */
             tool?: string;
             /** @description Action name the warning relates to, when applicable. */
             action?: string;
@@ -4488,13 +4982,13 @@ export interface components {
         AgentToolManifest: {
             /** @description Agent this manifest was resolved for. */
             agent_id: string;
-            /** @description Stable hash over the resolved tool + skill set; bumps when the agent's tool selectors or skills change. */
+            /** @description Stable hash over the resolved tool + skill set; bumps when the agent's action selectors or skills change. */
             policy_hash: string;
             /** @description Catalog entries the agent can invoke. Each entry surfaces to the LLM as its own named tool. Built-in, integration, and custom-HTTP actions are intermingled here. */
             tools: components["schemas"]["ActionCatalogEntry"][];
             /** @description Audit trail of group selectors that contributed to the resolved tool set. Operators see groups; the LLM only sees the flat `tools` list. */
             groups_resolved?: components["schemas"]["ResolvedActionGroup"][];
-            /** @description Skills assigned to this agent, as resolved for this manifest. See each entry's `active` property for which one's grant was applied. */
+            /** @description Skills assigned to this agent, as resolved for this manifest. See each entry's `active` property for which one's action constraint was applied. */
             skills: components["schemas"]["SkillManifestEntry"][];
             /** @description Non-fatal issues encountered while resolving the manifest. */
             warnings: components["schemas"]["AgentManifestWarning"][];
@@ -4527,10 +5021,8 @@ export interface components {
             model_route?: components["schemas"]["AgentModelRoute"];
             /** @description Omit to use the create-time default, `flat`. */
             tool_presentation?: components["schemas"]["AgentToolPresentation"];
-            /** @description The agent's tool grant. Omit for an agent with no granted actions; its intrinsic tools are unaffected. */
-            tool_selectors?: components["schemas"]["ActionSelector"][];
-            /** @description Per-provider connection rules. Omit for the defaults. */
-            integration_access?: components["schemas"]["AgentIntegrationAccess"][];
+            /** @description The agent's action selection. Omit for an agent with no selected catalog actions. */
+            action_selectors?: components["schemas"]["ActionSelector"][];
             /** @description Custom system prompt for agents. Empty uses the generated default. */
             system_prompt?: string;
             /**
@@ -4578,10 +5070,8 @@ export interface components {
             model_route?: components["schemas"]["AgentModelRoute"];
             /** @description Replacement tool presentation used by this agent's turns and channel replies. */
             tool_presentation?: components["schemas"]["AgentToolPresentation"];
-            /** @description Replacement per-provider connection rules, as a whole. Omit to leave them untouched; send an empty array to clear them. */
-            integration_access?: components["schemas"]["AgentIntegrationAccess"][];
-            /** @description Replacement tool grant, as a whole. Omit to leave the agent's current grant untouched; send an empty array to revoke it. */
-            tool_selectors?: components["schemas"]["ActionSelector"][];
+            /** @description Replacement action selection, as a whole. Omit to leave the agent's current selection untouched; send an empty array to select none. */
+            action_selectors?: components["schemas"]["ActionSelector"][];
             /** @description Replacement system prompt for agents. */
             system_prompt?: string;
             /**
@@ -4937,6 +5427,43 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /**
+         * @description Stable UI treatment for a projected external event.
+         * @enum {string}
+         */
+        SessionEventProjectionKind: "generic" | "repository_change" | "file_change" | "email" | "calendar_event" | "message" | "work_item" | "content_change" | "business_record";
+        SessionEventProjectionAttribute: {
+            /** @description Short fact label selected by the server-side formatter. */
+            label: string;
+            /** @description Plain-text, bounded fact value. */
+            value: string;
+        };
+        /** @description Bounded, display-safe projection of the external event associated with a session message. The complete provider payload is deliberately absent. */
+        SessionEventProjection: {
+            kind: components["schemas"]["SessionEventProjectionKind"];
+            /** @description Concrete event type that started the work. */
+            event_type: string;
+            /** @description Provider identifier when the event came from an integration. */
+            provider?: string;
+            /** @description Short human-readable description of what happened. */
+            title: string;
+            /** @description Optional provider-specific change summary. */
+            summary?: string;
+            /** @description Human-readable affected resource name, never an internal event or source ID. */
+            resource_name?: string;
+            /**
+             * Format: uri
+             * @description Optional http(s) link to the affected provider resource.
+             */
+            resource_url?: string;
+            /**
+             * Format: date-time
+             * @description Upstream occurrence time, falling back to receipt time.
+             */
+            occurred_at?: string;
+            /** @description Small provider-selected facts; never arbitrary payload fields. */
+            attributes?: components["schemas"]["SessionEventProjectionAttribute"][];
+        };
         /** @description One persisted message or compaction entry in a session transcript. */
         SessionMessage: {
             /** @description Stable message identifier. */
@@ -4961,6 +5488,8 @@ export interface components {
             metadata?: {
                 [key: string]: unknown;
             };
+            /** @description Server-owned safe display projection when this message was triggered by an external event. */
+            event_projection?: components["schemas"]["SessionEventProjection"];
             /**
              * Format: date-time
              * @description Server timestamp when the message was appended.
@@ -4991,7 +5520,7 @@ export interface components {
          *       "description": "Review pull requests for correctness and risk.",
          *       "source": "custom",
          *       "instructions": "Check the diff and leave concise findings.",
-         *       "allowed_tools": [
+         *       "allowed_actions": [
          *         "github.create_review_comment"
          *       ],
          *       "tags": {
@@ -5022,11 +5551,15 @@ export interface components {
             container: components["schemas"]["ResourceContainer"];
             posture: components["schemas"]["ResourcePosture"];
             /**
-             * @description Canonical action names, wildcard selectors, or group references naming the actions this skill needs. Uses the same selector vocabulary as agent tool grants.
+             * @description Canonical action names, wildcard selectors, or group references naming the actions this skill needs. Uses the same selector vocabulary as agent action selections.
              *
-             *     The grant takes effect when an agent invokes the skill, and lasts for the rest of that turn: calls to actions outside it are refused with an error naming the skill. Assigning a skill narrows nothing on its own, and an empty list declares nothing and narrows nothing. Skills invoked in the same turn compose as a union, so this keeps a skill on task rather than sandboxing it. Mobius memory and self-awareness tools are always exempt, and a skill can never widen an agent beyond its own tool selectors.
+             *     The constraint takes effect when an agent invokes the skill and lasts for the rest of that turn. Assigning a skill narrows nothing on its own, and an empty list declares nothing and narrows nothing. Lists from skills invoked in the same turn compose as a union, then intersect with the agent's selected actions. No catalog action is exempt, and a skill can never widen an agent's selection.
              */
-            allowed_tools?: string[];
+            allowed_actions?: string[];
+            /** @description Action selectors that must match the agent's effective selected catalog set. A skill with any missing requirement is unavailable and cannot be invoked. */
+            required_actions?: string[];
+            /** @description Action selectors that improve this skill. Missing recommendations produce warnings only; they never select or present actions. */
+            recommended_actions?: string[];
             /** @description Labels to apply to the skill. */
             tags?: components["schemas"]["TagMap"];
             /** @description ID of the principal who created this skill. */
@@ -5177,6 +5710,8 @@ export interface components {
             metadata?: {
                 [key: string]: unknown;
             };
+            /** @description Server-owned safe display projection when this message was triggered by an external event. */
+            event_projection?: components["schemas"]["SessionEventProjection"];
             /** Format: date-time */
             created_at: string;
         };
@@ -5576,6 +6111,10 @@ export interface components {
              */
             size_bytes?: number;
         };
+        CreateSessionArtifactReferenceRequest: {
+            /** @description Identifier of an existing library artifact the caller can read. */
+            artifact_id: string;
+        };
         SessionAttachmentResponse: {
             artifact: components["schemas"]["Artifact"];
             content_block: components["schemas"]["SessionContentBlock"];
@@ -5845,6 +6384,113 @@ export interface components {
             /** @description True when wake interrupted a waiting tool and requeued this turn. */
             woke_turn: boolean;
         };
+        /** @description One OR branch. All populated fields in this object match together. */
+        SessionEventSubscriptionFilter: {
+            /** @description A public exact event type or a supported provider wildcard such as `github.pull_request.*`. */
+            event_type: string;
+            /** @description Optional public source identifier restriction. */
+            source_id?: string;
+            /** @description Optional integration connection restriction. */
+            integration_id?: string;
+            /** @description Optional equality constraints over event payload fields. Dot paths address nested objects. */
+            match?: {
+                [key: string]: unknown;
+            };
+            /** @description Optional Boolean expression over `event` and `meta`. Errors fail closed. */
+            condition?: string;
+        };
+        CreateSessionEventSubscriptionRequest: {
+            /** @description ORed public-event filter branches. */
+            filters: components["schemas"]["SessionEventSubscriptionFilter"][];
+            /**
+             * Format: date-time
+             * @description Optional future stop time.
+             */
+            expires_at?: string | null;
+            /** @description Retry key scoped to this session. */
+            idempotency_key?: string;
+        };
+        /** @enum {string} */
+        SessionEventSubscriptionStatus: "active" | "funding_paused" | "stopped" | "expired";
+        SessionEventSubscription: {
+            id: string;
+            session_id: string;
+            agent_id: string;
+            /** @description Authorizing principal recorded at creation. */
+            created_by: string;
+            /** @description Server-resolved authority and billing scope; not event-controlled. */
+            execution_scope: {
+                [key: string]: unknown;
+            };
+            status: components["schemas"]["SessionEventSubscriptionStatus"];
+            stop_reason?: string;
+            /** @description Most recent fail-closed match or delivery diagnostic. */
+            last_diagnostic?: string;
+            /** Format: date-time */
+            last_diagnostic_at?: string | null;
+            /** @description Reserved, not-yet-injected event inputs. The subscription stops visibly at 256. */
+            pending_delivery_count: number;
+            /**
+             * Format: date-time
+             * @description First observed time intake stopped because the pending-input limit was reached.
+             */
+            coverage_cutoff_at?: string | null;
+            filters: components["schemas"]["SessionEventSubscriptionFilter"][];
+            /** Format: date-time */
+            activation_at: string;
+            /** Format: date-time */
+            activation_reconciled_at?: string | null;
+            /** Format: date-time */
+            expires_at?: string | null;
+            /** Format: date-time */
+            stopped_at?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        SessionEventSubscriptionCreateResponse: {
+            subscription: components["schemas"]["SessionEventSubscription"];
+            deduped: boolean;
+        };
+        SessionEventSubscriptionListResponse: {
+            items: components["schemas"]["SessionEventSubscription"][];
+            has_more: boolean;
+            next_cursor?: string | null;
+        };
+        /** @enum {string} */
+        SessionEventDeliveryStatus: "pending" | "delivered" | "cancelled" | "failed";
+        SessionEventDelivery: {
+            id: string;
+            subscription_id: string;
+            session_id: string;
+            source_event_id: string;
+            event_type: string;
+            source_id: string;
+            event: {
+                [key: string]: unknown;
+            };
+            meta: {
+                [key: string]: unknown;
+            };
+            target_turn_id?: string;
+            message_id?: string;
+            status: components["schemas"]["SessionEventDeliveryStatus"];
+            diagnostic?: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: date-time */
+            delivered_at?: string | null;
+            /** Format: date-time */
+            cancelled_at?: string | null;
+        };
+        SessionEventDeliveryListResponse: {
+            items: components["schemas"]["SessionEventDelivery"][];
+            has_more: boolean;
+            next_cursor?: string | null;
+        };
         /** @description Markdown-extraction state for an Office upload that requested conversion. */
         ArtifactConversionSummary: {
             /** @enum {string} */
@@ -5872,6 +6518,12 @@ export interface components {
         Artifact: {
             /** @description Unique artifact identifier. */
             id: string;
+            /** @description First artifact ID in this version chain. Always returned by current servers. */
+            root_id?: string;
+            /** @description Exact parent artifact ID; empty for version one. May point to a deleted version. */
+            previous_id?: string;
+            /** @description Parent version plus one. Concurrent revisions may share a number; creation time and ID break ties. */
+            version?: number;
             owner: components["schemas"]["ResourceOwner"];
             visibility: components["schemas"]["ResourceVisibility"];
             container?: components["schemas"]["ResourceContainer"];
@@ -5952,6 +6604,8 @@ export interface components {
             items: components["schemas"]["RoutinePrincipal"][];
         };
         AddRoutinePrincipalRequest: {
+            /** @description Confirm access to existing and future routine results and the selected manager powers. Required when inviting another person to private work. */
+            confirm_audience_expansion?: boolean;
             principal_id: string;
             relationship: components["schemas"]["RoutineRelationship"];
             level?: components["schemas"]["RoutineFollowLevel"];
@@ -5984,8 +6638,8 @@ export interface components {
              * @example github.issues.opened
              */
             event_type: string;
-            /** @description Optional. Only events from this connection start a run. Omitted, an event from any of the organization's connections for the provider does. */
-            integration_id?: string;
+            /** @description Exact connection and grant pairs whose matching events may start this routine. This selection does not authorize provider actions. */
+            source_bindings: components["schemas"]["ConnectionBinding"][];
             /**
              * @description Optional expression over the event's `{event, meta}` envelope. The run starts only when it returns true. A condition that cannot be evaluated against an event records a `failed` run with `error_code` `trigger_condition_error` and starts nothing.
              * @example event.repository.full_name == "acme/api"
@@ -5994,6 +6648,9 @@ export interface components {
         };
         /** @description Exactly one of `schedule` and `event` is required: a routine runs on a schedule or when an event arrives, not both. */
         RoutineCreateRequest: {
+            connection_bindings?: components["schemas"]["ConnectionBindings"];
+            /** @description Confirm access to existing and future routine results and the selected manager powers. Required when inviting another person to private work. */
+            confirm_audience_expansion?: boolean;
             /** @description Optional conversation this routine was proposed in, kept as provenance. Occurrences run in their own sessions, so this never affects where results are delivered. Omitted for a routine created from the form. */
             session_id?: string;
             agent_id: string;
@@ -6016,6 +6673,7 @@ export interface components {
             follower_principal_ids?: string[];
         };
         RoutineUpdateRequest: {
+            connection_bindings?: components["schemas"]["ConnectionBindings"];
             name?: string;
             instructions?: string;
             /** @description Makes this a scheduled routine, dropping any event trigger it had. Rejected together with `event`. */
@@ -6036,6 +6694,11 @@ export interface components {
             managed_by?: components["schemas"]["RoutineManagedBy"];
         };
         Routine: {
+            /** @description Actions permitted for this caller; the server rechecks each request. */
+            available_actions?: ("edit" | "run" | "pause" | "resume" | "delete" | "invite")[];
+            posture?: components["schemas"]["ResourcePosture"];
+            /** @enum {string} */
+            audience?: "private" | "named" | "organization" | "team";
             id: string;
             org_id: string;
             agent_id: string;
@@ -6054,7 +6717,7 @@ export interface components {
             /** @description Principals holding a follower row. Responsible people and managers are notified too, and are named separately. */
             follower_count: number;
             name: string;
-            /** @description Omitted from administrator metadata-only projections. */
+            /** @description Present only after ordinary content access is authorized. */
             instructions?: string;
             kind: components["schemas"]["RoutineKind"];
             trigger: components["schemas"]["RoutineTrigger"];
@@ -6065,6 +6728,11 @@ export interface components {
             timezone: string;
             status: components["schemas"]["RoutineStatus"];
             pause_reason?: string;
+            /**
+             * @description Caller-specific persistent attention state. Absence does not prove provider connectivity.
+             * @enum {string}
+             */
+            attention?: "account_repair";
             /**
              * Format: date-time
              * @description Absent on an event routine, which has no next fire to predict.
@@ -6079,7 +6747,7 @@ export interface components {
             per_occurrence_ceiling_milli: number;
             /** Format: int64 */
             daily_ceiling_milli: number;
-            act_as_user_providers?: string[];
+            connection_bindings?: components["schemas"]["ConnectionBindings"];
             /** Format: date-time */
             created_at: string;
             /** Format: date-time */
@@ -6113,6 +6781,8 @@ export interface components {
             triggered_by?: string;
             /** @description The source event that started this run. Present only when `trigger` is `event`; it is the row the integration events list shows for the delivery. */
             source_event_id?: string;
+            /** @description The exact connection and grant pair whose event started this run. Immutable server-authored provenance, not action authority. */
+            event_source_binding?: components["schemas"]["ConnectionBinding"];
             /** @description The concrete event type that arrived (`github.issues.opened`), not the pattern the routine subscribed to. Present only when `trigger` is `event`. */
             event_type?: string;
             /** @enum {string} */
@@ -6183,12 +6853,16 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        RoutineSharingConfirmation: {
+            /** @description Confirm sharing existing and future routine results with the proposed named people. */
+            confirm_audience_expansion?: boolean;
+        };
         /**
          * @example {
          *       "name": "Pull request review",
          *       "description": "Review pull requests for correctness and risk.",
          *       "instructions": "Check the diff and leave concise findings.",
-         *       "allowed_tools": [
+         *       "allowed_actions": [
          *         "github.create_review_comment"
          *       ],
          *       "tags": {
@@ -6204,10 +6878,20 @@ export interface components {
             /** @description Markdown instructions loaded when the skill is active. */
             instructions: string;
             /**
-             * @description Tool selectors naming the actions this skill needs. The grant applies once an agent invokes the skill and lasts for the rest of that turn. Empty declares nothing and narrows nothing.
+             * @description Action selectors naming the actions this skill permits after it is invoked. Empty declares nothing and narrows nothing.
              * @default []
              */
-            allowed_tools?: string[];
+            allowed_actions?: string[];
+            /**
+             * @description Action selectors that must already be effective for this skill to be invoked.
+             * @default []
+             */
+            required_actions?: string[];
+            /**
+             * @description Optional action selectors that produce warnings when absent and never select actions.
+             * @default []
+             */
+            recommended_actions?: string[];
             /** @description Optional explicit custodian. Omit to keep the default shown by the create surface. */
             owner?: components["schemas"]["ResourceOwner"];
             /** @description Optional declared audience. Omit for Only you. */
@@ -6310,8 +6994,12 @@ export interface components {
             title?: string;
             description?: string;
             instructions?: string;
-            /** @description Tool selectors naming the actions this skill needs. The grant applies once an agent invokes the skill and lasts for the rest of that turn. Empty declares nothing and narrows nothing. */
-            allowed_tools?: string[];
+            /** @description Action selectors naming the actions this skill permits after it is invoked. Empty declares nothing and narrows nothing. */
+            allowed_actions?: string[];
+            /** @description Action selectors that must already be effective for this skill to be invoked. */
+            required_actions?: string[];
+            /** @description Optional action selectors that warn when absent and never select actions. */
+            recommended_actions?: string[];
             tags?: components["schemas"]["TagMap"];
         };
         /** @description A desired agent. `skills`, when present, replaces the agent's full assignment set; omit it to leave existing assignments untouched. */
@@ -6322,8 +7010,10 @@ export interface components {
             model?: string;
             /** @description Default route for model calls made by this agent. */
             model_route?: components["schemas"]["AgentModelRoute"];
-            /** @description How granted actions are presented to the model. */
+            /** @description How selected actions are presented to the model. */
             tool_presentation?: components["schemas"]["AgentToolPresentation"];
+            /** @description Exact reviewed actions selected for this agent. Templates should use exact selectors so the proposed authority is visible during review. An empty array selects no catalog actions. */
+            action_selectors?: components["schemas"]["ActionSelector"][];
             system_prompt?: string;
             /**
              * Format: int64
@@ -6902,6 +7592,8 @@ export interface components {
             file: string;
             /** @description Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or organization-visible space. */
             name: string;
+            /** @description Optional exact parent artifact ID. Requires edit access and inherits its custody and visibility. Creates new bytes and a new ID; never changes existing references. */
+            previous_artifact_id?: string;
             /** @description Optional MIME type override. Defaults to the uploaded file part content type, then `application/octet-stream`. */
             mime?: string;
             /**
@@ -6965,6 +7657,11 @@ export interface components {
              * @description Time this quota snapshot was generated.
              */
             generated_at: string;
+        };
+        ArtifactVersionList: {
+            root_id: string;
+            /** @description Accessible available versions ordered oldest to newest. Deleted versions are omitted. */
+            versions: components["schemas"]["Artifact"][];
         };
     };
     responses: {
@@ -7080,6 +7777,8 @@ export interface components {
         EnvironmentIDParam: string;
         /** @description Reference type name, such as `slack.channel` or `table.table`. */
         ReferenceTypeParam: string;
+        /** @description Exact integration connection this account-scoped operation acts on. Invalid, inaccessible, stale, or wrong-provider IDs never fall back to another connection. */
+        IntegrationIDQueryParam: string;
         /** @description Integration record ID. */
         IntegrationIDParam: string;
         /** @description Integration event receipt ID. */
@@ -7098,6 +7797,8 @@ export interface components {
         TerminalPartialsIncludeParam: boolean;
         /** @description Session nudge identifier. */
         NudgeIdParam: string;
+        /** @description Durable session event subscription identifier. */
+        SessionEventSubscriptionIdParam: string;
         /** @description ID of the artifact */
         ArtifactIdParam: string;
         RoutineID: string;
@@ -7106,6 +7807,8 @@ export interface components {
         TableIDParam: string;
         /** @description Filter tables by name. Table names are unique within an org; use this as a discovery filter and use the returned table `id` for follow-up operations. */
         TableNameQueryParam: string;
+        /** @description Authoring format the template applies to */
+        DocumentTemplateFormatParam: "docx" | "pptx";
     };
     requestBodies: {
         /** @description Outbound signed-context HTTP action request. */
@@ -7491,6 +8194,14 @@ export interface operations {
                 action_name?: string;
                 /** @description Filter to an immutable custom Action ID. */
                 action_id?: string;
+                /** @description Action name prefix; the provider or built-in namespace. Matches invocations whose action name begins with `<integration>.` — a provider slug (`gmail`), a built-in namespace (`mobius`, `environment`), or an MCP server slug. The trailing dot is implied, so `gmail` does not match `gmail_extra.send`. */
+                integration?: string;
+                /** @description Filter to invocations made by a specific agent. */
+                agent_id?: string;
+                /** @description Only include invocations started at or after this time (inclusive). */
+                started_after?: string;
+                /** @description Only include invocations started strictly before this time (exclusive). */
+                started_before?: string;
                 /** @description Filter by the scope that owned the selected definition. */
                 definition_scope?: "platform" | "custom";
                 /** @description Filter to deliveries signed with a specific secret version. */
@@ -7730,6 +8441,280 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listConnectionGovernance: {
+        parameters: {
+            query?: {
+                provider?: string;
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Minimal governance metadata */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionGovernanceListResponse"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    deactivateConnectionGovernance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Connection deactivated */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    startConnectionTeamManagement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Completed management change with kind complete and the same active integration */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntegrationConnectResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    confirmConnectionReplacement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Replacement confirmed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listConnectionGrants: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Controller-authorized grants */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionGrantListResponse"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    materializeConnectionGrants: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MaterializeConnectionGrantsRequest"];
+            };
+        };
+        responses: {
+            /** @description Individual grants; replay preserves identical active grants */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionGrantListResponse"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    revokeConnectionGrant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                integration_id: string;
+                grant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Grant revoked or already absent */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listAgentConnectionGrants: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized operational labels and grants */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionGrantListResponse"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listAgentConnectionDefaults: {
+        parameters: {
+            query: {
+                context: components["schemas"]["ConnectionDefaultContext"];
+                execution_mode: components["schemas"]["ConnectionExecutionMode"];
+            };
+            header?: never;
+            path: {
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Saved state and selectable account choices by provider */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionDefaultPreferenceListResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    setAgentConnectionDefault: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agent_id: string;
+                provider: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetConnectionDefaultRequest"];
+            };
+        };
+        responses: {
+            /** @description Context default selected */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    clearAgentConnectionDefault: {
+        parameters: {
+            query: {
+                context: components["schemas"]["ConnectionDefaultContext"];
+                execution_mode: components["schemas"]["ConnectionExecutionMode"];
+            };
+            header?: never;
+            path: {
+                agent_id: string;
+                provider: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Context default cleared or already absent */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
@@ -9012,10 +9997,10 @@ export interface operations {
     getAgentTools: {
         parameters: {
             query?: {
-                /** @description Optional assigned skill name to simulate as invoked, so the response shows the tool scope a turn would run under once that skill is loaded. Omitted means no skill grant is applied; the resolved set still reflects the other filters on this request (`allowed_tools`). */
+                /** @description Optional assigned skill name to simulate as invoked, so the response shows the tool scope a turn would run under once that skill is loaded. Omitted means no skill action constraint is applied; the resolved set still reflects the other filters on this request (`allowed_actions`). */
                 skill_name?: string;
                 /** @description Optional comma-separated canonical action names, wildcard selectors, or group references to apply as a per-invocation filter against the resolved tool set. */
-                allowed_tools?: string;
+                allowed_actions?: string;
             };
             header?: never;
             path: {
@@ -9629,6 +10614,65 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
+    createSessionArtifactReference: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSessionArtifactReferenceRequest"];
+            };
+        };
+        responses: {
+            /** @description The session already referenced this file. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionAttachmentResponse"];
+                };
+            };
+            /** @description File referenced into the session. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionAttachmentResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description The file exceeds its per-type size or PDF page limit for model delivery. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Artifact storage is unavailable (`artifact_storage_unavailable`). */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     listSessionMessages: {
         parameters: {
             query?: {
@@ -9939,6 +10983,200 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
+    listSessionEventSubscriptions: {
+        parameters: {
+            query?: {
+                /** @description Filter by one or more subscription states. */
+                status?: components["schemas"]["SessionEventSubscriptionStatus"][];
+                /** @description Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first — the way to fetch the latest rows of a long list (the tail) in a single request. Items in the response are always ordered ascending regardless of this value; `order` only selects which end of the list the page is taken from. */
+                order?: components["parameters"]["OrderParam"];
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+            };
+            header?: never;
+            path: {
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionEventSubscriptionListResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createSessionEventSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSessionEventSubscriptionRequest"];
+            };
+        };
+        responses: {
+            /** @description Existing idempotent subscription returned. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionEventSubscriptionCreateResponse"];
+                };
+            };
+            /** @description Subscription created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionEventSubscriptionCreateResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getSessionEventSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
+                /** @description Durable session event subscription identifier. */
+                subscription_id: components["parameters"]["SessionEventSubscriptionIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionEventSubscription"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    unsubscribeSessionEventSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
+                /** @description Durable session event subscription identifier. */
+                subscription_id: components["parameters"]["SessionEventSubscriptionIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The stopped subscription. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionEventSubscription"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    stopSessionEventSubscriptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Subscriptions stopped. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listSessionEventDeliveries: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["SessionEventDeliveryStatus"][];
+                /** @description Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first — the way to fetch the latest rows of a long list (the tail) in a single request. Items in the response are always ordered ascending regardless of this value; `order` only selects which end of the list the page is taken from. */
+                order?: components["parameters"]["OrderParam"];
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+            };
+            header?: never;
+            path: {
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
+                /** @description Durable session event subscription identifier. */
+                subscription_id: components["parameters"]["SessionEventSubscriptionIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionEventDeliveryListResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     getSessionTurnLive: {
         parameters: {
             query?: never;
@@ -10155,6 +11393,10 @@ export interface operations {
                 agent_id?: string;
                 /** @description Filter to routines proposed in one conversation. Provenance only; it is not where they run. */
                 origin_session_id?: string;
+                /** @description Filter to persistent account-repair work assigned to the authenticated human. */
+                attention?: "account_repair";
+                /** @description Narrow to these routine statuses. Omit for every status, cancelled included. */
+                status?: components["schemas"]["RoutineStatus"][];
                 limit?: number;
                 /** @description next_cursor from the previous page. */
                 cursor?: string;
@@ -10523,7 +11765,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RoutineSharingConfirmation"];
+            };
+        };
         responses: {
             /** @description Existing routine returned for an idempotent replay. */
             200: {
@@ -10614,7 +11860,7 @@ export interface operations {
                  *       "name": "Pull request review",
                  *       "description": "Review pull requests for correctness and risk.",
                  *       "instructions": "Check the diff and leave concise findings.",
-                 *       "allowed_tools": [
+                 *       "allowed_actions": [
                  *         "github.create_review_comment"
                  *       ],
                  *       "tags": {
@@ -10639,7 +11885,7 @@ export interface operations {
                      *       "description": "Review pull requests for correctness and risk.",
                      *       "source": "custom",
                      *       "instructions": "Check the diff and leave concise findings.",
-                     *       "allowed_tools": [
+                     *       "allowed_actions": [
                      *         "github.create_review_comment"
                      *       ],
                      *       "tags": {
@@ -10681,7 +11927,7 @@ export interface operations {
                 /**
                  * @example {
                  *       "name": "Pull request review",
-                 *       "content": "---\nallowed_tools:\n  - github.create_review_comment\n---\nCheck the diff and leave concise findings.\n"
+                 *       "content": "---\nallowed_actions:\n  - github.create_review_comment\n---\nCheck the diff and leave concise findings.\n"
                  *     }
                  */
                 "application/json": components["schemas"]["ImportSkillRequest"];
@@ -10701,7 +11947,7 @@ export interface operations {
                      *       "description": "Review pull requests for correctness and risk.",
                      *       "source": "custom",
                      *       "instructions": "Check the diff and leave concise findings.",
-                     *       "allowed_tools": [
+                     *       "allowed_actions": [
                      *         "github.create_review_comment"
                      *       ],
                      *       "tags": {
@@ -10774,7 +12020,7 @@ export interface operations {
                  *       "name": "Pull request review",
                  *       "description": "Review pull requests for correctness and risk.",
                  *       "instructions": "Check the diff and leave concise findings.",
-                 *       "allowed_tools": [
+                 *       "allowed_actions": [
                  *         "github.create_review_comment"
                  *       ],
                  *       "tags": {
@@ -11868,8 +13114,12 @@ export interface operations {
     listArtifacts: {
         parameters: {
             query?: {
+                /** @description Return the latest accessible available version per root before filtering and pagination. The Library uses true; omitted preserves the full listing. */
+                latest_only?: boolean;
                 /** @description Mime prefix filter (e.g. `image/`) */
                 mime?: string;
+                /** @description Case-insensitive substring match on the artifact name. Filenames are how people and agents refer to a file, so this is the search key for "find the file called ...". */
+                q?: string;
                 /** @description Cursor for pagination (opaque string from previous response) */
                 cursor?: components["parameters"]["CursorParam"];
                 /** @description Maximum number of items to return */
@@ -12083,6 +13333,33 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    listArtifactVersions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the artifact */
+                artifact_id: components["parameters"]["ArtifactIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Artifact lineage */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArtifactVersionList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
 }
