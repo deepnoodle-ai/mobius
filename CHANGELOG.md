@@ -26,6 +26,15 @@ the minor version.
   follow keys
   ([#218](https://github.com/deepnoodle-ai/mobius/pull/218),
   [#219](https://github.com/deepnoodle-ai/mobius/pull/219)).
+- Library folders: `listArtifactFolders`, `createArtifactFolder`, and
+  `deleteArtifactFolder` across the generated clients, `folder` and `recursive`
+  on `listArtifacts`, and `updateArtifact` to rename a file or move its whole
+  version lineage.
+- CLI folder commands: `mobius artifacts folders`, `mkdir`, `rmdir`, and
+  `move`, plus `--folder` and `--no-recursive` on `artifacts list`.
+- `output_folder` on routine and agent create, update, and read shapes, with
+  `--output-folder` on the matching CLI commands. It is the Library folder a
+  routine's or assistant's files are saved to.
 
 ### Changed
 

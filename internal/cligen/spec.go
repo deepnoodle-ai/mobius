@@ -17,6 +17,11 @@ type SpecOp struct {
 	Summary           string
 	Description       string
 	ParamDescriptions map[string]string // query/path param name → description
+	// ParamDefaultTrue names the boolean query parameters whose schema
+	// declares `default: true`. The server applies them when the parameter is
+	// omitted, so the emitter pairs each one with a `--no-<flag>` switch —
+	// otherwise the only way to turn the behavior off is `--flag=false`.
+	ParamDefaultTrue map[string]bool
 	// BodyRequired mirrors requestBody.required. When false (the OpenAPI
 	// default), a bare invocation with no body is a valid request, so the
 	// generator must not emit a "supply a flag or --file" guard.
@@ -52,9 +57,18 @@ type specRequestBodyRaw struct {
 type specParamRaw struct {
 	// Ref is set when a parameter is a `$ref` into components/parameters
 	// rather than an inline definition (the common case for path params).
-	Ref         string `yaml:"$ref"`
-	Name        string `yaml:"name"`
-	Description string `yaml:"description"`
+	Ref         string              `yaml:"$ref"`
+	Name        string              `yaml:"name"`
+	Description string              `yaml:"description"`
+	Schema      *specParamSchemaRaw `yaml:"schema"`
+}
+
+// specParamSchemaRaw covers the parameter schema fields the generator reads.
+// Default is `any` because it carries whatever the schema declares; only a
+// boolean default is meaningful here.
+type specParamSchemaRaw struct {
+	Type    string `yaml:"type"`
+	Default any    `yaml:"default"`
 }
 
 // parseSpec loads openapi.yaml and returns operations keyed by operationId.
@@ -78,12 +92,18 @@ func parseSpec(path string) (map[string]*SpecOp, error) {
 				tag = op.Tags[0]
 			}
 			paramDescs := make(map[string]string, len(op.Parameters))
+			defaultTrue := map[string]bool{}
 			for _, p := range op.Parameters {
 				// Path params are usually `$ref`s into components/parameters,
 				// so resolve those to recover the param name + description.
 				if p.Ref != "" {
 					if rp, ok := root.Components.Parameters[refName(p.Ref)]; ok {
 						p = rp
+					}
+				}
+				if p.Name != "" && p.Schema != nil && p.Schema.Type == "boolean" {
+					if b, ok := p.Schema.Default.(bool); ok && b {
+						defaultTrue[normalizeParamKey(p.Name)] = true
 					}
 				}
 				if p.Name != "" && p.Description != "" {
@@ -101,6 +121,7 @@ func parseSpec(path string) (map[string]*SpecOp, error) {
 				Summary:           op.Summary,
 				Description:       op.Description,
 				ParamDescriptions: paramDescs,
+				ParamDefaultTrue:  defaultTrue,
 				BodyRequired:      op.RequestBody != nil && op.RequestBody.Required,
 			}
 		}

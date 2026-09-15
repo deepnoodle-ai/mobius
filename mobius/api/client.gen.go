@@ -4151,6 +4151,9 @@ type Agent struct {
 	// Name Mutable unique name within the org. Free-form human-readable label; use `id` for stable references and job targeting.
 	Name string `json:"name"`
 
+	// OutputFolder Library folder this assistant's files are saved to outside a routine occurrence, where the routine's folder wins. Empty means the top level of the Library. A file name that already contains a folder is never moved into it.
+	OutputFolder *string `json:"output_folder,omitempty"`
+
 	// Owner The human or team responsible for this resource.
 	Owner ResourceOwner `json:"owner"`
 
@@ -4923,6 +4926,53 @@ type ArtifactDelivery struct {
 	WebUrl *string `json:"web_url,omitempty"`
 }
 
+// ArtifactFolder A declared Library folder.
+type ArtifactFolder struct {
+	CreatedAt time.Time `json:"created_at"`
+
+	// CreatedBy Principal that declared the folder.
+	CreatedBy *string `json:"created_by,omitempty"`
+
+	// Id Folder ID.
+	Id string `json:"id"`
+
+	// Name Last segment of the path.
+	Name string `json:"name"`
+
+	// Owner The human or team responsible for this resource.
+	Owner ResourceOwner `json:"owner"`
+
+	// ParentPath Path of the containing folder; empty at the root.
+	ParentPath string `json:"parent_path"`
+
+	// Path Normalized folder path, with no leading or trailing slash.
+	Path string `json:"path"`
+
+	// Visibility Who the custodian chose to share the resource with.
+	Visibility ResourceVisibility `json:"visibility"`
+}
+
+// ArtifactFolderListResponse defines model for ArtifactFolderListResponse.
+type ArtifactFolderListResponse struct {
+	// Items Immediate subfolders, ordered by name.
+	Items []ArtifactFolderSummary `json:"items"`
+}
+
+// ArtifactFolderSummary One immediate subfolder, declared or implied by a file name.
+type ArtifactFolderSummary struct {
+	// Declared Whether a folder record exists. Only a declared folder can be deleted; an implied one disappears with its last file.
+	Declared bool `json:"declared"`
+
+	// Id Folder ID, present only when the folder is declared.
+	Id *string `json:"id,omitempty"`
+
+	// Name Last segment of the path, for display.
+	Name string `json:"name"`
+
+	// Path Normalized folder path.
+	Path string `json:"path"`
+}
+
 // ArtifactListResponse defines model for ArtifactListResponse.
 type ArtifactListResponse struct {
 	// HasMore Whether another page is available.
@@ -5673,6 +5723,9 @@ type CreateAgentRequest struct {
 	// Name Unique name for this agent. Free-form human-readable label, 1-63 characters.
 	Name string `json:"name"`
 
+	// OutputFolder Library folder this assistant's files are saved to, for example `assistants/ops`. Omit to take the default derived from the name; send an empty string for the top level of the Library. Inside a routine occurrence the routine's folder wins.
+	OutputFolder *string `json:"output_folder,omitempty"`
+
 	// Owner The human or team responsible for this resource.
 	Owner *ResourceOwner `json:"owner,omitempty"`
 
@@ -5703,6 +5756,15 @@ type CreateAgentRequest struct {
 	//
 	// Because agent memory is keyed by `(org, agent, user, key)` and every read is scoped to one agent, narrowing who can reach an agent narrows its shared memory layer by construction. Group memory needs no separate store.
 	Visibility *AgentVisibility `json:"visibility,omitempty"`
+}
+
+// CreateArtifactFolderRequest defines model for CreateArtifactFolderRequest.
+type CreateArtifactFolderRequest struct {
+	// Path Folder path to declare, relative and with no leading or trailing slash. Intermediate folders are implied by this path and need no declaration of their own.
+	Path string `json:"path"`
+
+	// Visibility Who the custodian chose to share the resource with.
+	Visibility *ResourceVisibility `json:"visibility,omitempty"`
 }
 
 // CreateArtifactRequest defines model for CreateArtifactRequest.
@@ -7403,6 +7465,9 @@ type Routine struct {
 	// OriginSessionId The conversation the routine was proposed in, kept as provenance and nothing more. Each occurrence runs in its own session, so this is absent for a form-created routine and for one whose conversation has since been deleted. Archiving it does not stop the routine.
 	OriginSessionId *string `json:"origin_session_id,omitempty"`
 
+	// OutputFolder Library folder files produced here are saved to. Empty means the top level of the Library. A file name that already contains a folder is never moved into it.
+	OutputFolder *string `json:"output_folder,omitempty"`
+
 	// OwnerId The custodian. Absent under team custody, which has no owner.
 	OwnerId *string `json:"owner_id,omitempty"`
 
@@ -7515,6 +7580,9 @@ type RoutineCreateRequest struct {
 	// MaxTurnsPerThread Turn allowance per thread. Only a human can raise it.
 	MaxTurnsPerThread *int    `json:"max_turns_per_thread,omitempty"`
 	Name              *string `json:"name,omitempty"`
+
+	// OutputFolder Library folder these files are saved to, for example `routines/weekly-report`. A file name that already contains a folder always wins. Omit to take the default derived from the routine name; send an empty string for the top level of the Library.
+	OutputFolder *string `json:"output_folder,omitempty"`
 
 	// OwnerKind Defaults to `person`. `team` requires organization administration.
 	OwnerKind                 *RoutineOwnerKind `json:"owner_kind,omitempty"`
@@ -7780,6 +7848,9 @@ type RoutineUpdateRequest struct {
 	// MaxTurnsPerThread Turn allowance per thread. Only a human can raise it.
 	MaxTurnsPerThread *int    `json:"max_turns_per_thread,omitempty"`
 	Name              *string `json:"name,omitempty"`
+
+	// OutputFolder Replacement Library folder, for example `routines/weekly-report`. Omit to leave it unchanged; send an empty string to clear it and save to the top level of the Library. Renaming never changes it.
+	OutputFolder *string `json:"output_folder,omitempty"`
 
 	// PerOccurrenceCeilingMilli A person may move this either way. An agent may only lower it, so no agent widens the budget it runs under; raising it as an agent receives 403.
 	PerOccurrenceCeilingMilli *int64 `json:"per_occurrence_ceiling_milli,omitempty"`
@@ -8128,6 +8199,9 @@ type SessionEventProjection struct {
 
 	// EventType Concrete event type that started the work.
 	EventType string `json:"event_type"`
+
+	// Excerpt Optional bounded plain-text excerpt from the event, such as a comment or review body.
+	Excerpt *string `json:"excerpt,omitempty"`
 
 	// Kind Stable UI treatment for a projected external event.
 	Kind SessionEventProjectionKind `json:"kind"`
@@ -9283,6 +9357,9 @@ type UpdateAgentRequest struct {
 	// Name Free-form human-readable label, 1-63 characters; must be unique within the org.
 	Name *string `json:"name,omitempty"`
 
+	// OutputFolder Replacement Library folder. Omit to leave it unchanged; send an empty string to clear it and save to the top level of the Library. Renaming the assistant never changes it.
+	OutputFolder *string `json:"output_folder,omitempty"`
+
 	// Status Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent.
 	Status *UpdateAgentRequestStatus `json:"status,omitempty"`
 
@@ -9327,6 +9404,12 @@ type UpdateAgentRequestStatus string
 //
 // `retain` keeps their partitions and sessions, readable only by org admins. `delete` additionally erases their private memory partitions, and only an org admin may choose it. A narrowing change that would strand rows and names neither returns `409`.
 type UpdateAgentRequestStrandedDisposition string
+
+// UpdateArtifactRequest defines model for UpdateArtifactRequest.
+type UpdateArtifactRequest struct {
+	// Name New name for the file, as a relative virtual path. A leading folder moves the file: `reports/2026/weekly.md` places it in `reports/2026`, a bare `weekly.md` places it at the root.
+	Name string `json:"name"`
+}
 
 // UpdateMemoryContextPolicy Replacement automatic memory delivery policy. Send an empty object to clear the stored override and restore the bounded index default. Otherwise `mode` is required (`index`, `full`, or `off`) and `max_bytes` is optional.
 type UpdateMemoryContextPolicy struct {
@@ -9817,6 +9900,9 @@ type ActionNameParam = string
 // AfterSequenceParam defines model for AfterSequenceParam.
 type AfterSequenceParam = int64
 
+// ArtifactFolderIdParam defines model for ArtifactFolderIdParam.
+type ArtifactFolderIdParam = string
+
 // ArtifactIdParam defines model for ArtifactIdParam.
 type ArtifactIdParam = string
 
@@ -10036,6 +10122,12 @@ type ListAPIKeysParams struct {
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
 }
 
+// ListArtifactFoldersParams defines parameters for ListArtifactFolders.
+type ListArtifactFoldersParams struct {
+	// Parent Folder whose children are listed. Omit for the root.
+	Parent *string `form:"parent,omitempty" json:"parent,omitempty"`
+}
+
 // ListArtifactsParams defines parameters for ListArtifacts.
 type ListArtifactsParams struct {
 	// LatestOnly Return the latest accessible available version per root before filtering and pagination. The Library uses true; omitted preserves the full listing.
@@ -10046,6 +10138,12 @@ type ListArtifactsParams struct {
 
 	// Q Case-insensitive substring match on the artifact name. Filenames are how people and agents refer to a file, so this is the search key for "find the file called ...".
 	Q *string `form:"q,omitempty" json:"q,omitempty"`
+
+	// Folder Folder to list, as a relative path with no leading or trailing slash. A file's folder is the directory part of its `name`, so `reports/2026` returns `reports/2026/weekly.md`. Omit it or send an empty value for the root.
+	Folder *string `form:"folder,omitempty" json:"folder,omitempty"`
+
+	// Recursive Include files in subfolders of `folder`. With `false`, only files whose folder is exactly `folder` are returned; at the root that means files whose name carries no folder at all.
+	Recursive *bool `form:"recursive,omitempty" json:"recursive,omitempty"`
 
 	// Cursor Cursor for pagination (opaque string from previous response)
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
@@ -10497,8 +10595,14 @@ type ReplaceAgentSkillAssignmentsJSONRequestBody = ReplaceSkillsRequest
 // CreateAPIKeyJSONRequestBody defines body for CreateAPIKey for application/json ContentType.
 type CreateAPIKeyJSONRequestBody = CreateAPIKeyRequest
 
+// CreateArtifactFolderJSONRequestBody defines body for CreateArtifactFolder for application/json ContentType.
+type CreateArtifactFolderJSONRequestBody = CreateArtifactFolderRequest
+
 // CreateArtifactMultipartRequestBody defines body for CreateArtifact for multipart/form-data ContentType.
 type CreateArtifactMultipartRequestBody = CreateArtifactRequest
+
+// UpdateArtifactJSONRequestBody defines body for UpdateArtifact for application/json ContentType.
+type UpdateArtifactJSONRequestBody = UpdateArtifactRequest
 
 // ApplyBlueprintJSONRequestBody defines body for ApplyBlueprint for application/json ContentType.
 type ApplyBlueprintJSONRequestBody = ApplyBlueprintRequest
@@ -15936,6 +16040,17 @@ type ClientInterface interface {
 	// GetAPIKey request
 	GetAPIKey(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListArtifactFolders request
+	ListArtifactFolders(ctx context.Context, params *ListArtifactFoldersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateArtifactFolderWithBody request with any body
+	CreateArtifactFolderWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateArtifactFolder(ctx context.Context, body CreateArtifactFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteArtifactFolder request
+	DeleteArtifactFolder(ctx context.Context, folderId ArtifactFolderIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListArtifacts request
 	ListArtifacts(ctx context.Context, params *ListArtifactsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -15947,6 +16062,11 @@ type ClientInterface interface {
 
 	// GetArtifact request
 	GetArtifact(ctx context.Context, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateArtifactWithBody request with any body
+	UpdateArtifactWithBody(ctx context.Context, artifactId ArtifactIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateArtifact(ctx context.Context, artifactId ArtifactIdParam, body UpdateArtifactJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListArtifactVersions request
 	ListArtifactVersions(ctx context.Context, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -17015,6 +17135,54 @@ func (c *Client) GetAPIKey(ctx context.Context, resourceId IDParam, reqEditors .
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListArtifactFolders(ctx context.Context, params *ListArtifactFoldersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListArtifactFoldersRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateArtifactFolderWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateArtifactFolderRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateArtifactFolder(ctx context.Context, body CreateArtifactFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateArtifactFolderRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteArtifactFolder(ctx context.Context, folderId ArtifactFolderIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteArtifactFolderRequest(c.Server, folderId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListArtifacts(ctx context.Context, params *ListArtifactsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListArtifactsRequest(c.Server, params)
 	if err != nil {
@@ -17053,6 +17221,30 @@ func (c *Client) DeleteArtifact(ctx context.Context, artifactId ArtifactIdParam,
 
 func (c *Client) GetArtifact(ctx context.Context, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetArtifactRequest(c.Server, artifactId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateArtifactWithBody(ctx context.Context, artifactId ArtifactIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateArtifactRequestWithBody(c.Server, artifactId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateArtifact(ctx context.Context, artifactId ArtifactIdParam, body UpdateArtifactJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateArtifactRequest(c.Server, artifactId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -21036,6 +21228,134 @@ func NewGetAPIKeyRequest(server string, resourceId IDParam) (*http.Request, erro
 	return req, nil
 }
 
+// NewListArtifactFoldersRequest generates requests for ListArtifactFolders
+func NewListArtifactFoldersRequest(server string, params *ListArtifactFoldersParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/artifact-folders")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Parent != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "parent", *params.Parent, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateArtifactFolderRequest calls the generic CreateArtifactFolder builder with application/json body
+func NewCreateArtifactFolderRequest(server string, body CreateArtifactFolderJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateArtifactFolderRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateArtifactFolderRequestWithBody generates requests for CreateArtifactFolder with any type of body
+func NewCreateArtifactFolderRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/artifact-folders")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteArtifactFolderRequest generates requests for DeleteArtifactFolder
+func NewDeleteArtifactFolderRequest(server string, folderId ArtifactFolderIdParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "folder_id", folderId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/artifact-folders/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListArtifactsRequest generates requests for ListArtifacts
 func NewListArtifactsRequest(server string, params *ListArtifactsParams) (*http.Request, error) {
 	var err error
@@ -21091,6 +21411,30 @@ func NewListArtifactsRequest(server string, params *ListArtifactsParams) (*http.
 		if params.Q != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "q", *params.Q, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Folder != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "folder", *params.Folder, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Recursive != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "recursive", *params.Recursive, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -21257,6 +21601,53 @@ func NewGetArtifactRequest(server string, artifactId ArtifactIdParam) (*http.Req
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewUpdateArtifactRequest calls the generic UpdateArtifact builder with application/json body
+func NewUpdateArtifactRequest(server string, artifactId ArtifactIdParam, body UpdateArtifactJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateArtifactRequestWithBody(server, artifactId, "application/json", bodyReader)
+}
+
+// NewUpdateArtifactRequestWithBody generates requests for UpdateArtifact with any type of body
+func NewUpdateArtifactRequestWithBody(server string, artifactId ArtifactIdParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "artifact_id", artifactId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/artifacts/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -27440,6 +27831,17 @@ type ClientWithResponsesInterface interface {
 	// GetAPIKeyWithResponse request
 	GetAPIKeyWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*GetAPIKeyResponse, error)
 
+	// ListArtifactFoldersWithResponse request
+	ListArtifactFoldersWithResponse(ctx context.Context, params *ListArtifactFoldersParams, reqEditors ...RequestEditorFn) (*ListArtifactFoldersResponse, error)
+
+	// CreateArtifactFolderWithBodyWithResponse request with any body
+	CreateArtifactFolderWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateArtifactFolderResponse, error)
+
+	CreateArtifactFolderWithResponse(ctx context.Context, body CreateArtifactFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateArtifactFolderResponse, error)
+
+	// DeleteArtifactFolderWithResponse request
+	DeleteArtifactFolderWithResponse(ctx context.Context, folderId ArtifactFolderIdParam, reqEditors ...RequestEditorFn) (*DeleteArtifactFolderResponse, error)
+
 	// ListArtifactsWithResponse request
 	ListArtifactsWithResponse(ctx context.Context, params *ListArtifactsParams, reqEditors ...RequestEditorFn) (*ListArtifactsResponse, error)
 
@@ -27451,6 +27853,11 @@ type ClientWithResponsesInterface interface {
 
 	// GetArtifactWithResponse request
 	GetArtifactWithResponse(ctx context.Context, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*GetArtifactResponse, error)
+
+	// UpdateArtifactWithBodyWithResponse request with any body
+	UpdateArtifactWithBodyWithResponse(ctx context.Context, artifactId ArtifactIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateArtifactResponse, error)
+
+	UpdateArtifactWithResponse(ctx context.Context, artifactId ArtifactIdParam, body UpdateArtifactJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateArtifactResponse, error)
 
 	// ListArtifactVersionsWithResponse request
 	ListArtifactVersionsWithResponse(ctx context.Context, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*ListArtifactVersionsResponse, error)
@@ -29207,6 +29614,106 @@ func (r GetAPIKeyResponse) ContentType() string {
 	return ""
 }
 
+type ListArtifactFoldersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ArtifactFolderListResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ListArtifactFoldersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListArtifactFoldersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListArtifactFoldersResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateArtifactFolderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ArtifactFolder
+	JSON201      *ArtifactFolder
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateArtifactFolderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateArtifactFolderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateArtifactFolderResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteArtifactFolderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteArtifactFolderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteArtifactFolderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteArtifactFolderResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListArtifactsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -29336,6 +29843,40 @@ func (r GetArtifactResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetArtifactResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateArtifactResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Artifact
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateArtifactResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateArtifactResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateArtifactResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -33775,6 +34316,41 @@ func (c *ClientWithResponses) GetAPIKeyWithResponse(ctx context.Context, resourc
 	return ParseGetAPIKeyResponse(rsp)
 }
 
+// ListArtifactFoldersWithResponse request returning *ListArtifactFoldersResponse
+func (c *ClientWithResponses) ListArtifactFoldersWithResponse(ctx context.Context, params *ListArtifactFoldersParams, reqEditors ...RequestEditorFn) (*ListArtifactFoldersResponse, error) {
+	rsp, err := c.ListArtifactFolders(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListArtifactFoldersResponse(rsp)
+}
+
+// CreateArtifactFolderWithBodyWithResponse request with arbitrary body returning *CreateArtifactFolderResponse
+func (c *ClientWithResponses) CreateArtifactFolderWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateArtifactFolderResponse, error) {
+	rsp, err := c.CreateArtifactFolderWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateArtifactFolderResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateArtifactFolderWithResponse(ctx context.Context, body CreateArtifactFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateArtifactFolderResponse, error) {
+	rsp, err := c.CreateArtifactFolder(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateArtifactFolderResponse(rsp)
+}
+
+// DeleteArtifactFolderWithResponse request returning *DeleteArtifactFolderResponse
+func (c *ClientWithResponses) DeleteArtifactFolderWithResponse(ctx context.Context, folderId ArtifactFolderIdParam, reqEditors ...RequestEditorFn) (*DeleteArtifactFolderResponse, error) {
+	rsp, err := c.DeleteArtifactFolder(ctx, folderId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteArtifactFolderResponse(rsp)
+}
+
 // ListArtifactsWithResponse request returning *ListArtifactsResponse
 func (c *ClientWithResponses) ListArtifactsWithResponse(ctx context.Context, params *ListArtifactsParams, reqEditors ...RequestEditorFn) (*ListArtifactsResponse, error) {
 	rsp, err := c.ListArtifacts(ctx, params, reqEditors...)
@@ -33809,6 +34385,23 @@ func (c *ClientWithResponses) GetArtifactWithResponse(ctx context.Context, artif
 		return nil, err
 	}
 	return ParseGetArtifactResponse(rsp)
+}
+
+// UpdateArtifactWithBodyWithResponse request with arbitrary body returning *UpdateArtifactResponse
+func (c *ClientWithResponses) UpdateArtifactWithBodyWithResponse(ctx context.Context, artifactId ArtifactIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateArtifactResponse, error) {
+	rsp, err := c.UpdateArtifactWithBody(ctx, artifactId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateArtifactResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateArtifactWithResponse(ctx context.Context, artifactId ArtifactIdParam, body UpdateArtifactJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateArtifactResponse, error) {
+	rsp, err := c.UpdateArtifact(ctx, artifactId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateArtifactResponse(rsp)
 }
 
 // ListArtifactVersionsWithResponse request returning *ListArtifactVersionsResponse
@@ -37269,6 +37862,154 @@ func ParseGetAPIKeyResponse(rsp *http.Response) (*GetAPIKeyResponse, error) {
 	return response, nil
 }
 
+// ParseListArtifactFoldersResponse parses an HTTP response from a ListArtifactFoldersWithResponse call
+func ParseListArtifactFoldersResponse(rsp *http.Response) (*ListArtifactFoldersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListArtifactFoldersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ArtifactFolderListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateArtifactFolderResponse parses an HTTP response from a CreateArtifactFolderWithResponse call
+func ParseCreateArtifactFolderResponse(rsp *http.Response) (*CreateArtifactFolderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateArtifactFolderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ArtifactFolder
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest ArtifactFolder
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteArtifactFolderResponse parses an HTTP response from a DeleteArtifactFolderWithResponse call
+func ParseDeleteArtifactFolderResponse(rsp *http.Response) (*DeleteArtifactFolderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteArtifactFolderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListArtifactsResponse parses an HTTP response from a ListArtifactsWithResponse call
 func ParseListArtifactsResponse(rsp *http.Response) (*ListArtifactsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -37451,6 +38192,60 @@ func ParseGetArtifactResponse(rsp *http.Response) (*GetArtifactResponse, error) 
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateArtifactResponse parses an HTTP response from a UpdateArtifactWithResponse call
+func ParseUpdateArtifactResponse(rsp *http.Response) (*UpdateArtifactResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateArtifactResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Artifact
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized

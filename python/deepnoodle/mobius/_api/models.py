@@ -525,6 +525,11 @@ class Agent(BaseModel):
         None,
         description='Default reasoning-effort level. New sessions inherit it, above the provider default and below an explicit per-session override. Absent when the agent has no default.',
     )
+    output_folder: str | None = Field(
+        None,
+        description="Library folder this assistant's files are saved to outside a routine occurrence, where the routine's folder wins. Empty means the top level of the Library. A file name that already contains a folder is never moved into it.",
+        max_length=256,
+    )
     status: AgentStatus = Field(
         ..., description='Current agent status: `active` or `inactive`.'
     )
@@ -3527,6 +3532,11 @@ class CreateAgentRequest(BaseModel):
         None,
         description='Default reasoning-effort level new sessions inherit from this agent.',
     )
+    output_folder: str | None = Field(
+        None,
+        description="Library folder this assistant's files are saved to, for example `assistants/ops`. Omit to take the default derived from the name; send an empty string for the top level of the Library. Inside a routine occurrence the routine's folder wins.",
+        max_length=256,
+    )
     tags: TagMap | None = Field(
         None, description='Initial labels used for filtering, ownership, or automation.'
     )
@@ -3633,6 +3643,11 @@ class UpdateAgentRequest(BaseModel):
     thinking_effort: ThinkingEffort | None = Field(
         None,
         description='Replacement default reasoning-effort level. Send `inherit` to clear the default and leave the provider default in place.',
+    )
+    output_folder: str | None = Field(
+        None,
+        description='Replacement Library folder. Omit to leave it unchanged; send an empty string to clear it and save to the top level of the Library. Renaming the assistant never changes it.',
+        max_length=256,
     )
     tags: TagMap | None = Field(
         None, description='Replacement labels; send an empty object to clear all tags.'
@@ -4163,6 +4178,10 @@ class SessionEventProjection(BaseModel):
     )
     summary: str | None = Field(
         None, description='Optional provider-specific change summary.'
+    )
+    excerpt: str | None = Field(
+        None,
+        description='Optional bounded plain-text excerpt from the event, such as a comment or review body.',
     )
     resource_name: str | None = Field(
         None,
@@ -6493,6 +6512,81 @@ class UpsertRowResult(BaseModel):
     )
 
 
+class UpdateArtifactRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ...,
+        description='New name for the file, as a relative virtual path. A leading folder moves the file: `reports/2026/weekly.md` places it in `reports/2026`, a bare `weekly.md` places it at the root.',
+        max_length=256,
+    )
+
+
+class ArtifactFolder(BaseModel):
+    """
+    A declared Library folder.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Folder ID.')
+    path: str = Field(
+        ..., description='Normalized folder path, with no leading or trailing slash.'
+    )
+    name: str = Field(..., description='Last segment of the path.')
+    parent_path: str = Field(
+        ..., description='Path of the containing folder; empty at the root.'
+    )
+    owner: ResourceOwner
+    visibility: ResourceVisibility
+    created_at: AwareDatetime
+    created_by: str | None = Field(
+        None, description='Principal that declared the folder.'
+    )
+
+
+class ArtifactFolderSummary(BaseModel):
+    """
+    One immediate subfolder, declared or implied by a file name.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    path: str = Field(..., description='Normalized folder path.')
+    name: str = Field(..., description='Last segment of the path, for display.')
+    declared: bool = Field(
+        ...,
+        description='Whether a folder record exists. Only a declared folder can be deleted; an implied one disappears with its last file.',
+    )
+    id: str | None = Field(
+        None, description='Folder ID, present only when the folder is declared.'
+    )
+
+
+class ArtifactFolderListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[ArtifactFolderSummary] = Field(
+        ..., description='Immediate subfolders, ordered by name.'
+    )
+
+
+class CreateArtifactFolderRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    path: str = Field(
+        ...,
+        description='Folder path to declare, relative and with no leading or trailing slash. Intermediate folders are implied by this path and need no declaration of their own.',
+        max_length=256,
+    )
+    visibility: ResourceVisibility | None = None
+
+
 class ArtifactListResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -7375,6 +7469,11 @@ class RoutineCreateRequest(BaseModel):
     kind: RoutineKind | None = None
     schedule: RoutineSchedule | None = None
     event: RoutineEventTrigger | None = None
+    output_folder: str | None = Field(
+        None,
+        description='Library folder these files are saved to, for example `routines/weekly-report`. A file name that already contains a folder always wins. Omit to take the default derived from the routine name; send an empty string for the top level of the Library.',
+        max_length=256,
+    )
     per_occurrence_ceiling_milli: int = Field(..., ge=1)
     daily_ceiling_milli: int = Field(..., ge=1)
     owner_kind: RoutineOwnerKind | None = Field(
@@ -7428,6 +7527,11 @@ class RoutineUpdateRequest(BaseModel):
     connection_bindings: ConnectionBindings | None = None
     name: str | None = None
     instructions: str | None = None
+    output_folder: str | None = Field(
+        None,
+        description='Replacement Library folder, for example `routines/weekly-report`. Omit to leave it unchanged; send an empty string to clear it and save to the top level of the Library. Renaming never changes it.',
+        max_length=256,
+    )
     schedule: RoutineSchedule | None = Field(
         None,
         description='Makes this a scheduled routine, dropping any event trigger it had. Rejected together with `event`.',
@@ -7530,6 +7634,11 @@ class Routine(BaseModel):
         None, description='Present when `trigger` is `event`.'
     )
     timezone: str
+    output_folder: str | None = Field(
+        None,
+        description='Library folder files produced here are saved to. Empty means the top level of the Library. A file name that already contains a folder is never moved into it.',
+        max_length=256,
+    )
     status: RoutineStatus
     pause_reason: str | None = None
     attention: Attention | None = Field(
