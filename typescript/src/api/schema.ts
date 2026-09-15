@@ -2467,7 +2467,13 @@ export interface paths {
         delete: operations["deleteArtifact"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update artifact name
+         * @description Changes the artifact's `name`. The name is a relative virtual path, so this is how a file moves between folders as well as how it is renamed. Every version in the file's lineage is renamed together, so its history never straddles two folders.
+         *
+         *     The ID, version lineage, custody, visibility, metadata, stored bytes, and session references are unchanged. Authorization is the delete authorization: whoever may remove the file may move it. Names are not unique, exactly as they are not on upload.
+         */
+        patch: operations["updateArtifact"];
         trace?: never;
     };
     "/v1/artifacts/{artifact_id}/content": {
@@ -2545,6 +2551,50 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/artifact-folders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List folders
+         * @description Returns the immediate subfolders of a folder, ordered by name. A folder exists either because it was declared through this API or because a file the caller can see carries it in its `name`; both are returned, and `declared` says which. Implied folders are derived only from files the caller could list, so browsing never reveals a hidden file.
+         */
+        get: operations["listArtifactFolders"];
+        put?: never;
+        /**
+         * Create folder
+         * @description Declares a folder so it can exist before any file is in it. The call is idempotent: declaring a folder that already exists returns the existing one with 200 rather than failing, so "new folder" on a name already in use simply opens it. A declared folder holds nothing itself and charges no quota; it never widens access to any file.
+         */
+        post: operations["createArtifactFolder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/artifact-folders/{folder_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete folder
+         * @description Removes a declared folder. The folder must be empty: the call is refused with `409 folder_not_empty` while any visible file lives in it or below it, or while a declared subfolder remains. The refusal carries `file_count` in `error.details`. Files are never deleted by this call.
+         */
+        delete: operations["deleteArtifactFolder"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2828,6 +2878,8 @@ export interface components {
             memory_context?: components["schemas"]["MemoryContextPolicy"];
             /** @description Default reasoning-effort level. New sessions inherit it, above the provider default and below an explicit per-session override. Absent when the agent has no default. */
             thinking_effort?: components["schemas"]["ThinkingEffort"];
+            /** @description Library folder this assistant's files are saved to outside a routine occurrence, where the routine's folder wins. Empty means the top level of the Library. A file name that already contains a folder is never moved into it. */
+            output_folder?: string | null;
             /** @description Current agent status: `active` or `inactive`. */
             status: components["schemas"]["AgentStatus"];
             /** @description Who may reach this agent. Read from the stored agent row at every gate: it is never supplied by a definition document, an invoke `definition_config`, or a client-side list filter. */
@@ -5129,6 +5181,8 @@ export interface components {
             memory_context?: components["schemas"]["MemoryContextPolicy"];
             /** @description Default reasoning-effort level new sessions inherit from this agent. */
             thinking_effort?: components["schemas"]["ThinkingEffort"];
+            /** @description Library folder this assistant's files are saved to, for example `assistants/ops`. Omit to take the default derived from the name; send an empty string for the top level of the Library. Inside a routine occurrence the routine's folder wins. */
+            output_folder?: string | null;
             /** @description Initial labels used for filtering, ownership, or automation. */
             tags?: components["schemas"]["TagMap"];
             /** @description Who governs this agent's configuration. Omit to use the creating human for a private agent; choose team deliberately for a restricted or organization agent. */
@@ -5179,6 +5233,8 @@ export interface components {
             memory_context?: components["schemas"]["UpdateMemoryContextPolicy"];
             /** @description Replacement default reasoning-effort level. Send `inherit` to clear the default and leave the provider default in place. */
             thinking_effort?: components["schemas"]["ThinkingEffort"];
+            /** @description Replacement Library folder. Omit to leave it unchanged; send an empty string to clear it and save to the top level of the Library. Renaming the assistant never changes it. */
+            output_folder?: string | null;
             /** @description Replacement labels; send an empty object to clear all tags. */
             tags?: components["schemas"]["TagMap"];
             /** @description Replacement audience. Widening (toward `organization`) republishes the agent's shared memory layer to the new audience and requires `confirm_visibility_change`; there is no technical undo, because republished knowledge cannot be un-read. Narrowing that would strand rows requires `stranded_disposition`. */
@@ -5537,6 +5593,8 @@ export interface components {
             title: string;
             /** @description Optional provider-specific change summary. */
             summary?: string;
+            /** @description Optional bounded plain-text excerpt from the event, such as a comment or review body. */
+            excerpt?: string;
             /** @description Human-readable affected resource name, never an internal event or source ID. */
             resource_name?: string;
             /**
@@ -6839,6 +6897,8 @@ export interface components {
             kind?: components["schemas"]["RoutineKind"];
             schedule?: components["schemas"]["RoutineSchedule"];
             event?: components["schemas"]["RoutineEventTrigger"];
+            /** @description Library folder these files are saved to, for example `routines/weekly-report`. A file name that already contains a folder always wins. Omit to take the default derived from the routine name; send an empty string for the top level of the Library. */
+            output_folder?: string | null;
             /** Format: int64 */
             per_occurrence_ceiling_milli: number;
             /** Format: int64 */
@@ -6875,6 +6935,8 @@ export interface components {
             connection_bindings?: components["schemas"]["ConnectionBindings"];
             name?: string;
             instructions?: string;
+            /** @description Replacement Library folder, for example `routines/weekly-report`. Omit to leave it unchanged; send an empty string to clear it and save to the top level of the Library. Renaming never changes it. */
+            output_folder?: string | null;
             /** @description Makes this a scheduled routine, dropping any event trigger it had. Rejected together with `event`. */
             schedule?: components["schemas"]["RoutineSchedule"];
             /** @description Makes this an event routine, dropping any schedule it had. Rejected together with `schedule`. */
@@ -6944,6 +7006,8 @@ export interface components {
             /** @description Present when `trigger` is `event`. */
             event?: components["schemas"]["RoutineEventTrigger"];
             timezone: string;
+            /** @description Library folder files produced here are saved to. Empty means the top level of the Library. A file name that already contains a folder is never moved into it. */
+            output_folder?: string | null;
             status: components["schemas"]["RoutineStatus"];
             pause_reason?: string;
             /**
@@ -7826,6 +7890,88 @@ export interface components {
         };
         /**
          * @example {
+         *       "name": "reports/2026/weekly.md"
+         *     }
+         */
+        UpdateArtifactRequest: {
+            /** @description New name for the file, as a relative virtual path. A leading folder moves the file: `reports/2026/weekly.md` places it in `reports/2026`, a bare `weekly.md` places it at the root. */
+            name: string;
+        };
+        /**
+         * @description A declared Library folder.
+         * @example {
+         *       "id": "afd_2m7q9x5v3p8n4r6t",
+         *       "path": "reports/2026",
+         *       "name": "2026",
+         *       "parent_path": "reports",
+         *       "owner": {
+         *         "kind": "team"
+         *       },
+         *       "visibility": "organization",
+         *       "created_at": "2026-09-14T14:30:00Z"
+         *     }
+         */
+        ArtifactFolder: {
+            /** @description Folder ID. */
+            id: string;
+            /** @description Normalized folder path, with no leading or trailing slash. */
+            path: string;
+            /** @description Last segment of the path. */
+            name: string;
+            /** @description Path of the containing folder; empty at the root. */
+            parent_path: string;
+            owner: components["schemas"]["ResourceOwner"];
+            visibility: components["schemas"]["ResourceVisibility"];
+            /** Format: date-time */
+            created_at: string;
+            /** @description Principal that declared the folder. */
+            created_by?: string;
+        };
+        /** @description One immediate subfolder, declared or implied by a file name. */
+        ArtifactFolderSummary: {
+            /** @description Normalized folder path. */
+            path: string;
+            /** @description Last segment of the path, for display. */
+            name: string;
+            /** @description Whether a folder record exists. Only a declared folder can be deleted; an implied one disappears with its last file. */
+            declared: boolean;
+            /** @description Folder ID, present only when the folder is declared. */
+            id?: string;
+        };
+        /**
+         * @example {
+         *       "items": [
+         *         {
+         *           "path": "reports",
+         *           "name": "reports",
+         *           "declared": true,
+         *           "id": "afd_2m7q9x5v3p8n4r6t"
+         *         },
+         *         {
+         *           "path": "invoices",
+         *           "name": "invoices",
+         *           "declared": false
+         *         }
+         *       ]
+         *     }
+         */
+        ArtifactFolderListResponse: {
+            /** @description Immediate subfolders, ordered by name. */
+            items: components["schemas"]["ArtifactFolderSummary"][];
+        };
+        /**
+         * @example {
+         *       "path": "reports/2026",
+         *       "visibility": "organization"
+         *     }
+         */
+        CreateArtifactFolderRequest: {
+            /** @description Folder path to declare, relative and with no leading or trailing slash. Intermediate folders are implied by this path and need no declaration of their own. */
+            path: string;
+            visibility?: components["schemas"]["ResourceVisibility"];
+        };
+        /**
+         * @example {
          *       "items": [
          *         {
          *           "id": "art_2m7q9x5v3p8n4r6t",
@@ -8070,6 +8216,8 @@ export interface components {
         TableIDParam: string;
         /** @description Filter tables by name. Table names are unique within an org; use this as a discovery filter and use the returned table `id` for follow-up operations. */
         TableNameQueryParam: string;
+        /** @description ID of the declared folder */
+        ArtifactFolderIdParam: string;
         /** @description Authoring format the template applies to */
         DocumentTemplateFormatParam: "docx" | "pptx";
     };
@@ -13495,6 +13643,10 @@ export interface operations {
                 mime?: string;
                 /** @description Case-insensitive substring match on the artifact name. Filenames are how people and agents refer to a file, so this is the search key for "find the file called ...". */
                 q?: string;
+                /** @description Folder to list, as a relative path with no leading or trailing slash. A file's folder is the directory part of its `name`, so `reports/2026` returns `reports/2026/weekly.md`. Omit it or send an empty value for the root. */
+                folder?: string;
+                /** @description Include files in subfolders of `folder`. With `false`, only files whose folder is exactly `folder` are returned; at the root that means files whose name carries no folder at all. */
+                recursive?: boolean;
                 /** @description Cursor for pagination (opaque string from previous response) */
                 cursor?: components["parameters"]["CursorParam"];
                 /** @description Maximum number of items to return */
@@ -13630,6 +13782,37 @@ export interface operations {
             429: components["responses"]["TooManyRequests"];
         };
     };
+    updateArtifact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the artifact */
+                artifact_id: components["parameters"]["ArtifactIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateArtifactRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated artifact */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Artifact"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     getArtifactContent: {
         parameters: {
             query?: never;
@@ -13735,6 +13918,112 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    listArtifactFolders: {
+        parameters: {
+            query?: {
+                /** @description Folder whose children are listed. Omit for the root. */
+                parent?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArtifactFolderListResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createArtifactFolder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateArtifactFolderRequest"];
+            };
+        };
+        responses: {
+            /** @description The folder was already declared */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArtifactFolder"];
+                };
+            };
+            /** @description Folder created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArtifactFolder"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    deleteArtifactFolder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the declared folder */
+                folder_id: components["parameters"]["ArtifactFolderIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The folder still contains files or subfolders */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "folder_not_empty",
+                     *         "message": "folder \"reports\" still contains 3 files; move or delete them first",
+                     *         "details": {
+                     *           "file_count": 3
+                     *         }
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
 }

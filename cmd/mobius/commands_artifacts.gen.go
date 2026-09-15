@@ -61,6 +61,30 @@ func registerArtifactsCommands(app *cli.App) {
 			return printResponse(ctx, "deleteArtifact", resp.StatusCode(), resp.Body)
 		})
 
+	artifactsGrp.Command("folders").
+		Description("List folders").
+		Flags(
+			cli.String("parent", "").Help("Folder whose children are listed. Omit for the root."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			params := &api.ListArtifactFoldersParams{}
+			if ctx.IsSet("parent") {
+				v := ctx.String("parent")
+				params.Parent = &v
+			}
+			resp, err := client.ListArtifactFoldersWithResponse(ctx.Context(), params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listArtifactFolders", resp.StatusCode(), resp.Body)
+		})
+
 	artifactsGrp.Command("get").
 		Description("Get artifact").
 		AddArg(&cli.Arg{Name: "artifact-id", Description: "ID of the artifact", Required: true}).
@@ -119,6 +143,9 @@ func registerArtifactsCommands(app *cli.App) {
 			cli.Bool("latest-only", "").Help("Return the latest accessible available version per root before filtering and pagination. The Library uses true; omitted preserves the full…"),
 			cli.String("mime", "").Help("Mime prefix filter (e.g. `image/`)"),
 			cli.String("q", "").Help("Case-insensitive substring match on the artifact name. Filenames are how people and agents refer to a file, so this is the search key for…"),
+			cli.String("folder", "").Help("Folder to list, as a relative path with no leading or trailing slash. A file's folder is the directory part of its `name`, so…"),
+			cli.Bool("recursive", "").Help("Include files in subfolders of `folder`. With `false`, only files whose folder is exactly `folder` are returned; at the root that means…"),
+			cli.Bool("no-recursive", "").Help("Turn off --recursive, which the server applies by default."),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
@@ -141,6 +168,17 @@ func registerArtifactsCommands(app *cli.App) {
 			if ctx.IsSet("q") {
 				v := ctx.String("q")
 				params.Q = &v
+			}
+			if ctx.IsSet("folder") {
+				v := ctx.String("folder")
+				params.Folder = &v
+			}
+			if ctx.Bool("no-recursive") {
+				v := false
+				params.Recursive = &v
+			} else if ctx.IsSet("recursive") {
+				v := ctx.Bool("recursive")
+				params.Recursive = &v
 			}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))
