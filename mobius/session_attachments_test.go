@@ -152,6 +152,12 @@ func TestUploadSessionPDFValidatesInput(t *testing.T) {
 	})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "upload_id must be a UUID")
+
+	_, err = c.UploadSessionPDF(ctx, "sess_1", UploadSessionPDFOptions{
+		Reader: strings.NewReader("%PDF"), Name: "a.pdf", IdempotencyKey: strings.Repeat("k", 256),
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "at most 255 characters")
 }
 
 func TestDeleteSessionTurn(t *testing.T) {

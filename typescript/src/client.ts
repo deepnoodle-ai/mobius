@@ -1443,6 +1443,12 @@ export class Client {
   async uploadSessionPdf(
     opts: UploadSessionPdfOptions,
   ): Promise<SessionAttachmentResponse> {
+    const idempotencyKey = normalizeIdempotencyKey(opts.idempotencyKey);
+    if (idempotencyKey != null && idempotencyKey.length > 255) {
+      throw new ConfigError(
+        "attachment idempotencyKey must be at most 255 characters",
+      );
+    }
     const name = opts.name.trim();
     if (!name) throw new ConfigError("attachment name is required");
     const file =
@@ -1469,7 +1475,7 @@ export class Client {
       name,
       sizeBytes: file.size,
       partCount,
-      idempotencyKey: opts.idempotencyKey,
+      idempotencyKey,
       signal: opts.signal,
     });
   }

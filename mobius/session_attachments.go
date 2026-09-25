@@ -138,6 +138,9 @@ func (c *Client) UploadSessionPDF(ctx context.Context, sessionID string, opts Up
 	if (opts.Path == "") == (opts.Reader == nil) {
 		return nil, fmt.Errorf("mobius: PDF upload requires exactly one of Path or Reader")
 	}
+	if len(opts.IdempotencyKey) > 255 {
+		return nil, fmt.Errorf("mobius: attachment IdempotencyKey must be at most 255 characters")
+	}
 	name := opts.Name
 	source := opts.Reader
 	if opts.Path != "" {

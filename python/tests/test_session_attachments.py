@@ -232,3 +232,48 @@ def test_delete_session_turn_deletes_and_surfaces_conflict():
         "DELETE /v1/sessions/sess_1/turns/turn_2",
         "DELETE /v1/sessions/sess_1/turns/turn_1",
     ]
+
+
+class _ShortReader(io.RawIOBase):
+    """Returns at most 1 MiB per read, like a socket or pipe."""
+
+    def __init__(self, data: bytes) -> None:
+        self._buf = io.BytesIO(data)
+
+    def readable(self) -> bool:
+        return True
+
+    def read(self, size: int = -1) -> bytes:
+        return self._buf.read(min(size, 1024 * 1024) if size >= 0 else 1024 * 1024)
+
+
+def test_upload_session_pdf_fills_parts_across_short_reads():
+    chunk = 8 * 1024 * 1024
+    total = 20 * 1024 * 1024
+    part_sizes: list[int] = []
+    completed: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "PUT":
+            part_sizes.append(len(request.content))
+            return httpx.Response(204)
+        completed.update(json.loads(request.content))
+        return httpx.Response(201, json=_attachment_body())
+
+    client = _client_with(handler)
+    client.upload_session_pdf("sess_1", _ShortReader(b"%" * total), name="big.pdf")
+
+    assert part_sizes == [chunk, chunk, total - 2 * chunk]
+    assert completed["part_count"] == 3
+    assert completed["size_bytes"] == total
+
+
+def test_upload_session_pdf_rejects_overlong_idempotency_key_before_sending():
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise AssertionError("no request expected")
+
+    client = _client_with(handler)
+    with pytest.raises(ValueError, match="at most 255 characters"):
+        client.upload_session_pdf(
+            "sess_1", b"%PDF-1.7", name="a.pdf", idempotency_key="k" * 256
+        )

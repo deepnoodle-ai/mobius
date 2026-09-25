@@ -215,6 +215,34 @@ test("client: uploadSessionPdf rejects empty and oversized files before sending"
   );
 });
 
+test("client: uploadSessionPdf rejects an overlong idempotency key before sending", async () => {
+  const originalFetch = globalThis.fetch;
+  let requests = 0;
+  globalThis.fetch = (async () => {
+    requests++;
+    return new Response(null, { status: 204 });
+  }) as typeof fetch;
+  try {
+    const client = new Client({
+      apiKey: "mbx_test",
+      baseURL: "https://api.example.invalid",
+      retry: 0,
+    });
+    await assert.rejects(
+      client.uploadSessionPdf({
+        sessionId: "sess_1",
+        name: "a.pdf",
+        file: new TextEncoder().encode("%PDF-1.7"),
+        idempotencyKey: "k".repeat(256),
+      }),
+      /at most 255 characters/,
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+  assert.equal(requests, 0);
+});
+
 test("client: deleteSessionTurn deletes the turn and surfaces 409", async () => {
   const originalFetch = globalThis.fetch;
   const seen: string[] = [];

@@ -1092,6 +1092,10 @@ class Client:
         ``upload_id`` is a v4 UUID generated when omitted; reuse it to resume
         a failed upload. ``idempotency_key`` applies to the completing request.
         """
+        if idempotency_key is not None and len(idempotency_key) > 255:
+            raise ValueError(
+                "attachment idempotency_key must be at most 255 characters"
+            )
         opened: BinaryIO | None = None
         try:
             source: BinaryIO
@@ -1110,7 +1114,7 @@ class Client:
             upload_id = upload_id or str(uuid.uuid4())
             size = 0
             part = 0
-            while chunk := source.read(SESSION_PDF_CHUNK_BYTES):
+            while chunk := _read_full(source, SESSION_PDF_CHUNK_BYTES):
                 size += len(chunk)
                 if size > SESSION_PDF_MAX_BYTES:
                     raise ValueError("PDF uploads are limited to 100 MiB")
@@ -1933,6 +1937,17 @@ def _invoke_agent_request(opts: InvokeAgentOptions) -> InvokeAgentRequest:
 def _normalize_idempotency_key(value: str | None) -> str | None:
     normalized = value.strip() if value is not None else ""
     return normalized or None
+
+
+def _read_full(source: BinaryIO, size: int) -> bytes:
+    """Read up to ``size`` bytes, looping over short reads until EOF."""
+    buf = bytearray()
+    while len(buf) < size:
+        chunk = source.read(size - len(buf))
+        if not chunk:
+            break
+        buf += chunk
+    return bytes(buf)
 
 
 def _idempotency_headers(
