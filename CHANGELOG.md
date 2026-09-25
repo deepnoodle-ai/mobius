@@ -10,6 +10,8 @@ the minor version.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-25
+
 ### Added
 
 - Connection governance, explicit agent grants and defaults, and multi-account
@@ -48,13 +50,14 @@ the minor version.
   per-question `answers` (the outcome is an answer list); callers can no longer
   attach an `agent_tool` consumer, which is now runtime-only
   ([#223](https://github.com/deepnoodle-ai/mobius/pull/223)).
-- Managed environment Git actions and the Git credential helper send the
-  active job lease so automatic Sprite workspaces can broker GitHub credentials
-  through the agent's live connection grant.
 - **Breaking.** Integration connect responses use `kind` instead of `type`;
   agent `integration_access` is replaced by explicit grants and defaults; and
   routines use exact `source_bindings` and `connection_bindings` instead of
   `integration_id` and `act_as_user_providers` ([#216](https://github.com/deepnoodle-ai/mobius/pull/216)).
+- Managed environment Git actions and the Git credential helper send the
+  active job lease so automatic Sprite workspaces can broker GitHub credentials
+  through the agent's live connection grant
+  ([#222](https://github.com/deepnoodle-ai/mobius/pull/222)).
 - Routine responses expose custody posture, audience, and caller actions, and
   private sharing accepts explicit audience-expansion confirmation
   ([#216](https://github.com/deepnoodle-ai/mobius/pull/216)).
