@@ -18,6 +18,25 @@ type testActionContext struct {
 	context.Context
 }
 
+type testLeasedActionContext struct{ testActionContext }
+
+func (testLeasedActionContext) LeaseToken() string { return "lease_active" }
+
+func TestEnvironmentBashPassesCurrentLeaseToGitHelper(t *testing.T) {
+	t.Setenv("MOBIUS_RUNTIME_WORKSPACE", realPath(t, t.TempDir()))
+	out, err := NewEnvironmentBashAction().Execute(testLeasedActionContext{testActionContext{Context: context.Background()}}, map[string]any{
+		"command": "printf '%s' \"$MOBIUS_JOB_LEASE_TOKEN\"",
+		"env":     map[string]string{"MOBIUS_JOB_LEASE_TOKEN": "forged"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, ok := out.(map[string]any)
+	if !ok || result["stdout"] != "lease_active" {
+		t.Fatalf("bash lease = %#v, want active job lease", out)
+	}
+}
+
 func (testActionContext) Logger() *slog.Logger                               { return slog.Default() }
 func (testActionContext) RunID() string                                      { return "run_test" }
 func (testActionContext) JobID() string                                      { return "job_test" }

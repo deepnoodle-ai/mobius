@@ -12,6 +12,7 @@ import (
 type EnvironmentGitCredentialRequest struct {
 	RepoFullName string `json:"repo_full_name"`
 	Operation    string `json:"operation,omitempty"`
+	LeaseToken   string `json:"lease_token,omitempty"`
 }
 
 type EnvironmentGitCredential struct {
