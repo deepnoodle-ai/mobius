@@ -1448,7 +1448,9 @@ paths:
       - interactions
       summary: Create interaction
       description: Creates an interaction. `consumer` names what is waiting on its resolution;
-        omit it for a standalone request that records the response and nothing more.
+        omit it for a standalone request that records the response and nothing more. An `agent_tool`
+        consumer is reserved for interactions created by the agent runtime and is rejected
+        on this API operation.
       requestBody:
         required: true
         content:
@@ -1464,8 +1466,12 @@ paths:
                 report_id: rpt_2026_04
                 amount_usd: 12850
               spec:
-                mode: confirm
-                default_confirmed: false
+                questions:
+                - id: decision
+                  prompt: Approve publishing the April billing report?
+                  mode: confirm
+                  required: true
+                  default_confirmed: false
               require_all: false
               expires_at: '2026-04-25T14:30:00Z'
       responses:
@@ -1484,8 +1490,12 @@ paths:
                   report_id: rpt_2026_04
                   amount_usd: 12850
                 spec:
-                  mode: confirm
-                  default_confirmed: false
+                  questions:
+                  - id: decision
+                    prompt: Approve publishing the April billing report?
+                    mode: confirm
+                    required: true
+                    default_confirmed: false
                 target_user_ids:
                 - user_2f9s3k4m5n6p7q8r
                 owner:
@@ -1621,7 +1631,9 @@ paths:
                 summary: Approve interaction
                 value:
                   action: submit
-                  value: true
+                  answers:
+                  - question_id: decision
+                    value: approved
                   comment: Approved for publication.
       responses:
         '200':
@@ -1639,8 +1651,12 @@ paths:
                   report_id: rpt_2026_04
                   amount_usd: 12850
                 spec:
-                  mode: confirm
-                  default_confirmed: false
+                  questions:
+                  - id: decision
+                    prompt: Approve publishing the April billing report?
+                    mode: confirm
+                    required: true
+                    default_confirmed: false
                 target_user_ids:
                 - user_2f9s3k4m5n6p7q8r
                 owner:
@@ -1657,12 +1673,16 @@ paths:
                   response_kind: response
                   state: submitted
                   responder_user_id: user_2f9s3k4m5n6p7q8r
-                  value: true
+                  answers:
+                  - question_id: decision
+                    value: approved
                   comment: Approved for publication.
                   responded_at: '2026-04-24T14:42:00Z'
                   created_at: '2026-04-24T14:42:00Z'
                   updated_at: '2026-04-24T14:42:00Z'
-                outcome: true
+                outcome:
+                - question_id: decision
+                  value: approved
                 resolved_by: any_of
                 expires_at: '2026-04-25T14:30:00Z'
                 completed_at: '2026-04-24T14:42:00Z'
@@ -2870,9 +2890,9 @@ paths:
       - sessions
       summary: Create session attachment
       description: |-
-        Uploads one document or image into server-managed artifact storage and binds it immutably to this session. DOCX, XLSX, and PPTX uploads start asynchronous Markdown conversion through the document service. The returned `content_block` is the canonical block callers append in a session message or turn input.
+        Uploads one document or image into server-managed artifact storage. Readable attachments are bound immutably to this session; PDFs over 30 MiB become durable Library files with a session reference instead. DOCX, XLSX, and PPTX uploads start asynchronous Markdown conversion through the document service. The returned `content_block` is the canonical block callers append in a session message or turn input.
 
-        Phase 1 accepts PDF (up to 5 MiB and 50 pages), DOCX, XLSX, or PPTX (up to 5 MiB), Markdown or plain text (up to 100 KiB), and PNG, JPEG, WebP, or GIF images (up to 5 MiB). Mobius detects the media type from the bytes and does not trust the multipart MIME declaration. The feature must be enabled for the organization.
+        Accepts PDF up to 100 MiB and 500 pages for inspection, DOCX, XLSX, or PPTX (up to 5 MiB), Markdown or plain text (up to 100 KiB), and PNG, JPEG, WebP, or GIF images (up to 5 MiB). Mobius detects the media type from the bytes and does not trust the multipart MIME declaration. PDFs over 5 MiB are delivered through their bounded inspection rather than as binary model input. PDFs over 30 MiB are stored in the Library and inspected before the turn so the assistant can search and read them. Cloud Run clients must use the staged PDF chunk and complete endpoints for files over 30 MiB because this multipart route uses HTTP/1. A message can contain up to 100 MiB of attachments. The feature must be enabled for the organization.
       parameters:
       - $ref: '#/components/parameters/SessionIdParam'
       - name: Idempotency-Key
@@ -2930,6 +2950,106 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /v1/sessions/{session_id}/attachments/uploads/{upload_id}/parts/{part_number}:
+    put:
+      operationId: putSessionPDFUploadPart
+      tags:
+      - sessions
+      summary: Stage one large PDF chunk
+      description: Uploads an 8 MiB or smaller chunk of a PDF before finalization. Use a fresh
+        random UUID as upload_id, zero-based consecutive part numbers, and no more than 13
+        parts. Each request stays below Cloud Run's HTTP/1 body limit. Staged bytes are private
+        to the caller and session and expire from storage after one day.
+      parameters:
+      - $ref: '#/components/parameters/SessionIdParam'
+      - name: upload_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: part_number
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 12
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '204':
+          description: Chunk staged.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '413':
+          description: Chunk exceeds 8 MiB.
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /v1/sessions/{session_id}/attachments/uploads/{upload_id}/complete:
+    post:
+      operationId: completeSessionPDFUpload
+      tags:
+      - sessions
+      summary: Complete a staged large PDF upload
+      description: Validates all staged chunks as one PDF, commits the ordinary Library artifact
+        and session reference, then removes the staged chunks.
+      parameters:
+      - $ref: '#/components/parameters/SessionIdParam'
+      - name: upload_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          type: string
+          maxLength: 255
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteSessionPDFUploadRequest'
+      responses:
+        '200':
+          description: PDF already committed by this idempotency key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionAttachmentResponse'
+        '201':
+          description: PDF committed and referenced.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionAttachmentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '413':
+          description: PDF exceeds 100 MiB.
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
   /v1/sessions/{session_id}/attachments/{artifact_id}:
     delete:
       operationId: deleteSessionAttachment
@@ -2964,7 +3084,7 @@ paths:
       description: |-
         Authorizes an existing library artifact for delivery to this session's turns and returns the same `content_block` shape the attachment endpoint returns. Nothing is uploaded or copied: the library file stays the single stored copy, and the server records the authorization so prompt-time delivery can re-check it without a caller.
 
-        The file must be readable by the caller, must not itself be another session's attachment, and must satisfy the same delivery limits as an upload: PDF (up to 5 MiB and 50 pages), DOCX, XLSX, PPTX (up to 5 MiB), Markdown or plain text (up to 100 KiB), and PNG, JPEG, WebP, or GIF images (up to 5 MiB). Content type is confirmed from the stored bytes. A private session may reference only its owner's own files; an organization-visible session may reference only organization-visible files.
+        The file must be readable by the caller, must not itself be another session's attachment, and must satisfy the same delivery limits as an upload: PDF (up to 100 MiB and 500 pages for inspection; files over 30 MiB remain in Library storage and are referenced), DOCX, XLSX, PPTX (up to 5 MiB), Markdown or plain text (up to 100 KiB), and PNG, JPEG, WebP, or GIF images (up to 5 MiB). Content type is confirmed from the stored bytes. A private session may reference only its owner's own files; an organization-visible session may reference only organization-visible files.
       parameters:
       - $ref: '#/components/parameters/SessionIdParam'
       requestBody:
@@ -3087,7 +3207,10 @@ paths:
         page-by-page via the `next_cursor` returned in the response. Pass `ids` to fetch exactly
         a known set of turns in one bounded request — the join a transcript view uses to resolve
         a loaded message window's `turn_id`s to their headers; when `ids` is set the cursor
-        and order parameters are ignored.
+        and order parameters are ignored. Turns taken back by `deleteSessionTurn` are still
+        returned, on both the paged and the `ids` reads, carrying `deleted_at` — their usage
+        stays readable after their transcript rows are gone. A view that renders the conversation
+        should skip them; they have no messages left to group.
       parameters:
       - $ref: '#/components/parameters/SessionIdParam'
       - name: ids
@@ -3188,6 +3311,40 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteSessionTurn
+      tags:
+      - sessions
+      summary: Delete the last session turn
+      description: |-
+        Takes back the session's last turn: the input message that started it, the agent's work, and its reply are all removed from the transcript. The next turn's model context reflects the removal, and a client streaming the session sees the turn disappear without reloading.
+
+        Only the LAST turn can be deleted, and only while the session is idle. Repeat the call to walk further back one turn at a time. To correct a message, delete the turn and send the corrected text: the new message gets its own id, turn, and position in the transcript.
+
+        The turn record itself is retained with `deleted_at` set, so what the turn cost stays readable, and the delete is written to the audit log. For a session on standard retention, that entry carries up to 500 removed transcript rows and marks the snapshot if more were removed. For a session on bounded retention it records only what was removed — turn, row count, roles — because an audit row is not covered by the retention sweep that exists to destroy that content. Deleting an already-deleted turn succeeds and changes nothing. Requires the same permission as deleting the session.
+
+        Deleting a turn that arrived over a channel (Slack, Teams, Telegram) changes Mobius's record of the conversation, not the channel's — the original messages stay where they were posted.
+      parameters:
+      - $ref: '#/components/parameters/SessionIdParam'
+      - $ref: '#/components/parameters/TurnIdParam'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: The session has a turn in flight (`session_turn_active`), or the turn
+            is not the session's last one (`turn_not_last`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /v1/sessions/{session_id}/nudges:
     get:
       operationId: listSessionNudges
@@ -3453,7 +3610,9 @@ paths:
       - sessions
       summary: Stop all session event subscriptions
       description: Stops every active session subscription and cancels its pending external-event
-        input. Repeating the request is idempotent.
+        input, except a question's own subscription (`execution_scope.surface` is `interaction_open`),
+        which brings the question's outcome back to the conversation that asked it. Cancel
+        the question to end that one. Repeating the request is idempotent.
       parameters:
       - $ref: '#/components/parameters/SessionIdParam'
       responses:
@@ -3538,7 +3697,7 @@ paths:
       - sessions
       summary: Cancel a session turn
       description: |-
-        Idempotently cancels one dispatcher-owned agent turn in the session. The first request that wins marks the turn terminal, retires its pending waits, interactions, nudges, and jobs, and emits `turn.cancelled` once. Later requests return the current terminal row without another lifecycle transition. Cancellation is cooperative: already-performed model, tool, and external effects are not rolled back. Committed transcript rows are retained, while live-only uncommitted preview content is discarded.
+        Idempotently cancels one dispatcher-owned agent turn in the session. The first request that wins marks the turn terminal, retires its pending waits, nudges, and jobs, and emits `turn.cancelled` once. Questions the agent asked stay open: an outcome that arrives later reaches the conversation as its next input. Later requests return the current terminal row without another lifecycle transition. Cancellation is cooperative: already-performed model, tool, and external effects are not rolled back. Committed transcript rows are retained, while live-only uncommitted preview content is discarded.
 
         A cancelled turn cannot be resumed. Reusing its invocation idempotency key returns the same cancelled turn; retrying the task requires a new invocation and may repeat external effects. Stream cursors resume observation only. Requires the `mobius.resource.use` permission (or the agent's own backing principal).
       parameters:
@@ -3563,11 +3722,10 @@ paths:
       tags:
       - sessions
       summary: Get the live transcript snapshot
-      description: Returns the transcript tail and authoritative turn state consumed by SessionTranscriptReducer.
-        Without a cursor this is a bootstrap tail; when older rows exist, next_page_token
-        walks backward through them while resume_cursor remains fixed at the bootstrap head.
-        With cursor it incrementally drains a fixed upper cut. In either mode, continue with
-        next_page_token until has_more is false.
+      description: |-
+        Returns the transcript tail and authoritative turn state consumed by SessionTranscriptReducer. Without a cursor this is a bootstrap tail; when older rows exist, next_page_token walks backward through them while resume_cursor remains fixed at the bootstrap head. With cursor it incrementally drains a fixed upper cut. In either mode, continue with next_page_token until has_more is false.
+
+        Rows a `deleteSessionTurn` tombstoned are never returned in any mode. A bootstrap simply no longer contains them; an incremental drain crossing the deletion's revision reports it as a turn carrying `deleted_at`, which is the signal to drop that turn and its rows from an already loaded transcript.
       parameters:
       - $ref: '#/components/parameters/SessionIdParam'
       - name: cursor
@@ -3674,12 +3832,12 @@ paths:
       - sessions
       summary: Cancel the session's active turn
       description: Idempotently cancels active dispatcher-owned turns in the session and retires
-        their pending waits, interactions, nudges, and jobs. Each turn's terminal `turn.cancelled`
-        transition is emitted once. Cancellation is cooperative and does not roll back effects
-        that already happened. Committed transcript rows remain; live-only preview content
-        is discarded. Cancelled turns cannot be resumed, and stream cursors resume observation
-        only. Returns the updated session. Requires the `mobius.resource.use` permission (or
-        the agent's own backing principal).
+        their pending waits, nudges, and jobs; questions the agent asked stay open. Each turn's
+        terminal `turn.cancelled` transition is emitted once. Cancellation is cooperative
+        and does not roll back effects that already happened. Committed transcript rows remain;
+        live-only preview content is discarded. Cancelled turns cannot be resumed, and stream
+        cursors resume observation only. Returns the updated session. Requires the `mobius.resource.use`
+        permission (or the agent's own backing principal).
       parameters:
       - $ref: '#/components/parameters/SessionIdParam'
       responses:
@@ -5621,7 +5779,7 @@ paths:
       - artifacts
       summary: Create artifact
       description: |-
-        Accepts an org-authorized multipart file upload. Without a worker lease, the caller needs `mobius.resource.build`; the artifact is private to the authenticated principal and has no run or step lineage. A worker may instead supply `X-Mobius-Lease-Token` with `mobius.job.execute`; Mobius then derives run, step, job, worker session, attempt, and shared visibility from the active claim. Execution attribution is server-derived. Version lineage is declared only with previous_artifact_id (or the leased publish action source_artifact_id). A version requires edit access to the exact parent and inherits its custody and visibility.
+        Accepts an org-authorized multipart file upload. Without a worker lease, the caller needs `mobius.resource.build`; the artifact is private to the authenticated principal and has no run or step lineage. A worker may instead supply `X-Mobius-Lease-Token` with `mobius.job.execute`; Mobius then derives run, step, job, worker session, attempt, and shared visibility from the active claim. Execution attribution is server-derived. A version requires edit access to the exact parent and inherits its custody and visibility. It is declared with previous_artifact_id (or the leased publish action source_artifact_id), which must name the file's latest version: naming an older one is refused with 409 rather than branching the file's history. A person's upload whose name is already taken by one of their files also becomes that file's next version; the response's `version` and `previous_id` say so.
 
         DOCX, XLSX, and PPTX uploads may pass `convert=true` to start asynchronous Markdown extraction for later model delivery.
       parameters:
@@ -5705,9 +5863,9 @@ paths:
       - artifacts
       summary: Update artifact name
       description: |-
-        Changes the artifact's `name`. The name is a relative virtual path, so this is how a file moves between folders as well as how it is renamed. Every version in the file's lineage is renamed together, so its history never straddles two folders.
+        Changes the artifact's `name`. The name is a relative virtual path, so this is how a file moves between folders as well as how it is renamed. Every version in the file's lineage is renamed together, so its history never straddles two folders and a later edit saves under the new name.
 
-        The ID, version lineage, custody, visibility, metadata, stored bytes, and session references are unchanged. Authorization is the delete authorization: whoever may remove the file may move it. Names are not unique, exactly as they are not on upload.
+        The ID, version lineage, custody, visibility, metadata, stored bytes, and session references are unchanged. Authorization is the delete authorization: whoever may remove the file may move it. A name another file in the same place already holds is refused with 409.
       parameters:
       - $ref: '#/components/parameters/ArtifactIdParam'
       requestBody:
@@ -5731,6 +5889,8 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
     delete:
       operationId: deleteArtifact
       tags:
@@ -6302,6 +6462,7 @@ components:
             enum:
             - key
             - org
+            - browser
           description: Scope of the tightest bucket.
         X-RateLimit-Policy:
           schema:
@@ -6335,14 +6496,17 @@ components:
                 codes clients can rely on across endpoints are: `bad_request` (malformed input
                 / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`,
                 `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`.
-                Direct session invocation conflicts use `session_turn_active` with the blocking
-                `turn_id` and `status` in `details`. Session-key lookups without an agent
-                scope use `session_key_scope_required`; supplying both agent ID and name uses
-                `session_agent_ref_conflict`. API-key creation for a principal with no role
-                assignments uses `principal_has_no_roles`. Authenticated callers missing a
-                permission receive `permission_denied` with the required permission in `details`.
-                Endpoint-specific codes (e.g. `invalid_signature`) extend this set; an unrecognized
-                code should be handled by its HTTP status family.'
+                When the request-wide rate limiter refuses a call, `rate_limit_exceeded` carries
+                `scope` (`key`, `org`, or `browser`), `window`, `limit`, and `retry_after_seconds`
+                in `details`; an endpoint''s own cap returns the same code without them. Direct
+                session invocation conflicts use `session_turn_active` with the blocking `turn_id`
+                and `status` in `details`. Session-key lookups without an agent scope use
+                `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`.
+                API-key creation for a principal with no role assignments uses `principal_has_no_roles`.
+                Authenticated callers missing a permission receive `permission_denied` with
+                the required permission in `details`. Endpoint-specific codes (e.g. `invalid_signature`)
+                extend this set; an unrecognized code should be handled by its HTTP status
+                family.'
             message:
               type: string
               description: Human-readable error message
@@ -7148,7 +7312,8 @@ components:
             pass. Returned on the single-session read; absent from list entries.
         message_count:
           type: integer
-          description: Total messages currently in the session, including compaction summaries.
+          description: Non-decreasing transcript sequence high-water mark, including tombstoned
+            rows and compaction summaries; not the number of live messages.
         token_input_total:
           type: integer
           description: Lifetime fresh (uncached) input-token total for this session. Prompt-cache
@@ -9871,49 +10036,156 @@ components:
         description:
           type: string
           description: Optional additional context shown beneath the label.
-    InteractionSpec:
+    InteractionQuestion:
       type: object
       required:
+      - id
+      - prompt
       - mode
       additionalProperties: false
       description: |-
-        Declarative dialog contract for rendering and validating an interaction. Used at both authoring time and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
+        One question inside an interaction's form. Answers are addressed by `id`, so the id is a stable machine key the responder never sees.
 
-        Allowed combinations:
-        * `request_approval` → `confirm`, `select`
-        * `request_review` → `select`, `input`
-        * `request_information` → `select`, `multi_select`, `input`
+        Write each prompt as one direct question. Selection limits, click-order instructions, and preference-ranking instructions belong in the structured fields, not in the prompt text — the interface owns its own input instructions.
       properties:
+        id:
+          type: string
+          maxLength: 64
+          pattern: ^[A-Za-z][A-Za-z0-9_-]{0,63}$
+          description: Stable machine key this question's answer is addressed by.
+        prompt:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: One direct user-facing question.
+        description:
+          type: string
+          maxLength: 500
+          description: Optional brief context that helps the responder decide. Do not repeat
+            input mechanics the interface already shows.
+        required:
+          type: boolean
+          description: Whether an answer must be supplied before the form can be submitted.
+            Defaults to true. Use false only for helpful context the responder may skip without
+            blocking the work.
         mode:
           $ref: '#/components/schemas/InteractionMode'
-          description: UI/input mode used to render and validate the response.
+          description: UI/input mode used to render and validate this answer.
         options:
           type: array
-          maxItems: 100
+          minItems: 2
+          maxItems: 12
           description: Required for `select` and `multi_select` modes.
           items:
             $ref: '#/components/schemas/InteractionOption'
-        default_value:
-          type: string
-          description: Default selected option for `select` mode.
-        default_values:
-          type: array
-          maxItems: 100
-          description: Default selected options for `multi_select` mode.
-          items:
-            type: string
-        default_text:
-          type: string
-          description: Initial text value for `input` mode.
-        default_confirmed:
+        allow_other:
           type: boolean
-          description: Initial yes/no value for `confirm` mode.
-        placeholder:
-          type: string
-          description: Hint text shown for `input` mode.
+          description: For `select` and `multi_select`, offer a free-text escape hatch alongside
+            the listed options.
+        min_selections:
+          type: integer
+          minimum: 1
+          maximum: 13
+          description: 'For `multi_select`: fewest choices accepted. Defaults to 1.'
+        max_selections:
+          type: integer
+          minimum: 1
+          maximum: 13
+          description: 'For `multi_select`: most choices accepted. Defaults to every available
+            choice.'
         multiline:
           type: boolean
-          description: When true, render `input` mode as a multiline text area.
+          description: 'For `input`: render a multi-line text area.'
+        placeholder:
+          type: string
+          maxLength: 200
+          description: 'For `input`: example input. Do not use placeholder copy to communicate
+            whether the question is required.'
+        max_length:
+          type: integer
+          minimum: 1
+          maximum: 4000
+          description: 'For `input`: longest accepted answer. Defaults to 500 for single-line
+            and 4000 for multiline.'
+        default_value:
+          type: string
+          maxLength: 100
+          description: 'For `select`: initially selected option value.'
+        default_values:
+          type: array
+          maxItems: 12
+          description: 'For `multi_select`: initially selected option values.'
+          items:
+            type: string
+            maxLength: 100
+        default_text:
+          type: string
+          maxLength: 4000
+          description: 'For `input`: initial text value.'
+        default_confirmed:
+          type: boolean
+          description: 'For `confirm`: initial yes/no value.'
+    InteractionSpec:
+      type: object
+      required:
+      - questions
+      additionalProperties: false
+      description: |-
+        The set of questions one responder answers atomically. Group related questions into a single interaction rather than opening several: each interaction is a separate item in someone's inbox and a separate interruption.
+
+        Protocol kind is decoupled from input shape: each kind declares which question modes are *allowed*, not which is *implied*.
+
+        Allowed combinations:
+        * `request_approval` → `confirm`, `select`, and **exactly one
+        question** — single-question is what makes an approval auditable
+        * `request_review` → `select`, `input`
+        * `request_information` → `select`, `multi_select`, `input`
+        * `assign_work` → `select`, `multi_select`, `input`
+      properties:
+        questions:
+          type: array
+          minItems: 1
+          maxItems: 12
+          description: The questions this interaction asks.
+          items:
+            $ref: '#/components/schemas/InteractionQuestion'
+    InteractionAnswer:
+      type: object
+      required:
+      - question_id
+      additionalProperties: false
+      description: |-
+        One responder's answer to one question. Exactly one content field is populated, chosen by the question's mode:
+
+        * `confirm` → `value`, either `approved` or `rejected`
+        * `select` → `value` (an option value) or `other`
+        * `multi_select` → `values`, optionally with `other`
+        * `input` → `text`
+      properties:
+        question_id:
+          type: string
+          maxLength: 64
+          description: The `id` of the question being answered.
+        text:
+          type: string
+          maxLength: 4000
+          description: 'For `input`: the free-text answer.'
+        value:
+          type: string
+          maxLength: 100
+          description: 'For `select` and `confirm`: the chosen value.'
+        values:
+          type: array
+          maxItems: 12
+          description: 'For `multi_select`: the chosen option values.'
+          items:
+            type: string
+            maxLength: 100
+        other:
+          type: string
+          maxLength: 4000
+          description: Free-text answer supplied instead of, or alongside, the listed options.
+            Only accepted when the question sets `allow_other`.
     InteractionKind:
       type: string
       enum:
@@ -10120,15 +10392,14 @@ components:
       additionalProperties: false
       required:
       - kind
+      description: A caller may attach an HTTP subscriber or no consumer. Agent-tool consumers
+        are runtime-only.
       properties:
         kind:
           type: string
           enum:
-          - agent_tool
           - http_subscriber
           - none
-        agent_tool:
-          $ref: '#/components/schemas/AgentToolConsumer'
         http_subscriber:
           $ref: '#/components/schemas/HttpSubscriberConsumerInput'
     HttpSubscriberConsumerInput:
@@ -10159,7 +10430,7 @@ components:
       - response_kind
       - state
       - responder_user_id
-      - value
+      - answers
       - responded_at
       - created_at
       - updated_at
@@ -10183,9 +10454,13 @@ components:
         responder_user_id:
           type: string
           description: User ID that submitted this response.
-        value:
-          $ref: '#/components/schemas/InteractionValue'
-          description: JSON value supplied by this participant.
+        answers:
+          type: array
+          maxItems: 12
+          description: This participant's complete answer set, one entry per question they
+            answered.
+          items:
+            $ref: '#/components/schemas/InteractionAnswer'
         comment:
           type: string
           nullable: true
@@ -10442,8 +10717,10 @@ components:
             delivers to the app inbox only.
         outcome:
           $ref: '#/components/schemas/InteractionValue'
-          description: Final outcome selected by the resolution policy. Omitted while the
-            interaction is still pending.
+          description: |-
+            Final outcome selected by the resolution policy. Omitted while the interaction is still pending.
+
+            Its shape follows the policy: a first-response policy records the resolving responder's answer array, while `all_of` and `quorum` record the list of response objects so each participant's answers stay attributable.
         resolved_by:
           type: string
           nullable: true
@@ -10563,7 +10840,8 @@ components:
             completion.
         consumer:
           $ref: '#/components/schemas/ConsumerInput'
-          description: Polymorphic identifier of what is waiting on this interaction's resolution.
+          description: Caller-provided continuation target, if any. The agent runtime creates
+            agent-tool continuations internally.
         delivery:
           $ref: '#/components/schemas/Delivery'
           description: Optional per-interaction delivery override.
@@ -10574,6 +10852,8 @@ components:
     RespondToInteractionRequest:
       type: object
       additionalProperties: false
+      required:
+      - answers
       properties:
         action:
           type: string
@@ -10581,14 +10861,20 @@ components:
           - submit
           description: Operation to perform through the canonical response endpoint. `submit`
             answers the interaction.
-        value:
-          $ref: '#/components/schemas/InteractionValue'
-          description: JSON value supplied by the responder. Required for `submit`.
+        answers:
+          type: array
+          minItems: 1
+          maxItems: 12
+          description: The responder's complete answer set. Required for `submit`. Every required
+            question must be answered; there is no partial submit.
+          items:
+            $ref: '#/components/schemas/InteractionAnswer'
         comment:
           type: string
           description: Optional free-text comment accompanying the action. Available on every
             interaction kind and never gated by the spec; the responder may always attach
-            reasoning, caveats, or follow-up notes alongside `value`.
+            reasoning, caveats, or follow-up notes alongside their answers. It is one note
+            per response, not per question.
     ReviewInteractionRequest:
       type: object
       additionalProperties: false
@@ -11970,7 +12256,10 @@ components:
       - work_item
       - content_change
       - business_record
-      description: Stable UI treatment for a projected external event.
+      - interaction
+      description: 'Stable UI treatment for a projected event. `interaction` is the outcome
+        of a question the agent asked with mobius.interaction.open: answered, dismissed, or
+        expired.'
     SessionEventProjectionAttribute:
       type: object
       additionalProperties: false
@@ -12030,6 +12319,37 @@ components:
           description: Small provider-selected facts; never arbitrary payload fields.
           items:
             $ref: '#/components/schemas/SessionEventProjectionAttribute'
+    SessionMessageAuthor:
+      type: object
+      additionalProperties: false
+      description: The principal that wrote a message, resolved from the authenticated sender
+        at read time so the transcript can render a name and avatar without a lookup per message.
+        Never accepted on write.
+      required:
+      - id
+      - kind
+      - display_name
+      properties:
+        id:
+          type: string
+          description: Principal id of the author.
+        kind:
+          type: string
+          enum:
+          - human
+          - agent
+          - service
+          - system
+          description: The principal's kind, resolved from the principal record.
+        display_name:
+          type: string
+          description: Single-line label for the author.
+        avatar_url:
+          type: string
+          description: Avatar image, when the principal has one.
+        color:
+          type: string
+          description: Mantine palette key for the avatar fallback when no image is set.
     SessionMessage:
       type: object
       additionalProperties: false
@@ -12067,8 +12387,9 @@ components:
           description: Whether this row is a normal message or a compaction summary.
         covers_through_sequence:
           type: integer
-          description: For `compaction` messages, the highest sequence number this summary
-            covers.
+          description: 'For `compaction` messages, the highest sequence number this summary
+            covers. It is an internal ordering key, not a quantity: use `metadata.conversation_message_count`
+            to say how much history the summary folded away.'
         sequence:
           type: integer
           description: Monotonic per-session sequence number assigned at append time.
@@ -12080,11 +12401,23 @@ components:
         metadata:
           type: object
           additionalProperties: true
-          description: Free-form caller metadata for this message.
+          description: 'Free-form caller metadata for this message. A `compaction` entry instead
+            carries server-owned keys describing the pass that wrote it: `trigger` (a `CompactionTrigger`:
+            what started the pass), `conversation_message_count` (transcript rows folded into
+            the summary, counting only rows a reader sees — the number to show a user), `message_count`
+            (the raw window size, including host-injected context rows), `from_sequence` /
+            `through_sequence` (the window''s sequence bounds), `estimated_tokens`, `strategy`,
+            `summary_model`, and `summary_provider`.'
         event_projection:
           $ref: '#/components/schemas/SessionEventProjection'
           description: Server-owned safe display projection when this message was triggered
             by an external event.
+        author:
+          $ref: '#/components/schemas/SessionMessageAuthor'
+          description: Who wrote this message, resolved server side from the authenticated
+            sender. Present only on `user` messages written by a principal in this organization;
+            routine inputs and event deliveries carry execution identity instead and remain
+            unattributed.
         created_at:
           type: string
           format: date-time
@@ -12304,6 +12637,14 @@ components:
           type: string
           format: date-time
           description: When the turn reached a terminal status.
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When this turn was taken back from the transcript. The turn record
+            is kept so its usage stays readable, but its messages no longer appear in the
+            transcript or in the agent's context. Absent on a turn that is still part of the
+            conversation.
     AgentTurnUsage:
       type: object
       additionalProperties: true
@@ -12446,10 +12787,18 @@ components:
         metadata:
           type: object
           additionalProperties: true
+          description: Free-form metadata for this message. A `compaction` entry carries the
+            server-owned keys described on `SessionMessage.metadata`.
         event_projection:
           $ref: '#/components/schemas/SessionEventProjection'
           description: Server-owned safe display projection when this message was triggered
             by an external event.
+        author:
+          $ref: '#/components/schemas/SessionMessageAuthor'
+          description: Who wrote this message, resolved server side from the authenticated
+            sender. Present only on `user` messages written by a principal in this organization;
+            routine inputs and event deliveries carry execution identity instead and remain
+            unattributed.
         created_at:
           type: string
           format: date-time
@@ -12508,6 +12857,13 @@ components:
         completed_at:
           type: string
           format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Set when the turn has been taken back. A reducer that receives this
+            drops the turn and every row belonging to it; the turn frame is the whole signal,
+            since the removed message rows are never re-sent.
     SessionTranscriptSnapshot:
       type: object
       additionalProperties: false
@@ -13165,6 +13521,26 @@ components:
           minimum: 0
           description: Optional declared byte size; when supplied it must match the uploaded
             bytes.
+    CompleteSessionPDFUploadRequest:
+      type: object
+      required:
+      - name
+      - size_bytes
+      - part_count
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          maxLength: 256
+        size_bytes:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 104857600
+        part_count:
+          type: integer
+          minimum: 1
+          maximum: 13
     CreateSessionArtifactReferenceRequest:
       type: object
       required:
@@ -13596,9 +13972,10 @@ components:
         wake:
           type: boolean
           default: false
-          description: 'When true and the target turn is waiting on an interruptible agent
-            tool, resolve that tool call with `{ "interrupted": true, "reason": "user_direction"
-            }` and resume the same turn. Running and newly queued turns ignore this field.'
+          description: |-
+            When true and the target turn is waiting on an interruptible agent tool, resolve that tool call with `{ "interrupted": true, "reason": "user_direction" }` and resume the same turn. Running and newly queued turns ignore this field.
+
+            A turn waiting on the outcome of a question it asked with `mobius.interaction.open` (`mobius_event_wait` on `interaction.resolved`) is resumed by every nudge, with or without this field. The question stays open: the tool result also carries `interaction_id` and `interaction_status: "pending"`, and the question's outcome still arrives in the conversation as its own input.
     SessionNudgeStatus:
       type: string
       enum:
@@ -13729,7 +14106,13 @@ components:
           type: string
           minLength: 1
           description: A public exact event type or a supported provider wildcard such as
-            `github.pull_request.*`.
+            `github.pull_request.*`. Subscriptions accept the same public events an agent
+            can wait for. The one interaction event that can be followed is `interaction.resolved`,
+            with `source_id` set to a question the session's agent asked in this session;
+            any other interaction filter is refused. A question the agent asks is already
+            followed by its own subscription until it is answered, dismissed, or expires,
+            so a filter on a question that something in the session already follows, or that
+            has already closed, is refused with 409.
         source_id:
           type: string
           description: Optional public source identifier restriction.
@@ -13767,6 +14150,14 @@ components:
           type: string
           maxLength: 255
           description: Retry key scoped to this session.
+        once:
+          type: boolean
+          default: false
+          description: When true, the subscription ends after its first matching event. That
+            event is still delivered to the conversation, and the subscription stops with
+            `stop_reason` `delivered_once` in the same step, so no later event can match it.
+            When false, the subscription keeps delivering until it is unsubscribed, stopped,
+            or expires. Retrying with the same `idempotency_key` must repeat the same value.
     SessionEventSubscriptionStatus:
       type: string
       enum:
@@ -13783,6 +14174,7 @@ components:
       - agent_id
       - created_by
       - execution_scope
+      - once
       - status
       - pending_delivery_count
       - filters
@@ -13803,6 +14195,11 @@ components:
           type: object
           additionalProperties: true
           description: Server-resolved authority and billing scope; not event-controlled.
+        once:
+          type: boolean
+          description: True when the subscription ends after its first matching event. Once
+            that event matches, `status` is `stopped` with `stop_reason` `delivered_once`,
+            and its delivery still reaches the conversation.
         status:
           $ref: '#/components/schemas/SessionEventSubscriptionStatus'
         stop_reason:
@@ -13926,6 +14323,10 @@ components:
           $ref: '#/components/schemas/SessionEventDeliveryStatus'
         diagnostic:
           type: string
+          description: 'Machine-readable note about this delivery, such as `payload_truncated_at_65536_bytes`.
+            `superseded_by_event_wait` means an agent wait in the same conversation already
+            received this event, so it was not added a second time: the status is `delivered`
+            and `target_turn_id` is the turn that received it.'
         created_at:
           type: string
           format: date-time
@@ -16333,7 +16734,10 @@ components:
             Intermediate folders are implied by this path and need no declaration of their
             own.
         visibility:
-          $ref: '#/components/schemas/ResourceVisibility'
+          allOf:
+          - $ref: '#/components/schemas/ResourceVisibility'
+          description: Who sees the folder. Omit for `private`, visible only to the person
+            creating it. It never changes who can open the files inside.
       example:
         path: reports/2026
         visibility: organization

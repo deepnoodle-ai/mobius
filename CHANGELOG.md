@@ -26,18 +26,31 @@ the minor version.
   follow keys
   ([#218](https://github.com/deepnoodle-ai/mobius/pull/218),
   [#219](https://github.com/deepnoodle-ai/mobius/pull/219)).
-- Library folders: `listArtifactFolders`, `createArtifactFolder`, and
-  `deleteArtifactFolder` across the generated clients, `folder` and `recursive`
-  on `listArtifacts`, and `updateArtifact` to rename a file or move its whole
-  version lineage.
+- Library files can be renamed or moved (`updateArtifact`), listed by folder,
+  and grouped under declared folders; sessions can delete their last turn and
+  stage PDFs up to 100 MiB in chunks; messages carry a resolved `author`
+  ([#223](https://github.com/deepnoodle-ai/mobius/pull/223)).
+- Go, Python, and TypeScript clients add `UploadSessionPDF` /
+  `upload_session_pdf` / `uploadSessionPdf` (8 MiB staged parts, up to
+  100 MiB), their part/complete primitives, and `DeleteSessionTurn`
+  ([#223](https://github.com/deepnoodle-ai/mobius/pull/223)).
 - CLI folder commands: `mobius artifacts folders`, `mkdir`, `rmdir`, and
-  `move`, plus `--folder` and `--no-recursive` on `artifacts list`.
+  `move`, plus `--folder` and `--no-recursive` on `artifacts list`
+  ([#221](https://github.com/deepnoodle-ai/mobius/pull/221)).
 - `output_folder` on routine and agent create, update, and read shapes, with
-  `--output-folder` on the matching CLI commands. It is the Library folder a
-  routine's or assistant's files are saved to.
+  `--output-folder` on the matching CLI commands: the Library folder a
+  routine's or assistant's files are saved to
+  ([#221](https://github.com/deepnoodle-ai/mobius/pull/221)).
 
 ### Changed
 
+- **Breaking.** Interactions ask a list of `questions` and responses carry
+  per-question `answers` (the outcome is an answer list); callers can no longer
+  attach an `agent_tool` consumer, which is now runtime-only
+  ([#223](https://github.com/deepnoodle-ai/mobius/pull/223)).
+- Managed environment Git actions and the Git credential helper send the
+  active job lease so automatic Sprite workspaces can broker GitHub credentials
+  through the agent's live connection grant.
 - **Breaking.** Integration connect responses use `kind` instead of `type`;
   agent `integration_access` is replaced by explicit grants and defaults; and
   routines use exact `source_bindings` and `connection_bindings` instead of

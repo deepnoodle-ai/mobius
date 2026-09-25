@@ -169,7 +169,7 @@ func TestArtifactsRmdirTakesAFolderIDWithoutLookup(t *testing.T) {
 	defer srv.Close()
 
 	result := newApp().Test(t, cli.TestArgs(
-		"artifacts", "rmdir", "afd_1",
+		"artifacts", "rmdir", "--id", "afd_1",
 		"--api-url", srv.URL,
 		"--api-key", "mbx_test",
 	))
@@ -186,13 +186,67 @@ func TestArtifactsRmdirReportsTheFileCountOnConflict(t *testing.T) {
 	defer srv.Close()
 
 	result := newApp().Test(t, cli.TestArgs(
-		"artifacts", "rmdir", "afd_1",
+		"artifacts", "rmdir", "--id", "afd_1",
 		"--api-url", srv.URL,
 		"--api-key", "mbx_test",
 	))
 	assert.False(t, result.Success())
 	assert.Error(t, result.Err)
 	assert.Contains(t, result.Err.Error(), "still contains 3 files")
+}
+
+func TestArtifactsRmdirReportsSubfoldersWhenNoFilesBlock(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusConflict)
+		_, _ = w.Write([]byte(`{"error":{"code":"folder_not_empty","message":"folder is not empty","details":{"file_count":0}}}`))
+	}))
+	defer srv.Close()
+
+	result := newApp().Test(t, cli.TestArgs(
+		"artifacts", "rmdir", "--id", "afd_1",
+		"--api-url", srv.URL,
+		"--api-key", "mbx_test",
+	))
+	assert.False(t, result.Success())
+	assert.Error(t, result.Err)
+	assert.Contains(t, result.Err.Error(), "still has declared subfolders")
+}
+
+func TestArtifactsRmdirResolvesAnAfdPrefixedPath(t *testing.T) {
+	var listQuery, deletePath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			listQuery = r.URL.RawQuery
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"items":[{"path":"afd_reports/2026","name":"2026","declared":true,"id":"afd_9"}]}`))
+		case http.MethodDelete:
+			deletePath = r.URL.Path
+			w.WriteHeader(http.StatusNoContent)
+		}
+	}))
+	defer srv.Close()
+
+	result := newApp().Test(t, cli.TestArgs(
+		"artifacts", "rmdir", "afd_reports/2026",
+		"--api-url", srv.URL,
+		"--api-key", "mbx_test",
+	))
+	assert.True(t, result.Success(), "rmdir failed: %v\nstderr: %s", result.Err, result.Stderr)
+	assert.Equal(t, "parent=afd_reports", listQuery)
+	assert.Equal(t, "/v1/artifact-folders/afd_9", deletePath)
+}
+
+func TestArtifactsRmdirRequiresExactlyOneOfPathOrID(t *testing.T) {
+	for _, args := range [][]string{
+		{"artifacts", "rmdir"},
+		{"artifacts", "rmdir", "reports", "--id", "afd_1"},
+	} {
+		result := newApp().Test(t, cli.TestArgs(append(args, "--api-key", "mbx_test")...))
+		assert.False(t, result.Success())
+		assert.Error(t, result.Err)
+		assert.Contains(t, result.Err.Error(), "exactly one of")
+	}
 }
 
 func TestArtifactsRmdirRefusesAnImpliedFolder(t *testing.T) {

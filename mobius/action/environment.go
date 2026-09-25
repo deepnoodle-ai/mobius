@@ -204,6 +204,9 @@ func NewEnvironmentBashAction() mobius.Action {
 		for key, value := range in.Env {
 			cmd.Env = append(cmd.Env, key+"="+value)
 		}
+		if lease, ok := ctx.(environmentLeaseContext); ok && lease.LeaseToken() != "" {
+			cmd.Env = append(cmd.Env, "MOBIUS_JOB_LEASE_TOKEN="+lease.LeaseToken())
+		}
 		limit := resolveOutputMaxBytes(in.MaxOutputBytes, defaultCommandOutputMaxBytes)
 		return runCommand(cmd,
 			newHeadTailTruncator(limit, "stdout", bashOutputHint),
@@ -1154,10 +1157,14 @@ func runGitWithCredential(ctx mobius.Context, repoFullName, operation, dir strin
 	if !ok || ec.MobiusClient() == nil || ec.EnvironmentID() == "" {
 		return nil, fmt.Errorf("environment credential broker is not available")
 	}
-	cred, err := ec.MobiusClient().CreateEnvironmentGitCredential(ctx, ec.EnvironmentID(), mobius.EnvironmentGitCredentialRequest{
+	request := mobius.EnvironmentGitCredentialRequest{
 		RepoFullName: repoFullName,
 		Operation:    operation,
-	})
+	}
+	if lease, ok := ctx.(environmentLeaseContext); ok {
+		request.LeaseToken = lease.LeaseToken()
+	}
+	cred, err := ec.MobiusClient().CreateEnvironmentGitCredential(ctx, ec.EnvironmentID(), request)
 	if err != nil {
 		return nil, err
 	}

@@ -121,6 +121,40 @@ export interface CreateArtifactOptions {
   signal?: AbortSignal;
 }
 
+/** Largest chunk the staged PDF upload accepts; every part but the last is exactly this size. */
+export const SESSION_PDF_CHUNK_BYTES = 8 * 1024 * 1024;
+/** Largest PDF the staged upload accepts. */
+export const SESSION_PDF_MAX_BYTES = 100 * 1024 * 1024;
+
+export interface UploadSessionPdfOptions {
+  /** Session to bind the PDF to. */
+  sessionId: string;
+  /** PDF bytes, up to 100 MiB. */
+  file: Blob | Uint8Array;
+  /** Display filename recorded for the PDF. */
+  name: string;
+  /** Retry key for the completing request, scoped to this session and caller. */
+  idempotencyKey?: string;
+  /** Staging ID (a random v4 UUID). Generated when omitted; reuse it to resume a failed upload. */
+  uploadId?: string;
+  signal?: AbortSignal;
+}
+
+export interface CompleteSessionPdfUploadOptions {
+  sessionId: string;
+  /** The v4 UUID the parts were staged under. */
+  uploadId: string;
+  /** Display filename recorded for the PDF. */
+  name: string;
+  /** Total bytes across all staged parts. */
+  sizeBytes: number;
+  /** Number of staged parts, numbered from 0. */
+  partCount: number;
+  /** Retry key scoped to this session and caller; an identical retry returns the original attachment. */
+  idempotencyKey?: string;
+  signal?: AbortSignal;
+}
+
 export interface CreateSessionAttachmentOptions {
   /** Session to bind the attachment to. */
   sessionId: string;
@@ -1399,6 +1433,104 @@ export class Client {
     );
   }
 
+  /**
+   * Upload a PDF of up to 100 MiB through the staged chunk endpoints and
+   * bind it to the session. PDFs over 30 MiB must take this path; smaller
+   * ones may. Parts are 8 MiB and each is retried independently; the
+   * completing request validates the whole file and returns the same
+   * response as `createSessionAttachment`.
+   */
+  async uploadSessionPdf(
+    opts: UploadSessionPdfOptions,
+  ): Promise<SessionAttachmentResponse> {
+    const idempotencyKey = normalizeIdempotencyKey(opts.idempotencyKey);
+    if (idempotencyKey != null && idempotencyKey.length > 255) {
+      throw new ConfigError(
+        "attachment idempotencyKey must be at most 255 characters",
+      );
+    }
+    const name = opts.name.trim();
+    if (!name) throw new ConfigError("attachment name is required");
+    const file =
+      opts.file instanceof Blob ? opts.file : new Blob([Uint8Array.from(opts.file)]);
+    if (file.size === 0) throw new ConfigError("PDF must not be empty");
+    if (file.size > SESSION_PDF_MAX_BYTES) {
+      throw new ConfigError("PDF uploads are limited to 100 MiB");
+    }
+    const uploadId = opts.uploadId ?? crypto.randomUUID();
+    const partCount = Math.ceil(file.size / SESSION_PDF_CHUNK_BYTES);
+    for (let part = 0; part < partCount; part++) {
+      const start = part * SESSION_PDF_CHUNK_BYTES;
+      await this.putSessionPdfUploadPart(
+        opts.sessionId,
+        uploadId,
+        part,
+        file.slice(start, start + SESSION_PDF_CHUNK_BYTES),
+        { signal: opts.signal },
+      );
+    }
+    return this.completeSessionPdfUpload({
+      sessionId: opts.sessionId,
+      uploadId,
+      name,
+      sizeBytes: file.size,
+      partCount,
+      idempotencyKey,
+      signal: opts.signal,
+    });
+  }
+
+  /**
+   * Stage one chunk of a large PDF. Low-level: prefer `uploadSessionPdf`.
+   * Every part but the last must be exactly 8 MiB; part numbers run from 0.
+   */
+  async putSessionPdfUploadPart(
+    sessionId: string,
+    uploadId: string,
+    partNumber: number,
+    chunk: Blob | Uint8Array,
+    opts: { signal?: AbortSignal } = {},
+  ): Promise<void> {
+    await this.request(
+      `/v1/sessions/${encodeURIComponent(sessionId)}/attachments/uploads/${encodeURIComponent(uploadId)}/parts/${partNumber}`,
+      {
+        method: "PUT",
+        rawBody:
+          chunk instanceof Blob ? chunk : new Blob([Uint8Array.from(chunk)]),
+        signal: opts.signal,
+      },
+    );
+  }
+
+  /**
+   * Validate the staged chunks as one PDF, commit it, and bind it to the
+   * session. Low-level: prefer `uploadSessionPdf`.
+   */
+  async completeSessionPdfUpload(
+    opts: CompleteSessionPdfUploadOptions,
+  ): Promise<SessionAttachmentResponse> {
+    const idempotencyKey = normalizeIdempotencyKey(opts.idempotencyKey);
+    if (idempotencyKey != null && idempotencyKey.length > 255) {
+      throw new ConfigError(
+        "attachment idempotencyKey must be at most 255 characters",
+      );
+    }
+    const resp = await this.request(
+      `/v1/sessions/${encodeURIComponent(opts.sessionId)}/attachments/uploads/${encodeURIComponent(opts.uploadId)}/complete`,
+      {
+        method: "POST",
+        body: {
+          name: opts.name,
+          size_bytes: opts.sizeBytes,
+          part_count: opts.partCount,
+        },
+        idempotencyKey,
+        signal: opts.signal,
+      },
+    );
+    return (await resp.json()) as SessionAttachmentResponse;
+  }
+
   async compactSession(sessionId: string): Promise<Session> {
     const resp = await this.request(
       `/v1/sessions/${encodeURIComponent(sessionId)}/compact`,
@@ -1522,6 +1654,19 @@ export class Client {
       { method: "POST" },
     );
     return (await resp.json()) as AgentTurn;
+  }
+
+  /**
+   * Delete the session's last turn: its input, the agent's work, and its
+   * reply leave the transcript. Only the last turn of an idle session can be
+   * deleted (409 otherwise); repeat to walk further back. Deleting an
+   * already-deleted turn succeeds.
+   */
+  async deleteSessionTurn(sessionId: string, turnId: string): Promise<void> {
+    await this.request(
+      `/v1/sessions/${encodeURIComponent(sessionId)}/turns/${encodeURIComponent(turnId)}`,
+      { method: "DELETE" },
+    );
   }
 
   /** Start a turn in an existing session and return its lazy transcript handle. */
@@ -1801,6 +1946,8 @@ export class Client {
       method: string;
       body?: unknown;
       formData?: FormData;
+      /** Raw request body, sent as application/octet-stream. */
+      rawBody?: Blob;
       idempotencyKey?: string | undefined;
       /**
        * Marks a POST/PATCH as safe to replay without an Idempotency-Key
@@ -1823,7 +1970,10 @@ export class Client {
     };
     if (opts.replaySafe) init.replaySafe = true;
     if (opts.formData != null) init.body = opts.formData;
-    else if (opts.body != null) init.body = JSON.stringify(opts.body);
+    else if (opts.rawBody != null) {
+      headers.set("Content-Type", "application/octet-stream");
+      init.body = opts.rawBody;
+    } else if (opts.body != null) init.body = JSON.stringify(opts.body);
     let resp: Response;
     try {
       resp = await this.fetchFn(this.url(path), init);

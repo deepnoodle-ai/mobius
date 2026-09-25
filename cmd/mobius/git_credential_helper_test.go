@@ -46,19 +46,22 @@ func TestGithubRepoFromCredentialRequest(t *testing.T) {
 }
 
 type fakeBroker struct {
-	calledRepo string
-	calledOp   string
-	cred       *mobius.EnvironmentGitCredential
-	err        error
+	calledRepo  string
+	calledOp    string
+	calledLease string
+	cred        *mobius.EnvironmentGitCredential
+	err         error
 }
 
 func (f *fakeBroker) CreateEnvironmentGitCredential(_ context.Context, _ string, req mobius.EnvironmentGitCredentialRequest) (*mobius.EnvironmentGitCredential, error) {
 	f.calledRepo = req.RepoFullName
 	f.calledOp = req.Operation
+	f.calledLease = req.LeaseToken
 	return f.cred, f.err
 }
 
 func TestRunGitCredentialHelperBrokersAndWrites(t *testing.T) {
+	t.Setenv("MOBIUS_JOB_LEASE_TOKEN", "lease_active")
 	expiry := time.Unix(1_900_000_000, 0).UTC()
 	broker := &fakeBroker{cred: &mobius.EnvironmentGitCredential{
 		Username:  "x-access-token",
@@ -71,6 +74,7 @@ func TestRunGitCredentialHelperBrokersAndWrites(t *testing.T) {
 	// The helper always requests push; the broker decides read vs write.
 	assert.Equal(t, "owner/repo", broker.calledRepo)
 	assert.Equal(t, "push", broker.calledOp)
+	assert.Equal(t, "lease_active", broker.calledLease)
 	got := out.String()
 	assert.True(t, strings.Contains(got, "username=x-access-token\n"))
 	assert.True(t, strings.Contains(got, "password=ghs_prototype\n"))

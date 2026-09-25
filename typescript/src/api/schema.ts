@@ -685,7 +685,7 @@ export interface paths {
         put?: never;
         /**
          * Create interaction
-         * @description Creates an interaction. `consumer` names what is waiting on its resolution; omit it for a standalone request that records the response and nothing more.
+         * @description Creates an interaction. `consumer` names what is waiting on its resolution; omit it for a standalone request that records the response and nothing more. An `agent_tool` consumer is reserved for interactions created by the agent runtime and is rejected on this API operation.
          */
         post: operations["createInteraction"];
         delete?: never;
@@ -1245,11 +1245,51 @@ export interface paths {
         put?: never;
         /**
          * Create session attachment
-         * @description Uploads one document or image into server-managed artifact storage and binds it immutably to this session. DOCX, XLSX, and PPTX uploads start asynchronous Markdown conversion through the document service. The returned `content_block` is the canonical block callers append in a session message or turn input.
+         * @description Uploads one document or image into server-managed artifact storage. Readable attachments are bound immutably to this session; PDFs over 30 MiB become durable Library files with a session reference instead. DOCX, XLSX, and PPTX uploads start asynchronous Markdown conversion through the document service. The returned `content_block` is the canonical block callers append in a session message or turn input.
          *
-         *     Phase 1 accepts PDF (up to 5 MiB and 50 pages), DOCX, XLSX, or PPTX (up to 5 MiB), Markdown or plain text (up to 100 KiB), and PNG, JPEG, WebP, or GIF images (up to 5 MiB). Mobius detects the media type from the bytes and does not trust the multipart MIME declaration. The feature must be enabled for the organization.
+         *     Accepts PDF up to 100 MiB and 500 pages for inspection, DOCX, XLSX, or PPTX (up to 5 MiB), Markdown or plain text (up to 100 KiB), and PNG, JPEG, WebP, or GIF images (up to 5 MiB). Mobius detects the media type from the bytes and does not trust the multipart MIME declaration. PDFs over 5 MiB are delivered through their bounded inspection rather than as binary model input. PDFs over 30 MiB are stored in the Library and inspected before the turn so the assistant can search and read them. Cloud Run clients must use the staged PDF chunk and complete endpoints for files over 30 MiB because this multipart route uses HTTP/1. A message can contain up to 100 MiB of attachments. The feature must be enabled for the organization.
          */
         post: operations["createSessionAttachment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sessions/{session_id}/attachments/uploads/{upload_id}/parts/{part_number}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Stage one large PDF chunk
+         * @description Uploads an 8 MiB or smaller chunk of a PDF before finalization. Use a fresh random UUID as upload_id, zero-based consecutive part numbers, and no more than 13 parts. Each request stays below Cloud Run's HTTP/1 body limit. Staged bytes are private to the caller and session and expire from storage after one day.
+         */
+        put: operations["putSessionPDFUploadPart"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sessions/{session_id}/attachments/uploads/{upload_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete a staged large PDF upload
+         * @description Validates all staged chunks as one PDF, commits the ordinary Library artifact and session reference, then removes the staged chunks.
+         */
+        post: operations["completeSessionPDFUpload"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1289,7 +1329,7 @@ export interface paths {
          * Create session artifact reference
          * @description Authorizes an existing library artifact for delivery to this session's turns and returns the same `content_block` shape the attachment endpoint returns. Nothing is uploaded or copied: the library file stays the single stored copy, and the server records the authorization so prompt-time delivery can re-check it without a caller.
          *
-         *     The file must be readable by the caller, must not itself be another session's attachment, and must satisfy the same delivery limits as an upload: PDF (up to 5 MiB and 50 pages), DOCX, XLSX, PPTX (up to 5 MiB), Markdown or plain text (up to 100 KiB), and PNG, JPEG, WebP, or GIF images (up to 5 MiB). Content type is confirmed from the stored bytes. A private session may reference only its owner's own files; an organization-visible session may reference only organization-visible files.
+         *     The file must be readable by the caller, must not itself be another session's attachment, and must satisfy the same delivery limits as an upload: PDF (up to 100 MiB and 500 pages for inspection; files over 30 MiB remain in Library storage and are referenced), DOCX, XLSX, PPTX (up to 5 MiB), Markdown or plain text (up to 100 KiB), and PNG, JPEG, WebP, or GIF images (up to 5 MiB). Content type is confirmed from the stored bytes. A private session may reference only its owner's own files; an organization-visible session may reference only organization-visible files.
          */
         post: operations["createSessionArtifactReference"];
         delete?: never;
@@ -1331,7 +1371,7 @@ export interface paths {
         };
         /**
          * List session turns
-         * @description Returns the session's turns, the structure the turn-grouped transcript is built on. Each turn groups related transcript messages and includes links to any run step or channel exchange that produced it. Turns are ordered by creation time; `order=desc` returns the newest turns (the tail) first, and long sessions are walked page-by-page via the `next_cursor` returned in the response. Pass `ids` to fetch exactly a known set of turns in one bounded request — the join a transcript view uses to resolve a loaded message window's `turn_id`s to their headers; when `ids` is set the cursor and order parameters are ignored.
+         * @description Returns the session's turns, the structure the turn-grouped transcript is built on. Each turn groups related transcript messages and includes links to any run step or channel exchange that produced it. Turns are ordered by creation time; `order=desc` returns the newest turns (the tail) first, and long sessions are walked page-by-page via the `next_cursor` returned in the response. Pass `ids` to fetch exactly a known set of turns in one bounded request — the join a transcript view uses to resolve a loaded message window's `turn_id`s to their headers; when `ids` is set the cursor and order parameters are ignored. Turns taken back by `deleteSessionTurn` are still returned, on both the paged and the `ids` reads, carrying `deleted_at` — their usage stays readable after their transcript rows are gone. A view that renders the conversation should skip them; they have no messages left to group.
          */
         get: operations["listSessionTurns"];
         put?: never;
@@ -1362,7 +1402,17 @@ export interface paths {
         get: operations["getSessionTurn"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete the last session turn
+         * @description Takes back the session's last turn: the input message that started it, the agent's work, and its reply are all removed from the transcript. The next turn's model context reflects the removal, and a client streaming the session sees the turn disappear without reloading.
+         *
+         *     Only the LAST turn can be deleted, and only while the session is idle. Repeat the call to walk further back one turn at a time. To correct a message, delete the turn and send the corrected text: the new message gets its own id, turn, and position in the transcript.
+         *
+         *     The turn record itself is retained with `deleted_at` set, so what the turn cost stays readable, and the delete is written to the audit log. For a session on standard retention, that entry carries up to 500 removed transcript rows and marks the snapshot if more were removed. For a session on bounded retention it records only what was removed — turn, row count, roles — because an audit row is not covered by the retention sweep that exists to destroy that content. Deleting an already-deleted turn succeeds and changes nothing. Requires the same permission as deleting the session.
+         *
+         *     Deleting a turn that arrived over a channel (Slack, Teams, Telegram) changes Mobius's record of the conversation, not the channel's — the original messages stay where they were posted.
+         */
+        delete: operations["deleteSessionTurn"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1507,7 +1557,7 @@ export interface paths {
         put?: never;
         /**
          * Stop all session event subscriptions
-         * @description Stops every active session subscription and cancels its pending external-event input. Repeating the request is idempotent.
+         * @description Stops every active session subscription and cancels its pending external-event input, except a question's own subscription (`execution_scope.surface` is `interaction_open`), which brings the question's outcome back to the conversation that asked it. Cancel the question to end that one. Repeating the request is idempotent.
          */
         post: operations["stopSessionEventSubscriptions"];
         delete?: never;
@@ -1567,7 +1617,7 @@ export interface paths {
         put?: never;
         /**
          * Cancel a session turn
-         * @description Idempotently cancels one dispatcher-owned agent turn in the session. The first request that wins marks the turn terminal, retires its pending waits, interactions, nudges, and jobs, and emits `turn.cancelled` once. Later requests return the current terminal row without another lifecycle transition. Cancellation is cooperative: already-performed model, tool, and external effects are not rolled back. Committed transcript rows are retained, while live-only uncommitted preview content is discarded.
+         * @description Idempotently cancels one dispatcher-owned agent turn in the session. The first request that wins marks the turn terminal, retires its pending waits, nudges, and jobs, and emits `turn.cancelled` once. Questions the agent asked stay open: an outcome that arrives later reaches the conversation as its next input. Later requests return the current terminal row without another lifecycle transition. Cancellation is cooperative: already-performed model, tool, and external effects are not rolled back. Committed transcript rows are retained, while live-only uncommitted preview content is discarded.
          *
          *     A cancelled turn cannot be resumed. Reusing its invocation idempotency key returns the same cancelled turn; retrying the task requires a new invocation and may repeat external effects. Stream cursors resume observation only. Requires the `mobius.resource.use` permission (or the agent's own backing principal).
          */
@@ -1588,6 +1638,8 @@ export interface paths {
         /**
          * Get the live transcript snapshot
          * @description Returns the transcript tail and authoritative turn state consumed by SessionTranscriptReducer. Without a cursor this is a bootstrap tail; when older rows exist, next_page_token walks backward through them while resume_cursor remains fixed at the bootstrap head. With cursor it incrementally drains a fixed upper cut. In either mode, continue with next_page_token until has_more is false.
+         *
+         *     Rows a `deleteSessionTurn` tombstoned are never returned in any mode. A bootstrap simply no longer contains them; an incremental drain crossing the deletion's revision reports it as a turn carrying `deleted_at`, which is the signal to drop that turn and its rows from an already loaded transcript.
          */
         get: operations["getSessionTranscript"];
         put?: never;
@@ -1655,7 +1707,7 @@ export interface paths {
         put?: never;
         /**
          * Cancel the session's active turn
-         * @description Idempotently cancels active dispatcher-owned turns in the session and retires their pending waits, interactions, nudges, and jobs. Each turn's terminal `turn.cancelled` transition is emitted once. Cancellation is cooperative and does not roll back effects that already happened. Committed transcript rows remain; live-only preview content is discarded. Cancelled turns cannot be resumed, and stream cursors resume observation only. Returns the updated session. Requires the `mobius.resource.use` permission (or the agent's own backing principal).
+         * @description Idempotently cancels active dispatcher-owned turns in the session and retires their pending waits, nudges, and jobs; questions the agent asked stay open. Each turn's terminal `turn.cancelled` transition is emitted once. Cancellation is cooperative and does not roll back effects that already happened. Committed transcript rows remain; live-only preview content is discarded. Cancelled turns cannot be resumed, and stream cursors resume observation only. Returns the updated session. Requires the `mobius.resource.use` permission (or the agent's own backing principal).
          */
         post: operations["cancelSession"];
         delete?: never;
@@ -2435,7 +2487,7 @@ export interface paths {
         put?: never;
         /**
          * Create artifact
-         * @description Accepts an org-authorized multipart file upload. Without a worker lease, the caller needs `mobius.resource.build`; the artifact is private to the authenticated principal and has no run or step lineage. A worker may instead supply `X-Mobius-Lease-Token` with `mobius.job.execute`; Mobius then derives run, step, job, worker session, attempt, and shared visibility from the active claim. Execution attribution is server-derived. Version lineage is declared only with previous_artifact_id (or the leased publish action source_artifact_id). A version requires edit access to the exact parent and inherits its custody and visibility.
+         * @description Accepts an org-authorized multipart file upload. Without a worker lease, the caller needs `mobius.resource.build`; the artifact is private to the authenticated principal and has no run or step lineage. A worker may instead supply `X-Mobius-Lease-Token` with `mobius.job.execute`; Mobius then derives run, step, job, worker session, attempt, and shared visibility from the active claim. Execution attribution is server-derived. A version requires edit access to the exact parent and inherits its custody and visibility. It is declared with previous_artifact_id (or the leased publish action source_artifact_id), which must name the file's latest version: naming an older one is refused with 409 rather than branching the file's history. A person's upload whose name is already taken by one of their files also becomes that file's next version; the response's `version` and `previous_id` say so.
          *
          *     DOCX, XLSX, and PPTX uploads may pass `convert=true` to start asynchronous Markdown extraction for later model delivery.
          */
@@ -2469,9 +2521,9 @@ export interface paths {
         head?: never;
         /**
          * Update artifact name
-         * @description Changes the artifact's `name`. The name is a relative virtual path, so this is how a file moves between folders as well as how it is renamed. Every version in the file's lineage is renamed together, so its history never straddles two folders.
+         * @description Changes the artifact's `name`. The name is a relative virtual path, so this is how a file moves between folders as well as how it is renamed. Every version in the file's lineage is renamed together, so its history never straddles two folders and a later edit saves under the new name.
          *
-         *     The ID, version lineage, custody, visibility, metadata, stored bytes, and session references are unchanged. Authorization is the delete authorization: whoever may remove the file may move it. Names are not unique, exactly as they are not on upload.
+         *     The ID, version lineage, custody, visibility, metadata, stored bytes, and session references are unchanged. Authorization is the delete authorization: whoever may remove the file may move it. A name another file in the same place already holds is refused with 409.
          */
         patch: operations["updateArtifact"];
         trace?: never;
@@ -2608,7 +2660,7 @@ export interface components {
         ErrorResponse: {
             /** @description Error detail. */
             error: {
-                /** @description Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family. */
+                /** @description Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. When the request-wide rate limiter refuses a call, `rate_limit_exceeded` carries `scope` (`key`, `org`, or `browser`), `window`, `limit`, and `retry_after_seconds` in `details`; an endpoint's own cap returns the same code without them. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family. */
                 code: string;
                 /** @description Human-readable error message */
                 message: string;
@@ -3049,7 +3101,7 @@ export interface components {
             latest_compaction?: components["schemas"]["SessionCompactionBoundary"];
             /** @description Live compaction progress plus the threshold that triggers the next pass. Returned on the single-session read; absent from list entries. */
             compaction?: components["schemas"]["SessionCompactionProgress"];
-            /** @description Total messages currently in the session, including compaction summaries. */
+            /** @description Non-decreasing transcript sequence high-water mark, including tombstoned rows and compaction summaries; not the number of live messages. */
             message_count: number;
             /** @description Lifetime fresh (uncached) input-token total for this session. Prompt-cache tokens are reported separately in `cache_read_input_total` and `cache_creation_input_total`. */
             token_input_total: number;
@@ -4492,30 +4544,79 @@ export interface components {
             description?: string;
         };
         /**
-         * @description Declarative dialog contract for rendering and validating an interaction. Used at both authoring time and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
+         * @description One question inside an interaction's form. Answers are addressed by `id`, so the id is a stable machine key the responder never sees.
          *
-         *     Allowed combinations:
-         *     * `request_approval` → `confirm`, `select`
-         *     * `request_review` → `select`, `input`
-         *     * `request_information` → `select`, `multi_select`, `input`
+         *     Write each prompt as one direct question. Selection limits, click-order instructions, and preference-ranking instructions belong in the structured fields, not in the prompt text — the interface owns its own input instructions.
          */
-        InteractionSpec: {
-            /** @description UI/input mode used to render and validate the response. */
+        InteractionQuestion: {
+            /** @description Stable machine key this question's answer is addressed by. */
+            id: string;
+            /** @description One direct user-facing question. */
+            prompt: string;
+            /** @description Optional brief context that helps the responder decide. Do not repeat input mechanics the interface already shows. */
+            description?: string;
+            /** @description Whether an answer must be supplied before the form can be submitted. Defaults to true. Use false only for helpful context the responder may skip without blocking the work. */
+            required?: boolean;
+            /** @description UI/input mode used to render and validate this answer. */
             mode: components["schemas"]["InteractionMode"];
             /** @description Required for `select` and `multi_select` modes. */
             options?: components["schemas"]["InteractionOption"][];
-            /** @description Default selected option for `select` mode. */
-            default_value?: string;
-            /** @description Default selected options for `multi_select` mode. */
-            default_values?: string[];
-            /** @description Initial text value for `input` mode. */
-            default_text?: string;
-            /** @description Initial yes/no value for `confirm` mode. */
-            default_confirmed?: boolean;
-            /** @description Hint text shown for `input` mode. */
-            placeholder?: string;
-            /** @description When true, render `input` mode as a multiline text area. */
+            /** @description For `select` and `multi_select`, offer a free-text escape hatch alongside the listed options. */
+            allow_other?: boolean;
+            /** @description For `multi_select`: fewest choices accepted. Defaults to 1. */
+            min_selections?: number;
+            /** @description For `multi_select`: most choices accepted. Defaults to every available choice. */
+            max_selections?: number;
+            /** @description For `input`: render a multi-line text area. */
             multiline?: boolean;
+            /** @description For `input`: example input. Do not use placeholder copy to communicate whether the question is required. */
+            placeholder?: string;
+            /** @description For `input`: longest accepted answer. Defaults to 500 for single-line and 4000 for multiline. */
+            max_length?: number;
+            /** @description For `select`: initially selected option value. */
+            default_value?: string;
+            /** @description For `multi_select`: initially selected option values. */
+            default_values?: string[];
+            /** @description For `input`: initial text value. */
+            default_text?: string;
+            /** @description For `confirm`: initial yes/no value. */
+            default_confirmed?: boolean;
+        };
+        /**
+         * @description The set of questions one responder answers atomically. Group related questions into a single interaction rather than opening several: each interaction is a separate item in someone's inbox and a separate interruption.
+         *
+         *     Protocol kind is decoupled from input shape: each kind declares which question modes are *allowed*, not which is *implied*.
+         *
+         *     Allowed combinations:
+         *     * `request_approval` → `confirm`, `select`, and **exactly one
+         *     question** — single-question is what makes an approval auditable
+         *     * `request_review` → `select`, `input`
+         *     * `request_information` → `select`, `multi_select`, `input`
+         *     * `assign_work` → `select`, `multi_select`, `input`
+         */
+        InteractionSpec: {
+            /** @description The questions this interaction asks. */
+            questions: components["schemas"]["InteractionQuestion"][];
+        };
+        /**
+         * @description One responder's answer to one question. Exactly one content field is populated, chosen by the question's mode:
+         *
+         *     * `confirm` → `value`, either `approved` or `rejected`
+         *     * `select` → `value` (an option value) or `other`
+         *     * `multi_select` → `values`, optionally with `other`
+         *     * `input` → `text`
+         */
+        InteractionAnswer: {
+            /** @description The `id` of the question being answered. */
+            question_id: string;
+            /** @description For `input`: the free-text answer. */
+            text?: string;
+            /** @description For `select` and `confirm`: the chosen value. */
+            value?: string;
+            /** @description For `multi_select`: the chosen option values. */
+            values?: string[];
+            /** @description Free-text answer supplied instead of, or alongside, the listed options. Only accepted when the question sets `allow_other`. */
+            other?: string;
         };
         /**
          * @description Protocol kind of the interaction:
@@ -4610,10 +4711,10 @@ export interface components {
              */
             callback_url: string;
         };
+        /** @description A caller may attach an HTTP subscriber or no consumer. Agent-tool consumers are runtime-only. */
         ConsumerInput: {
             /** @enum {string} */
-            kind: "agent_tool" | "http_subscriber" | "none";
-            agent_tool?: components["schemas"]["AgentToolConsumer"];
+            kind: "http_subscriber" | "none";
             http_subscriber?: components["schemas"]["HttpSubscriberConsumerInput"];
         };
         HttpSubscriberConsumerInput: {
@@ -4643,8 +4744,8 @@ export interface components {
             state: "submitted";
             /** @description User ID that submitted this response. */
             responder_user_id: string;
-            /** @description JSON value supplied by this participant. */
-            value: components["schemas"]["InteractionValue"];
+            /** @description This participant's complete answer set, one entry per question they answered. */
+            answers: components["schemas"]["InteractionAnswer"][];
             /** @description Optional free-text comment from this responder. */
             comment?: string | null;
             /**
@@ -4771,7 +4872,11 @@ export interface components {
             consumer?: components["schemas"]["Consumer"] | null;
             /** @description Optional per-interaction delivery override. When absent, the dispatcher delivers to the app inbox only. */
             delivery?: components["schemas"]["Delivery"] | null;
-            /** @description Final outcome selected by the resolution policy. Omitted while the interaction is still pending. */
+            /**
+             * @description Final outcome selected by the resolution policy. Omitted while the interaction is still pending.
+             *
+             *     Its shape follows the policy: a first-response policy records the resolving responder's answer array, while `all_of` and `quorum` record the list of response objects so each participant's answers stay attributable.
+             */
             outcome?: components["schemas"]["InteractionValue"];
             /** @description Short audit string identifying which policy rule fired. Null until the interaction reaches a resolved state. */
             resolved_by?: string | null;
@@ -4828,7 +4933,7 @@ export interface components {
             require_all?: boolean;
             /** @description Declarative resolution rule. When supplied the policy evaluator drives completion. */
             resolution_policy?: components["schemas"]["ResolutionPolicy"];
-            /** @description Polymorphic identifier of what is waiting on this interaction's resolution. */
+            /** @description Caller-provided continuation target, if any. The agent runtime creates agent-tool continuations internally. */
             consumer?: components["schemas"]["ConsumerInput"];
             /** @description Optional per-interaction delivery override. */
             delivery?: components["schemas"]["Delivery"];
@@ -4844,9 +4949,9 @@ export interface components {
              * @enum {string}
              */
             action?: "submit";
-            /** @description JSON value supplied by the responder. Required for `submit`. */
-            value?: components["schemas"]["InteractionValue"];
-            /** @description Optional free-text comment accompanying the action. Available on every interaction kind and never gated by the spec; the responder may always attach reasoning, caveats, or follow-up notes alongside `value`. */
+            /** @description The responder's complete answer set. Required for `submit`. Every required question must be answered; there is no partial submit. */
+            answers: components["schemas"]["InteractionAnswer"][];
+            /** @description Optional free-text comment accompanying the action. Available on every interaction kind and never gated by the spec; the responder may always attach reasoning, caveats, or follow-up notes alongside their answers. It is one note per response, not per question. */
             comment?: string;
         };
         /** @description Acceptance decision on submitted work. */
@@ -5572,10 +5677,10 @@ export interface components {
             [key: string]: unknown;
         };
         /**
-         * @description Stable UI treatment for a projected external event.
+         * @description Stable UI treatment for a projected event. `interaction` is the outcome of a question the agent asked with mobius.interaction.open: answered, dismissed, or expired.
          * @enum {string}
          */
-        SessionEventProjectionKind: "generic" | "repository_change" | "file_change" | "email" | "calendar_event" | "message" | "work_item" | "content_change" | "business_record";
+        SessionEventProjectionKind: "generic" | "repository_change" | "file_change" | "email" | "calendar_event" | "message" | "work_item" | "content_change" | "business_record" | "interaction";
         SessionEventProjectionAttribute: {
             /** @description Short fact label selected by the server-side formatter. */
             label: string;
@@ -5610,6 +5715,22 @@ export interface components {
             /** @description Small provider-selected facts; never arbitrary payload fields. */
             attributes?: components["schemas"]["SessionEventProjectionAttribute"][];
         };
+        /** @description The principal that wrote a message, resolved from the authenticated sender at read time so the transcript can render a name and avatar without a lookup per message. Never accepted on write. */
+        SessionMessageAuthor: {
+            /** @description Principal id of the author. */
+            id: string;
+            /**
+             * @description The principal's kind, resolved from the principal record.
+             * @enum {string}
+             */
+            kind: "human" | "agent" | "service" | "system";
+            /** @description Single-line label for the author. */
+            display_name: string;
+            /** @description Avatar image, when the principal has one. */
+            avatar_url?: string;
+            /** @description Mantine palette key for the avatar fallback when no image is set. */
+            color?: string;
+        };
         /** @description One persisted message or compaction entry in a session transcript. */
         SessionMessage: {
             /** @description Stable message identifier. */
@@ -5624,18 +5745,20 @@ export interface components {
             content: components["schemas"]["SessionContentBlock"][];
             /** @description Whether this row is a normal message or a compaction summary. */
             entry_type: components["schemas"]["SessionMessageEntryType"];
-            /** @description For `compaction` messages, the highest sequence number this summary covers. */
+            /** @description For `compaction` messages, the highest sequence number this summary covers. It is an internal ordering key, not a quantity: use `metadata.conversation_message_count` to say how much history the summary folded away. */
             covers_through_sequence?: number;
             /** @description Monotonic per-session sequence number assigned at append time. */
             sequence: number;
             /** @description AgentTurn that produced this message. Run, step, and channel identity for the message are read from this turn. Absent for compaction summaries and messages not tied to a turn. */
             turn_id?: string;
-            /** @description Free-form caller metadata for this message. */
+            /** @description Free-form caller metadata for this message. A `compaction` entry instead carries server-owned keys describing the pass that wrote it: `trigger` (a `CompactionTrigger`: what started the pass), `conversation_message_count` (transcript rows folded into the summary, counting only rows a reader sees — the number to show a user), `message_count` (the raw window size, including host-injected context rows), `from_sequence` / `through_sequence` (the window's sequence bounds), `estimated_tokens`, `strategy`, `summary_model`, and `summary_provider`. */
             metadata?: {
                 [key: string]: unknown;
             };
             /** @description Server-owned safe display projection when this message was triggered by an external event. */
             event_projection?: components["schemas"]["SessionEventProjection"];
+            /** @description Who wrote this message, resolved server side from the authenticated sender. Present only on `user` messages written by a principal in this organization; routine inputs and event deliveries carry execution identity instead and remain unattributed. */
+            author?: components["schemas"]["SessionMessageAuthor"];
             /**
              * Format: date-time
              * @description Server timestamp when the message was appended.
@@ -5786,6 +5909,11 @@ export interface components {
              * @description When the turn reached a terminal status.
              */
             completed_at?: string;
+            /**
+             * Format: date-time
+             * @description When this turn was taken back from the transcript. The turn record is kept so its usage stays readable, but its messages no longer appear in the transcript or in the agent's context. Absent on a turn that is still part of the conversation.
+             */
+            deleted_at?: string | null;
         };
         /**
          * @description Aggregate token accounting for one completed turn, summed over every LLM call the turn made. It is a usage report, not a bill — see the billing usage events for charged amounts.
@@ -5853,11 +5981,14 @@ export interface components {
             turn_index: number | null;
             sequence: number | null;
             covers_through_sequence?: number | null;
+            /** @description Free-form metadata for this message. A `compaction` entry carries the server-owned keys described on `SessionMessage.metadata`. */
             metadata?: {
                 [key: string]: unknown;
             };
             /** @description Server-owned safe display projection when this message was triggered by an external event. */
             event_projection?: components["schemas"]["SessionEventProjection"];
+            /** @description Who wrote this message, resolved server side from the authenticated sender. Present only on `user` messages written by a principal in this organization; routine inputs and event deliveries carry execution identity instead and remain unattributed. */
+            author?: components["schemas"]["SessionMessageAuthor"];
             /** Format: date-time */
             created_at: string;
         };
@@ -5887,6 +6018,11 @@ export interface components {
             updated_at: string;
             /** Format: date-time */
             completed_at?: string;
+            /**
+             * Format: date-time
+             * @description Set when the turn has been taken back. A reducer that receives this drops the turn and every row belonging to it; the turn frame is the whole signal, since the removed message rows are never re-sent.
+             */
+            deleted_at?: string | null;
         };
         SessionTranscriptSnapshot: {
             messages: components["schemas"]["SessionTranscriptMessage"][];
@@ -6257,6 +6393,12 @@ export interface components {
              */
             size_bytes?: number;
         };
+        CompleteSessionPDFUploadRequest: {
+            name: string;
+            /** Format: int64 */
+            size_bytes: number;
+            part_count: number;
+        };
         CreateSessionArtifactReferenceRequest: {
             /** @description Identifier of an existing library artifact the caller can read. */
             artifact_id: string;
@@ -6472,6 +6614,8 @@ export interface components {
             };
             /**
              * @description When true and the target turn is waiting on an interruptible agent tool, resolve that tool call with `{ "interrupted": true, "reason": "user_direction" }` and resume the same turn. Running and newly queued turns ignore this field.
+             *
+             *     A turn waiting on the outcome of a question it asked with `mobius.interaction.open` (`mobius_event_wait` on `interaction.resolved`) is resumed by every nudge, with or without this field. The question stays open: the tool result also carries `interaction_id` and `interaction_status: "pending"`, and the question's outcome still arrives in the conversation as its own input.
              * @default false
              */
             wake?: boolean;
@@ -6532,7 +6676,7 @@ export interface components {
         };
         /** @description One OR branch. All populated fields in this object match together. */
         SessionEventSubscriptionFilter: {
-            /** @description A public exact event type or a supported provider wildcard such as `github.pull_request.*`. */
+            /** @description A public exact event type or a supported provider wildcard such as `github.pull_request.*`. Subscriptions accept the same public events an agent can wait for. The one interaction event that can be followed is `interaction.resolved`, with `source_id` set to a question the session's agent asked in this session; any other interaction filter is refused. A question the agent asks is already followed by its own subscription until it is answered, dismissed, or expires, so a filter on a question that something in the session already follows, or that has already closed, is refused with 409. */
             event_type: string;
             /** @description Optional public source identifier restriction. */
             source_id?: string;
@@ -6555,6 +6699,11 @@ export interface components {
             expires_at?: string | null;
             /** @description Retry key scoped to this session. */
             idempotency_key?: string;
+            /**
+             * @description When true, the subscription ends after its first matching event. That event is still delivered to the conversation, and the subscription stops with `stop_reason` `delivered_once` in the same step, so no later event can match it. When false, the subscription keeps delivering until it is unsubscribed, stopped, or expires. Retrying with the same `idempotency_key` must repeat the same value.
+             * @default false
+             */
+            once?: boolean;
         };
         /** @enum {string} */
         SessionEventSubscriptionStatus: "active" | "funding_paused" | "stopped" | "expired";
@@ -6568,6 +6717,8 @@ export interface components {
             execution_scope: {
                 [key: string]: unknown;
             };
+            /** @description True when the subscription ends after its first matching event. Once that event matches, `status` is `stopped` with `stop_reason` `delivered_once`, and its delivery still reaches the conversation. */
+            once: boolean;
             status: components["schemas"]["SessionEventSubscriptionStatus"];
             stop_reason?: string;
             /** @description Most recent fail-closed match or delivery diagnostic. */
@@ -6622,6 +6773,7 @@ export interface components {
             target_turn_id?: string;
             message_id?: string;
             status: components["schemas"]["SessionEventDeliveryStatus"];
+            /** @description Machine-readable note about this delivery, such as `payload_truncated_at_65536_bytes`. `superseded_by_event_wait` means an agent wait in the same conversation already received this event, so it was not added a second time: the status is `delivered` and `target_turn_id` is the turn that received it. */
             diagnostic?: string;
             /** Format: date-time */
             created_at: string;
@@ -7968,6 +8120,7 @@ export interface components {
         CreateArtifactFolderRequest: {
             /** @description Folder path to declare, relative and with no leading or trailing slash. Intermediate folders are implied by this path and need no declaration of their own. */
             path: string;
+            /** @description Who sees the folder. Omit for `private`, visible only to the person creating it. It never changes who can open the files inside. */
             visibility?: components["schemas"]["ResourceVisibility"];
         };
         /**
@@ -8140,7 +8293,7 @@ export interface components {
                 /** @description Unix timestamp (seconds) when the tightest bucket resets. */
                 "X-RateLimit-Reset"?: number;
                 /** @description Scope of the tightest bucket. */
-                "X-RateLimit-Scope"?: "key" | "org";
+                "X-RateLimit-Scope"?: "key" | "org" | "browser";
                 /** @description All active windows for the selected scope, in `limit;w=seconds` form. */
                 "X-RateLimit-Policy"?: string;
                 [name: string]: unknown;
@@ -9572,8 +9725,15 @@ export interface operations {
                  *         "amount_usd": 12850
                  *       },
                  *       "spec": {
-                 *         "mode": "confirm",
-                 *         "default_confirmed": false
+                 *         "questions": [
+                 *           {
+                 *             "id": "decision",
+                 *             "prompt": "Approve publishing the April billing report?",
+                 *             "mode": "confirm",
+                 *             "required": true,
+                 *             "default_confirmed": false
+                 *           }
+                 *         ]
                  *       },
                  *       "require_all": false,
                  *       "expires_at": "2026-04-25T14:30:00Z"
@@ -9600,8 +9760,15 @@ export interface operations {
                      *         "amount_usd": 12850
                      *       },
                      *       "spec": {
-                     *         "mode": "confirm",
-                     *         "default_confirmed": false
+                     *         "questions": [
+                     *           {
+                     *             "id": "decision",
+                     *             "prompt": "Approve publishing the April billing report?",
+                     *             "mode": "confirm",
+                     *             "required": true,
+                     *             "default_confirmed": false
+                     *           }
+                     *         ]
                      *       },
                      *       "target_user_ids": [
                      *         "user_2f9s3k4m5n6p7q8r"
@@ -9711,8 +9878,15 @@ export interface operations {
                      *         "amount_usd": 12850
                      *       },
                      *       "spec": {
-                     *         "mode": "confirm",
-                     *         "default_confirmed": false
+                     *         "questions": [
+                     *           {
+                     *             "id": "decision",
+                     *             "prompt": "Approve publishing the April billing report?",
+                     *             "mode": "confirm",
+                     *             "required": true,
+                     *             "default_confirmed": false
+                     *           }
+                     *         ]
                      *       },
                      *       "target_user_ids": [
                      *         "user_2f9s3k4m5n6p7q8r"
@@ -9734,14 +9908,24 @@ export interface operations {
                      *           "response_kind": "response",
                      *           "state": "submitted",
                      *           "responder_user_id": "user_2f9s3k4m5n6p7q8r",
-                     *           "value": true,
+                     *           "answers": [
+                     *             {
+                     *               "question_id": "decision",
+                     *               "value": "approved"
+                     *             }
+                     *           ],
                      *           "comment": "Approved for publication.",
                      *           "responded_at": "2026-04-24T14:42:00Z",
                      *           "created_at": "2026-04-24T14:42:00Z",
                      *           "updated_at": "2026-04-24T14:42:00Z"
                      *         }
                      *       ],
-                     *       "outcome": true,
+                     *       "outcome": [
+                     *         {
+                     *           "question_id": "decision",
+                     *           "value": "approved"
+                     *         }
+                     *       ],
                      *       "resolved_by": "any_of",
                      *       "expires_at": "2026-04-25T14:30:00Z",
                      *       "completed_at": "2026-04-24T14:42:00Z",
@@ -10998,6 +11182,96 @@ export interface operations {
             };
         };
     };
+    putSessionPDFUploadPart: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
+                upload_id: string;
+                part_number: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description Chunk staged. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Chunk exceeds 8 MiB. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            503: components["responses"]["ServiceUnavailable"];
+        };
+    };
+    completeSessionPDFUpload: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
+                upload_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompleteSessionPDFUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description PDF already committed by this idempotency key. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionAttachmentResponse"];
+                };
+            };
+            /** @description PDF committed and referenced. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionAttachmentResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description PDF exceeds 100 MiB. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            503: components["responses"]["ServiceUnavailable"];
+        };
+    };
     deleteSessionAttachment: {
         parameters: {
             query?: never;
@@ -11266,6 +11540,42 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    deleteSessionTurn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
+                /** @description Identifier of a turn within a session. */
+                turn_id: components["parameters"]["TurnIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The session has a turn in flight (`session_turn_active`), or the turn is not the session's last one (`turn_not_last`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listSessionNudges: {
@@ -13811,6 +14121,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     getArtifactContent: {

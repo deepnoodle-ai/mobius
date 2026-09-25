@@ -11,10 +11,6 @@ import (
 	"github.com/deepnoodle-ai/mobius/mobius/api"
 )
 
-// folderIDPrefix is the ID prefix the server assigns declared folders. It is
-// what tells `rmdir afd_123` from `rmdir reports/2026`.
-const folderIDPrefix = "afd_"
-
 // registerArtifactFolderCommands adds the Library folder commands. A folder
 // is the directory part of an artifact name, so these read as their
 // filesystem counterparts; the generator skips the three operations
@@ -51,11 +47,14 @@ func registerArtifactFolderCommands(app *cli.App) {
 
 	grp.Command("rmdir").
 		Description("Delete folder").
-		Long("Removes a declared folder, named by ID or by path. The folder must be " +
+		Long("Removes a declared folder, named by path or by --id. The folder must be " +
 			"empty: the call is refused while any visible file lives in it or below " +
 			"it, or while a declared subfolder remains. Files are never deleted by " +
 			"this command.").
-		AddArg(&cli.Arg{Name: "folder", Description: "Folder ID (afd_...) or path (e.g. reports/2026).", Required: true}).
+		AddArg(&cli.Arg{Name: "path", Description: "Folder path (e.g. reports/2026). Omit when passing --id."}).
+		Flags(
+			cli.String("id", "").Help("Folder ID (afd_...) to remove instead of a path."),
+		).
 		Use(requireAuth()).
 		Run(runArtifactRmdir)
 }
@@ -116,13 +115,17 @@ func runArtifactRmdir(ctx *cli.Context) error {
 		return err
 	}
 	client := mc.RawClient()
-	ref := strings.TrimSpace(ctx.Arg(0))
-	if ref == "" {
-		return cli.Errorf("folder ID or path is required")
+	path := strings.TrimSpace(ctx.Arg(0))
+	folderID := strings.TrimSpace(ctx.String("id"))
+	if (path == "") == (folderID == "") {
+		return cli.Errorf("give exactly one of a folder path or --id")
 	}
-	folderID, err := resolveArtifactFolderID(ctx, ref)
-	if err != nil {
-		return err
+	ref := folderID
+	if path != "" {
+		ref = path
+		if folderID, err = resolveArtifactFolderID(ctx, path); err != nil {
+			return err
+		}
 	}
 	resp, err := client.DeleteArtifactFolderWithResponse(ctx.Context(), api.ArtifactFolderIdParam(folderID))
 	if err != nil {
@@ -136,14 +139,12 @@ func runArtifactRmdir(ctx *cli.Context) error {
 	return printResponse(ctx, "deleteArtifactFolder", resp.StatusCode(), resp.Body)
 }
 
-// resolveArtifactFolderID turns a `rmdir` argument into a folder ID. An
-// afd_-prefixed argument is already one; a path is looked up among its
-// parent's children, which is also how the caller learns that the folder is
-// only implied by the names of the files in it and so has nothing to remove.
+// resolveArtifactFolderID turns a `rmdir` path into a folder ID by looking
+// it up among its parent's children, which is also how the caller learns that
+// the folder is only implied by the names of the files in it and so has
+// nothing to remove. IDs come only through --id: a path may itself start with
+// afd_, so the prefix cannot tell the two apart.
 func resolveArtifactFolderID(ctx *cli.Context, ref string) (string, error) {
-	if strings.HasPrefix(ref, folderIDPrefix) {
-		return ref, nil
-	}
 	mc, err := clientFromContext(ctx)
 	if err != nil {
 		return "", err
@@ -206,6 +207,11 @@ func folderNotEmptyMessage(ref string, body []byte) string {
 	count, ok := folderFileCount(resp.Error.Details)
 	if !ok {
 		return resp.Error.Message
+	}
+	if count == 0 {
+		// The server also refuses while a declared subfolder remains, and
+		// then reports no files.
+		return fmt.Sprintf("folder %q still has declared subfolders; remove them first", ref)
 	}
 	files := "files"
 	if count == 1 {

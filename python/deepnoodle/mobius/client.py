@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import io
 import json
 import logging
 import os
 import re
 import time
+import uuid
 from dataclasses import dataclass, field
 from collections.abc import Iterator, Sequence
 from typing import Any, BinaryIO, TypeVar
@@ -30,6 +32,7 @@ from ._api.models import (
     BlueprintBindingListResponse,
     BlueprintDeleteResult,
     ChannelContext,
+    CompleteSessionPDFUploadRequest,
     CreateAgentRequest,
     CreatePrincipalRequest,
     CreateRoleAssignmentRequest,
@@ -90,6 +93,9 @@ from .transcript import (
 )
 
 DEFAULT_BASE_URL = "https://api.mobiusops.com"
+# Staged PDF upload limits: every part but the last is exactly one chunk.
+SESSION_PDF_CHUNK_BYTES = 8 * 1024 * 1024
+SESSION_PDF_MAX_BYTES = 100 * 1024 * 1024
 
 
 @dataclass
@@ -1066,6 +1072,111 @@ class Client:
             f"/attachments/{quote(artifact_id, safe='')}",
         )
 
+    def upload_session_pdf(
+        self,
+        session_id: str,
+        file: bytes | BinaryIO | str | os.PathLike[str],
+        *,
+        name: str | None = None,
+        idempotency_key: str | None = None,
+        upload_id: str | None = None,
+    ) -> SessionAttachmentResponse:
+        """Upload a PDF of up to 100 MiB in staged chunks and bind it to a session.
+
+        PDFs over 30 MiB must take this path; smaller ones may. The file is
+        sent as 8 MiB parts, each retried independently, and the completing
+        request validates the whole PDF and returns the same response as
+        :meth:`create_session_attachment`.
+
+        ``file`` and ``name`` behave as in :meth:`create_session_attachment`.
+        ``upload_id`` is a v4 UUID generated when omitted; reuse it to resume
+        a failed upload. ``idempotency_key`` applies to the completing request.
+        """
+        if idempotency_key is not None and len(idempotency_key) > 255:
+            raise ValueError(
+                "attachment idempotency_key must be at most 255 characters"
+            )
+        opened: BinaryIO | None = None
+        try:
+            source: BinaryIO
+            if isinstance(file, (str, os.PathLike)):
+                opened = open(file, "rb")
+                source = opened
+                if name is None:
+                    name = os.path.basename(os.fspath(file))
+            elif isinstance(file, (bytes, bytearray, memoryview)):
+                source = io.BytesIO(bytes(file))
+            else:
+                source = file
+            clean_name = (name or "").strip()
+            if not clean_name:
+                raise ValueError("attachment name is required")
+            upload_id = upload_id or str(uuid.uuid4())
+            size = 0
+            part = 0
+            while chunk := _read_full(source, SESSION_PDF_CHUNK_BYTES):
+                size += len(chunk)
+                if size > SESSION_PDF_MAX_BYTES:
+                    raise ValueError("PDF uploads are limited to 100 MiB")
+                self.put_session_pdf_upload_part(session_id, upload_id, part, chunk)
+                part += 1
+            if size == 0:
+                raise ValueError("PDF must not be empty")
+            return self.complete_session_pdf_upload(
+                session_id,
+                upload_id,
+                name=clean_name,
+                size_bytes=size,
+                part_count=part,
+                idempotency_key=idempotency_key,
+            )
+        finally:
+            if opened is not None:
+                opened.close()
+
+    def put_session_pdf_upload_part(
+        self, session_id: str, upload_id: str, part_number: int, chunk: bytes
+    ) -> None:
+        """Stage one chunk of a large PDF. Prefer :meth:`upload_session_pdf`.
+
+        Every part but the last must be exactly 8 MiB; parts number from 0.
+        """
+        self._request(
+            "PUT",
+            f"/v1/sessions/{quote(session_id, safe='')}/attachments/uploads/"
+            f"{quote(upload_id, safe='')}/parts/{int(part_number)}",
+            content=chunk,
+        )
+
+    def complete_session_pdf_upload(
+        self,
+        session_id: str,
+        upload_id: str,
+        *,
+        name: str,
+        size_bytes: int,
+        part_count: int,
+        idempotency_key: str | None = None,
+    ) -> SessionAttachmentResponse:
+        """Validate staged chunks as one PDF, commit it, and bind it to the session.
+
+        Prefer :meth:`upload_session_pdf`, which stages and completes in one call.
+        """
+        if idempotency_key is not None and len(idempotency_key) > 255:
+            raise ValueError(
+                "attachment idempotency_key must be at most 255 characters"
+            )
+        resp = self._request(
+            "POST",
+            f"/v1/sessions/{quote(session_id, safe='')}/attachments/uploads/"
+            f"{quote(upload_id, safe='')}/complete",
+            json=CompleteSessionPDFUploadRequest(
+                name=name, size_bytes=size_bytes, part_count=part_count
+            ),
+            idempotency_key=idempotency_key,
+        )
+        return SessionAttachmentResponse.model_validate(resp.json())
+
     def list_session_messages(
         self, session_id: str, opts: ListSessionMessagesOptions | None = None
     ) -> SessionMessageListResponse:
@@ -1143,6 +1254,18 @@ class Client:
             f"{quote(turn_id, safe='')}/cancel",
         )
         return AgentTurn.model_validate(resp.json())
+
+    def delete_session_turn(self, session_id: str, turn_id: str) -> None:
+        """Delete the session's last turn: its input, work, and reply.
+
+        Only the last turn of an idle session can be deleted (409 otherwise);
+        repeat to walk further back. Deleting an already-deleted turn succeeds.
+        """
+        self._request(
+            "DELETE",
+            f"/v1/sessions/{quote(session_id, safe='')}/turns/"
+            f"{quote(turn_id, safe='')}",
+        )
 
     # Fetch a session transcript snapshot (session-stream v2). Without a cursor
     # this is a bootstrap tail (latest final page + all live rows and turns);
@@ -1327,11 +1450,15 @@ class Client:
         idempotency_key: str | None = None,
         files: Any | None = None,
         data: dict[str, Any] | None = None,
+        content: bytes | None = None,
         replay_safe: bool = False,
     ) -> httpx.Response:
         payload = _model_dump(json) if json is not None else None
         request_path = self._path(path, params=params)
         started = time.monotonic()
+        headers = _idempotency_headers(idempotency_key)
+        if content is not None:
+            headers["Content-Type"] = "application/octet-stream"
         # replay_safe marks a POST whose idempotency is guaranteed without an
         # Idempotency-Key header (adopt-mode creates, deduped on
         # external_ref); the retrying transport honors it via extensions.
@@ -1341,7 +1468,8 @@ class Client:
             json=payload,
             files=files,
             data=data,
-            headers=_idempotency_headers(idempotency_key),
+            content=content,
+            headers=headers,
             extensions={"replay_safe": True} if replay_safe else None,
         )
         self._logger.debug(
@@ -1809,6 +1937,17 @@ def _invoke_agent_request(opts: InvokeAgentOptions) -> InvokeAgentRequest:
 def _normalize_idempotency_key(value: str | None) -> str | None:
     normalized = value.strip() if value is not None else ""
     return normalized or None
+
+
+def _read_full(source: BinaryIO, size: int) -> bytes:
+    """Read up to ``size`` bytes, looping over short reads until EOF."""
+    buf = bytearray()
+    while len(buf) < size:
+        chunk = source.read(size - len(buf))
+        if not chunk:
+            break
+        buf += chunk
+    return bytes(buf)
 
 
 def _idempotency_headers(
