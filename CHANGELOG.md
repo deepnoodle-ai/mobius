@@ -30,6 +30,10 @@ the minor version.
   and grouped under declared folders; sessions can delete their last turn and
   stage PDFs up to 100 MiB in chunks; messages carry a resolved `author`
   ([#223](https://github.com/deepnoodle-ai/mobius/pull/223)).
+- Go, Python, and TypeScript clients add `UploadSessionPDF` /
+  `upload_session_pdf` / `uploadSessionPdf` (8 MiB staged parts, up to
+  100 MiB), their part/complete primitives, and `DeleteSessionTurn`
+  ([#223](https://github.com/deepnoodle-ai/mobius/pull/223)).
 
 ### Changed
 

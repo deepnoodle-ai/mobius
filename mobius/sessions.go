@@ -490,6 +490,21 @@ func (c *Client) CancelTurn(ctx context.Context, sessionID, turnID string) (*api
 	return resp.JSON200, nil
 }
 
+// DeleteSessionTurn takes back the session's last turn: its input, the
+// agent's work, and its reply leave the transcript. Only the last turn of an
+// idle session can be deleted (409 otherwise); repeat to walk further back.
+// Deleting an already-deleted turn succeeds.
+func (c *Client) DeleteSessionTurn(ctx context.Context, sessionID, turnID string) error {
+	resp, err := c.ac.DeleteSessionTurnWithResponse(ctx, api.SessionIdParam(sessionID), api.TurnIdParam(turnID))
+	if err != nil {
+		return fmt.Errorf("mobius: delete session turn: %w", err)
+	}
+	if resp.StatusCode() != http.StatusNoContent {
+		return unexpectedSessionStatus("delete session turn", resp.StatusCode(), resp.Status(), resp.HTTPResponse, resp.Body)
+	}
+	return nil
+}
+
 func stringPointer(value string) *string {
 	if value == "" {
 		return nil

@@ -126,3 +126,125 @@ test("client: deleting a session attachment escapes both identifiers", async () 
     "https://api.example.invalid/v1/sessions/sess%2F1/attachments/art%201",
   );
 });
+
+test("client: uploadSessionPdf stages 8 MiB parts then completes", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: {
+    method: string;
+    url: string;
+    headers: Headers;
+    size?: number;
+    body?: unknown;
+  }[] = [];
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof input === "string" ? input : input.toString();
+    const headers = new Headers(init?.headers);
+    if (init?.method === "PUT") {
+      calls.push({
+        method: "PUT",
+        url,
+        headers,
+        size: (init.body as Blob).size,
+      });
+      return new Response(null, { status: 204 });
+    }
+    calls.push({
+      method: init?.method ?? "GET",
+      url,
+      headers,
+      body: JSON.parse(init?.body as string),
+    });
+    return Response.json(ATTACHMENT_FIXTURE, { status: 201 });
+  }) as typeof fetch;
+
+  const chunk = 8 * 1024 * 1024;
+  try {
+    const client = new Client({
+      apiKey: "mbx_test",
+      baseURL: "https://api.example.invalid",
+      retry: 0,
+    });
+    const attachment = await client.uploadSessionPdf({
+      sessionId: "sess_1",
+      name: " big.pdf ",
+      file: new Blob([new Uint8Array(chunk + 5)]),
+      uploadId: "7f1c3c9e-5b1a-4c55-9d5e-1c1f5a0b8e21",
+      idempotencyKey: "turn-1:big",
+    });
+    assert.equal(attachment.artifact.id, "art_fixture");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  const base =
+    "https://api.example.invalid/v1/sessions/sess_1/attachments/uploads/7f1c3c9e-5b1a-4c55-9d5e-1c1f5a0b8e21";
+  assert.deepEqual(
+    calls.map((c) => [c.method, c.url, c.size]),
+    [
+      ["PUT", `${base}/parts/0`, chunk],
+      ["PUT", `${base}/parts/1`, 5],
+      ["POST", `${base}/complete`, undefined],
+    ],
+  );
+  assert.equal(calls[0]!.headers.get("Content-Type"), "application/octet-stream");
+  assert.equal(calls[2]!.headers.get("Idempotency-Key"), "turn-1:big");
+  assert.deepEqual(calls[2]!.body, {
+    name: "big.pdf",
+    size_bytes: chunk + 5,
+    part_count: 2,
+  });
+});
+
+test("client: uploadSessionPdf rejects empty and oversized files before sending", async () => {
+  const client = new Client({
+    apiKey: "mbx_test",
+    baseURL: "https://api.example.invalid",
+    retry: 0,
+  });
+  await assert.rejects(
+    client.uploadSessionPdf({ sessionId: "sess_1", name: "a.pdf", file: new Uint8Array() }),
+    /must not be empty/,
+  );
+  await assert.rejects(
+    client.uploadSessionPdf({
+      sessionId: "sess_1",
+      name: "a.pdf",
+      file: new Blob([new Uint8Array(100 * 1024 * 1024 + 1)]),
+    }),
+    /limited to 100 MiB/,
+  );
+});
+
+test("client: deleteSessionTurn deletes the turn and surfaces 409", async () => {
+  const originalFetch = globalThis.fetch;
+  const seen: string[] = [];
+  let status = 204;
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    seen.push(`${init?.method} ${typeof input === "string" ? input : input.toString()}`);
+    if (status === 204) return new Response(null, { status: 204 });
+    return Response.json(
+      { error: { code: "turn_not_last", message: "not the last turn" } },
+      { status },
+    );
+  }) as typeof fetch;
+
+  try {
+    const client = new Client({
+      apiKey: "mbx_test",
+      baseURL: "https://api.example.invalid",
+      retry: 0,
+    });
+    await client.deleteSessionTurn("sess_1", "turn_2");
+    status = 409;
+    await assert.rejects(client.deleteSessionTurn("sess_1", "turn_1"), {
+      status: 409,
+      code: "turn_not_last",
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+  assert.deepEqual(seen, [
+    "DELETE https://api.example.invalid/v1/sessions/sess_1/turns/turn_2",
+    "DELETE https://api.example.invalid/v1/sessions/sess_1/turns/turn_1",
+  ]);
+});
