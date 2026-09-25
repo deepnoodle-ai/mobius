@@ -154,3 +154,55 @@ func TestGeneratedCommandsOptIntoTextFiles(t *testing.T) {
 		t.Fatal("instructions should accept @file text input")
 	}
 }
+
+func TestBooleanQueryParamsDefaultingTrueGetANegatedFlag(t *testing.T) {
+	var b bytes.Buffer
+	err := renderCommand(&b, "artifacts", PlannedCommand{
+		OperationID: "listArtifacts",
+		Command:     "list",
+		Description: "List artifacts",
+		Method:      &Method{Name: "ListArtifacts", Params: []Param{{Name: "params", Type: "*ListArtifactsParams"}}},
+		QueryBlock: &QueryBlock{TypeName: "ListArtifactsParams", Fields: []QueryField{{
+			GoField:     "Recursive",
+			FlagName:    "recursive",
+			Description: "Include files in subfolders of `folder`.",
+			ElemType:    "bool",
+			Kind:        "bool",
+			DefaultTrue: true,
+		}}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		`cli.Bool("no-recursive", "")`,
+		`if ctx.Bool("no-recursive") {`,
+		`} else if ctx.IsSet("recursive") {`,
+	} {
+		if !strings.Contains(b.String(), want) {
+			t.Fatalf("generated command does not contain %q:\n%s", want, b.String())
+		}
+	}
+}
+
+func TestBooleanQueryParamsWithoutATrueDefaultStaySingleFlags(t *testing.T) {
+	var b bytes.Buffer
+	err := renderCommand(&b, "artifacts", PlannedCommand{
+		OperationID: "listArtifacts",
+		Command:     "list",
+		Description: "List artifacts",
+		Method:      &Method{Name: "ListArtifacts", Params: []Param{{Name: "params", Type: "*ListArtifactsParams"}}},
+		QueryBlock: &QueryBlock{TypeName: "ListArtifactsParams", Fields: []QueryField{{
+			GoField:  "LatestOnly",
+			FlagName: "latest-only",
+			ElemType: "bool",
+			Kind:     "bool",
+		}}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(b.String(), "no-latest-only") {
+		t.Fatalf("unexpected negated flag:\n%s", b.String())
+	}
+}

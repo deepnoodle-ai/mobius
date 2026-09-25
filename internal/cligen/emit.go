@@ -51,6 +51,10 @@ type QueryField struct {
 	ElemType    string // unwrapped element type: "string", "int", "bool", or a named alias
 	Kind        string // "string", "int", "bool", "strings" (for []string), "skip"
 	Required    bool   // true if the struct field is non-pointer
+	// DefaultTrue marks a boolean parameter the server applies when it is
+	// omitted. Such a flag gets a `--no-<flag>` companion so turning the
+	// behavior off reads as a switch rather than as `--flag=false`.
+	DefaultTrue bool
 }
 
 // BodyArg captures a typed JSON request body.
@@ -135,6 +139,9 @@ func buildPlan(client *ClientInfo, spec map[string]*SpecOp, overrides map[string
 				jsonName := strings.ReplaceAll(f.FlagName, "-", "_")
 				if desc, ok := op.ParamDescriptions[jsonName]; ok {
 					f.Description = desc
+				}
+				if f.Kind == "bool" && !f.Required && op.ParamDefaultTrue[jsonName] {
+					f.DefaultTrue = true
 				}
 			}
 		}
@@ -315,6 +322,10 @@ func resolveQueryField(f FieldInfo, client *ClientInfo) QueryField {
 	}
 	return qf
 }
+
+// negatedFlagName is the companion switch for a boolean flag the server
+// applies by default: --recursive → --no-recursive.
+func negatedFlagName(flag string) string { return "no-" + flag }
 
 // underlyingKind returns "string", "int", "bool", or "" for a named type,
 // following type-alias chains recorded in client.TypeAliases.
@@ -754,6 +765,10 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 				flags = append(flags, fmt.Sprintf(`cli.Int(%q, "").Help(%q)%s`, f.FlagName, help, required))
 			case "bool":
 				flags = append(flags, fmt.Sprintf(`cli.Bool(%q, "").Help(%q)%s`, f.FlagName, help, required))
+				if f.DefaultTrue {
+					flags = append(flags, fmt.Sprintf(`cli.Bool(%q, "").Help(%q)`, negatedFlagName(f.FlagName),
+						fmt.Sprintf("Turn off --%s, which the server applies by default.", f.FlagName)))
+				}
 			case "strings":
 				flags = append(flags, fmt.Sprintf(`cli.Strings(%q, "").Help(%q)%s`, f.FlagName, help, required))
 			case "time":
@@ -879,9 +894,15 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 						f.FlagName, cast(fmt.Sprintf("int64(ctx.Int(%q))", f.FlagName)), f.GoField)
 				}
 			case "bool":
-				if f.Required {
+				switch {
+				case f.Required:
 					fmt.Fprintf(b, "\t\t\tparams.%s = ctx.Bool(%q)\n", f.GoField, f.FlagName)
-				} else {
+				case f.DefaultTrue:
+					// --no-<flag> wins over --<flag>; leaving both unset sends
+					// nothing and lets the server apply its default.
+					fmt.Fprintf(b, "\t\t\tif ctx.Bool(%q) { v := false; params.%s = &v } else if ctx.IsSet(%q) { v := ctx.Bool(%q); params.%s = &v }\n",
+						negatedFlagName(f.FlagName), f.GoField, f.FlagName, f.FlagName, f.GoField)
+				default:
 					fmt.Fprintf(b, "\t\t\tif ctx.IsSet(%q) { v := ctx.Bool(%q); params.%s = &v }\n",
 						f.FlagName, f.FlagName, f.GoField)
 				}

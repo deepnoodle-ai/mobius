@@ -34,6 +34,13 @@ the minor version.
   `upload_session_pdf` / `uploadSessionPdf` (8 MiB staged parts, up to
   100 MiB), their part/complete primitives, and `DeleteSessionTurn`
   ([#223](https://github.com/deepnoodle-ai/mobius/pull/223)).
+- CLI folder commands: `mobius artifacts folders`, `mkdir`, `rmdir`, and
+  `move`, plus `--folder` and `--no-recursive` on `artifacts list`
+  ([#221](https://github.com/deepnoodle-ai/mobius/pull/221)).
+- `output_folder` on routine and agent create, update, and read shapes, with
+  `--output-folder` on the matching CLI commands: the Library folder a
+  routine's or assistant's files are saved to
+  ([#221](https://github.com/deepnoodle-ai/mobius/pull/221)).
 
 ### Changed
 
