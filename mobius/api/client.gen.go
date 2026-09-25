@@ -1099,7 +1099,6 @@ func (e ConsumerKind) Valid() bool {
 
 // Defines values for ConsumerInputKind.
 const (
-	ConsumerInputKindAgentTool      ConsumerInputKind = "agent_tool"
 	ConsumerInputKindHttpSubscriber ConsumerInputKind = "http_subscriber"
 	ConsumerInputKindNone           ConsumerInputKind = "none"
 )
@@ -1107,8 +1106,6 @@ const (
 // Valid indicates whether the value is a known member of the ConsumerInputKind enum.
 func (e ConsumerInputKind) Valid() bool {
 	switch e {
-	case ConsumerInputKindAgentTool:
-		return true
 	case ConsumerInputKindHttpSubscriber:
 		return true
 	case ConsumerInputKindNone:
@@ -2497,6 +2494,7 @@ const (
 	SessionEventProjectionKindEmail            SessionEventProjectionKind = "email"
 	SessionEventProjectionKindFileChange       SessionEventProjectionKind = "file_change"
 	SessionEventProjectionKindGeneric          SessionEventProjectionKind = "generic"
+	SessionEventProjectionKindInteraction      SessionEventProjectionKind = "interaction"
 	SessionEventProjectionKindMessage          SessionEventProjectionKind = "message"
 	SessionEventProjectionKindRepositoryChange SessionEventProjectionKind = "repository_change"
 	SessionEventProjectionKindWorkItem         SessionEventProjectionKind = "work_item"
@@ -2516,6 +2514,8 @@ func (e SessionEventProjectionKind) Valid() bool {
 	case SessionEventProjectionKindFileChange:
 		return true
 	case SessionEventProjectionKindGeneric:
+		return true
+	case SessionEventProjectionKindInteraction:
 		return true
 	case SessionEventProjectionKindMessage:
 		return true
@@ -2582,6 +2582,30 @@ func (e SessionImageSourceType) Valid() bool {
 	case SessionImageSourceTypeBase64:
 		return true
 	case SessionImageSourceTypeUrl:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SessionMessageAuthorKind.
+const (
+	SessionMessageAuthorKindAgent   SessionMessageAuthorKind = "agent"
+	SessionMessageAuthorKindHuman   SessionMessageAuthorKind = "human"
+	SessionMessageAuthorKindService SessionMessageAuthorKind = "service"
+	SessionMessageAuthorKindSystem  SessionMessageAuthorKind = "system"
+)
+
+// Valid indicates whether the value is a known member of the SessionMessageAuthorKind enum.
+func (e SessionMessageAuthorKind) Valid() bool {
+	switch e {
+	case SessionMessageAuthorKindAgent:
+		return true
+	case SessionMessageAuthorKindHuman:
+		return true
+	case SessionMessageAuthorKindService:
+		return true
+	case SessionMessageAuthorKindSystem:
 		return true
 	default:
 		return false
@@ -4151,6 +4175,9 @@ type Agent struct {
 	// Name Mutable unique name within the org. Free-form human-readable label; use `id` for stable references and job targeting.
 	Name string `json:"name"`
 
+	// OutputFolder Library folder this assistant's files are saved to outside a routine occurrence, where the routine's folder wins. Empty means the top level of the Library. A file name that already contains a folder is never moved into it.
+	OutputFolder *string `json:"output_folder,omitempty"`
+
 	// Owner The human or team responsible for this resource.
 	Owner ResourceOwner `json:"owner"`
 
@@ -4590,6 +4617,9 @@ type AgentTurn struct {
 	// Deferrable True for scheduled work that yields admission priority to direct turns.
 	Deferrable *bool `json:"deferrable,omitempty"`
 
+	// DeletedAt When this turn was taken back from the transcript. The turn record is kept so its usage stays readable, but its messages no longer appear in the transcript or in the agent's context. Absent on a turn that is still part of the conversation.
+	DeletedAt *time.Time `json:"deleted_at,omitempty"`
+
 	// EffectiveTimeoutSeconds Authoritative active-execution budget selected for the turn.
 	EffectiveTimeoutSeconds *int64 `json:"effective_timeout_seconds,omitempty"`
 
@@ -4921,6 +4951,53 @@ type ArtifactDelivery struct {
 
 	// WebUrl Destination browser URL.
 	WebUrl *string `json:"web_url,omitempty"`
+}
+
+// ArtifactFolder A declared Library folder.
+type ArtifactFolder struct {
+	CreatedAt time.Time `json:"created_at"`
+
+	// CreatedBy Principal that declared the folder.
+	CreatedBy *string `json:"created_by,omitempty"`
+
+	// Id Folder ID.
+	Id string `json:"id"`
+
+	// Name Last segment of the path.
+	Name string `json:"name"`
+
+	// Owner The human or team responsible for this resource.
+	Owner ResourceOwner `json:"owner"`
+
+	// ParentPath Path of the containing folder; empty at the root.
+	ParentPath string `json:"parent_path"`
+
+	// Path Normalized folder path, with no leading or trailing slash.
+	Path string `json:"path"`
+
+	// Visibility Who the custodian chose to share the resource with.
+	Visibility ResourceVisibility `json:"visibility"`
+}
+
+// ArtifactFolderListResponse defines model for ArtifactFolderListResponse.
+type ArtifactFolderListResponse struct {
+	// Items Immediate subfolders, ordered by name.
+	Items []ArtifactFolderSummary `json:"items"`
+}
+
+// ArtifactFolderSummary One immediate subfolder, declared or implied by a file name.
+type ArtifactFolderSummary struct {
+	// Declared Whether a folder record exists. Only a declared folder can be deleted; an implied one disappears with its last file.
+	Declared bool `json:"declared"`
+
+	// Id Folder ID, present only when the folder is declared.
+	Id *string `json:"id,omitempty"`
+
+	// Name Last segment of the path, for display.
+	Name string `json:"name"`
+
+	// Path Normalized folder path.
+	Path string `json:"path"`
 }
 
 // ArtifactListResponse defines model for ArtifactListResponse.
@@ -5445,6 +5522,13 @@ type CompactionStartedPayload struct {
 // CompactionTrigger What started a compaction pass. `auto` is the threshold-gated pass that runs after a turn commits; `append` is the threshold-gated pass that runs inline on a message append; `manual` is an explicit compact request.
 type CompactionTrigger string
 
+// CompleteSessionPDFUploadRequest defines model for CompleteSessionPDFUploadRequest.
+type CompleteSessionPDFUploadRequest struct {
+	Name      string `json:"name"`
+	PartCount int    `json:"part_count"`
+	SizeBytes int64  `json:"size_bytes"`
+}
+
 // ConnectionBinding A frozen selection of one connection and its explicit grant.
 type ConnectionBinding struct {
 	ConnectionId string `json:"connection_id"`
@@ -5554,9 +5638,8 @@ type Consumer struct {
 // ConsumerKind defines model for Consumer.Kind.
 type ConsumerKind string
 
-// ConsumerInput defines model for ConsumerInput.
+// ConsumerInput A caller may attach an HTTP subscriber or no consumer. Agent-tool consumers are runtime-only.
 type ConsumerInput struct {
-	AgentTool      *AgentToolConsumer           `json:"agent_tool,omitempty"`
 	HttpSubscriber *HttpSubscriberConsumerInput `json:"http_subscriber,omitempty"`
 	Kind           ConsumerInputKind            `json:"kind"`
 }
@@ -5673,6 +5756,9 @@ type CreateAgentRequest struct {
 	// Name Unique name for this agent. Free-form human-readable label, 1-63 characters.
 	Name string `json:"name"`
 
+	// OutputFolder Library folder this assistant's files are saved to, for example `assistants/ops`. Omit to take the default derived from the name; send an empty string for the top level of the Library. Inside a routine occurrence the routine's folder wins.
+	OutputFolder *string `json:"output_folder,omitempty"`
+
 	// Owner The human or team responsible for this resource.
 	Owner *ResourceOwner `json:"owner,omitempty"`
 
@@ -5703,6 +5789,15 @@ type CreateAgentRequest struct {
 	//
 	// Because agent memory is keyed by `(org, agent, user, key)` and every read is scoped to one agent, narrowing who can reach an agent narrows its shared memory layer by construction. Group memory needs no separate store.
 	Visibility *AgentVisibility `json:"visibility,omitempty"`
+}
+
+// CreateArtifactFolderRequest defines model for CreateArtifactFolderRequest.
+type CreateArtifactFolderRequest struct {
+	// Path Folder path to declare, relative and with no leading or trailing slash. Intermediate folders are implied by this path and need no declaration of their own.
+	Path string `json:"path"`
+
+	// Visibility Who sees the folder. Omit for `private`, visible only to the person creating it. It never changes who can open the files inside.
+	Visibility *ResourceVisibility `json:"visibility,omitempty"`
 }
 
 // CreateArtifactRequest defines model for CreateArtifactRequest.
@@ -5740,6 +5835,7 @@ type CreateArtifactRequestConvert string
 
 // CreateInteractionRequest Creates an interaction. `consumer` names what is waiting on its resolution; when omitted, completion records the response and nothing else acts on it.
 type CreateInteractionRequest struct {
+	// Consumer A caller may attach an HTTP subscriber or no consumer. Agent-tool consumers are runtime-only.
 	Consumer *ConsumerInput `json:"consumer,omitempty"`
 
 	// Context Additional key-value context surfaced in the UI alongside the title and description.
@@ -5780,12 +5876,16 @@ type CreateInteractionRequest struct {
 	// ResolutionPolicy Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome, and whether that outcome needs acceptance before it is final.
 	ResolutionPolicy *ResolutionPolicy `json:"resolution_policy,omitempty"`
 
-	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
+	// Spec The set of questions one responder answers atomically. Group related questions into a single interaction rather than opening several: each interaction is a separate item in someone's inbox and a separate interruption.
+	//
+	// Protocol kind is decoupled from input shape: each kind declares which question modes are *allowed*, not which is *implied*.
 	//
 	// Allowed combinations:
-	// * `request_approval` → `confirm`, `select`
+	// * `request_approval` → `confirm`, `select`, and **exactly one
+	// question** — single-question is what makes an approval auditable
 	// * `request_review` → `select`, `input`
 	// * `request_information` → `select`, `multi_select`, `input`
+	// * `assign_work` → `select`, `multi_select`, `input`
 	Spec *InteractionSpec `json:"spec,omitempty"`
 
 	// Subject Pointer to the work item, artifact, external ticket, or Mobius entity this interaction is about.
@@ -5887,6 +5987,9 @@ type CreateSessionEventSubscriptionRequest struct {
 
 	// IdempotencyKey Retry key scoped to this session.
 	IdempotencyKey *string `json:"idempotency_key,omitempty"`
+
+	// Once When true, the subscription ends after its first matching event. That event is still delivered to the conversation, and the subscription stops with `stop_reason` `delivered_once` in the same step, so no later event can match it. When false, the subscription keeps delivering until it is unsubscribed, stopped, or expires. Retrying with the same `idempotency_key` must repeat the same value.
+	Once *bool `json:"once,omitempty"`
 }
 
 // CreateSessionRequest Resolve-or-create policy for a session.
@@ -5975,7 +6078,7 @@ type EmailDelivery struct {
 type ErrorResponse struct {
 	// Error Error detail.
 	Error struct {
-		// Code Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family.
+		// Code Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. When the request-wide rate limiter refuses a call, `rate_limit_exceeded` carries `scope` (`key`, `org`, or `browser`), `window`, `limit`, and `retry_after_seconds` in `details`; an endpoint's own cap returns the same code without them. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family.
 		Code string `json:"code"`
 
 		// Details Optional structured details specific to a `code`. Endpoints that set this document the per-code shape inline. Absent for codes whose `code` + `message` are sufficient.
@@ -6300,12 +6403,16 @@ type Interaction struct {
 	// Reviewer Principal whose accept or send-back was recorded last; null until a review decision is made. Distinct from `responder`, which names whoever submitted the work.
 	Reviewer *InteractionResponder `json:"reviewer,omitempty"`
 
-	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
+	// Spec The set of questions one responder answers atomically. Group related questions into a single interaction rather than opening several: each interaction is a separate item in someone's inbox and a separate interruption.
+	//
+	// Protocol kind is decoupled from input shape: each kind declares which question modes are *allowed*, not which is *implied*.
 	//
 	// Allowed combinations:
-	// * `request_approval` → `confirm`, `select`
+	// * `request_approval` → `confirm`, `select`, and **exactly one
+	// question** — single-question is what makes an approval auditable
 	// * `request_review` → `select`, `input`
 	// * `request_information` → `select`, `multi_select`, `input`
+	// * `assign_work` → `select`, `multi_select`, `input`
 	Spec *InteractionSpec `json:"spec,omitempty"`
 
 	// Status Lifecycle state of the interaction.
@@ -6340,6 +6447,29 @@ type Interaction struct {
 
 	// Visibility Who the custodian chose to share the resource with.
 	Visibility ResourceVisibility `json:"visibility"`
+}
+
+// InteractionAnswer One responder's answer to one question. Exactly one content field is populated, chosen by the question's mode:
+//
+// * `confirm` → `value`, either `approved` or `rejected`
+// * `select` → `value` (an option value) or `other`
+// * `multi_select` → `values`, optionally with `other`
+// * `input` → `text`
+type InteractionAnswer struct {
+	// Other Free-text answer supplied instead of, or alongside, the listed options. Only accepted when the question sets `allow_other`.
+	Other *string `json:"other,omitempty"`
+
+	// QuestionId The `id` of the question being answered.
+	QuestionId string `json:"question_id"`
+
+	// Text For `input`: the free-text answer.
+	Text *string `json:"text,omitempty"`
+
+	// Value For `select` and `confirm`: the chosen value.
+	Value *string `json:"value,omitempty"`
+
+	// Values For `multi_select`: the chosen option values.
+	Values *[]string `json:"values,omitempty"`
 }
 
 // InteractionKind Protocol kind of the interaction:
@@ -6416,6 +6546,59 @@ type InteractionOption struct {
 	Value string `json:"value"`
 }
 
+// InteractionQuestion One question inside an interaction's form. Answers are addressed by `id`, so the id is a stable machine key the responder never sees.
+//
+// Write each prompt as one direct question. Selection limits, click-order instructions, and preference-ranking instructions belong in the structured fields, not in the prompt text — the interface owns its own input instructions.
+type InteractionQuestion struct {
+	// AllowOther For `select` and `multi_select`, offer a free-text escape hatch alongside the listed options.
+	AllowOther *bool `json:"allow_other,omitempty"`
+
+	// DefaultConfirmed For `confirm`: initial yes/no value.
+	DefaultConfirmed *bool `json:"default_confirmed,omitempty"`
+
+	// DefaultText For `input`: initial text value.
+	DefaultText *string `json:"default_text,omitempty"`
+
+	// DefaultValue For `select`: initially selected option value.
+	DefaultValue *string `json:"default_value,omitempty"`
+
+	// DefaultValues For `multi_select`: initially selected option values.
+	DefaultValues *[]string `json:"default_values,omitempty"`
+
+	// Description Optional brief context that helps the responder decide. Do not repeat input mechanics the interface already shows.
+	Description *string `json:"description,omitempty"`
+
+	// Id Stable machine key this question's answer is addressed by.
+	Id string `json:"id"`
+
+	// MaxLength For `input`: longest accepted answer. Defaults to 500 for single-line and 4000 for multiline.
+	MaxLength *int `json:"max_length,omitempty"`
+
+	// MaxSelections For `multi_select`: most choices accepted. Defaults to every available choice.
+	MaxSelections *int `json:"max_selections,omitempty"`
+
+	// MinSelections For `multi_select`: fewest choices accepted. Defaults to 1.
+	MinSelections *int `json:"min_selections,omitempty"`
+
+	// Mode Declarative UI/input primitive for collecting the response. This is a portable rendering contract, not executable code. Values are `confirm`, `select`, `multi_select`, and `input`.
+	Mode InteractionMode `json:"mode"`
+
+	// Multiline For `input`: render a multi-line text area.
+	Multiline *bool `json:"multiline,omitempty"`
+
+	// Options Required for `select` and `multi_select` modes.
+	Options *[]InteractionOption `json:"options,omitempty"`
+
+	// Placeholder For `input`: example input. Do not use placeholder copy to communicate whether the question is required.
+	Placeholder *string `json:"placeholder,omitempty"`
+
+	// Prompt One direct user-facing question.
+	Prompt string `json:"prompt"`
+
+	// Required Whether an answer must be supplied before the form can be submitted. Defaults to true. Use false only for helpful context the responder may skip without blocking the work.
+	Required *bool `json:"required,omitempty"`
+}
+
 // InteractionReference Pointer to the work item, artifact, external ticket, or Mobius entity this interaction is about.
 type InteractionReference struct {
 	// EntityId Required when kind is `mobius_entity`.
@@ -6446,6 +6629,9 @@ type InteractionResponder struct {
 
 // InteractionResponse One persisted answer artifact for an interaction. The response that triggered resolution is referenced from `Interaction.resolving_response_id`.
 type InteractionResponse struct {
+	// Answers This participant's complete answer set, one entry per question they answered.
+	Answers []InteractionAnswer `json:"answers"`
+
 	// Attempt Review round this response was submitted under, matching the interaction's `review_round` at submission time. Null or absent for the first round. Only responses whose `attempt` equals the interaction's current `review_round` count toward resolution; earlier rounds are retained as audit history.
 	Attempt *int `json:"attempt,omitempty"`
 
@@ -6471,9 +6657,6 @@ type InteractionResponse struct {
 	// State Lifecycle state for this response row.
 	State     InteractionResponseState `json:"state"`
 	UpdatedAt time.Time                `json:"updated_at"`
-
-	// Value Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
-	Value InteractionValue `json:"value"`
 }
 
 // InteractionResponseResponseKind Answer response.
@@ -6482,36 +6665,19 @@ type InteractionResponseResponseKind string
 // InteractionResponseState Lifecycle state for this response row.
 type InteractionResponseState string
 
-// InteractionSpec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
+// InteractionSpec The set of questions one responder answers atomically. Group related questions into a single interaction rather than opening several: each interaction is a separate item in someone's inbox and a separate interruption.
+//
+// Protocol kind is decoupled from input shape: each kind declares which question modes are *allowed*, not which is *implied*.
 //
 // Allowed combinations:
-// * `request_approval` → `confirm`, `select`
+// * `request_approval` → `confirm`, `select`, and **exactly one
+// question** — single-question is what makes an approval auditable
 // * `request_review` → `select`, `input`
 // * `request_information` → `select`, `multi_select`, `input`
+// * `assign_work` → `select`, `multi_select`, `input`
 type InteractionSpec struct {
-	// DefaultConfirmed Initial yes/no value for `confirm` mode.
-	DefaultConfirmed *bool `json:"default_confirmed,omitempty"`
-
-	// DefaultText Initial text value for `input` mode.
-	DefaultText *string `json:"default_text,omitempty"`
-
-	// DefaultValue Default selected option for `select` mode.
-	DefaultValue *string `json:"default_value,omitempty"`
-
-	// DefaultValues Default selected options for `multi_select` mode.
-	DefaultValues *[]string `json:"default_values,omitempty"`
-
-	// Mode Declarative UI/input primitive for collecting the response. This is a portable rendering contract, not executable code. Values are `confirm`, `select`, `multi_select`, and `input`.
-	Mode InteractionMode `json:"mode"`
-
-	// Multiline When true, render `input` mode as a multiline text area.
-	Multiline *bool `json:"multiline,omitempty"`
-
-	// Options Required for `select` and `multi_select` modes.
-	Options *[]InteractionOption `json:"options,omitempty"`
-
-	// Placeholder Hint text shown for `input` mode.
-	Placeholder *string `json:"placeholder,omitempty"`
+	// Questions The questions this interaction asks.
+	Questions []InteractionQuestion `json:"questions"`
 }
 
 // InteractionStatus Lifecycle state of the interaction.
@@ -6621,12 +6787,16 @@ type InteractionUpsertFrame struct {
 	// Reviewer Principal whose accept or send-back was recorded last; null until a review decision is made. Distinct from `responder`, which names whoever submitted the work.
 	Reviewer *InteractionResponder `json:"reviewer,omitempty"`
 
-	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
+	// Spec The set of questions one responder answers atomically. Group related questions into a single interaction rather than opening several: each interaction is a separate item in someone's inbox and a separate interruption.
+	//
+	// Protocol kind is decoupled from input shape: each kind declares which question modes are *allowed*, not which is *implied*.
 	//
 	// Allowed combinations:
-	// * `request_approval` → `confirm`, `select`
+	// * `request_approval` → `confirm`, `select`, and **exactly one
+	// question** — single-question is what makes an approval auditable
 	// * `request_review` → `select`, `input`
 	// * `request_information` → `select`, `multi_select`, `input`
+	// * `assign_work` → `select`, `multi_select`, `input`
 	Spec *InteractionSpec `json:"spec,omitempty"`
 
 	// Status Lifecycle state of the interaction.
@@ -6856,7 +7026,10 @@ type MessageDeltaFrameEventType string
 
 // MessageUpsertFrame defines model for MessageUpsertFrame.
 type MessageUpsertFrame struct {
-	AgentId               string                `json:"agent_id"`
+	AgentId string `json:"agent_id"`
+
+	// Author The principal that wrote a message, resolved from the authenticated sender at read time so the transcript can render a name and avatar without a lookup per message. Never accepted on write.
+	Author                *SessionMessageAuthor `json:"author,omitempty"`
 	Content               []SessionContentBlock `json:"content"`
 	CoversThroughSequence *int                  `json:"covers_through_sequence,omitempty"`
 	CreatedAt             time.Time             `json:"created_at"`
@@ -6868,7 +7041,9 @@ type MessageUpsertFrame struct {
 	EventProjection *SessionEventProjection     `json:"event_projection,omitempty"`
 	EventType       MessageUpsertFrameEventType `json:"event_type"`
 	Id              string                      `json:"id"`
-	Metadata        *map[string]interface{}     `json:"metadata,omitempty"`
+
+	// Metadata Free-form metadata for this message. A `compaction` entry carries the server-owned keys described on `SessionMessage.metadata`.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 
 	// Role Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
 	Role      SessionMessageRole `json:"role"`
@@ -6962,6 +7137,8 @@ type NudgeSessionRequest struct {
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 
 	// Wake When true and the target turn is waiting on an interruptible agent tool, resolve that tool call with `{ "interrupted": true, "reason": "user_direction" }` and resume the same turn. Running and newly queued turns ignore this field.
+	//
+	// A turn waiting on the outcome of a question it asked with `mobius.interaction.open` (`mobius_event_wait` on `interaction.resolved`) is resumed by every nudge, with or without this field. The question stays open: the tool result also carries `interaction_id` and `interaction_status: "pending"`, and the question's outcome still arrives in the conversation as its own input.
 	Wake *bool `json:"wake,omitempty"`
 }
 
@@ -7237,11 +7414,11 @@ type RespondToInteractionRequest struct {
 	// Action Operation to perform through the canonical response endpoint. `submit` answers the interaction.
 	Action *RespondToInteractionRequestAction `json:"action,omitempty"`
 
-	// Comment Optional free-text comment accompanying the action. Available on every interaction kind and never gated by the spec; the responder may always attach reasoning, caveats, or follow-up notes alongside `value`.
-	Comment *string `json:"comment,omitempty"`
+	// Answers The responder's complete answer set. Required for `submit`. Every required question must be answered; there is no partial submit.
+	Answers []InteractionAnswer `json:"answers"`
 
-	// Value Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
-	Value *InteractionValue `json:"value,omitempty"`
+	// Comment Optional free-text comment accompanying the action. Available on every interaction kind and never gated by the spec; the responder may always attach reasoning, caveats, or follow-up notes alongside their answers. It is one note per response, not per question.
+	Comment *string `json:"comment,omitempty"`
 }
 
 // RespondToInteractionRequestAction Operation to perform through the canonical response endpoint. `submit` answers the interaction.
@@ -7403,6 +7580,9 @@ type Routine struct {
 	// OriginSessionId The conversation the routine was proposed in, kept as provenance and nothing more. Each occurrence runs in its own session, so this is absent for a form-created routine and for one whose conversation has since been deleted. Archiving it does not stop the routine.
 	OriginSessionId *string `json:"origin_session_id,omitempty"`
 
+	// OutputFolder Library folder files produced here are saved to. Empty means the top level of the Library. A file name that already contains a folder is never moved into it.
+	OutputFolder *string `json:"output_folder,omitempty"`
+
 	// OwnerId The custodian. Absent under team custody, which has no owner.
 	OwnerId *string `json:"owner_id,omitempty"`
 
@@ -7515,6 +7695,9 @@ type RoutineCreateRequest struct {
 	// MaxTurnsPerThread Turn allowance per thread. Only a human can raise it.
 	MaxTurnsPerThread *int    `json:"max_turns_per_thread,omitempty"`
 	Name              *string `json:"name,omitempty"`
+
+	// OutputFolder Library folder these files are saved to, for example `routines/weekly-report`. A file name that already contains a folder always wins. Omit to take the default derived from the routine name; send an empty string for the top level of the Library.
+	OutputFolder *string `json:"output_folder,omitempty"`
 
 	// OwnerKind Defaults to `person`. `team` requires organization administration.
 	OwnerKind                 *RoutineOwnerKind `json:"owner_kind,omitempty"`
@@ -7781,6 +7964,9 @@ type RoutineUpdateRequest struct {
 	MaxTurnsPerThread *int    `json:"max_turns_per_thread,omitempty"`
 	Name              *string `json:"name,omitempty"`
 
+	// OutputFolder Replacement Library folder, for example `routines/weekly-report`. Omit to leave it unchanged; send an empty string to clear it and save to the top level of the Library. Renaming never changes it.
+	OutputFolder *string `json:"output_folder,omitempty"`
+
 	// PerOccurrenceCeilingMilli A person may move this either way. An agent may only lower it, so no agent widens the budget it runs under; raising it as an agent receives 403.
 	PerOccurrenceCeilingMilli *int64 `json:"per_occurrence_ceiling_milli,omitempty"`
 
@@ -7895,7 +8081,7 @@ type Session struct {
 	// LatestCompaction Pointer to the latest compaction marker in a session's transcript. The marker is itself a transcript message (role `compaction`); everything at or below `covers_through_sequence` is summarized history.
 	LatestCompaction *SessionCompactionBoundary `json:"latest_compaction,omitempty"`
 
-	// MessageCount Total messages currently in the session, including compaction summaries.
+	// MessageCount Non-decreasing transcript sequence high-water mark, including tombstoned rows and compaction summaries; not the number of live messages.
 	MessageCount int `json:"message_count"`
 
 	// Metadata Free-form caller metadata.
@@ -8093,9 +8279,11 @@ type SessionDocumentSourceType string
 
 // SessionEventDelivery defines model for SessionEventDelivery.
 type SessionEventDelivery struct {
-	CancelledAt    *time.Time                 `json:"cancelled_at,omitempty"`
-	CreatedAt      time.Time                  `json:"created_at"`
-	DeliveredAt    *time.Time                 `json:"delivered_at,omitempty"`
+	CancelledAt *time.Time `json:"cancelled_at,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
+	DeliveredAt *time.Time `json:"delivered_at,omitempty"`
+
+	// Diagnostic Machine-readable note about this delivery, such as `payload_truncated_at_65536_bytes`. `superseded_by_event_wait` means an agent wait in the same conversation already received this event, so it was not added a second time: the status is `delivered` and `target_turn_id` is the turn that received it.
 	Diagnostic     *string                    `json:"diagnostic,omitempty"`
 	Event          map[string]interface{}     `json:"event"`
 	EventType      string                     `json:"event_type"`
@@ -8129,7 +8317,10 @@ type SessionEventProjection struct {
 	// EventType Concrete event type that started the work.
 	EventType string `json:"event_type"`
 
-	// Kind Stable UI treatment for a projected external event.
+	// Excerpt Optional bounded plain-text excerpt from the event, such as a comment or review body.
+	Excerpt *string `json:"excerpt,omitempty"`
+
+	// Kind Stable UI treatment for a projected event. `interaction` is the outcome of a question the agent asked with mobius.interaction.open: answered, dismissed, or expired.
 	Kind SessionEventProjectionKind `json:"kind"`
 
 	// OccurredAt Upstream occurrence time, falling back to receipt time.
@@ -8160,7 +8351,7 @@ type SessionEventProjectionAttribute struct {
 	Value string `json:"value"`
 }
 
-// SessionEventProjectionKind Stable UI treatment for a projected external event.
+// SessionEventProjectionKind Stable UI treatment for a projected event. `interaction` is the outcome of a question the agent asked with mobius.interaction.open: answered, dismissed, or expired.
 type SessionEventProjectionKind string
 
 // SessionEventSubscription defines model for SessionEventSubscription.
@@ -8186,6 +8377,9 @@ type SessionEventSubscription struct {
 	LastDiagnostic   *string    `json:"last_diagnostic,omitempty"`
 	LastDiagnosticAt *time.Time `json:"last_diagnostic_at,omitempty"`
 
+	// Once True when the subscription ends after its first matching event. Once that event matches, `status` is `stopped` with `stop_reason` `delivered_once`, and its delivery still reaches the conversation.
+	Once bool `json:"once"`
+
 	// PendingDeliveryCount Reserved, not-yet-injected event inputs. The subscription stops visibly at 256.
 	PendingDeliveryCount int                            `json:"pending_delivery_count"`
 	SessionId            string                         `json:"session_id"`
@@ -8206,7 +8400,7 @@ type SessionEventSubscriptionFilter struct {
 	// Condition Optional Boolean expression over `event` and `meta`. Errors fail closed.
 	Condition *string `json:"condition,omitempty"`
 
-	// EventType A public exact event type or a supported provider wildcard such as `github.pull_request.*`.
+	// EventType A public exact event type or a supported provider wildcard such as `github.pull_request.*`. Subscriptions accept the same public events an agent can wait for. The one interaction event that can be followed is `interaction.resolved`, with `source_id` set to a question the session's agent asked in this session; any other interaction filter is refused. A question the agent asks is already followed by its own subscription until it is answered, dismissed, or expires, so a filter on a question that something in the session already follows, or that has already closed, is refused with 409.
 	EventType string `json:"event_type"`
 
 	// IntegrationId Optional integration connection restriction.
@@ -8300,10 +8494,13 @@ type SessionMessage struct {
 	// AgentId Agent container executing the parent session.
 	AgentId string `json:"agent_id"`
 
+	// Author The principal that wrote a message, resolved from the authenticated sender at read time so the transcript can render a name and avatar without a lookup per message. Never accepted on write.
+	Author *SessionMessageAuthor `json:"author,omitempty"`
+
 	// Content Ordered canonical content blocks (text, thinking, tool_use, tool_result, image, document).
 	Content []SessionContentBlock `json:"content"`
 
-	// CoversThroughSequence For `compaction` messages, the highest sequence number this summary covers.
+	// CoversThroughSequence For `compaction` messages, the highest sequence number this summary covers. It is an internal ordering key, not a quantity: use `metadata.conversation_message_count` to say how much history the summary folded away.
 	CoversThroughSequence *int `json:"covers_through_sequence,omitempty"`
 
 	// CreatedAt Server timestamp when the message was appended.
@@ -8318,7 +8515,7 @@ type SessionMessage struct {
 	// Id Stable message identifier.
 	Id string `json:"id"`
 
-	// Metadata Free-form caller metadata for this message.
+	// Metadata Free-form caller metadata for this message. A `compaction` entry instead carries server-owned keys describing the pass that wrote it: `trigger` (a `CompactionTrigger`: what started the pass), `conversation_message_count` (transcript rows folded into the summary, counting only rows a reader sees — the number to show a user), `message_count` (the raw window size, including host-injected context rows), `from_sequence` / `through_sequence` (the window's sequence bounds), `estimated_tokens`, `strategy`, `summary_model`, and `summary_provider`.
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 
 	// Role Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
@@ -8333,6 +8530,27 @@ type SessionMessage struct {
 	// TurnId AgentTurn that produced this message. Run, step, and channel identity for the message are read from this turn. Absent for compaction summaries and messages not tied to a turn.
 	TurnId *string `json:"turn_id,omitempty"`
 }
+
+// SessionMessageAuthor The principal that wrote a message, resolved from the authenticated sender at read time so the transcript can render a name and avatar without a lookup per message. Never accepted on write.
+type SessionMessageAuthor struct {
+	// AvatarUrl Avatar image, when the principal has one.
+	AvatarUrl *string `json:"avatar_url,omitempty"`
+
+	// Color Mantine palette key for the avatar fallback when no image is set.
+	Color *string `json:"color,omitempty"`
+
+	// DisplayName Single-line label for the author.
+	DisplayName string `json:"display_name"`
+
+	// Id Principal id of the author.
+	Id string `json:"id"`
+
+	// Kind The principal's kind, resolved from the principal record.
+	Kind SessionMessageAuthorKind `json:"kind"`
+}
+
+// SessionMessageAuthorKind The principal's kind, resolved from the principal record.
+type SessionMessageAuthorKind string
 
 // SessionMessageEntryType Transcript entry type: `message` or `compaction`.
 type SessionMessageEntryType string
@@ -8625,7 +8843,10 @@ type SessionTranscriptFrame struct {
 
 // SessionTranscriptMessage defines model for SessionTranscriptMessage.
 type SessionTranscriptMessage struct {
-	AgentId               string                `json:"agent_id"`
+	AgentId string `json:"agent_id"`
+
+	// Author The principal that wrote a message, resolved from the authenticated sender at read time so the transcript can render a name and avatar without a lookup per message. Never accepted on write.
+	Author                *SessionMessageAuthor `json:"author,omitempty"`
 	Content               []SessionContentBlock `json:"content"`
 	CoversThroughSequence *int                  `json:"covers_through_sequence,omitempty"`
 	CreatedAt             time.Time             `json:"created_at"`
@@ -8636,7 +8857,9 @@ type SessionTranscriptMessage struct {
 	// EventProjection Bounded, display-safe projection of the external event associated with a session message. The complete provider payload is deliberately absent.
 	EventProjection *SessionEventProjection `json:"event_projection,omitempty"`
 	Id              string                  `json:"id"`
-	Metadata        *map[string]interface{} `json:"metadata,omitempty"`
+
+	// Metadata Free-form metadata for this message. A `compaction` entry carries the server-owned keys described on `SessionMessage.metadata`.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 
 	// Role Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
 	Role      SessionMessageRole `json:"role"`
@@ -8671,9 +8894,12 @@ type SessionTranscriptTurn struct {
 	ChannelExchangeId *string    `json:"channel_exchange_id,omitempty"`
 	CompletedAt       *time.Time `json:"completed_at,omitempty"`
 	CreatedAt         time.Time  `json:"created_at"`
-	ErrorMessage      *string    `json:"error_message,omitempty"`
-	ErrorType         *string    `json:"error_type,omitempty"`
-	Id                string     `json:"id"`
+
+	// DeletedAt Set when the turn has been taken back. A reducer that receives this drops the turn and every row belonging to it; the turn frame is the whole signal, since the removed message rows are never re-sent.
+	DeletedAt    *time.Time `json:"deleted_at,omitempty"`
+	ErrorMessage *string    `json:"error_message,omitempty"`
+	ErrorType    *string    `json:"error_type,omitempty"`
+	Id           string     `json:"id"`
 
 	// Output The validated structured output, delivered on the terminal `turn.upsert` frame. Present only on a `completed` turn that declared an output schema.
 	Output *map[string]interface{} `json:"output,omitempty"`
@@ -9177,15 +9403,18 @@ type TurnStartedPayload map[string]interface{}
 
 // TurnUpsertFrame defines model for TurnUpsertFrame.
 type TurnUpsertFrame struct {
-	AgentId           string                   `json:"agent_id"`
-	Attempt           int                      `json:"attempt"`
-	ChannelExchangeId *string                  `json:"channel_exchange_id,omitempty"`
-	CompletedAt       *time.Time               `json:"completed_at,omitempty"`
-	CreatedAt         time.Time                `json:"created_at"`
-	ErrorMessage      *string                  `json:"error_message,omitempty"`
-	ErrorType         *string                  `json:"error_type,omitempty"`
-	EventType         TurnUpsertFrameEventType `json:"event_type"`
-	Id                string                   `json:"id"`
+	AgentId           string     `json:"agent_id"`
+	Attempt           int        `json:"attempt"`
+	ChannelExchangeId *string    `json:"channel_exchange_id,omitempty"`
+	CompletedAt       *time.Time `json:"completed_at,omitempty"`
+	CreatedAt         time.Time  `json:"created_at"`
+
+	// DeletedAt Set when the turn has been taken back. A reducer that receives this drops the turn and every row belonging to it; the turn frame is the whole signal, since the removed message rows are never re-sent.
+	DeletedAt    *time.Time               `json:"deleted_at,omitempty"`
+	ErrorMessage *string                  `json:"error_message,omitempty"`
+	ErrorType    *string                  `json:"error_type,omitempty"`
+	EventType    TurnUpsertFrameEventType `json:"event_type"`
+	Id           string                   `json:"id"`
 
 	// Output The validated structured output, delivered on the terminal `turn.upsert` frame. Present only on a `completed` turn that declared an output schema.
 	Output *map[string]interface{} `json:"output,omitempty"`
@@ -9283,6 +9512,9 @@ type UpdateAgentRequest struct {
 	// Name Free-form human-readable label, 1-63 characters; must be unique within the org.
 	Name *string `json:"name,omitempty"`
 
+	// OutputFolder Replacement Library folder. Omit to leave it unchanged; send an empty string to clear it and save to the top level of the Library. Renaming the assistant never changes it.
+	OutputFolder *string `json:"output_folder,omitempty"`
+
 	// Status Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent.
 	Status *UpdateAgentRequestStatus `json:"status,omitempty"`
 
@@ -9327,6 +9559,12 @@ type UpdateAgentRequestStatus string
 //
 // `retain` keeps their partitions and sessions, readable only by org admins. `delete` additionally erases their private memory partitions, and only an org admin may choose it. A narrowing change that would strand rows and names neither returns `409`.
 type UpdateAgentRequestStrandedDisposition string
+
+// UpdateArtifactRequest defines model for UpdateArtifactRequest.
+type UpdateArtifactRequest struct {
+	// Name New name for the file, as a relative virtual path. A leading folder moves the file: `reports/2026/weekly.md` places it in `reports/2026`, a bare `weekly.md` places it at the root.
+	Name string `json:"name"`
+}
 
 // UpdateMemoryContextPolicy Replacement automatic memory delivery policy. Send an empty object to clear the stored override and restore the bounded index default. Otherwise `mode` is required (`index`, `full`, or `off`) and `max_bytes` is optional.
 type UpdateMemoryContextPolicy struct {
@@ -9817,6 +10055,9 @@ type ActionNameParam = string
 // AfterSequenceParam defines model for AfterSequenceParam.
 type AfterSequenceParam = int64
 
+// ArtifactFolderIdParam defines model for ArtifactFolderIdParam.
+type ArtifactFolderIdParam = string
+
 // ArtifactIdParam defines model for ArtifactIdParam.
 type ArtifactIdParam = string
 
@@ -10036,6 +10277,12 @@ type ListAPIKeysParams struct {
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
 }
 
+// ListArtifactFoldersParams defines parameters for ListArtifactFolders.
+type ListArtifactFoldersParams struct {
+	// Parent Folder whose children are listed. Omit for the root.
+	Parent *string `form:"parent,omitempty" json:"parent,omitempty"`
+}
+
 // ListArtifactsParams defines parameters for ListArtifacts.
 type ListArtifactsParams struct {
 	// LatestOnly Return the latest accessible available version per root before filtering and pagination. The Library uses true; omitted preserves the full listing.
@@ -10046,6 +10293,12 @@ type ListArtifactsParams struct {
 
 	// Q Case-insensitive substring match on the artifact name. Filenames are how people and agents refer to a file, so this is the search key for "find the file called ...".
 	Q *string `form:"q,omitempty" json:"q,omitempty"`
+
+	// Folder Folder to list, as a relative path with no leading or trailing slash. A file's folder is the directory part of its `name`, so `reports/2026` returns `reports/2026/weekly.md`. Omit it or send an empty value for the root.
+	Folder *string `form:"folder,omitempty" json:"folder,omitempty"`
+
+	// Recursive Include files in subfolders of `folder`. With `false`, only files whose folder is exactly `folder` are returned; at the root that means files whose name carries no folder at all.
+	Recursive *bool `form:"recursive,omitempty" json:"recursive,omitempty"`
 
 	// Cursor Cursor for pagination (opaque string from previous response)
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
@@ -10300,6 +10553,11 @@ type CreateSessionAttachmentParams struct {
 	IdempotencyKey *string `json:"Idempotency-Key,omitempty"`
 }
 
+// CompleteSessionPDFUploadParams defines parameters for CompleteSessionPDFUpload.
+type CompleteSessionPDFUploadParams struct {
+	IdempotencyKey *string `json:"Idempotency-Key,omitempty"`
+}
+
 // ListSessionEventSubscriptionsParams defines parameters for ListSessionEventSubscriptions.
 type ListSessionEventSubscriptionsParams struct {
 	// Status Filter by one or more subscription states.
@@ -10497,8 +10755,14 @@ type ReplaceAgentSkillAssignmentsJSONRequestBody = ReplaceSkillsRequest
 // CreateAPIKeyJSONRequestBody defines body for CreateAPIKey for application/json ContentType.
 type CreateAPIKeyJSONRequestBody = CreateAPIKeyRequest
 
+// CreateArtifactFolderJSONRequestBody defines body for CreateArtifactFolder for application/json ContentType.
+type CreateArtifactFolderJSONRequestBody = CreateArtifactFolderRequest
+
 // CreateArtifactMultipartRequestBody defines body for CreateArtifact for multipart/form-data ContentType.
 type CreateArtifactMultipartRequestBody = CreateArtifactRequest
+
+// UpdateArtifactJSONRequestBody defines body for UpdateArtifact for application/json ContentType.
+type UpdateArtifactJSONRequestBody = UpdateArtifactRequest
 
 // ApplyBlueprintJSONRequestBody defines body for ApplyBlueprint for application/json ContentType.
 type ApplyBlueprintJSONRequestBody = ApplyBlueprintRequest
@@ -10568,6 +10832,9 @@ type UpdateSessionJSONRequestBody = UpdateSessionRequest
 
 // CreateSessionAttachmentMultipartRequestBody defines body for CreateSessionAttachment for multipart/form-data ContentType.
 type CreateSessionAttachmentMultipartRequestBody = CreateSessionAttachmentRequest
+
+// CompleteSessionPDFUploadJSONRequestBody defines body for CompleteSessionPDFUpload for application/json ContentType.
+type CompleteSessionPDFUploadJSONRequestBody = CompleteSessionPDFUploadRequest
 
 // CreateSessionEventSubscriptionJSONRequestBody defines body for CreateSessionEventSubscription for application/json ContentType.
 type CreateSessionEventSubscriptionJSONRequestBody = CreateSessionEventSubscriptionRequest
@@ -15936,6 +16203,17 @@ type ClientInterface interface {
 	// GetAPIKey request
 	GetAPIKey(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListArtifactFolders request
+	ListArtifactFolders(ctx context.Context, params *ListArtifactFoldersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateArtifactFolderWithBody request with any body
+	CreateArtifactFolderWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateArtifactFolder(ctx context.Context, body CreateArtifactFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteArtifactFolder request
+	DeleteArtifactFolder(ctx context.Context, folderId ArtifactFolderIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListArtifacts request
 	ListArtifacts(ctx context.Context, params *ListArtifactsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -15947,6 +16225,11 @@ type ClientInterface interface {
 
 	// GetArtifact request
 	GetArtifact(ctx context.Context, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateArtifactWithBody request with any body
+	UpdateArtifactWithBody(ctx context.Context, artifactId ArtifactIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateArtifact(ctx context.Context, artifactId ArtifactIdParam, body UpdateArtifactJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListArtifactVersions request
 	ListArtifactVersions(ctx context.Context, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -16205,6 +16488,14 @@ type ClientInterface interface {
 	// CreateSessionAttachmentWithBody request with any body
 	CreateSessionAttachmentWithBody(ctx context.Context, sessionId SessionIdParam, params *CreateSessionAttachmentParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// CompleteSessionPDFUploadWithBody request with any body
+	CompleteSessionPDFUploadWithBody(ctx context.Context, sessionId SessionIdParam, uploadId openapi_types.UUID, params *CompleteSessionPDFUploadParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CompleteSessionPDFUpload(ctx context.Context, sessionId SessionIdParam, uploadId openapi_types.UUID, params *CompleteSessionPDFUploadParams, body CompleteSessionPDFUploadJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutSessionPDFUploadPartWithBody request with any body
+	PutSessionPDFUploadPartWithBody(ctx context.Context, sessionId SessionIdParam, uploadId openapi_types.UUID, partNumber int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// DeleteSessionAttachment request
 	DeleteSessionAttachment(ctx context.Context, sessionId SessionIdParam, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -16277,6 +16568,9 @@ type ClientInterface interface {
 	StartTurnWithBody(ctx context.Context, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	StartTurn(ctx context.Context, sessionId SessionIdParam, body StartTurnJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteSessionTurn request
+	DeleteSessionTurn(ctx context.Context, sessionId SessionIdParam, turnId TurnIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetSessionTurn request
 	GetSessionTurn(ctx context.Context, sessionId SessionIdParam, turnId TurnIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -17015,6 +17309,54 @@ func (c *Client) GetAPIKey(ctx context.Context, resourceId IDParam, reqEditors .
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListArtifactFolders(ctx context.Context, params *ListArtifactFoldersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListArtifactFoldersRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateArtifactFolderWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateArtifactFolderRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateArtifactFolder(ctx context.Context, body CreateArtifactFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateArtifactFolderRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteArtifactFolder(ctx context.Context, folderId ArtifactFolderIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteArtifactFolderRequest(c.Server, folderId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListArtifacts(ctx context.Context, params *ListArtifactsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListArtifactsRequest(c.Server, params)
 	if err != nil {
@@ -17053,6 +17395,30 @@ func (c *Client) DeleteArtifact(ctx context.Context, artifactId ArtifactIdParam,
 
 func (c *Client) GetArtifact(ctx context.Context, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetArtifactRequest(c.Server, artifactId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateArtifactWithBody(ctx context.Context, artifactId ArtifactIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateArtifactRequestWithBody(c.Server, artifactId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateArtifact(ctx context.Context, artifactId ArtifactIdParam, body UpdateArtifactJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateArtifactRequest(c.Server, artifactId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -18179,6 +18545,42 @@ func (c *Client) CreateSessionAttachmentWithBody(ctx context.Context, sessionId 
 	return c.Client.Do(req)
 }
 
+func (c *Client) CompleteSessionPDFUploadWithBody(ctx context.Context, sessionId SessionIdParam, uploadId openapi_types.UUID, params *CompleteSessionPDFUploadParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCompleteSessionPDFUploadRequestWithBody(c.Server, sessionId, uploadId, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CompleteSessionPDFUpload(ctx context.Context, sessionId SessionIdParam, uploadId openapi_types.UUID, params *CompleteSessionPDFUploadParams, body CompleteSessionPDFUploadJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCompleteSessionPDFUploadRequest(c.Server, sessionId, uploadId, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PutSessionPDFUploadPartWithBody(ctx context.Context, sessionId SessionIdParam, uploadId openapi_types.UUID, partNumber int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutSessionPDFUploadPartRequestWithBody(c.Server, sessionId, uploadId, partNumber, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) DeleteSessionAttachment(ctx context.Context, sessionId SessionIdParam, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewDeleteSessionAttachmentRequest(c.Server, sessionId, artifactId)
 	if err != nil {
@@ -18481,6 +18883,18 @@ func (c *Client) StartTurnWithBody(ctx context.Context, sessionId SessionIdParam
 
 func (c *Client) StartTurn(ctx context.Context, sessionId SessionIdParam, body StartTurnJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewStartTurnRequest(c.Server, sessionId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteSessionTurn(ctx context.Context, sessionId SessionIdParam, turnId TurnIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteSessionTurnRequest(c.Server, sessionId, turnId)
 	if err != nil {
 		return nil, err
 	}
@@ -21036,6 +21450,134 @@ func NewGetAPIKeyRequest(server string, resourceId IDParam) (*http.Request, erro
 	return req, nil
 }
 
+// NewListArtifactFoldersRequest generates requests for ListArtifactFolders
+func NewListArtifactFoldersRequest(server string, params *ListArtifactFoldersParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/artifact-folders")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Parent != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "parent", *params.Parent, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateArtifactFolderRequest calls the generic CreateArtifactFolder builder with application/json body
+func NewCreateArtifactFolderRequest(server string, body CreateArtifactFolderJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateArtifactFolderRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateArtifactFolderRequestWithBody generates requests for CreateArtifactFolder with any type of body
+func NewCreateArtifactFolderRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/artifact-folders")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteArtifactFolderRequest generates requests for DeleteArtifactFolder
+func NewDeleteArtifactFolderRequest(server string, folderId ArtifactFolderIdParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "folder_id", folderId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/artifact-folders/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListArtifactsRequest generates requests for ListArtifacts
 func NewListArtifactsRequest(server string, params *ListArtifactsParams) (*http.Request, error) {
 	var err error
@@ -21091,6 +21633,30 @@ func NewListArtifactsRequest(server string, params *ListArtifactsParams) (*http.
 		if params.Q != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "q", *params.Q, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Folder != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "folder", *params.Folder, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Recursive != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "recursive", *params.Recursive, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -21257,6 +21823,53 @@ func NewGetArtifactRequest(server string, artifactId ArtifactIdParam) (*http.Req
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewUpdateArtifactRequest calls the generic UpdateArtifact builder with application/json body
+func NewUpdateArtifactRequest(server string, artifactId ArtifactIdParam, body UpdateArtifactJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateArtifactRequestWithBody(server, artifactId, "application/json", bodyReader)
+}
+
+// NewUpdateArtifactRequestWithBody generates requests for UpdateArtifact with any type of body
+func NewUpdateArtifactRequestWithBody(server string, artifactId ArtifactIdParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "artifact_id", artifactId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/artifacts/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -24808,6 +25421,125 @@ func NewCreateSessionAttachmentRequestWithBody(server string, sessionId SessionI
 	return req, nil
 }
 
+// NewCompleteSessionPDFUploadRequest calls the generic CompleteSessionPDFUpload builder with application/json body
+func NewCompleteSessionPDFUploadRequest(server string, sessionId SessionIdParam, uploadId openapi_types.UUID, params *CompleteSessionPDFUploadParams, body CompleteSessionPDFUploadJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCompleteSessionPDFUploadRequestWithBody(server, sessionId, uploadId, params, "application/json", bodyReader)
+}
+
+// NewCompleteSessionPDFUploadRequestWithBody generates requests for CompleteSessionPDFUpload with any type of body
+func NewCompleteSessionPDFUploadRequestWithBody(server string, sessionId SessionIdParam, uploadId openapi_types.UUID, params *CompleteSessionPDFUploadParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "upload_id", uploadId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/sessions/%s/attachments/uploads/%s/complete", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.IdempotencyKey != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", *params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Idempotency-Key", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewPutSessionPDFUploadPartRequestWithBody generates requests for PutSessionPDFUploadPart with any type of body
+func NewPutSessionPDFUploadPartRequestWithBody(server string, sessionId SessionIdParam, uploadId openapi_types.UUID, partNumber int, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "upload_id", uploadId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "part_number", partNumber, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/sessions/%s/attachments/uploads/%s/parts/%s", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewDeleteSessionAttachmentRequest generates requests for DeleteSessionAttachment
 func NewDeleteSessionAttachmentRequest(server string, sessionId SessionIdParam, artifactId ArtifactIdParam) (*http.Request, error) {
 	var err error
@@ -26099,6 +26831,47 @@ func NewStartTurnRequestWithBody(server string, sessionId SessionIdParam, conten
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteSessionTurnRequest generates requests for DeleteSessionTurn
+func NewDeleteSessionTurnRequest(server string, sessionId SessionIdParam, turnId TurnIdParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "turn_id", turnId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/sessions/%s/turns/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -27440,6 +28213,17 @@ type ClientWithResponsesInterface interface {
 	// GetAPIKeyWithResponse request
 	GetAPIKeyWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*GetAPIKeyResponse, error)
 
+	// ListArtifactFoldersWithResponse request
+	ListArtifactFoldersWithResponse(ctx context.Context, params *ListArtifactFoldersParams, reqEditors ...RequestEditorFn) (*ListArtifactFoldersResponse, error)
+
+	// CreateArtifactFolderWithBodyWithResponse request with any body
+	CreateArtifactFolderWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateArtifactFolderResponse, error)
+
+	CreateArtifactFolderWithResponse(ctx context.Context, body CreateArtifactFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateArtifactFolderResponse, error)
+
+	// DeleteArtifactFolderWithResponse request
+	DeleteArtifactFolderWithResponse(ctx context.Context, folderId ArtifactFolderIdParam, reqEditors ...RequestEditorFn) (*DeleteArtifactFolderResponse, error)
+
 	// ListArtifactsWithResponse request
 	ListArtifactsWithResponse(ctx context.Context, params *ListArtifactsParams, reqEditors ...RequestEditorFn) (*ListArtifactsResponse, error)
 
@@ -27451,6 +28235,11 @@ type ClientWithResponsesInterface interface {
 
 	// GetArtifactWithResponse request
 	GetArtifactWithResponse(ctx context.Context, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*GetArtifactResponse, error)
+
+	// UpdateArtifactWithBodyWithResponse request with any body
+	UpdateArtifactWithBodyWithResponse(ctx context.Context, artifactId ArtifactIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateArtifactResponse, error)
+
+	UpdateArtifactWithResponse(ctx context.Context, artifactId ArtifactIdParam, body UpdateArtifactJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateArtifactResponse, error)
 
 	// ListArtifactVersionsWithResponse request
 	ListArtifactVersionsWithResponse(ctx context.Context, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*ListArtifactVersionsResponse, error)
@@ -27709,6 +28498,14 @@ type ClientWithResponsesInterface interface {
 	// CreateSessionAttachmentWithBodyWithResponse request with any body
 	CreateSessionAttachmentWithBodyWithResponse(ctx context.Context, sessionId SessionIdParam, params *CreateSessionAttachmentParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSessionAttachmentResponse, error)
 
+	// CompleteSessionPDFUploadWithBodyWithResponse request with any body
+	CompleteSessionPDFUploadWithBodyWithResponse(ctx context.Context, sessionId SessionIdParam, uploadId openapi_types.UUID, params *CompleteSessionPDFUploadParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CompleteSessionPDFUploadResponse, error)
+
+	CompleteSessionPDFUploadWithResponse(ctx context.Context, sessionId SessionIdParam, uploadId openapi_types.UUID, params *CompleteSessionPDFUploadParams, body CompleteSessionPDFUploadJSONRequestBody, reqEditors ...RequestEditorFn) (*CompleteSessionPDFUploadResponse, error)
+
+	// PutSessionPDFUploadPartWithBodyWithResponse request with any body
+	PutSessionPDFUploadPartWithBodyWithResponse(ctx context.Context, sessionId SessionIdParam, uploadId openapi_types.UUID, partNumber int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutSessionPDFUploadPartResponse, error)
+
 	// DeleteSessionAttachmentWithResponse request
 	DeleteSessionAttachmentWithResponse(ctx context.Context, sessionId SessionIdParam, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*DeleteSessionAttachmentResponse, error)
 
@@ -27781,6 +28578,9 @@ type ClientWithResponsesInterface interface {
 	StartTurnWithBodyWithResponse(ctx context.Context, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*StartTurnResponse, error)
 
 	StartTurnWithResponse(ctx context.Context, sessionId SessionIdParam, body StartTurnJSONRequestBody, reqEditors ...RequestEditorFn) (*StartTurnResponse, error)
+
+	// DeleteSessionTurnWithResponse request
+	DeleteSessionTurnWithResponse(ctx context.Context, sessionId SessionIdParam, turnId TurnIdParam, reqEditors ...RequestEditorFn) (*DeleteSessionTurnResponse, error)
 
 	// GetSessionTurnWithResponse request
 	GetSessionTurnWithResponse(ctx context.Context, sessionId SessionIdParam, turnId TurnIdParam, reqEditors ...RequestEditorFn) (*GetSessionTurnResponse, error)
@@ -29207,6 +30007,106 @@ func (r GetAPIKeyResponse) ContentType() string {
 	return ""
 }
 
+type ListArtifactFoldersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ArtifactFolderListResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ListArtifactFoldersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListArtifactFoldersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListArtifactFoldersResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateArtifactFolderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ArtifactFolder
+	JSON201      *ArtifactFolder
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateArtifactFolderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateArtifactFolderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateArtifactFolderResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteArtifactFolderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteArtifactFolderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteArtifactFolderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteArtifactFolderResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListArtifactsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -29336,6 +30236,41 @@ func (r GetArtifactResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetArtifactResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateArtifactResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Artifact
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateArtifactResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateArtifactResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateArtifactResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -31713,6 +32648,76 @@ func (r CreateSessionAttachmentResponse) ContentType() string {
 	return ""
 }
 
+type CompleteSessionPDFUploadResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SessionAttachmentResponse
+	JSON201      *SessionAttachmentResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON503      *ServiceUnavailable
+}
+
+// Status returns HTTPResponse.Status
+func (r CompleteSessionPDFUploadResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CompleteSessionPDFUploadResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CompleteSessionPDFUploadResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PutSessionPDFUploadPartResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON503      *ServiceUnavailable
+}
+
+// Status returns HTTPResponse.Status
+func (r PutSessionPDFUploadPartResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PutSessionPDFUploadPartResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PutSessionPDFUploadPartResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type DeleteSessionAttachmentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -32421,6 +33426,40 @@ func (r StartTurnResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r StartTurnResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteSessionTurnResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *ErrorResponse
+	JSON429      *TooManyRequests
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteSessionTurnResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteSessionTurnResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteSessionTurnResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -33775,6 +34814,41 @@ func (c *ClientWithResponses) GetAPIKeyWithResponse(ctx context.Context, resourc
 	return ParseGetAPIKeyResponse(rsp)
 }
 
+// ListArtifactFoldersWithResponse request returning *ListArtifactFoldersResponse
+func (c *ClientWithResponses) ListArtifactFoldersWithResponse(ctx context.Context, params *ListArtifactFoldersParams, reqEditors ...RequestEditorFn) (*ListArtifactFoldersResponse, error) {
+	rsp, err := c.ListArtifactFolders(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListArtifactFoldersResponse(rsp)
+}
+
+// CreateArtifactFolderWithBodyWithResponse request with arbitrary body returning *CreateArtifactFolderResponse
+func (c *ClientWithResponses) CreateArtifactFolderWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateArtifactFolderResponse, error) {
+	rsp, err := c.CreateArtifactFolderWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateArtifactFolderResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateArtifactFolderWithResponse(ctx context.Context, body CreateArtifactFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateArtifactFolderResponse, error) {
+	rsp, err := c.CreateArtifactFolder(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateArtifactFolderResponse(rsp)
+}
+
+// DeleteArtifactFolderWithResponse request returning *DeleteArtifactFolderResponse
+func (c *ClientWithResponses) DeleteArtifactFolderWithResponse(ctx context.Context, folderId ArtifactFolderIdParam, reqEditors ...RequestEditorFn) (*DeleteArtifactFolderResponse, error) {
+	rsp, err := c.DeleteArtifactFolder(ctx, folderId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteArtifactFolderResponse(rsp)
+}
+
 // ListArtifactsWithResponse request returning *ListArtifactsResponse
 func (c *ClientWithResponses) ListArtifactsWithResponse(ctx context.Context, params *ListArtifactsParams, reqEditors ...RequestEditorFn) (*ListArtifactsResponse, error) {
 	rsp, err := c.ListArtifacts(ctx, params, reqEditors...)
@@ -33809,6 +34883,23 @@ func (c *ClientWithResponses) GetArtifactWithResponse(ctx context.Context, artif
 		return nil, err
 	}
 	return ParseGetArtifactResponse(rsp)
+}
+
+// UpdateArtifactWithBodyWithResponse request with arbitrary body returning *UpdateArtifactResponse
+func (c *ClientWithResponses) UpdateArtifactWithBodyWithResponse(ctx context.Context, artifactId ArtifactIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateArtifactResponse, error) {
+	rsp, err := c.UpdateArtifactWithBody(ctx, artifactId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateArtifactResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateArtifactWithResponse(ctx context.Context, artifactId ArtifactIdParam, body UpdateArtifactJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateArtifactResponse, error) {
+	rsp, err := c.UpdateArtifact(ctx, artifactId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateArtifactResponse(rsp)
 }
 
 // ListArtifactVersionsWithResponse request returning *ListArtifactVersionsResponse
@@ -34626,6 +35717,32 @@ func (c *ClientWithResponses) CreateSessionAttachmentWithBodyWithResponse(ctx co
 	return ParseCreateSessionAttachmentResponse(rsp)
 }
 
+// CompleteSessionPDFUploadWithBodyWithResponse request with arbitrary body returning *CompleteSessionPDFUploadResponse
+func (c *ClientWithResponses) CompleteSessionPDFUploadWithBodyWithResponse(ctx context.Context, sessionId SessionIdParam, uploadId openapi_types.UUID, params *CompleteSessionPDFUploadParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CompleteSessionPDFUploadResponse, error) {
+	rsp, err := c.CompleteSessionPDFUploadWithBody(ctx, sessionId, uploadId, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCompleteSessionPDFUploadResponse(rsp)
+}
+
+func (c *ClientWithResponses) CompleteSessionPDFUploadWithResponse(ctx context.Context, sessionId SessionIdParam, uploadId openapi_types.UUID, params *CompleteSessionPDFUploadParams, body CompleteSessionPDFUploadJSONRequestBody, reqEditors ...RequestEditorFn) (*CompleteSessionPDFUploadResponse, error) {
+	rsp, err := c.CompleteSessionPDFUpload(ctx, sessionId, uploadId, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCompleteSessionPDFUploadResponse(rsp)
+}
+
+// PutSessionPDFUploadPartWithBodyWithResponse request with arbitrary body returning *PutSessionPDFUploadPartResponse
+func (c *ClientWithResponses) PutSessionPDFUploadPartWithBodyWithResponse(ctx context.Context, sessionId SessionIdParam, uploadId openapi_types.UUID, partNumber int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutSessionPDFUploadPartResponse, error) {
+	rsp, err := c.PutSessionPDFUploadPartWithBody(ctx, sessionId, uploadId, partNumber, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutSessionPDFUploadPartResponse(rsp)
+}
+
 // DeleteSessionAttachmentWithResponse request returning *DeleteSessionAttachmentResponse
 func (c *ClientWithResponses) DeleteSessionAttachmentWithResponse(ctx context.Context, sessionId SessionIdParam, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*DeleteSessionAttachmentResponse, error) {
 	rsp, err := c.DeleteSessionAttachment(ctx, sessionId, artifactId, reqEditors...)
@@ -34853,6 +35970,15 @@ func (c *ClientWithResponses) StartTurnWithResponse(ctx context.Context, session
 		return nil, err
 	}
 	return ParseStartTurnResponse(rsp)
+}
+
+// DeleteSessionTurnWithResponse request returning *DeleteSessionTurnResponse
+func (c *ClientWithResponses) DeleteSessionTurnWithResponse(ctx context.Context, sessionId SessionIdParam, turnId TurnIdParam, reqEditors ...RequestEditorFn) (*DeleteSessionTurnResponse, error) {
+	rsp, err := c.DeleteSessionTurn(ctx, sessionId, turnId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteSessionTurnResponse(rsp)
 }
 
 // GetSessionTurnWithResponse request returning *GetSessionTurnResponse
@@ -37269,6 +38395,154 @@ func ParseGetAPIKeyResponse(rsp *http.Response) (*GetAPIKeyResponse, error) {
 	return response, nil
 }
 
+// ParseListArtifactFoldersResponse parses an HTTP response from a ListArtifactFoldersWithResponse call
+func ParseListArtifactFoldersResponse(rsp *http.Response) (*ListArtifactFoldersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListArtifactFoldersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ArtifactFolderListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateArtifactFolderResponse parses an HTTP response from a CreateArtifactFolderWithResponse call
+func ParseCreateArtifactFolderResponse(rsp *http.Response) (*CreateArtifactFolderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateArtifactFolderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ArtifactFolder
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest ArtifactFolder
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteArtifactFolderResponse parses an HTTP response from a DeleteArtifactFolderWithResponse call
+func ParseDeleteArtifactFolderResponse(rsp *http.Response) (*DeleteArtifactFolderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteArtifactFolderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListArtifactsResponse parses an HTTP response from a ListArtifactsWithResponse call
 func ParseListArtifactsResponse(rsp *http.Response) (*ListArtifactsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -37472,6 +38746,67 @@ func ParseGetArtifactResponse(rsp *http.Response) (*GetArtifactResponse, error) 
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateArtifactResponse parses an HTTP response from a UpdateArtifactWithResponse call
+func ParseUpdateArtifactResponse(rsp *http.Response) (*UpdateArtifactResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateArtifactResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Artifact
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 
@@ -41011,6 +42346,128 @@ func ParseCreateSessionAttachmentResponse(rsp *http.Response) (*CreateSessionAtt
 	return response, nil
 }
 
+// ParseCompleteSessionPDFUploadResponse parses an HTTP response from a CompleteSessionPDFUploadWithResponse call
+func ParseCompleteSessionPDFUploadResponse(rsp *http.Response) (*CompleteSessionPDFUploadResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CompleteSessionPDFUploadResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SessionAttachmentResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest SessionAttachmentResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest ServiceUnavailable
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePutSessionPDFUploadPartResponse parses an HTTP response from a PutSessionPDFUploadPartWithResponse call
+func ParsePutSessionPDFUploadPartResponse(rsp *http.Response) (*PutSessionPDFUploadPartResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PutSessionPDFUploadPartResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest ServiceUnavailable
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseDeleteSessionAttachmentResponse parses an HTTP response from a DeleteSessionAttachmentWithResponse call
 func ParseDeleteSessionAttachmentResponse(rsp *http.Response) (*DeleteSessionAttachmentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -42105,6 +43562,60 @@ func ParseStartTurnResponse(rsp *http.Response) (*StartTurnResponse, error) {
 		}
 		response.JSON400 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteSessionTurnResponse parses an HTTP response from a DeleteSessionTurnWithResponse call
+func ParseDeleteSessionTurnResponse(rsp *http.Response) (*DeleteSessionTurnResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteSessionTurnResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {

@@ -8,6 +8,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/deepnoodle-ai/wonton/cli"
 
 	"github.com/deepnoodle-ai/mobius/mobius/api"
@@ -17,6 +19,45 @@ import (
 func registerArtifactsCommands(app *cli.App) {
 	artifactsGrp := app.Group("artifacts").Description("Stored files, uploads, and storage quota")
 	artifactsGrp.Alias("artifact")
+	artifactsGrp.Command("create-folder").
+		Description("Create folder").
+		Flags(
+			cli.String("path", "").Help("[required] Folder path to declare, relative and with no leading or trailing slash. Intermediate folders are implied by this path and need no…"),
+			cli.String("visibility", "").Help("Who sees the folder. Omit for `private`, visible only to the person creating it. It never changes who can open the files inside."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			var body api.CreateArtifactFolderJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("path") {
+				body.Path = ctx.String("path")
+			}
+			if ctx.IsSet("visibility") {
+				v := api.ResourceVisibility(ctx.String("visibility"))
+				body.Visibility = &v
+			}
+			if body.Path == "" {
+				return fmt.Errorf("--path is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.CreateArtifactFolderWithResponse(ctx.Context(), body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "createArtifactFolder", resp.StatusCode(), resp.Body)
+		})
+
 	artifactsGrp.Command("create-signed-url").
 		Description("Create signed artifact URL").
 		AddArg(&cli.Arg{Name: "artifact-id", Description: "ID of the artifact", Required: true}).
@@ -59,6 +100,24 @@ func registerArtifactsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "deleteArtifact", resp.StatusCode(), resp.Body)
+		})
+
+	artifactsGrp.Command("delete-folder").
+		Description("Delete folder").
+		AddArg(&cli.Arg{Name: "folder-id", Description: "ID of the declared folder", Required: true}).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.ArtifactFolderIdParam(ctx.Arg(0))
+			resp, err := client.DeleteArtifactFolderWithResponse(ctx.Context(), p0)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "deleteArtifactFolder", resp.StatusCode(), resp.Body)
 		})
 
 	artifactsGrp.Command("get").
@@ -119,6 +178,8 @@ func registerArtifactsCommands(app *cli.App) {
 			cli.Bool("latest-only", "").Help("Return the latest accessible available version per root before filtering and pagination. The Library uses true; omitted preserves the full…"),
 			cli.String("mime", "").Help("Mime prefix filter (e.g. `image/`)"),
 			cli.String("q", "").Help("Case-insensitive substring match on the artifact name. Filenames are how people and agents refer to a file, so this is the search key for…"),
+			cli.String("folder", "").Help("Folder to list, as a relative path with no leading or trailing slash. A file's folder is the directory part of its `name`, so…"),
+			cli.Bool("recursive", "").Help("Include files in subfolders of `folder`. With `false`, only files whose folder is exactly `folder` are returned; at the root that means…"),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
@@ -142,6 +203,14 @@ func registerArtifactsCommands(app *cli.App) {
 				v := ctx.String("q")
 				params.Q = &v
 			}
+			if ctx.IsSet("folder") {
+				v := ctx.String("folder")
+				params.Folder = &v
+			}
+			if ctx.IsSet("recursive") {
+				v := ctx.Bool("recursive")
+				params.Recursive = &v
+			}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))
 				params.Cursor = &v
@@ -155,6 +224,30 @@ func registerArtifactsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "listArtifacts", resp.StatusCode(), resp.Body)
+		})
+
+	artifactsGrp.Command("list-folders").
+		Description("List folders").
+		Flags(
+			cli.String("parent", "").Help("Folder whose children are listed. Omit for the root."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			params := &api.ListArtifactFoldersParams{}
+			if ctx.IsSet("parent") {
+				v := ctx.String("parent")
+				params.Parent = &v
+			}
+			resp, err := client.ListArtifactFoldersWithResponse(ctx.Context(), params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listArtifactFolders", resp.StatusCode(), resp.Body)
 		})
 
 	artifactsGrp.Command("list-versions").
@@ -173,6 +266,42 @@ func registerArtifactsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "listArtifactVersions", resp.StatusCode(), resp.Body)
+		})
+
+	artifactsGrp.Command("update").
+		Description("Update artifact name").
+		AddArg(&cli.Arg{Name: "artifact-id", Description: "ID of the artifact", Required: true}).
+		Flags(
+			cli.String("name", "").Help("[required] New name for the file, as a relative virtual path. A leading folder moves the file: `reports/2026/weekly.md` places it in `reports/2026`, a…"),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.ArtifactIdParam(ctx.Arg(0))
+			var body api.UpdateArtifactJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("name") {
+				body.Name = ctx.String("name")
+			}
+			if body.Name == "" {
+				return fmt.Errorf("--name is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.UpdateArtifactWithResponse(ctx.Context(), p0, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "updateArtifact", resp.StatusCode(), resp.Body)
 		})
 
 }

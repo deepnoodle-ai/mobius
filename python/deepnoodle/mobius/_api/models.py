@@ -27,7 +27,7 @@ class Error(BaseModel):
     )
     code: str = Field(
         ...,
-        description='Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family.',
+        description="Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. When the request-wide rate limiter refuses a call, `rate_limit_exceeded` carries `scope` (`key`, `org`, or `browser`), `window`, `limit`, and `retry_after_seconds` in `details`; an endpoint's own cap returns the same code without them. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family.",
     )
     message: str = Field(..., description='Human-readable error message')
     details: dict[str, Any] | None = Field(
@@ -525,6 +525,11 @@ class Agent(BaseModel):
         None,
         description='Default reasoning-effort level. New sessions inherit it, above the provider default and below an explicit per-session override. Absent when the agent has no default.',
     )
+    output_folder: str | None = Field(
+        None,
+        description="Library folder this assistant's files are saved to outside a routine occurrence, where the routine's folder wins. Empty means the top level of the Library. A file name that already contains a folder is never moved into it.",
+        max_length=256,
+    )
     status: AgentStatus = Field(
         ..., description='Current agent status: `active` or `inactive`.'
     )
@@ -777,7 +782,7 @@ class Session(BaseModel):
     )
     message_count: int = Field(
         ...,
-        description='Total messages currently in the session, including compaction summaries.',
+        description='Non-decreasing transcript sequence high-water mark, including tombstoned rows and compaction summaries; not the number of live messages.',
     )
     token_input_total: int = Field(
         ...,
@@ -2695,46 +2700,158 @@ class InteractionOption(BaseModel):
     )
 
 
-class InteractionSpec(BaseModel):
-    """
-    Declarative dialog contract for rendering and validating an interaction. Used at both authoring time and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
+class DefaultValue(RootModel[str]):
+    root: str = Field(..., max_length=100)
 
-    Allowed combinations:
-    * `request_approval` → `confirm`, `select`
-    * `request_review` → `select`, `input`
-    * `request_information` → `select`, `multi_select`, `input`
+
+class InteractionQuestion(BaseModel):
+    """
+    One question inside an interaction's form. Answers are addressed by `id`, so the id is a stable machine key the responder never sees.
+
+    Write each prompt as one direct question. Selection limits, click-order instructions, and preference-ranking instructions belong in the structured fields, not in the prompt text — the interface owns its own input instructions.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
+    id: str = Field(
+        ...,
+        description="Stable machine key this question's answer is addressed by.",
+        max_length=64,
+        pattern='^[A-Za-z][A-Za-z0-9_-]{0,63}$',
+    )
+    prompt: str = Field(
+        ...,
+        description='One direct user-facing question.',
+        max_length=500,
+        min_length=1,
+    )
+    description: str | None = Field(
+        None,
+        description='Optional brief context that helps the responder decide. Do not repeat input mechanics the interface already shows.',
+        max_length=500,
+    )
+    required: bool | None = Field(
+        None,
+        description='Whether an answer must be supplied before the form can be submitted. Defaults to true. Use false only for helpful context the responder may skip without blocking the work.',
+    )
     mode: InteractionMode = Field(
-        ..., description='UI/input mode used to render and validate the response.'
+        ..., description='UI/input mode used to render and validate this answer.'
     )
     options: list[InteractionOption] | None = Field(
         None,
         description='Required for `select` and `multi_select` modes.',
-        max_length=100,
+        max_length=12,
+        min_length=2,
     )
-    default_value: str | None = Field(
-        None, description='Default selected option for `select` mode.'
-    )
-    default_values: list[str] | None = Field(
+    allow_other: bool | None = Field(
         None,
-        description='Default selected options for `multi_select` mode.',
-        max_length=100,
+        description='For `select` and `multi_select`, offer a free-text escape hatch alongside the listed options.',
     )
-    default_text: str | None = Field(
-        None, description='Initial text value for `input` mode.'
+    min_selections: int | None = Field(
+        None,
+        description='For `multi_select`: fewest choices accepted. Defaults to 1.',
+        ge=1,
+        le=13,
     )
-    default_confirmed: bool | None = Field(
-        None, description='Initial yes/no value for `confirm` mode.'
-    )
-    placeholder: str | None = Field(
-        None, description='Hint text shown for `input` mode.'
+    max_selections: int | None = Field(
+        None,
+        description='For `multi_select`: most choices accepted. Defaults to every available choice.',
+        ge=1,
+        le=13,
     )
     multiline: bool | None = Field(
-        None, description='When true, render `input` mode as a multiline text area.'
+        None, description='For `input`: render a multi-line text area.'
+    )
+    placeholder: str | None = Field(
+        None,
+        description='For `input`: example input. Do not use placeholder copy to communicate whether the question is required.',
+        max_length=200,
+    )
+    max_length: int | None = Field(
+        None,
+        description='For `input`: longest accepted answer. Defaults to 500 for single-line and 4000 for multiline.',
+        ge=1,
+        le=4000,
+    )
+    default_value: str | None = Field(
+        None,
+        description='For `select`: initially selected option value.',
+        max_length=100,
+    )
+    default_values: list[DefaultValue] | None = Field(
+        None,
+        description='For `multi_select`: initially selected option values.',
+        max_length=12,
+    )
+    default_text: str | None = Field(
+        None, description='For `input`: initial text value.', max_length=4000
+    )
+    default_confirmed: bool | None = Field(
+        None, description='For `confirm`: initial yes/no value.'
+    )
+
+
+class InteractionSpec(BaseModel):
+    """
+    The set of questions one responder answers atomically. Group related questions into a single interaction rather than opening several: each interaction is a separate item in someone's inbox and a separate interruption.
+
+    Protocol kind is decoupled from input shape: each kind declares which question modes are *allowed*, not which is *implied*.
+
+    Allowed combinations:
+    * `request_approval` → `confirm`, `select`, and **exactly one
+    question** — single-question is what makes an approval auditable
+    * `request_review` → `select`, `input`
+    * `request_information` → `select`, `multi_select`, `input`
+    * `assign_work` → `select`, `multi_select`, `input`
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    questions: list[InteractionQuestion] = Field(
+        ...,
+        description='The questions this interaction asks.',
+        max_length=12,
+        min_length=1,
+    )
+
+
+class Value(RootModel[str]):
+    root: str = Field(..., max_length=100)
+
+
+class InteractionAnswer(BaseModel):
+    """
+    One responder's answer to one question. Exactly one content field is populated, chosen by the question's mode:
+
+    * `confirm` → `value`, either `approved` or `rejected`
+    * `select` → `value` (an option value) or `other`
+    * `multi_select` → `values`, optionally with `other`
+    * `input` → `text`
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    question_id: str = Field(
+        ..., description='The `id` of the question being answered.', max_length=64
+    )
+    text: str | None = Field(
+        None, description='For `input`: the free-text answer.', max_length=4000
+    )
+    value: str | None = Field(
+        None,
+        description='For `select` and `confirm`: the chosen value.',
+        max_length=100,
+    )
+    values: list[Value] | None = Field(
+        None, description='For `multi_select`: the chosen option values.', max_length=12
+    )
+    other: str | None = Field(
+        None,
+        description='Free-text answer supplied instead of, or alongside, the listed options. Only accepted when the question sets `allow_other`.',
+        max_length=4000,
     )
 
 
@@ -2868,6 +2985,11 @@ class HttpSubscriberConsumer(BaseModel):
     )
 
 
+class Kind11(StrEnum):
+    http_subscriber = 'http_subscriber'
+    none = 'none'
+
+
 class HttpSubscriberConsumerInput(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -2915,8 +3037,10 @@ class InteractionResponse(BaseModel):
     responder_user_id: str = Field(
         ..., description='User ID that submitted this response.'
     )
-    value: InteractionValue = Field(
-        ..., description='JSON value supplied by this participant.'
+    answers: list[InteractionAnswer] = Field(
+        ...,
+        description="This participant's complete answer set, one entry per question they answered.",
+        max_length=12,
     )
     comment: str | None = Field(
         None, description='Optional free-text comment from this responder.'
@@ -3038,12 +3162,15 @@ class RespondToInteractionRequest(BaseModel):
         None,
         description='Operation to perform through the canonical response endpoint. `submit` answers the interaction.',
     )
-    value: InteractionValue | None = Field(
-        None, description='JSON value supplied by the responder. Required for `submit`.'
+    answers: list[InteractionAnswer] = Field(
+        ...,
+        description="The responder's complete answer set. Required for `submit`. Every required question must be answered; there is no partial submit.",
+        max_length=12,
+        min_length=1,
     )
     comment: str | None = Field(
         None,
-        description='Optional free-text comment accompanying the action. Available on every interaction kind and never gated by the spec; the responder may always attach reasoning, caveats, or follow-up notes alongside `value`.',
+        description='Optional free-text comment accompanying the action. Available on every interaction kind and never gated by the spec; the responder may always attach reasoning, caveats, or follow-up notes alongside their answers. It is one note per response, not per question.',
     )
 
 
@@ -3527,6 +3654,11 @@ class CreateAgentRequest(BaseModel):
         None,
         description='Default reasoning-effort level new sessions inherit from this agent.',
     )
+    output_folder: str | None = Field(
+        None,
+        description="Library folder this assistant's files are saved to, for example `assistants/ops`. Omit to take the default derived from the name; send an empty string for the top level of the Library. Inside a routine occurrence the routine's folder wins.",
+        max_length=256,
+    )
     tags: TagMap | None = Field(
         None, description='Initial labels used for filtering, ownership, or automation.'
     )
@@ -3633,6 +3765,11 @@ class UpdateAgentRequest(BaseModel):
     thinking_effort: ThinkingEffort | None = Field(
         None,
         description='Replacement default reasoning-effort level. Send `inherit` to clear the default and leave the provider default in place.',
+    )
+    output_folder: str | None = Field(
+        None,
+        description='Replacement Library folder. Omit to leave it unchanged; send an empty string to clear it and save to the top level of the Library. Renaming the assistant never changes it.',
+        max_length=256,
     )
     tags: TagMap | None = Field(
         None, description='Replacement labels; send an empty object to clear all tags.'
@@ -4119,7 +4256,7 @@ class SessionReminderBlock(BaseModel):
 
 class SessionEventProjectionKind(StrEnum):
     """
-    Stable UI treatment for a projected external event.
+    Stable UI treatment for a projected event. `interaction` is the outcome of a question the agent asked with mobius.interaction.open: answered, dismissed, or expired.
     """
 
     generic = 'generic'
@@ -4131,6 +4268,7 @@ class SessionEventProjectionKind(StrEnum):
     work_item = 'work_item'
     content_change = 'content_change'
     business_record = 'business_record'
+    interaction = 'interaction'
 
 
 class SessionEventProjectionAttribute(BaseModel):
@@ -4164,6 +4302,10 @@ class SessionEventProjection(BaseModel):
     summary: str | None = Field(
         None, description='Optional provider-specific change summary.'
     )
+    excerpt: str | None = Field(
+        None,
+        description='Optional bounded plain-text excerpt from the event, such as a comment or review body.',
+    )
     resource_name: str | None = Field(
         None,
         description='Human-readable affected resource name, never an internal event or source ID.',
@@ -4178,6 +4320,39 @@ class SessionEventProjection(BaseModel):
         None,
         description='Small provider-selected facts; never arbitrary payload fields.',
         max_length=4,
+    )
+
+
+class Kind13(StrEnum):
+    """
+    The principal's kind, resolved from the principal record.
+    """
+
+    human = 'human'
+    agent = 'agent'
+    service = 'service'
+    system = 'system'
+
+
+class SessionMessageAuthor(BaseModel):
+    """
+    The principal that wrote a message, resolved from the authenticated sender at read time so the transcript can render a name and avatar without a lookup per message. Never accepted on write.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Principal id of the author.')
+    kind: Kind13 = Field(
+        ..., description="The principal's kind, resolved from the principal record."
+    )
+    display_name: str = Field(..., description='Single-line label for the author.')
+    avatar_url: str | None = Field(
+        None, description='Avatar image, when the principal has one.'
+    )
+    color: str | None = Field(
+        None,
+        description='Mantine palette key for the avatar fallback when no image is set.',
     )
 
 
@@ -4493,7 +4668,7 @@ class ToolCallPayload(BaseModel):
     )
 
 
-class Kind13(StrEnum):
+class Kind14(StrEnum):
     interaction = 'interaction'
 
 
@@ -4501,7 +4676,7 @@ class SessionTranscriptWait(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind13
+    kind: Kind14
     interaction_id: str
     tool_call_id: str
     expires_at: AwareDatetime | None = None
@@ -4617,6 +4792,15 @@ class CreateSessionAttachmentRequest(BaseModel):
         description='Optional declared byte size; when supplied it must match the uploaded bytes.',
         ge=0,
     )
+
+
+class CompleteSessionPDFUploadRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(..., max_length=256)
+    size_bytes: int = Field(..., ge=1, le=104857600)
+    part_count: int = Field(..., ge=1, le=13)
 
 
 class CreateSessionArtifactReferenceRequest(BaseModel):
@@ -4924,7 +5108,7 @@ class NudgeSessionRequest(BaseModel):
     )
     wake: bool = Field(
         False,
-        description='When true and the target turn is waiting on an interruptible agent tool, resolve that tool call with `{ "interrupted": true, "reason": "user_direction" }` and resume the same turn. Running and newly queued turns ignore this field.',
+        description='When true and the target turn is waiting on an interruptible agent tool, resolve that tool call with `{ "interrupted": true, "reason": "user_direction" }` and resume the same turn. Running and newly queued turns ignore this field.\n\nA turn waiting on the outcome of a question it asked with `mobius.interaction.open` (`mobius_event_wait` on `interaction.resolved`) is resumed by every nudge, with or without this field. The question stays open: the tool result also carries `interaction_id` and `interaction_status: "pending"`, and the question\'s outcome still arrives in the conversation as its own input.',
     )
 
 
@@ -4995,7 +5179,7 @@ class SessionEventSubscriptionFilter(BaseModel):
     )
     event_type: str = Field(
         ...,
-        description='A public exact event type or a supported provider wildcard such as `github.pull_request.*`.',
+        description="A public exact event type or a supported provider wildcard such as `github.pull_request.*`. Subscriptions accept the same public events an agent can wait for. The one interaction event that can be followed is `interaction.resolved`, with `source_id` set to a question the session's agent asked in this session; any other interaction filter is refused. A question the agent asks is already followed by its own subscription until it is answered, dismissed, or expires, so a filter on a question that something in the session already follows, or that has already closed, is refused with 409.",
         min_length=1,
     )
     source_id: str | None = Field(
@@ -5031,6 +5215,10 @@ class CreateSessionEventSubscriptionRequest(BaseModel):
     idempotency_key: str | None = Field(
         None, description='Retry key scoped to this session.', max_length=255
     )
+    once: bool = Field(
+        False,
+        description='When true, the subscription ends after its first matching event. That event is still delivered to the conversation, and the subscription stops with `stop_reason` `delivered_once` in the same step, so no later event can match it. When false, the subscription keeps delivering until it is unsubscribed, stopped, or expires. Retrying with the same `idempotency_key` must repeat the same value.',
+    )
 
 
 class SessionEventSubscriptionStatus(StrEnum):
@@ -5053,6 +5241,10 @@ class SessionEventSubscription(BaseModel):
     execution_scope: dict[str, Any] = Field(
         ...,
         description='Server-resolved authority and billing scope; not event-controlled.',
+    )
+    once: bool = Field(
+        ...,
+        description='True when the subscription ends after its first matching event. Once that event matches, `status` is `stopped` with `stop_reason` `delivered_once`, and its delivery still reaches the conversation.',
     )
     status: SessionEventSubscriptionStatus
     stop_reason: str | None = None
@@ -5117,7 +5309,10 @@ class SessionEventDelivery(BaseModel):
     target_turn_id: str | None = None
     message_id: str | None = None
     status: SessionEventDeliveryStatus
-    diagnostic: str | None = None
+    diagnostic: str | None = Field(
+        None,
+        description='Machine-readable note about this delivery, such as `payload_truncated_at_65536_bytes`. `superseded_by_event_wait` means an agent wait in the same conversation already received this event, so it was not added a second time: the status is `delivered` and `target_turn_id` is the turn that received it.',
+    )
     created_at: AwareDatetime
     updated_at: AwareDatetime
     delivered_at: AwareDatetime | None = None
@@ -5326,7 +5521,7 @@ class RoutineFollowLevel(StrEnum):
     failures_only = 'failures_only'
 
 
-class Kind14(StrEnum):
+class Kind15(StrEnum):
     """
     The principal's kind, resolved from the principal record.
     """
@@ -5344,7 +5539,7 @@ class RoutinePrincipal(BaseModel):
     principal_id: str
     relationship: RoutineRelationship
     level: RoutineFollowLevel | None = None
-    kind: Kind14 = Field(
+    kind: Kind15 = Field(
         ..., description="The principal's kind, resolved from the principal record."
     )
     display_name: str | None = None
@@ -6493,6 +6688,84 @@ class UpsertRowResult(BaseModel):
     )
 
 
+class UpdateArtifactRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ...,
+        description='New name for the file, as a relative virtual path. A leading folder moves the file: `reports/2026/weekly.md` places it in `reports/2026`, a bare `weekly.md` places it at the root.',
+        max_length=256,
+    )
+
+
+class ArtifactFolder(BaseModel):
+    """
+    A declared Library folder.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Folder ID.')
+    path: str = Field(
+        ..., description='Normalized folder path, with no leading or trailing slash.'
+    )
+    name: str = Field(..., description='Last segment of the path.')
+    parent_path: str = Field(
+        ..., description='Path of the containing folder; empty at the root.'
+    )
+    owner: ResourceOwner
+    visibility: ResourceVisibility
+    created_at: AwareDatetime
+    created_by: str | None = Field(
+        None, description='Principal that declared the folder.'
+    )
+
+
+class ArtifactFolderSummary(BaseModel):
+    """
+    One immediate subfolder, declared or implied by a file name.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    path: str = Field(..., description='Normalized folder path.')
+    name: str = Field(..., description='Last segment of the path, for display.')
+    declared: bool = Field(
+        ...,
+        description='Whether a folder record exists. Only a declared folder can be deleted; an implied one disappears with its last file.',
+    )
+    id: str | None = Field(
+        None, description='Folder ID, present only when the folder is declared.'
+    )
+
+
+class ArtifactFolderListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[ArtifactFolderSummary] = Field(
+        ..., description='Immediate subfolders, ordered by name.'
+    )
+
+
+class CreateArtifactFolderRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    path: str = Field(
+        ...,
+        description='Folder path to declare, relative and with no leading or trailing slash. Intermediate folders are implied by this path and need no declaration of their own.',
+        max_length=256,
+    )
+    visibility: ResourceVisibility | None = Field(
+        None,
+        description='Who sees the folder. Omit for `private`, visible only to the person creating it. It never changes who can open the files inside.',
+    )
+
+
 class ArtifactListResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -7007,11 +7280,14 @@ class Consumer(BaseModel):
 
 
 class ConsumerInput(BaseModel):
+    """
+    A caller may attach an HTTP subscriber or no consumer. Agent-tool consumers are runtime-only.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind10
-    agent_tool: AgentToolConsumer | None = None
+    kind: Kind11
     http_subscriber: HttpSubscriberConsumerInput | None = None
 
 
@@ -7174,6 +7450,10 @@ class AgentTurn(BaseModel):
     completed_at: AwareDatetime | None = Field(
         None, description='When the turn reached a terminal status.'
     )
+    deleted_at: AwareDatetime | None = Field(
+        None,
+        description="When this turn was taken back from the transcript. The turn record is kept so its usage stays readable, but its messages no longer appear in the transcript or in the agent's context. Absent on a turn that is still part of the conversation.",
+    )
 
 
 class AgentTurnListResponse(BaseModel):
@@ -7222,6 +7502,10 @@ class SessionTranscriptTurn(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     completed_at: AwareDatetime | None = None
+    deleted_at: AwareDatetime | None = Field(
+        None,
+        description='Set when the turn has been taken back. A reducer that receives this drops the turn and every row belonging to it; the turn frame is the whole signal, since the removed message rows are never re-sent.',
+    )
 
 
 class TurnUpsertFrame(SessionTranscriptTurn):
@@ -7375,6 +7659,11 @@ class RoutineCreateRequest(BaseModel):
     kind: RoutineKind | None = None
     schedule: RoutineSchedule | None = None
     event: RoutineEventTrigger | None = None
+    output_folder: str | None = Field(
+        None,
+        description='Library folder these files are saved to, for example `routines/weekly-report`. A file name that already contains a folder always wins. Omit to take the default derived from the routine name; send an empty string for the top level of the Library.',
+        max_length=256,
+    )
     per_occurrence_ceiling_milli: int = Field(..., ge=1)
     daily_ceiling_milli: int = Field(..., ge=1)
     owner_kind: RoutineOwnerKind | None = Field(
@@ -7428,6 +7717,11 @@ class RoutineUpdateRequest(BaseModel):
     connection_bindings: ConnectionBindings | None = None
     name: str | None = None
     instructions: str | None = None
+    output_folder: str | None = Field(
+        None,
+        description='Replacement Library folder, for example `routines/weekly-report`. Omit to leave it unchanged; send an empty string to clear it and save to the top level of the Library. Renaming never changes it.',
+        max_length=256,
+    )
     schedule: RoutineSchedule | None = Field(
         None,
         description='Makes this a scheduled routine, dropping any event trigger it had. Rejected together with `event`.',
@@ -7530,6 +7824,11 @@ class Routine(BaseModel):
         None, description='Present when `trigger` is `event`.'
     )
     timezone: str
+    output_folder: str | None = Field(
+        None,
+        description='Library folder files produced here are saved to. Empty means the top level of the Library. A file name that already contains a folder is never moved into it.',
+        max_length=256,
+    )
     status: RoutineStatus
     pause_reason: str | None = None
     attention: Attention | None = Field(
@@ -7845,7 +8144,7 @@ class Interaction(BaseModel):
     )
     outcome: InteractionValue | None = Field(
         None,
-        description='Final outcome selected by the resolution policy. Omitted while the interaction is still pending.',
+        description="Final outcome selected by the resolution policy. Omitted while the interaction is still pending.\n\nIts shape follows the policy: a first-response policy records the resolving responder's answer array, while `all_of` and `quorum` record the list of response objects so each participant's answers stay attributable.",
     )
     resolved_by: str | None = Field(
         None,
@@ -7940,7 +8239,7 @@ class CreateInteractionRequest(BaseModel):
     )
     consumer: ConsumerInput | None = Field(
         None,
-        description="Polymorphic identifier of what is waiting on this interaction's resolution.",
+        description='Caller-provided continuation target, if any. The agent runtime creates agent-tool continuations internally.',
     )
     delivery: Delivery | None = Field(
         None, description='Optional per-interaction delivery override.'
@@ -8040,7 +8339,7 @@ class SessionMessage(BaseModel):
     )
     covers_through_sequence: int | None = Field(
         None,
-        description='For `compaction` messages, the highest sequence number this summary covers.',
+        description='For `compaction` messages, the highest sequence number this summary covers. It is an internal ordering key, not a quantity: use `metadata.conversation_message_count` to say how much history the summary folded away.',
     )
     sequence: int = Field(
         ...,
@@ -8051,11 +8350,16 @@ class SessionMessage(BaseModel):
         description='AgentTurn that produced this message. Run, step, and channel identity for the message are read from this turn. Absent for compaction summaries and messages not tied to a turn.',
     )
     metadata: dict[str, Any] | None = Field(
-        None, description='Free-form caller metadata for this message.'
+        None,
+        description="Free-form caller metadata for this message. A `compaction` entry instead carries server-owned keys describing the pass that wrote it: `trigger` (a `CompactionTrigger`: what started the pass), `conversation_message_count` (transcript rows folded into the summary, counting only rows a reader sees — the number to show a user), `message_count` (the raw window size, including host-injected context rows), `from_sequence` / `through_sequence` (the window's sequence bounds), `estimated_tokens`, `strategy`, `summary_model`, and `summary_provider`.",
     )
     event_projection: SessionEventProjection | None = Field(
         None,
         description='Server-owned safe display projection when this message was triggered by an external event.',
+    )
+    author: SessionMessageAuthor | None = Field(
+        None,
+        description='Who wrote this message, resolved server side from the authenticated sender. Present only on `user` messages written by a principal in this organization; routine inputs and event deliveries carry execution identity instead and remain unattributed.',
     )
     created_at: AwareDatetime = Field(
         ..., description='Server timestamp when the message was appended.'
@@ -8104,10 +8408,17 @@ class SessionTranscriptMessage(BaseModel):
     turn_index: int | None = Field(...)
     sequence: int | None = Field(...)
     covers_through_sequence: int | None = None
-    metadata: dict[str, Any] | None = None
+    metadata: dict[str, Any] | None = Field(
+        None,
+        description='Free-form metadata for this message. A `compaction` entry carries the server-owned keys described on `SessionMessage.metadata`.',
+    )
     event_projection: SessionEventProjection | None = Field(
         None,
         description='Server-owned safe display projection when this message was triggered by an external event.',
+    )
+    author: SessionMessageAuthor | None = Field(
+        None,
+        description='Who wrote this message, resolved server side from the authenticated sender. Present only on `user` messages written by a principal in this organization; routine inputs and event deliveries carry execution identity instead and remain unattributed.',
     )
     created_at: AwareDatetime
 

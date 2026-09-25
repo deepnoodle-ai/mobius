@@ -26,9 +26,17 @@ the minor version.
   follow keys
   ([#218](https://github.com/deepnoodle-ai/mobius/pull/218),
   [#219](https://github.com/deepnoodle-ai/mobius/pull/219)).
+- Library files can be renamed or moved (`updateArtifact`), listed by folder,
+  and grouped under declared folders; sessions can delete their last turn and
+  stage PDFs up to 100 MiB in chunks; messages carry a resolved `author`
+  ([#PR](https://github.com/deepnoodle-ai/mobius/pull/PR)).
 
 ### Changed
 
+- **Breaking.** Interactions ask a list of `questions` and responses carry
+  per-question `answers` (the outcome is an answer list); callers can no longer
+  attach an `agent_tool` consumer, which is now runtime-only
+  ([#PR](https://github.com/deepnoodle-ai/mobius/pull/PR)).
 - Managed environment Git actions and the Git credential helper send the
   active job lease so automatic Sprite workspaces can broker GitHub credentials
   through the agent's live connection grant.
