@@ -56,7 +56,7 @@ func registerInteractionsCommands(app *cli.App) {
 	interactionsGrp.Command("create").
 		Description("Create interaction").
 		Flags(
-			cli.String("consumer", "").Help("consumer Accepts JSON, @file, or @-."),
+			cli.String("consumer", "").Help("A caller may attach an HTTP subscriber or no consumer. Agent-tool consumers are runtime-only. Accepts JSON, @file, or @-."),
 			cli.String("context", "").Help("Additional key-value context surfaced in the UI alongside the title and description. Accepts JSON, @file, or @-."),
 			cli.String("delivery", "").Help("Optional per-interaction delivery override. When absent, each participant is notified via the app inbox only. Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Optional longer responder-facing detail or instructions."),
@@ -66,7 +66,7 @@ func registerInteractionsCommands(app *cli.App) {
 			cli.String("references", "").Help("Supporting links and related entities. Accepts JSON, @file, or @-."),
 			cli.Bool("require-all", "").Help("When true, all target users must respond before the interaction is considered complete. Defaults to false when omitted. Mutually exclusive…"),
 			cli.String("resolution-policy", "").Help("Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome, and whether that… Accepts JSON, @file, or @-."),
-			cli.String("spec", "").Help("Declarative dialog contract for rendering and validating an interaction. Used at both authoring time and runtime (persisted on an… Accepts JSON, @file, or @-."),
+			cli.String("spec", "").Help("The set of questions one responder answers atomically. Group related questions into a single interaction rather than opening several: each… Accepts JSON, @file, or @-."),
 			cli.String("subject", "").Help("Pointer to the work item, artifact, external ticket, or Mobius entity this interaction is about. Accepts JSON, @file, or @-."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.Strings("target-user-ids", "").Help("[required] Resolved user IDs to target directly. At least one target is required — every interaction needs someone who can answer it, even when a…"),
@@ -268,8 +268,8 @@ func registerInteractionsCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("action", "").Help("Operation to perform through the canonical response endpoint. `submit` answers the interaction."),
+			cli.String("answers", "").Help("[required] The responder's complete answer set. Required for `submit`. Every required question must be answered; there is no partial submit. Accepts JSON, @file, or @-."),
 			cli.String("comment", "").Help("Optional free-text comment accompanying the action. Available on every interaction kind and never gated by the spec; the responder may…"),
-			cli.String("value", "").Help("Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`… Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -289,20 +289,20 @@ func registerInteractionsCommands(app *cli.App) {
 				v := api.RespondToInteractionRequestAction(ctx.String("action"))
 				body.Action = &v
 			}
+			if ctx.IsSet("answers") {
+				if err := decodeFlagJSON(ctx, "answers", ctx.String("answers"), &body.Answers); err != nil {
+					return err
+				}
+			}
 			if ctx.IsSet("comment") {
 				v := ctx.String("comment")
 				body.Comment = &v
 			}
-			if ctx.IsSet("value") {
-				if err := decodeFlagJSON(ctx, "value", ctx.String("value"), &body.Value); err != nil {
-					return err
-				}
-			}
-			if ctx.String("file") == "" && !ctx.IsSet("action") && !ctx.IsSet("comment") && !ctx.IsSet("value") {
-				return fmt.Errorf("at least one flag or --file is required")
+			if ctx.String("file") == "" && !ctx.IsSet("answers") {
+				return fmt.Errorf("--answers is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body, "value")
+				return printDryRun(ctx, body, "answers")
 			}
 			resp, err := client.RespondToInteractionWithResponse(ctx.Context(), p0, body)
 			if err != nil {

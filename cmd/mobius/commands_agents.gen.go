@@ -71,6 +71,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("model", "").Help("Model identifier for agents. Any id from `GET /v1/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally…"),
 			cli.String("model-route", "").Help("Default model route used by built-in messaging and by any turn that does not override the route. Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("[required] Unique name for this agent. Free-form human-readable label, 1-63 characters."),
+			cli.String("output-folder", "").Help("Library folder this assistant's files are saved to, for example `assistants/ops`. Omit to take the default derived from the name; send an…"),
 			cli.String("owner", "").Help("The human or team responsible for this resource. Accepts JSON, @file, or @-."),
 			cli.String("system-prompt", "").Help("Custom system prompt for agents. Empty uses the generated default."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
@@ -142,6 +143,10 @@ func registerAgentsCommands(app *cli.App) {
 			}
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
+			}
+			if ctx.IsSet("output-folder") {
+				v := ctx.String("output-folder")
+				body.OutputFolder = &v
 			}
 			if ctx.IsSet("owner") {
 				if err := decodeFlagJSON(ctx, "owner", ctx.String("owner"), &body.Owner); err != nil {
@@ -983,6 +988,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("model", "").Help("Replacement model identifier for agents (any id from `GET /v1/catalog/models`, including slash-bearing OpenRouter catalog ids, or an…"),
 			cli.String("model-route", "").Help("Default model route used by built-in messaging and by any turn that does not override the route. Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("Free-form human-readable label, 1-63 characters; must be unique within the org."),
+			cli.String("output-folder", "").Help("Replacement Library folder. Omit to leave it unchanged; send an empty string to clear it and save to the top level of the Library. Renaming…"),
 			cli.String("status", "").Help("Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent."),
 			cli.String("stranded-disposition", "").Help("What happens to the memory partitions and sessions of principals who fall outside a narrowed audience."),
 			cli.String("system-prompt", "").Help("Replacement system prompt for agents."),
@@ -1063,6 +1069,10 @@ func registerAgentsCommands(app *cli.App) {
 				v := ctx.String("name")
 				body.Name = &v
 			}
+			if ctx.IsSet("output-folder") {
+				v := ctx.String("output-folder")
+				body.OutputFolder = &v
+			}
 			if ctx.IsSet("status") {
 				v := api.UpdateAgentRequestStatus(ctx.String("status"))
 				body.Status = &v
@@ -1097,7 +1107,7 @@ func registerAgentsCommands(app *cli.App) {
 				v := api.AgentVisibility(ctx.String("visibility"))
 				body.Visibility = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("action-selectors") && !ctx.IsSet("affected-resource-dispositions") && !ctx.IsSet("color") && !ctx.IsSet("compaction-policy") && !ctx.IsSet("confirm-visibility-change") && !ctx.IsSet("description") && !ctx.IsSet("external-ref") && !ctx.IsSet("members") && !ctx.IsSet("memory-context") && !ctx.IsSet("memory-enabled") && !ctx.IsSet("model") && !ctx.IsSet("model-route") && !ctx.IsSet("name") && !ctx.IsSet("status") && !ctx.IsSet("stranded-disposition") && !ctx.IsSet("system-prompt") && !ctx.IsSet("tag") && !ctx.IsSet("thinking-effort") && !ctx.IsSet("timeout-seconds") && !ctx.IsSet("tool-presentation") && !ctx.IsSet("visibility") {
+			if ctx.String("file") == "" && !ctx.IsSet("action-selectors") && !ctx.IsSet("affected-resource-dispositions") && !ctx.IsSet("color") && !ctx.IsSet("compaction-policy") && !ctx.IsSet("confirm-visibility-change") && !ctx.IsSet("description") && !ctx.IsSet("external-ref") && !ctx.IsSet("members") && !ctx.IsSet("memory-context") && !ctx.IsSet("memory-enabled") && !ctx.IsSet("model") && !ctx.IsSet("model-route") && !ctx.IsSet("name") && !ctx.IsSet("output-folder") && !ctx.IsSet("status") && !ctx.IsSet("stranded-disposition") && !ctx.IsSet("system-prompt") && !ctx.IsSet("tag") && !ctx.IsSet("thinking-effort") && !ctx.IsSet("timeout-seconds") && !ctx.IsSet("tool-presentation") && !ctx.IsSet("visibility") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

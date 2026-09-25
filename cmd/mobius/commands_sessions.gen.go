@@ -294,6 +294,7 @@ func registerSessionsCommands(app *cli.App) {
 			cli.String("expires-at", "").Help("Optional future stop time. Accepts JSON, @file, or @-."),
 			cli.String("filters", "").Help("[required] ORed public-event filter branches. Accepts JSON, @file, or @-."),
 			cli.String("idempotency-key", "").Help("Retry key scoped to this session."),
+			cli.Bool("once", "").Help("When true, the subscription ends after its first matching event. That event is still delivered to the conversation, and the subscription…"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -322,6 +323,10 @@ func registerSessionsCommands(app *cli.App) {
 			if ctx.IsSet("idempotency-key") {
 				v := ctx.String("idempotency-key")
 				body.IdempotencyKey = &v
+			}
+			if ctx.IsSet("once") {
+				v := ctx.Bool("once")
+				body.Once = &v
 			}
 			if ctx.String("file") == "" && !ctx.IsSet("filters") {
 				return fmt.Errorf("--filters is required (or supply it via --file)")
@@ -372,6 +377,26 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "deleteSessionAttachment", resp.StatusCode(), resp.Body)
+		})
+
+	sessionsGrp.Command("delete-turn").
+		Description("Delete the last session turn").
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
+		AddArg(&cli.Arg{Name: "turn-id", Description: "Identifier of a turn within a session.", Required: true}).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.SessionIdParam(ctx.Arg(0))
+			p1 := api.TurnIdParam(ctx.Arg(1))
+			resp, err := client.DeleteSessionTurnWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "deleteSessionTurn", resp.StatusCode(), resp.Body)
 		})
 
 	sessionsGrp.Command("get").

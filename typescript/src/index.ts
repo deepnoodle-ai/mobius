@@ -11,6 +11,8 @@ export {
   StreamHTTPError,
   TurnTranscript,
   WorkerInstanceConflictError,
+  SESSION_PDF_CHUNK_BYTES,
+  SESSION_PDF_MAX_BYTES,
 } from "./client.js";
 export type {
   ClientOptions,
@@ -19,6 +21,8 @@ export type {
   CreateAgentOptions,
   CreateArtifactOptions,
   CreateSessionAttachmentOptions,
+  CompleteSessionPdfUploadOptions,
+  UploadSessionPdfOptions,
   GetSessionTranscriptOptions,
   ImportSkillOptions,
   InvokeAgentOptions,
