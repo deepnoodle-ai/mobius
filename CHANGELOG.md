@@ -29,6 +29,9 @@ the minor version.
 
 ### Changed
 
+- Managed environment Git actions and the Git credential helper send the
+  active job lease so automatic Sprite workspaces can broker GitHub credentials
+  through the agent's live connection grant.
 - **Breaking.** Integration connect responses use `kind` instead of `type`;
   agent `integration_access` is replaced by explicit grants and defaults; and
   routines use exact `source_bindings` and `connection_bindings` instead of

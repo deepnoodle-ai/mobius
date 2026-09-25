@@ -124,6 +124,7 @@ func runGitCredentialHelper(ctx context.Context, out io.Writer, broker gitCreden
 	cred, err := broker.CreateEnvironmentGitCredential(ctx, environmentID, mobius.EnvironmentGitCredentialRequest{
 		RepoFullName: repo,
 		Operation:    "push",
+		LeaseToken:   os.Getenv("MOBIUS_JOB_LEASE_TOKEN"),
 	})
 	if err != nil {
 		return fmt.Errorf("broker git credential for %s: %w", repo, err)
