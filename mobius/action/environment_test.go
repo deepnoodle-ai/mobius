@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -34,6 +36,40 @@ func TestEnvironmentBashPassesCurrentLeaseToGitHelper(t *testing.T) {
 	result, ok := out.(map[string]any)
 	if !ok || result["stdout"] != "lease_active" {
 		t.Fatalf("bash lease = %#v, want active job lease", out)
+	}
+}
+
+type testClientLeasedActionContext struct {
+	testLeasedActionContext
+	client *mobius.Client
+}
+
+func (c testClientLeasedActionContext) EnvironmentID() string        { return "env_test" }
+func (c testClientLeasedActionContext) MobiusClient() *mobius.Client { return c.client }
+
+// A session workspace download reads the person's file on the job lease; the
+// worker's own credential cannot see a person's private uploads (#1866).
+func TestEnvironmentArtifactDownloadSendsJobLease(t *testing.T) {
+	t.Setenv("MOBIUS_RUNTIME_WORKSPACE", realPath(t, t.TempDir()))
+	var lease string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/artifacts/art_upload/content" {
+			t.Errorf("unexpected request %s %s", r.Method, r.URL.Path)
+		}
+		lease = r.Header.Get("X-Mobius-Lease-Token")
+		_, _ = w.Write([]byte("upload bytes"))
+	}))
+	t.Cleanup(srv.Close)
+	client, err := mobius.NewClient(mobius.WithBaseURL(srv.URL), mobius.WithAPIKey("mbx_worker"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := testClientLeasedActionContext{testLeasedActionContext{testActionContext{Context: context.Background()}}, client}
+	if _, err := NewEnvironmentArtifactDownloadAction().Execute(ctx, map[string]any{"artifact_id": "art_upload", "dest": "upload.docx"}); err != nil {
+		t.Fatal(err)
+	}
+	if lease != "lease_active" {
+		t.Fatalf("download lease header = %q, want the active job lease", lease)
 	}
 }
 

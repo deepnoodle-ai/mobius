@@ -931,7 +931,11 @@ func NewEnvironmentArtifactDownloadAction() mobius.Action {
 		if !ok || ec.MobiusClient() == nil {
 			return nil, fmt.Errorf("mobius client is not available in worker context")
 		}
-		out, err := ec.MobiusClient().DownloadArtifactToFile(ctx, in.ArtifactID, path, in.MaxBytes)
+		leaseToken := ""
+		if lc, ok := ctx.(environmentLeaseContext); ok {
+			leaseToken = lc.LeaseToken()
+		}
+		out, err := ec.MobiusClient().DownloadArtifactToFileWithLease(ctx, in.ArtifactID, path, in.MaxBytes, leaseToken)
 		if err != nil {
 			return nil, err
 		}
