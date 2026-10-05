@@ -206,12 +206,23 @@ func (h *spriteHold) run(ctx context.Context, opts holdRunOptions) error {
 		}
 	}()
 	for {
-		if h.takeRefresh() && held {
-			// The environment resumed from a pause: the task may have expired
-			// mid-suspend. Re-establish it before anything else.
-			if ok := h.putTaskRetrying(ctx, opts); !ok && opts.Required {
-				releaseOnExit = false
-				return fmt.Errorf("mobius: required Sprite keep-warm hold could not be re-established after resume for task %q", h.taskName)
+		if h.takeRefresh() {
+			switch {
+			case held:
+				// The environment resumed from a pause: the task may have
+				// expired mid-suspend. Re-establish it before anything else.
+				if ok := h.putTaskRetrying(ctx, opts); !ok && opts.Required {
+					releaseOnExit = false
+					return fmt.Errorf("mobius: required Sprite keep-warm hold could not be re-established after resume for task %q", h.taskName)
+				}
+			case h.releaseGrace > 0:
+				// Resumed while idle and unheld. Something woke this Sprite,
+				// almost always the server about to hand the worker a job.
+				// Without a hold the Sprite pauses again as soon as the waking
+				// exec ends, before the worker reconnects and claims, and the
+				// job is failed as worker-unavailable. Hold for the keep-warm
+				// window; the idle branch below arms its release.
+				held = h.putTaskRetrying(ctx, opts)
 			}
 		}
 		switch active := h.active(); {

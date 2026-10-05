@@ -10,6 +10,12 @@ the minor version.
 
 ## [Unreleased]
 
+### Fixed
+
+- A Sprite worker woken from an idle pause now holds the Sprite warm for the
+  keep-warm window. Before, the Sprite could pause again before the worker
+  reconnected, and the job that woke it failed as worker-unavailable.
+
 ## [0.2.1] - 2026-10-04
 
 ### Added

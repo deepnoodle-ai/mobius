@@ -306,6 +306,29 @@ func TestSpriteHoldPokeReestablishesHeldTask(t *testing.T) {
 	}, "re-PUT after poke")
 }
 
+// TestSpriteHoldPokeHoldsIdleSpriteForWindow covers a resume while the worker
+// is idle and unheld: the server woke the Sprite to hand it a job. The hold must
+// be established so the Sprite stays awake long enough for the worker to
+// reconnect and claim, then released once the keep-warm window passes.
+func TestSpriteHoldPokeHoldsIdleSpriteForWindow(t *testing.T) {
+	rec := &taskRecorder{}
+	sock := serveTaskSocket(t, rec)
+
+	h := newSpriteHoldWithPath(sock, slog.Default(), "mobius-worker-test", 200*time.Millisecond)
+	if h == nil {
+		t.Fatal("expected a hold for a real socket, got nil")
+	}
+	h.interval = time.Hour
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() { _ = h.run(ctx, holdRunOptions{}) }()
+
+	h.poke()
+	waitFor(t, func() bool { return rec.seen(http.MethodPut) }, "PUT after resume poke")
+	waitFor(t, func() bool { return rec.seen(http.MethodDelete) }, "DELETE after keep-warm window")
+}
+
 func TestNewSpriteHoldOffSprite(t *testing.T) {
 	// A path that isn't a Unix socket means we're not inside a Sprite: the
 	// constructor returns nil so detectHold falls back to a no-op.
