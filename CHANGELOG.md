@@ -10,6 +10,8 @@ the minor version.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-04
+
 ### Added
 
 - Organizations can schedule, inspect, and cancel deletion
@@ -17,7 +19,8 @@ the minor version.
 - Sessions and routines expose read marks (`mark-read`), routines can fetch a
   single occurrence, and actions can fetch a single direct invocation.
 - Session tool blocks carry a `display` summary (`SessionToolDisplay`), and the
-  event catalog reports `default_for` follow targets for new routines.
+  event catalog reports `default_for` follow targets for new routines
+  ([#226](https://github.com/deepnoodle-ai/mobius/pull/226)).
 
 ## [0.2.0] - 2026-09-25
 
