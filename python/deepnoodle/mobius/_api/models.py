@@ -1717,6 +1717,10 @@ class RoutineFollowTarget(BaseModel):
     label: str
     description: str
     event_types: list[str]
+    default_for: list[str] | None = Field(
+        None,
+        description='Event-type patterns for which a new routine that names no follow_target follows this target.',
+    )
 
 
 class WorkerSocketModelCapability(BaseModel):
@@ -2601,6 +2605,36 @@ class CreateRoleAssignmentRequest(
     RootModel[CreateRoleAssignmentRequest1 | CreateRoleAssignmentRequest2]
 ):
     root: CreateRoleAssignmentRequest1 | CreateRoleAssignmentRequest2
+
+
+class OrgDeletionRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    confirmation_name: str = Field(..., min_length=1)
+
+
+class Status2(StrEnum):
+    pending_purge = 'pending_purge'
+    purging = 'purging'
+    completed = 'completed'
+    cancelled = 'cancelled'
+    failed = 'failed'
+
+
+class OrgDeletion(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    org_id: str
+    status: Status2
+    purge_after: AwareDatetime
+    requested_at: AwareDatetime
+    completed_at: AwareDatetime | None = None
+    cancelled_at: AwareDatetime | None = None
+    failure_reason: str | None = Field(
+        None, description='Stable step code when status is failed; omitted otherwise.'
+    )
 
 
 class OAuthReturnOrigins(BaseModel):
@@ -3677,7 +3711,7 @@ class CreateAgentRequest(BaseModel):
     )
 
 
-class Status2(StrEnum):
+class Status3(StrEnum):
     """
     Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent.
     """
@@ -3749,7 +3783,7 @@ class UpdateAgentRequest(BaseModel):
         description="Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (600s / 10 minutes); a request's `operation.timeout_seconds` overrides it for that turn.",
         ge=0,
     )
-    status: Status2 | None = Field(
+    status: Status3 | None = Field(
         None,
         description='Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent.',
     )
@@ -4064,6 +4098,49 @@ class SessionResolvedAction(BaseModel):
     )
 
 
+class SessionToolDisplay(BaseModel):
+    """
+    Plain-language phrasing for a tool call, recorded when the call is made. Clients show these words instead of the tool name or its arguments.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    label: str = Field(
+        ...,
+        description='What the tool does, in sentence case, for example "Export a PDF".',
+    )
+    running: str | None = Field(
+        None, description='Phrase while the call runs, for example "Exporting a PDF…".'
+    )
+    done: str | None = Field(
+        None,
+        description='Phrase once it succeeds, for example: Exported "Q3 update.pdf".',
+    )
+    done_many: str | None = Field(
+        None,
+        description='Phrase for a group of these calls; "{n}" is replaced by the count.',
+    )
+    subject: str | None = Field(
+        None,
+        description='The one thing the call acted on, such as a file name. Never message bodies.',
+    )
+    artifact_id: str | None = Field(
+        None, description='The artifact the call created or changed, when there is one.'
+    )
+    integration: str | None = Field(
+        None,
+        description='The integration\'s name as people know it, shown before the label, for example "GitHub".',
+    )
+    integration_key: str | None = Field(
+        None, description='Provider key for the integration icon, for example "github".'
+    )
+    error: str | None = Field(
+        None,
+        description="One safe line explaining a failure, only for Mobius's own tools. Empty for integration and third party tools, whose error text can quote private content.",
+    )
+
+
 class Type21(StrEnum):
     tool_use = 'tool_use'
 
@@ -4091,6 +4168,7 @@ class SessionToolUseBlock(BaseModel):
         description='Latest in-flight progress snapshot. Absent on final transcript rows.',
     )
     resolved_action: SessionResolvedAction | None = None
+    display: SessionToolDisplay | None = None
 
 
 class Type22(StrEnum):
@@ -4523,6 +4601,7 @@ class MessageBlockPatchFrame(BaseModel):
     )
     progress: dict[str, Any] | None = None
     resolved_action: SessionResolvedAction | None = None
+    display: SessionToolDisplay | None = None
 
 
 class EventType4(StrEnum):
@@ -5653,7 +5732,7 @@ class Trigger(StrEnum):
     event = 'event'
 
 
-class Status3(StrEnum):
+class Status4(StrEnum):
     pending = 'pending'
     admitted = 'admitted'
     completed = 'completed'
@@ -5713,7 +5792,7 @@ class RoutineOccurrence(BaseModel):
         None,
         description='The concrete event type that arrived (`github.issues.opened`), not the pattern the routine subscribed to. Present only when `trigger` is `event`.',
     )
-    status: Status3
+    status: Status4
     outcome: str | None = Field(
         None,
         description="A completed run's headline: one line saying what it did, derived from the run's own final message with markdown removed and length capped, falling back to the scheduled time when the run said nothing. Safe to render in a table cell as-is.",
@@ -5744,7 +5823,7 @@ class Changes(BaseModel):
     after: dict[str, Any] | None = None
 
 
-class Status4(StrEnum):
+class Status5(StrEnum):
     success = 'success'
     failure = 'failure'
 
@@ -5779,7 +5858,7 @@ class RoutineChange(BaseModel):
         None,
         description='The values before and after. Withheld fields read as `<redacted>` rather than disappearing.',
     )
-    status: Status4
+    status: Status5
     error_type: str | None = None
     created_at: AwareDatetime
 
@@ -5802,7 +5881,7 @@ class RoutineOccurrenceList(BaseModel):
     next_cursor: str | None = None
 
 
-class Status5(StrEnum):
+class Status6(StrEnum):
     pending = 'pending'
     approved = 'approved'
     dismissed = 'dismissed'
@@ -5817,7 +5896,7 @@ class RoutineProposal(BaseModel):
     session_id: str
     agent_id: str
     proposed_to: str
-    status: Status5
+    status: Status6
     routine_id: str | None = None
     expires_at: AwareDatetime
     payload: dict[str, Any]
@@ -6039,7 +6118,7 @@ class BlueprintSkillInput(BaseModel):
     tags: TagMap | None = None
 
 
-class Status6(StrEnum):
+class Status7(StrEnum):
     """
     `applied` for a mutating apply, `previewed` for a preview.
     """
@@ -6094,7 +6173,7 @@ class SetBlueprintProtectionRequest(BaseModel):
     protected: bool
 
 
-class Status7(StrEnum):
+class Status8(StrEnum):
     deleted = 'deleted'
 
 
@@ -6102,7 +6181,7 @@ class BlueprintDeleteResult(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    status: Status7
+    status: Status8
     namespace: str | None = None
     blueprint_key: str
     deleted: list[BlueprintBinding] = Field(
@@ -7619,7 +7698,7 @@ class RoutineCreateRequest(BaseModel):
     )
     follow_target: str | None = Field(
         None,
-        description='Immutable follow target from the event catalog. Null or event creates a conversation per event; routine shares one conversation; custom evaluates follow_key. Provider targets derive the event subscription.',
+        description='Immutable follow target from the event catalog. Omitted uses the catalog target whose default_for matches the event type, or event when none does; event always creates a conversation per event; routine shares one conversation; custom evaluates follow_key. A provider target keeps an event type it covers and otherwise subscribes to the whole provider.',
     )
     follow_key: str | None = Field(
         None,
@@ -7689,7 +7768,7 @@ class RoutineUpdateRequest(BaseModel):
     )
     follow_target: str | None = Field(
         None,
-        description='Immutable follow target. May be omitted or echo the current value; changing it is rejected. Create a new routine to follow a different target.',
+        description='Immutable follow target. May be omitted or echo the current value (null and event are the same value); changing it is rejected. Create a new routine to follow a different target.',
     )
     follow_key: str | None = Field(
         None,
@@ -7965,7 +8044,7 @@ class BlueprintApplyResult(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    status: Status6 = Field(
+    status: Status7 = Field(
         ..., description='`applied` for a mutating apply, `previewed` for a preview.'
     )
     namespace: str | None = None
@@ -8312,6 +8391,7 @@ class SessionToolResultBlock(BaseModel):
     is_error: bool | None = Field(
         None, description='True when the tool reported a failure.'
     )
+    display: SessionToolDisplay | None = None
 
 
 class SessionMessage(BaseModel):

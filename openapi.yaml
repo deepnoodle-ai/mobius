@@ -521,6 +521,31 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /v1/action-invocations/{job_id}:
+    get:
+      operationId: getActionInvocation
+      tags:
+      - actions
+      summary: Get a direct action invocation
+      description: Returns the status and retained result of a direct invocation to the principal
+        that started it.
+      parameters:
+      - name: job_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Current or terminal invocation result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionInvocationResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/actions/{action_name}/invoke:
     post:
       operationId: invokeAction
@@ -559,6 +584,11 @@ paths:
                   message_ts: '1718461800.000100'
         '202':
           description: Accepted — asynchronous invocation is still active
+          headers:
+            Location:
+              description: Pollable invocation result.
+              schema:
+                type: string
           content:
             application/json:
               schema:
@@ -1329,6 +1359,93 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/orgs/{org_id}:
+    delete:
+      operationId: scheduleOrgDeletion
+      x-public: true
+      tags:
+      - organizations
+      summary: Schedule organization deletion
+      description: An owner may schedule deletion of a self-serve organization. A current
+        administrator of its enabled governing parent may schedule a managed child. The exact
+        organization name must be confirmed. Access stops immediately, while Clerk, Stripe,
+        and stored data remain untouched for seven days. Repeating this request returns the
+        active attempt.
+      parameters:
+      - $ref: '#/components/parameters/OrgIDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrgDeletionRequest'
+      responses:
+        '202':
+          description: Deletion scheduled; poll Location for progress
+          headers:
+            Location:
+              schema:
+                type: string
+              description: Path of this organization's deletion resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgDeletion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/orgs/{org_id}/deletion:
+    get:
+      operationId: getOrgDeletion
+      x-public: true
+      tags:
+      - organizations
+      summary: Get organization deletion status
+      description: The initiating principal can poll after the org and its memberships are
+        gone. A still-authorized governing parent administrator can also poll a managed child's
+        attempt. Terminal records remain for at least 30 days. An unrelated principal receives
+        404.
+      parameters:
+      - $ref: '#/components/parameters/OrgIDParam'
+      responses:
+        '200':
+          description: Current or terminal deletion state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgDeletion'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: cancelOrgDeletion
+      x-public: true
+      tags:
+      - organizations
+      summary: Cancel pending organization deletion
+      description: Restores local access only while the attempt is pending and before purge_after.
+        No external organization or subscription needs recreation.
+      parameters:
+      - $ref: '#/components/parameters/OrgIDParam'
+      responses:
+        '204':
+          description: Deletion cancelled and local access restored
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /v1/organization/oauth-return-origins:
     get:
       operationId: getOAuthReturnOrigins
@@ -2681,6 +2798,11 @@ paths:
                 $ref: '#/components/schemas/SessionStreamFrame'
         '202':
           description: The turn was accepted and is running.
+          headers:
+            Location:
+              description: Pollable session turn.
+              schema:
+                type: string
           content:
             application/json:
               schema:
@@ -2809,7 +2931,9 @@ paths:
       tags:
       - sessions
       summary: Get session
-      description: Returns one durable conversation session.
+      description: Returns one durable conversation session. During the web-client transition,
+        callers that already posted a read mark may send X-Mobius-Safe-Read as 1 to suppress
+        the legacy GET watermark write.
       parameters:
       - $ref: '#/components/parameters/SessionIdParam'
       responses:
@@ -2883,6 +3007,24 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /v1/sessions/{session_id}/read-mark:
+    post:
+      operationId: markSessionRead
+      tags:
+      - sessions
+      summary: Advance the caller's session read mark
+      description: Idempotently records that the caller opened this authorized session.
+      parameters:
+      - $ref: '#/components/parameters/SessionIdParam'
+      responses:
+        '204':
+          description: Read mark advanced
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/sessions/{session_id}/attachments:
     post:
       operationId: createSessionAttachment
@@ -3267,6 +3409,11 @@ paths:
                 $ref: '#/components/schemas/SessionStreamFrame'
         '202':
           description: The turn was accepted and is running.
+          headers:
+            Location:
+              description: Pollable session turn.
+              schema:
+                type: string
           content:
             application/json:
               schema:
@@ -3410,6 +3557,11 @@ paths:
       responses:
         '202':
           description: The nudge input was accepted for delivery.
+          headers:
+            Location:
+              description: Pollable session nudge.
+              schema:
+                type: string
           content:
             application/json:
               schema:
@@ -3902,6 +4054,12 @@ paths:
         in: query
         schema:
           type: string
+      - name: paused
+        in: query
+        description: When true, returns only threads at their turn limit. They skip new events
+          until a manager resumes them.
+        schema:
+          type: boolean
       responses:
         '200':
           description: Threads ordered by last activity.
@@ -4182,6 +4340,32 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/routines/occurrences/{occurrence_id}:
+    get:
+      operationId: getRoutineOccurrence
+      tags:
+      - routines
+      summary: Get one routine occurrence
+      description: Returns a durable occurrence after checking reach to its routine.
+      parameters:
+      - name: occurrence_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Current or terminal occurrence.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoutineOccurrence'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/routines/{routine_id}:
     get:
       operationId: getRoutine
@@ -4189,6 +4373,8 @@ paths:
       - routines
       summary: Get a routine
       description: Returns one reachable routine and its current schedule and lifecycle state.
+        During the web-client transition, callers that already posted a read mark may send
+        X-Mobius-Safe-Read as 1 to suppress the legacy GET watermark write.
       parameters:
       - $ref: '#/components/parameters/RoutineID'
       responses:
@@ -4248,6 +4434,24 @@ paths:
                 $ref: '#/components/schemas/Routine'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/routines/{routine_id}/read-mark:
+    post:
+      operationId: markRoutineRead
+      tags:
+      - routines
+      summary: Mark the caller's routine occurrences read
+      description: Idempotently advances the caller's read marks for reachable completed occurrences.
+      parameters:
+      - $ref: '#/components/parameters/RoutineID'
+      responses:
+        '204':
+          description: Read marks advanced
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
   /v1/routines/{routine_id}/changes:
@@ -4313,6 +4517,11 @@ paths:
             Run accepted. The occurrence is pending until the alarm admits it, which is why this is not a 200 with a running row.
 
             A manual run carries a ten-minute deadline: asking for one is an act of attention, and work that cannot start within ten minutes is answering a stale intention. An occurrence still pending past that deadline is closed on the ledger with `status: skipped` and `error_code: stale` rather than run late.
+          headers:
+            Location:
+              description: Pollable occurrence.
+              schema:
+                type: string
           content:
             application/json:
               schema:
@@ -8620,6 +8829,12 @@ components:
           type: array
           items:
             type: string
+        default_for:
+          type: array
+          items:
+            type: string
+          description: Event-type patterns for which a new routine that names no follow_target
+            follows this target.
     WorkerSocketModelCapability:
       type: object
       additionalProperties: false
@@ -9942,6 +10157,51 @@ components:
         role_name:
           type: string
           description: Resolved to a role ID server-side. Mutually exclusive with `role_id`.
+    OrgDeletionRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - confirmation_name
+      properties:
+        confirmation_name:
+          type: string
+          minLength: 1
+    OrgDeletion:
+      type: object
+      additionalProperties: false
+      required:
+      - org_id
+      - status
+      - purge_after
+      - requested_at
+      properties:
+        org_id:
+          type: string
+        status:
+          type: string
+          enum:
+          - pending_purge
+          - purging
+          - completed
+          - cancelled
+          - failed
+        purge_after:
+          type: string
+          format: date-time
+        requested_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        cancelled_at:
+          type: string
+          format: date-time
+          nullable: true
+        failure_reason:
+          type: string
+          description: Stable step code when status is failed; omitted otherwise.
     OAuthReturnOrigins:
       type: object
       additionalProperties: false
@@ -12003,6 +12263,44 @@ components:
           type: object
           additionalProperties: true
           description: Resolved action arguments. Meta-router command wrappers are removed.
+    SessionToolDisplay:
+      type: object
+      additionalProperties: false
+      required:
+      - label
+      description: Plain-language phrasing for a tool call, recorded when the call is made.
+        Clients show these words instead of the tool name or its arguments.
+      properties:
+        label:
+          type: string
+          description: What the tool does, in sentence case, for example "Export a PDF".
+        running:
+          type: string
+          description: Phrase while the call runs, for example "Exporting a PDF…".
+        done:
+          type: string
+          description: 'Phrase once it succeeds, for example: Exported "Q3 update.pdf".'
+        done_many:
+          type: string
+          description: Phrase for a group of these calls; "{n}" is replaced by the count.
+        subject:
+          type: string
+          description: The one thing the call acted on, such as a file name. Never message
+            bodies.
+        artifact_id:
+          type: string
+          description: The artifact the call created or changed, when there is one.
+        integration:
+          type: string
+          description: The integration's name as people know it, shown before the label, for
+            example "GitHub".
+        integration_key:
+          type: string
+          description: Provider key for the integration icon, for example "github".
+        error:
+          type: string
+          description: One safe line explaining a failure, only for Mobius's own tools. Empty
+            for integration and third party tools, whose error text can quote private content.
     SessionToolUseBlock:
       type: object
       additionalProperties: true
@@ -12037,6 +12335,8 @@ components:
           description: Latest in-flight progress snapshot. Absent on final transcript rows.
         resolved_action:
           $ref: '#/components/schemas/SessionResolvedAction'
+        display:
+          $ref: '#/components/schemas/SessionToolDisplay'
     SessionContentBlock:
       oneOf:
       - $ref: '#/components/schemas/SessionTextBlock'
@@ -12089,6 +12389,8 @@ components:
         is_error:
           type: boolean
           description: True when the tool reported a failure.
+        display:
+          $ref: '#/components/schemas/SessionToolDisplay'
     SessionImageSource:
       type: object
       additionalProperties: true
@@ -12979,6 +13281,8 @@ components:
           additionalProperties: true
         resolved_action:
           $ref: '#/components/schemas/SessionResolvedAction'
+        display:
+          $ref: '#/components/schemas/SessionToolDisplay'
     MessageDeltaFrame:
       type: object
       additionalProperties: false
@@ -14766,9 +15070,11 @@ components:
         follow_target:
           type: string
           nullable: true
-          description: Immutable follow target from the event catalog. Null or event creates
-            a conversation per event; routine shares one conversation; custom evaluates follow_key.
-            Provider targets derive the event subscription.
+          description: Immutable follow target from the event catalog. Omitted uses the catalog
+            target whose default_for matches the event type, or event when none does; event
+            always creates a conversation per event; routine shares one conversation; custom
+            evaluates follow_key. A provider target keeps an event type it covers and otherwise
+            subscribes to the whole provider.
         follow_key:
           type: string
           nullable: true
@@ -14859,8 +15165,9 @@ components:
         follow_target:
           type: string
           nullable: true
-          description: Immutable follow target. May be omitted or echo the current value;
-            changing it is rejected. Create a new routine to follow a different target.
+          description: Immutable follow target. May be omitted or echo the current value (null
+            and event are the same value); changing it is rejected. Create a new routine to
+            follow a different target.
         follow_key:
           type: string
           nullable: true

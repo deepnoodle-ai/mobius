@@ -19,6 +19,24 @@ import (
 func registerOrganizationsCommands(app *cli.App) {
 	organizationsGrp := app.Group("organizations").Description("Organization settings and control plane")
 	organizationsGrp.Alias("organization")
+	organizationsGrp.Command("cancel-deletion").
+		Description("Cancel pending organization deletion").
+		AddArg(&cli.Arg{Name: "org-id", Description: "Organization ID.", Required: true}).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.OrgIDParam(ctx.Arg(0))
+			resp, err := client.CancelOrgDeletionWithResponse(ctx.Context(), p0)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "cancelOrgDeletion", resp.StatusCode(), resp.Body)
+		})
+
 	organizationsGrp.Command("get-context").
 		Description("Get the organization's shared context").
 		Use(requireAuth()).
@@ -33,6 +51,24 @@ func registerOrganizationsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "getOrgContext", resp.StatusCode(), resp.Body)
+		})
+
+	organizationsGrp.Command("get-deletion").
+		Description("Get organization deletion status").
+		AddArg(&cli.Arg{Name: "org-id", Description: "Organization ID.", Required: true}).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.OrgIDParam(ctx.Arg(0))
+			resp, err := client.GetOrgDeletionWithResponse(ctx.Context(), p0)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "getOrgDeletion", resp.StatusCode(), resp.Body)
 		})
 
 	organizationsGrp.Command("get-oauth-return-origins").
@@ -83,6 +119,42 @@ func registerOrganizationsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "replaceOrgContext", resp.StatusCode(), resp.Body)
+		})
+
+	organizationsGrp.Command("schedule-deletion").
+		Description("Schedule organization deletion").
+		AddArg(&cli.Arg{Name: "org-id", Description: "Organization ID.", Required: true}).
+		Flags(
+			cli.String("confirmation-name", "").Help("[required] confirmation-name"),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.OrgIDParam(ctx.Arg(0))
+			var body api.ScheduleOrgDeletionJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("confirmation-name") {
+				body.ConfirmationName = ctx.String("confirmation-name")
+			}
+			if body.ConfirmationName == "" {
+				return fmt.Errorf("--confirmation-name is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.ScheduleOrgDeletionWithResponse(ctx.Context(), p0, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "scheduleOrgDeletion", resp.StatusCode(), resp.Body)
 		})
 
 }

@@ -1697,6 +1697,33 @@ func (e ModelProviderGroupSource) Valid() bool {
 	}
 }
 
+// Defines values for OrgDeletionStatus.
+const (
+	OrgDeletionStatusCancelled    OrgDeletionStatus = "cancelled"
+	OrgDeletionStatusCompleted    OrgDeletionStatus = "completed"
+	OrgDeletionStatusFailed       OrgDeletionStatus = "failed"
+	OrgDeletionStatusPendingPurge OrgDeletionStatus = "pending_purge"
+	OrgDeletionStatusPurging      OrgDeletionStatus = "purging"
+)
+
+// Valid indicates whether the value is a known member of the OrgDeletionStatus enum.
+func (e OrgDeletionStatus) Valid() bool {
+	switch e {
+	case OrgDeletionStatusCancelled:
+		return true
+	case OrgDeletionStatusCompleted:
+		return true
+	case OrgDeletionStatusFailed:
+		return true
+	case OrgDeletionStatusPendingPurge:
+		return true
+	case OrgDeletionStatusPurging:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PermissionDefinitionCategory.
 const (
 	PermissionDefinitionCategoryBilling  PermissionDefinitionCategory = "billing"
@@ -6995,10 +7022,13 @@ type MessageBlockFrameEventType string
 
 // MessageBlockPatchFrame defines model for MessageBlockPatchFrame.
 type MessageBlockPatchFrame struct {
-	ContentIndex int                             `json:"content_index"`
-	EventType    MessageBlockPatchFrameEventType `json:"event_type"`
-	MessageId    string                          `json:"message_id"`
-	Progress     *map[string]interface{}         `json:"progress,omitempty"`
+	ContentIndex int `json:"content_index"`
+
+	// Display Plain-language phrasing for a tool call, recorded when the call is made. Clients show these words instead of the tool name or its arguments.
+	Display   *SessionToolDisplay             `json:"display,omitempty"`
+	EventType MessageBlockPatchFrameEventType `json:"event_type"`
+	MessageId string                          `json:"message_id"`
+	Progress  *map[string]interface{}         `json:"progress,omitempty"`
 
 	// ResolvedAction Canonical action resolved by a catalog tool dispatch.
 	ResolvedAction *SessionResolvedAction `json:"resolved_action,omitempty"`
@@ -7158,6 +7188,27 @@ type OrgContext struct {
 
 	// UpdatedAt When the content last changed. Absent until it is first written.
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+}
+
+// OrgDeletion defines model for OrgDeletion.
+type OrgDeletion struct {
+	CancelledAt *time.Time `json:"cancelled_at,omitempty"`
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
+
+	// FailureReason Stable step code when status is failed; omitted otherwise.
+	FailureReason *string           `json:"failure_reason,omitempty"`
+	OrgId         string            `json:"org_id"`
+	PurgeAfter    time.Time         `json:"purge_after"`
+	RequestedAt   time.Time         `json:"requested_at"`
+	Status        OrgDeletionStatus `json:"status"`
+}
+
+// OrgDeletionStatus defines model for OrgDeletion.Status.
+type OrgDeletionStatus string
+
+// OrgDeletionRequest defines model for OrgDeletionRequest.
+type OrgDeletionRequest struct {
+	ConfirmationName string `json:"confirmation_name"`
 }
 
 // PermissionCatalogResponse defines model for PermissionCatalogResponse.
@@ -7676,7 +7727,7 @@ type RoutineCreateRequest struct {
 	// FollowKey Immutable expr over event and meta; required only with custom. Must yield a non-empty string of at most 2048 bytes.
 	FollowKey *string `json:"follow_key,omitempty"`
 
-	// FollowTarget Immutable follow target from the event catalog. Null or event creates a conversation per event; routine shares one conversation; custom evaluates follow_key. Provider targets derive the event subscription.
+	// FollowTarget Immutable follow target from the event catalog. Omitted uses the catalog target whose default_for matches the event type, or event when none does; event always creates a conversation per event; routine shares one conversation; custom evaluates follow_key. A provider target keeps an event type it covers and otherwise subscribes to the whole provider.
 	FollowTarget *string `json:"follow_target,omitempty"`
 
 	// FollowerPrincipalIds Principals who opt into the routine's results. The creator is added automatically.
@@ -7744,10 +7795,12 @@ type RoutineFollowPreviewRequest struct {
 
 // RoutineFollowTarget defines model for RoutineFollowTarget.
 type RoutineFollowTarget struct {
-	Description string   `json:"description"`
-	EventTypes  []string `json:"event_types"`
-	Id          string   `json:"id"`
-	Label       string   `json:"label"`
+	// DefaultFor Event-type patterns for which a new routine that names no follow_target follows this target.
+	DefaultFor  *[]string `json:"default_for,omitempty"`
+	Description string    `json:"description"`
+	EventTypes  []string  `json:"event_types"`
+	Id          string    `json:"id"`
+	Label       string    `json:"label"`
 }
 
 // RoutineKind V1 accepts invoke; notify is reserved and returns unsupported_routine_kind.
@@ -7950,7 +8003,7 @@ type RoutineUpdateRequest struct {
 	// FollowKey Immutable custom follow expression. May be omitted or echo the current value; changing it is rejected. Create a new routine to use a different expression.
 	FollowKey *string `json:"follow_key,omitempty"`
 
-	// FollowTarget Immutable follow target. May be omitted or echo the current value; changing it is rejected. Create a new routine to follow a different target.
+	// FollowTarget Immutable follow target. May be omitted or echo the current value (null and event are the same value); changing it is rejected. Create a new routine to follow a different target.
 	FollowTarget *string `json:"follow_target,omitempty"`
 
 	// IdleAfter Seconds without events before an open thread is shown as idle.
@@ -8782,10 +8835,43 @@ type SessionThinkingBlock struct {
 // SessionThinkingBlockType defines model for SessionThinkingBlock.Type.
 type SessionThinkingBlockType string
 
+// SessionToolDisplay Plain-language phrasing for a tool call, recorded when the call is made. Clients show these words instead of the tool name or its arguments.
+type SessionToolDisplay struct {
+	// ArtifactId The artifact the call created or changed, when there is one.
+	ArtifactId *string `json:"artifact_id,omitempty"`
+
+	// Done Phrase once it succeeds, for example: Exported "Q3 update.pdf".
+	Done *string `json:"done,omitempty"`
+
+	// DoneMany Phrase for a group of these calls; "{n}" is replaced by the count.
+	DoneMany *string `json:"done_many,omitempty"`
+
+	// Error One safe line explaining a failure, only for Mobius's own tools. Empty for integration and third party tools, whose error text can quote private content.
+	Error *string `json:"error,omitempty"`
+
+	// Integration The integration's name as people know it, shown before the label, for example "GitHub".
+	Integration *string `json:"integration,omitempty"`
+
+	// IntegrationKey Provider key for the integration icon, for example "github".
+	IntegrationKey *string `json:"integration_key,omitempty"`
+
+	// Label What the tool does, in sentence case, for example "Export a PDF".
+	Label string `json:"label"`
+
+	// Running Phrase while the call runs, for example "Exporting a PDF…".
+	Running *string `json:"running,omitempty"`
+
+	// Subject The one thing the call acted on, such as a file name. Never message bodies.
+	Subject *string `json:"subject,omitempty"`
+}
+
 // SessionToolResultBlock The result of a tool call.
 type SessionToolResultBlock struct {
 	// Content Result payload — a string, or an array of typed sub-blocks using the same canonical block shape as a transcript message.
 	Content *SessionToolResultBlock_Content `json:"content,omitempty"`
+
+	// Display Plain-language phrasing for a tool call, recorded when the call is made. Clients show these words instead of the tool name or its arguments.
+	Display *SessionToolDisplay `json:"display,omitempty"`
 
 	// IsError True when the tool reported a failure.
 	IsError *bool `json:"is_error,omitempty"`
@@ -8812,6 +8898,9 @@ type SessionToolResultBlockType string
 
 // SessionToolUseBlock A tool call the agent issued.
 type SessionToolUseBlock struct {
+	// Display Plain-language phrasing for a tool call, recorded when the call is made. Clients show these words instead of the tool name or its arguments.
+	Display *SessionToolDisplay `json:"display,omitempty"`
+
 	// Id Tool-call id; the matching tool_result references it.
 	Id string `json:"id"`
 
@@ -10088,6 +10177,9 @@ type NudgeIdParam = string
 // OrderParam defines model for OrderParam.
 type OrderParam string
 
+// OrgIDParam defines model for OrgIDParam.
+type OrgIDParam = string
+
 // RoutineID defines model for RoutineID.
 type RoutineID = string
 
@@ -10512,6 +10604,9 @@ type RemoveRoutinePrincipalParams struct {
 type ListRoutineThreadsParams struct {
 	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
 	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Paused When true, returns only threads at their turn limit. They skip new events until a manager resumes them.
+	Paused *bool `form:"paused,omitempty" json:"paused,omitempty"`
 }
 
 // ListSessionsParams defines parameters for ListSessions.
@@ -10790,6 +10885,9 @@ type ReplaceOrgContextJSONRequestBody = PutOrgContextRequest
 
 // ReplaceOAuthReturnOriginsJSONRequestBody defines body for ReplaceOAuthReturnOrigins for application/json ContentType.
 type ReplaceOAuthReturnOriginsJSONRequestBody = PutOAuthReturnOriginsRequest
+
+// ScheduleOrgDeletionJSONRequestBody defines body for ScheduleOrgDeletion for application/json ContentType.
+type ScheduleOrgDeletionJSONRequestBody = OrgDeletionRequest
 
 // CreatePrincipalJSONRequestBody defines body for CreatePrincipal for application/json ContentType.
 type CreatePrincipalJSONRequestBody = CreatePrincipalRequest
@@ -13091,6 +13189,14 @@ func (a *SessionToolResultBlock) UnmarshalJSON(b []byte) error {
 		delete(object, "content")
 	}
 
+	if raw, found := object["display"]; found {
+		err = json.Unmarshal(raw, &a.Display)
+		if err != nil {
+			return fmt.Errorf("error reading 'display': %w", err)
+		}
+		delete(object, "display")
+	}
+
 	if raw, found := object["is_error"]; found {
 		err = json.Unmarshal(raw, &a.IsError)
 		if err != nil {
@@ -13138,6 +13244,13 @@ func (a SessionToolResultBlock) MarshalJSON() ([]byte, error) {
 		object["content"], err = json.Marshal(a.Content)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'content': %w", err)
+		}
+	}
+
+	if a.Display != nil {
+		object["display"], err = json.Marshal(a.Display)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'display': %w", err)
 		}
 	}
 
@@ -13190,6 +13303,14 @@ func (a *SessionToolUseBlock) UnmarshalJSON(b []byte) error {
 	err := json.Unmarshal(b, &object)
 	if err != nil {
 		return err
+	}
+
+	if raw, found := object["display"]; found {
+		err = json.Unmarshal(raw, &a.Display)
+		if err != nil {
+			return fmt.Errorf("error reading 'display': %w", err)
+		}
+		delete(object, "display")
 	}
 
 	if raw, found := object["id"]; found {
@@ -13266,6 +13387,13 @@ func (a *SessionToolUseBlock) UnmarshalJSON(b []byte) error {
 func (a SessionToolUseBlock) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
+
+	if a.Display != nil {
+		object["display"], err = json.Marshal(a.Display)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'display': %w", err)
+		}
+	}
 
 	object["id"], err = json.Marshal(a.Id)
 	if err != nil {
@@ -16061,6 +16189,9 @@ type ClientInterface interface {
 	// ListActionInvocations request
 	ListActionInvocations(ctx context.Context, params *ListActionInvocationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetActionInvocation request
+	GetActionInvocation(ctx context.Context, jobId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// CreateActionWithBody request with any body
 	CreateActionWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -16342,6 +16473,17 @@ type ClientInterface interface {
 
 	ReplaceOAuthReturnOrigins(ctx context.Context, body ReplaceOAuthReturnOriginsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ScheduleOrgDeletionWithBody request with any body
+	ScheduleOrgDeletionWithBody(ctx context.Context, orgId OrgIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ScheduleOrgDeletion(ctx context.Context, orgId OrgIDParam, body ScheduleOrgDeletionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CancelOrgDeletion request
+	CancelOrgDeletion(ctx context.Context, orgId OrgIDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetOrgDeletion request
+	GetOrgDeletion(ctx context.Context, orgId OrgIDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListOrgPermissions request
 	ListOrgPermissions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -16415,6 +16557,9 @@ type ClientInterface interface {
 	// ListRoutineOccurrences request
 	ListRoutineOccurrences(ctx context.Context, params *ListRoutineOccurrencesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetRoutineOccurrence request
+	GetRoutineOccurrence(ctx context.Context, occurrenceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ApproveRoutineProposalWithBody request with any body
 	ApproveRoutineProposalWithBody(ctx context.Context, proposalId RoutineProposalID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -16450,6 +16595,9 @@ type ClientInterface interface {
 
 	// RemoveRoutinePrincipal request
 	RemoveRoutinePrincipal(ctx context.Context, routineId RoutineID, principalId string, params *RemoveRoutinePrincipalParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// MarkRoutineRead request
+	MarkRoutineRead(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ResumeRoutine request
 	ResumeRoutine(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -16546,6 +16694,9 @@ type ClientInterface interface {
 
 	// CancelNudge request
 	CancelNudge(ctx context.Context, sessionId SessionIdParam, nudgeId NudgeIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// MarkSessionRead request
+	MarkSessionRead(ctx context.Context, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateSessionArtifactReferenceWithBody request with any body
 	CreateSessionArtifactReferenceWithBody(ctx context.Context, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -16675,6 +16826,18 @@ type ClientInterface interface {
 
 func (c *Client) ListActionInvocations(ctx context.Context, params *ListActionInvocationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListActionInvocationsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetActionInvocation(ctx context.Context, jobId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetActionInvocationRequest(c.Server, jobId)
 	if err != nil {
 		return nil, err
 	}
@@ -17909,6 +18072,54 @@ func (c *Client) ReplaceOAuthReturnOrigins(ctx context.Context, body ReplaceOAut
 	return c.Client.Do(req)
 }
 
+func (c *Client) ScheduleOrgDeletionWithBody(ctx context.Context, orgId OrgIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewScheduleOrgDeletionRequestWithBody(c.Server, orgId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ScheduleOrgDeletion(ctx context.Context, orgId OrgIDParam, body ScheduleOrgDeletionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewScheduleOrgDeletionRequest(c.Server, orgId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CancelOrgDeletion(ctx context.Context, orgId OrgIDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCancelOrgDeletionRequest(c.Server, orgId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetOrgDeletion(ctx context.Context, orgId OrgIDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetOrgDeletionRequest(c.Server, orgId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListOrgPermissions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListOrgPermissionsRequest(c.Server)
 	if err != nil {
@@ -18233,6 +18444,18 @@ func (c *Client) ListRoutineOccurrences(ctx context.Context, params *ListRoutine
 	return c.Client.Do(req)
 }
 
+func (c *Client) GetRoutineOccurrence(ctx context.Context, occurrenceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetRoutineOccurrenceRequest(c.Server, occurrenceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ApproveRoutineProposalWithBody(ctx context.Context, proposalId RoutineProposalID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewApproveRoutineProposalRequestWithBody(c.Server, proposalId, contentType, body)
 	if err != nil {
@@ -18379,6 +18602,18 @@ func (c *Client) AddRoutinePrincipal(ctx context.Context, routineId RoutineID, b
 
 func (c *Client) RemoveRoutinePrincipal(ctx context.Context, routineId RoutineID, principalId string, params *RemoveRoutinePrincipalParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRemoveRoutinePrincipalRequest(c.Server, routineId, principalId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) MarkRoutineRead(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewMarkRoutineReadRequest(c.Server, routineId)
 	if err != nil {
 		return nil, err
 	}
@@ -18787,6 +19022,18 @@ func (c *Client) GetSessionNudge(ctx context.Context, sessionId SessionIdParam, 
 
 func (c *Client) CancelNudge(ctx context.Context, sessionId SessionIdParam, nudgeId NudgeIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCancelNudgeRequest(c.Server, sessionId, nudgeId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) MarkSessionRead(ctx context.Context, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewMarkSessionReadRequest(c.Server, sessionId)
 	if err != nil {
 		return nil, err
 	}
@@ -19561,6 +19808,40 @@ func NewListActionInvocationsRequest(server string, params *ListActionInvocation
 			rawQueryFragments = append(rawQueryFragments, encoded)
 		}
 		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetActionInvocationRequest generates requests for GetActionInvocation
+func NewGetActionInvocationRequest(server string, jobId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "job_id", jobId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/action-invocations/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -23359,6 +23640,121 @@ func NewReplaceOAuthReturnOriginsRequestWithBody(server string, contentType stri
 	return req, nil
 }
 
+// NewScheduleOrgDeletionRequest calls the generic ScheduleOrgDeletion builder with application/json body
+func NewScheduleOrgDeletionRequest(server string, orgId OrgIDParam, body ScheduleOrgDeletionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewScheduleOrgDeletionRequestWithBody(server, orgId, "application/json", bodyReader)
+}
+
+// NewScheduleOrgDeletionRequestWithBody generates requests for ScheduleOrgDeletion with any type of body
+func NewScheduleOrgDeletionRequestWithBody(server string, orgId OrgIDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "org_id", orgId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/orgs/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCancelOrgDeletionRequest generates requests for CancelOrgDeletion
+func NewCancelOrgDeletionRequest(server string, orgId OrgIDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "org_id", orgId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/orgs/%s/deletion", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetOrgDeletionRequest generates requests for GetOrgDeletion
+func NewGetOrgDeletionRequest(server string, orgId OrgIDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "org_id", orgId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/orgs/%s/deletion", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListOrgPermissionsRequest generates requests for ListOrgPermissions
 func NewListOrgPermissionsRequest(server string) (*http.Request, error) {
 	var err error
@@ -24378,6 +24774,40 @@ func NewListRoutineOccurrencesRequest(server string, params *ListRoutineOccurren
 	return req, nil
 }
 
+// NewGetRoutineOccurrenceRequest generates requests for GetRoutineOccurrence
+func NewGetRoutineOccurrenceRequest(server string, occurrenceId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "occurrence_id", occurrenceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/routines/occurrences/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewApproveRoutineProposalRequest calls the generic ApproveRoutineProposal builder with application/json body
 func NewApproveRoutineProposalRequest(server string, proposalId RoutineProposalID, body ApproveRoutineProposalJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -24830,6 +25260,40 @@ func NewRemoveRoutinePrincipalRequest(server string, routineId RoutineID, princi
 	return req, nil
 }
 
+// NewMarkRoutineReadRequest generates requests for MarkRoutineRead
+func NewMarkRoutineReadRequest(server string, routineId RoutineID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "routine_id", routineId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/routines/%s/read-mark", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewResumeRoutineRequest generates requests for ResumeRoutine
 func NewResumeRoutineRequest(server string, routineId RoutineID) (*http.Request, error) {
 	var err error
@@ -24948,6 +25412,18 @@ func NewListRoutineThreadsRequest(server string, routineId RoutineID, params *Li
 		if params.Cursor != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Paused != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "paused", *params.Paused, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -26390,6 +26866,40 @@ func NewCancelNudgeRequest(server string, sessionId SessionIdParam, nudgeId Nudg
 	}
 
 	operationPath := fmt.Sprintf("/v1/sessions/%s/nudges/%s/cancel", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewMarkSessionReadRequest generates requests for MarkSessionRead
+func NewMarkSessionReadRequest(server string, sessionId SessionIdParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/sessions/%s/read-mark", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -28071,6 +28581,9 @@ type ClientWithResponsesInterface interface {
 	// ListActionInvocationsWithResponse request
 	ListActionInvocationsWithResponse(ctx context.Context, params *ListActionInvocationsParams, reqEditors ...RequestEditorFn) (*ListActionInvocationsResponse, error)
 
+	// GetActionInvocationWithResponse request
+	GetActionInvocationWithResponse(ctx context.Context, jobId string, reqEditors ...RequestEditorFn) (*GetActionInvocationResponse, error)
+
 	// CreateActionWithBodyWithResponse request with any body
 	CreateActionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateActionResponse, error)
 
@@ -28352,6 +28865,17 @@ type ClientWithResponsesInterface interface {
 
 	ReplaceOAuthReturnOriginsWithResponse(ctx context.Context, body ReplaceOAuthReturnOriginsJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceOAuthReturnOriginsResponse, error)
 
+	// ScheduleOrgDeletionWithBodyWithResponse request with any body
+	ScheduleOrgDeletionWithBodyWithResponse(ctx context.Context, orgId OrgIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ScheduleOrgDeletionResponse, error)
+
+	ScheduleOrgDeletionWithResponse(ctx context.Context, orgId OrgIDParam, body ScheduleOrgDeletionJSONRequestBody, reqEditors ...RequestEditorFn) (*ScheduleOrgDeletionResponse, error)
+
+	// CancelOrgDeletionWithResponse request
+	CancelOrgDeletionWithResponse(ctx context.Context, orgId OrgIDParam, reqEditors ...RequestEditorFn) (*CancelOrgDeletionResponse, error)
+
+	// GetOrgDeletionWithResponse request
+	GetOrgDeletionWithResponse(ctx context.Context, orgId OrgIDParam, reqEditors ...RequestEditorFn) (*GetOrgDeletionResponse, error)
+
 	// ListOrgPermissionsWithResponse request
 	ListOrgPermissionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListOrgPermissionsResponse, error)
 
@@ -28425,6 +28949,9 @@ type ClientWithResponsesInterface interface {
 	// ListRoutineOccurrencesWithResponse request
 	ListRoutineOccurrencesWithResponse(ctx context.Context, params *ListRoutineOccurrencesParams, reqEditors ...RequestEditorFn) (*ListRoutineOccurrencesResponse, error)
 
+	// GetRoutineOccurrenceWithResponse request
+	GetRoutineOccurrenceWithResponse(ctx context.Context, occurrenceId string, reqEditors ...RequestEditorFn) (*GetRoutineOccurrenceResponse, error)
+
 	// ApproveRoutineProposalWithBodyWithResponse request with any body
 	ApproveRoutineProposalWithBodyWithResponse(ctx context.Context, proposalId RoutineProposalID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ApproveRoutineProposalResponse, error)
 
@@ -28460,6 +28987,9 @@ type ClientWithResponsesInterface interface {
 
 	// RemoveRoutinePrincipalWithResponse request
 	RemoveRoutinePrincipalWithResponse(ctx context.Context, routineId RoutineID, principalId string, params *RemoveRoutinePrincipalParams, reqEditors ...RequestEditorFn) (*RemoveRoutinePrincipalResponse, error)
+
+	// MarkRoutineReadWithResponse request
+	MarkRoutineReadWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*MarkRoutineReadResponse, error)
 
 	// ResumeRoutineWithResponse request
 	ResumeRoutineWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*ResumeRoutineResponse, error)
@@ -28556,6 +29086,9 @@ type ClientWithResponsesInterface interface {
 
 	// CancelNudgeWithResponse request
 	CancelNudgeWithResponse(ctx context.Context, sessionId SessionIdParam, nudgeId NudgeIdParam, reqEditors ...RequestEditorFn) (*CancelNudgeResponse, error)
+
+	// MarkSessionReadWithResponse request
+	MarkSessionReadWithResponse(ctx context.Context, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*MarkSessionReadResponse, error)
 
 	// CreateSessionArtifactReferenceWithBodyWithResponse request with any body
 	CreateSessionArtifactReferenceWithBodyWithResponse(ctx context.Context, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSessionArtifactReferenceResponse, error)
@@ -28709,6 +29242,38 @@ func (r ListActionInvocationsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListActionInvocationsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetActionInvocationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ActionInvocationResult
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetActionInvocationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetActionInvocationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetActionInvocationResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -31305,6 +31870,106 @@ func (r ReplaceOAuthReturnOriginsResponse) ContentType() string {
 	return ""
 }
 
+type ScheduleOrgDeletionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *OrgDeletion
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r ScheduleOrgDeletionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ScheduleOrgDeletionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ScheduleOrgDeletionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CancelOrgDeletionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r CancelOrgDeletionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CancelOrgDeletionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CancelOrgDeletionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetOrgDeletionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *OrgDeletion
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetOrgDeletionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetOrgDeletionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetOrgDeletionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListOrgPermissionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -31941,6 +32606,39 @@ func (r ListRoutineOccurrencesResponse) ContentType() string {
 	return ""
 }
 
+type GetRoutineOccurrenceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RoutineOccurrence
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetRoutineOccurrenceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetRoutineOccurrenceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetRoutineOccurrenceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ApproveRoutineProposalResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -32267,6 +32965,38 @@ func (r RemoveRoutinePrincipalResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r RemoveRoutinePrincipalResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type MarkRoutineReadResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r MarkRoutineReadResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r MarkRoutineReadResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r MarkRoutineReadResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -33220,6 +33950,38 @@ func (r CancelNudgeResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r CancelNudgeResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type MarkSessionReadResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r MarkSessionReadResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r MarkSessionReadResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r MarkSessionReadResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -34360,6 +35122,15 @@ func (c *ClientWithResponses) ListActionInvocationsWithResponse(ctx context.Cont
 	return ParseListActionInvocationsResponse(rsp)
 }
 
+// GetActionInvocationWithResponse request returning *GetActionInvocationResponse
+func (c *ClientWithResponses) GetActionInvocationWithResponse(ctx context.Context, jobId string, reqEditors ...RequestEditorFn) (*GetActionInvocationResponse, error) {
+	rsp, err := c.GetActionInvocation(ctx, jobId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetActionInvocationResponse(rsp)
+}
+
 // CreateActionWithBodyWithResponse request with arbitrary body returning *CreateActionResponse
 func (c *ClientWithResponses) CreateActionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateActionResponse, error) {
 	rsp, err := c.CreateActionWithBody(ctx, contentType, body, reqEditors...)
@@ -35253,6 +36024,41 @@ func (c *ClientWithResponses) ReplaceOAuthReturnOriginsWithResponse(ctx context.
 	return ParseReplaceOAuthReturnOriginsResponse(rsp)
 }
 
+// ScheduleOrgDeletionWithBodyWithResponse request with arbitrary body returning *ScheduleOrgDeletionResponse
+func (c *ClientWithResponses) ScheduleOrgDeletionWithBodyWithResponse(ctx context.Context, orgId OrgIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ScheduleOrgDeletionResponse, error) {
+	rsp, err := c.ScheduleOrgDeletionWithBody(ctx, orgId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseScheduleOrgDeletionResponse(rsp)
+}
+
+func (c *ClientWithResponses) ScheduleOrgDeletionWithResponse(ctx context.Context, orgId OrgIDParam, body ScheduleOrgDeletionJSONRequestBody, reqEditors ...RequestEditorFn) (*ScheduleOrgDeletionResponse, error) {
+	rsp, err := c.ScheduleOrgDeletion(ctx, orgId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseScheduleOrgDeletionResponse(rsp)
+}
+
+// CancelOrgDeletionWithResponse request returning *CancelOrgDeletionResponse
+func (c *ClientWithResponses) CancelOrgDeletionWithResponse(ctx context.Context, orgId OrgIDParam, reqEditors ...RequestEditorFn) (*CancelOrgDeletionResponse, error) {
+	rsp, err := c.CancelOrgDeletion(ctx, orgId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCancelOrgDeletionResponse(rsp)
+}
+
+// GetOrgDeletionWithResponse request returning *GetOrgDeletionResponse
+func (c *ClientWithResponses) GetOrgDeletionWithResponse(ctx context.Context, orgId OrgIDParam, reqEditors ...RequestEditorFn) (*GetOrgDeletionResponse, error) {
+	rsp, err := c.GetOrgDeletion(ctx, orgId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetOrgDeletionResponse(rsp)
+}
+
 // ListOrgPermissionsWithResponse request returning *ListOrgPermissionsResponse
 func (c *ClientWithResponses) ListOrgPermissionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListOrgPermissionsResponse, error) {
 	rsp, err := c.ListOrgPermissions(ctx, reqEditors...)
@@ -35488,6 +36294,15 @@ func (c *ClientWithResponses) ListRoutineOccurrencesWithResponse(ctx context.Con
 	return ParseListRoutineOccurrencesResponse(rsp)
 }
 
+// GetRoutineOccurrenceWithResponse request returning *GetRoutineOccurrenceResponse
+func (c *ClientWithResponses) GetRoutineOccurrenceWithResponse(ctx context.Context, occurrenceId string, reqEditors ...RequestEditorFn) (*GetRoutineOccurrenceResponse, error) {
+	rsp, err := c.GetRoutineOccurrence(ctx, occurrenceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetRoutineOccurrenceResponse(rsp)
+}
+
 // ApproveRoutineProposalWithBodyWithResponse request with arbitrary body returning *ApproveRoutineProposalResponse
 func (c *ClientWithResponses) ApproveRoutineProposalWithBodyWithResponse(ctx context.Context, proposalId RoutineProposalID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ApproveRoutineProposalResponse, error) {
 	rsp, err := c.ApproveRoutineProposalWithBody(ctx, proposalId, contentType, body, reqEditors...)
@@ -35600,6 +36415,15 @@ func (c *ClientWithResponses) RemoveRoutinePrincipalWithResponse(ctx context.Con
 		return nil, err
 	}
 	return ParseRemoveRoutinePrincipalResponse(rsp)
+}
+
+// MarkRoutineReadWithResponse request returning *MarkRoutineReadResponse
+func (c *ClientWithResponses) MarkRoutineReadWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*MarkRoutineReadResponse, error) {
+	rsp, err := c.MarkRoutineRead(ctx, routineId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseMarkRoutineReadResponse(rsp)
 }
 
 // ResumeRoutineWithResponse request returning *ResumeRoutineResponse
@@ -35900,6 +36724,15 @@ func (c *ClientWithResponses) CancelNudgeWithResponse(ctx context.Context, sessi
 		return nil, err
 	}
 	return ParseCancelNudgeResponse(rsp)
+}
+
+// MarkSessionReadWithResponse request returning *MarkSessionReadResponse
+func (c *ClientWithResponses) MarkSessionReadWithResponse(ctx context.Context, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*MarkSessionReadResponse, error) {
+	rsp, err := c.MarkSessionRead(ctx, sessionId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseMarkSessionReadResponse(rsp)
 }
 
 // CreateSessionArtifactReferenceWithBodyWithResponse request with arbitrary body returning *CreateSessionArtifactReferenceResponse
@@ -36337,6 +37170,46 @@ func ParseListActionInvocationsResponse(rsp *http.Response) (*ListActionInvocati
 			return nil, err
 		}
 		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetActionInvocationResponse parses an HTTP response from a GetActionInvocationWithResponse call
+func ParseGetActionInvocationResponse(rsp *http.Response) (*GetActionInvocationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetActionInvocationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ActionInvocationResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -40305,6 +41178,154 @@ func ParseReplaceOAuthReturnOriginsResponse(rsp *http.Response) (*ReplaceOAuthRe
 	return response, nil
 }
 
+// ParseScheduleOrgDeletionResponse parses an HTTP response from a ScheduleOrgDeletionWithResponse call
+func ParseScheduleOrgDeletionResponse(rsp *http.Response) (*ScheduleOrgDeletionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ScheduleOrgDeletionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest OrgDeletion
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCancelOrgDeletionResponse parses an HTTP response from a CancelOrgDeletionWithResponse call
+func ParseCancelOrgDeletionResponse(rsp *http.Response) (*CancelOrgDeletionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CancelOrgDeletionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetOrgDeletionResponse parses an HTTP response from a GetOrgDeletionWithResponse call
+func ParseGetOrgDeletionResponse(rsp *http.Response) (*GetOrgDeletionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetOrgDeletionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OrgDeletion
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListOrgPermissionsResponse parses an HTTP response from a ListOrgPermissionsWithResponse call
 func ParseListOrgPermissionsResponse(rsp *http.Response) (*ListOrgPermissionsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -41261,6 +42282,53 @@ func ParseListRoutineOccurrencesResponse(rsp *http.Response) (*ListRoutineOccurr
 	return response, nil
 }
 
+// ParseGetRoutineOccurrenceResponse parses an HTTP response from a GetRoutineOccurrenceWithResponse call
+func ParseGetRoutineOccurrenceResponse(rsp *http.Response) (*GetRoutineOccurrenceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetRoutineOccurrenceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RoutineOccurrence
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseApproveRoutineProposalResponse parses an HTTP response from a ApproveRoutineProposalWithResponse call
 func ParseApproveRoutineProposalResponse(rsp *http.Response) (*ApproveRoutineProposalResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -41739,6 +42807,46 @@ func ParseRemoveRoutinePrincipalResponse(rsp *http.Response) (*RemoveRoutinePrin
 			return nil, err
 		}
 		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseMarkRoutineReadResponse parses an HTTP response from a MarkRoutineReadWithResponse call
+func ParseMarkRoutineReadResponse(rsp *http.Response) (*MarkRoutineReadResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &MarkRoutineReadResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -43258,6 +44366,46 @@ func ParseCancelNudgeResponse(rsp *http.Response) (*CancelNudgeResponse, error) 
 			return nil, err
 		}
 		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseMarkSessionReadResponse parses an HTTP response from a MarkSessionReadWithResponse call
+func ParseMarkSessionReadResponse(rsp *http.Response) (*MarkSessionReadResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &MarkSessionReadResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
