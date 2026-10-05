@@ -366,6 +366,69 @@ func TestSpriteHoldRetriesFailedResumeHold(t *testing.T) {
 	waitFor(t, func() bool { return rec.seen(http.MethodDelete) }, "DELETE after keep-warm window")
 }
 
+// putCount reports how many PUTs the recorder has seen.
+func (r *taskRecorder) putCount() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	n := 0
+	for _, m := range r.methods {
+		if m == http.MethodPut {
+			n++
+		}
+	}
+	return n
+}
+
+// TestSpriteHoldRetriesWhenWorkArrivesDuringFailedResumeHold covers a job
+// claimed while the resume hold is still failing: the active-path PUT fails
+// too, and the hold must keep retrying for the job without another poke.
+func TestSpriteHoldRetriesWhenWorkArrivesDuringFailedResumeHold(t *testing.T) {
+	rec := &taskRecorder{}
+	rec.setStatus(http.StatusInternalServerError)
+	sock := serveTaskSocket(t, rec)
+
+	h := newSpriteHoldWithPath(sock, slog.Default(), "mobius-worker-test", time.Hour)
+	if h == nil {
+		t.Fatal("expected a hold for a real socket, got nil")
+	}
+	h.interval = time.Hour
+	h.retryDelay = 20 * time.Millisecond
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() { _ = h.run(ctx, holdRunOptions{}) }()
+
+	h.poke()
+	waitFor(t, func() bool { return rec.putCount() >= 1 }, "failed resume PUT")
+	h.acquire()
+	waitFor(t, func() bool { return rec.putCount() >= 3 }, "failed active-path PUTs keep retrying")
+	rec.setStatus(0)
+	before := rec.putCount()
+	waitFor(t, func() bool { return rec.putCount() > before }, "PUT succeeds without another poke")
+}
+
+// TestSpriteHoldRetriesFailedAcquireHold covers the best-effort acquire path:
+// a failed PUT for an in-flight job is retried while the job runs.
+func TestSpriteHoldRetriesFailedAcquireHold(t *testing.T) {
+	rec := &taskRecorder{}
+	rec.setStatus(http.StatusInternalServerError)
+	sock := serveTaskSocket(t, rec)
+
+	h := newSpriteHoldWithPath(sock, slog.Default(), "mobius-worker-test", DefaultKeepWarmWindow)
+	if h == nil {
+		t.Fatal("expected a hold for a real socket, got nil")
+	}
+	h.interval = time.Hour
+	h.retryDelay = 20 * time.Millisecond
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() { _ = h.run(ctx, holdRunOptions{}) }()
+
+	h.acquire()
+	waitFor(t, func() bool { return rec.putCount() >= 4 }, "failed acquire PUT keeps retrying")
+}
+
 func TestNewSpriteHoldOffSprite(t *testing.T) {
 	// A path that isn't a Unix socket means we're not inside a Sprite: the
 	// constructor returns nil so detectHold falls back to a no-op.

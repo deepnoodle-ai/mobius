@@ -198,9 +198,10 @@ func (h *spriteHold) run(ctx context.Context, opts holdRunOptions) error {
 		}
 	}
 	held := false
-	// A resume hold that failed to establish is retried on retryC until
-	// resumeUntil, so a Tasks-API blip right after the wake does not leave the
-	// Sprite free to pause before the worker claims its job.
+	// A wanted hold that failed to establish is retried on retryC. A hold is
+	// wanted while a job is in flight or until resumeUntil after an idle
+	// resume, so a Tasks-API blip never leaves the Sprite free to pause under
+	// a job or before the worker claims the job that woke it.
 	var resumeUntil time.Time
 	var retry *time.Timer
 	var retryC <-chan time.Time
@@ -211,13 +212,20 @@ func (h *spriteHold) run(ctx context.Context, opts holdRunOptions) error {
 			retryC = nil
 		}
 	}
-	tryResumeHold := func() {
+	wantHold := func() bool {
+		return h.active() || time.Now().Before(resumeUntil)
+	}
+	armRetry := func() {
 		stopRetry()
-		held = h.putTask(ctx)
-		if !held && time.Now().Before(resumeUntil) {
+		if !held && wantHold() {
 			retry = time.NewTimer(h.retryDelay)
 			retryC = retry.C
 		}
+	}
+	tryHold := func() {
+		stopRetry()
+		held = h.putTask(ctx)
+		armRetry()
 	}
 	releaseOnExit := true
 	defer func() {
@@ -245,7 +253,7 @@ func (h *spriteHold) run(ctx context.Context, opts holdRunOptions) error {
 				// job is failed as worker-unavailable. Hold for the keep-warm
 				// window; the idle branch below arms its release.
 				resumeUntil = time.Now().Add(h.releaseGrace)
-				tryResumeHold()
+				tryHold()
 			}
 		}
 		switch active := h.active(); {
@@ -257,6 +265,9 @@ func (h *spriteHold) run(ctx context.Context, opts holdRunOptions) error {
 				releaseOnExit = false
 				return fmt.Errorf("mobius: required Sprite keep-warm hold could not be established for task %q", h.taskName)
 			}
+			// Best-effort mode: keep trying while the job runs rather than
+			// leaving it unheld until the next acquire.
+			armRetry()
 		case active && held:
 			// Work resumed (or never stopped) within the grace window — keep the
 			// hold and cancel any pending release.
@@ -280,8 +291,10 @@ func (h *spriteHold) run(ctx context.Context, opts holdRunOptions) error {
 		case <-h.wake:
 		case <-retryC:
 			retry, retryC = nil, nil
-			if !held {
-				tryResumeHold()
+			// While a job is active the switch above retries on the next pass;
+			// only an idle resume window needs the PUT here.
+			if !held && !h.active() && wantHold() {
+				tryHold()
 			}
 		case <-t.C:
 			if held {
