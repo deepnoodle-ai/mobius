@@ -329,6 +329,43 @@ func TestSpriteHoldPokeHoldsIdleSpriteForWindow(t *testing.T) {
 	waitFor(t, func() bool { return rec.seen(http.MethodDelete) }, "DELETE after keep-warm window")
 }
 
+// TestSpriteHoldRetriesFailedResumeHold covers a Tasks-API failure on the
+// resume hold: with the worker still idle and no further poke or job, the hold
+// must be retried until it is established, then released after the window.
+func TestSpriteHoldRetriesFailedResumeHold(t *testing.T) {
+	rec := &taskRecorder{}
+	rec.setStatus(http.StatusInternalServerError)
+	sock := serveTaskSocket(t, rec)
+
+	h := newSpriteHoldWithPath(sock, slog.Default(), "mobius-worker-test", 500*time.Millisecond)
+	if h == nil {
+		t.Fatal("expected a hold for a real socket, got nil")
+	}
+	h.interval = time.Hour
+	h.retryDelay = 20 * time.Millisecond
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() { _ = h.run(ctx, holdRunOptions{}) }()
+
+	h.poke()
+	waitFor(t, func() bool { return rec.seen(http.MethodPut) }, "first PUT after resume poke")
+	rec.setStatus(0)
+	puts := func() int {
+		rec.mu.Lock()
+		defer rec.mu.Unlock()
+		n := 0
+		for _, m := range rec.methods {
+			if m == http.MethodPut {
+				n++
+			}
+		}
+		return n
+	}
+	waitFor(t, func() bool { return puts() >= 2 }, "retried PUT without another poke")
+	waitFor(t, func() bool { return rec.seen(http.MethodDelete) }, "DELETE after keep-warm window")
+}
+
 func TestNewSpriteHoldOffSprite(t *testing.T) {
 	// A path that isn't a Unix socket means we're not inside a Sprite: the
 	// constructor returns nil so detectHold falls back to a no-op.

@@ -198,9 +198,31 @@ func (h *spriteHold) run(ctx context.Context, opts holdRunOptions) error {
 		}
 	}
 	held := false
+	// A resume hold that failed to establish is retried on retryC until
+	// resumeUntil, so a Tasks-API blip right after the wake does not leave the
+	// Sprite free to pause before the worker claims its job.
+	var resumeUntil time.Time
+	var retry *time.Timer
+	var retryC <-chan time.Time
+	stopRetry := func() {
+		if retry != nil {
+			retry.Stop()
+			retry = nil
+			retryC = nil
+		}
+	}
+	tryResumeHold := func() {
+		stopRetry()
+		held = h.putTask(ctx)
+		if !held && time.Now().Before(resumeUntil) {
+			retry = time.NewTimer(h.retryDelay)
+			retryC = retry.C
+		}
+	}
 	releaseOnExit := true
 	defer func() {
 		stopGrace()
+		stopRetry()
 		if held && releaseOnExit {
 			h.deleteTask()
 		}
@@ -222,12 +244,14 @@ func (h *spriteHold) run(ctx context.Context, opts holdRunOptions) error {
 				// exec ends, before the worker reconnects and claims, and the
 				// job is failed as worker-unavailable. Hold for the keep-warm
 				// window; the idle branch below arms its release.
-				held = h.putTaskRetrying(ctx, opts)
+				resumeUntil = time.Now().Add(h.releaseGrace)
+				tryResumeHold()
 			}
 		}
 		switch active := h.active(); {
 		case active && !held:
 			stopGrace()
+			stopRetry()
 			held = h.putTaskRetrying(ctx, opts)
 			if !held && opts.Required {
 				releaseOnExit = false
@@ -254,6 +278,11 @@ func (h *spriteHold) run(ctx context.Context, opts holdRunOptions) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-h.wake:
+		case <-retryC:
+			retry, retryC = nil, nil
+			if !held {
+				tryResumeHold()
+			}
 		case <-t.C:
 			if held {
 				if ok := h.putTaskRetrying(ctx, opts); !ok && opts.Required {
