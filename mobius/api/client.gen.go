@@ -484,15 +484,18 @@ func (e AgentMessagingDMPolicy) Valid() bool {
 
 // Defines values for AgentMessagingProvider.
 const (
-	AgentMessagingProviderLinear   AgentMessagingProvider = "linear"
-	AgentMessagingProviderSlack    AgentMessagingProvider = "slack"
-	AgentMessagingProviderTelegram AgentMessagingProvider = "telegram"
+	AgentMessagingProviderLinear         AgentMessagingProvider = "linear"
+	AgentMessagingProviderMicrosoftTeams AgentMessagingProvider = "microsoft_teams"
+	AgentMessagingProviderSlack          AgentMessagingProvider = "slack"
+	AgentMessagingProviderTelegram       AgentMessagingProvider = "telegram"
 )
 
 // Valid indicates whether the value is a known member of the AgentMessagingProvider enum.
 func (e AgentMessagingProvider) Valid() bool {
 	switch e {
 	case AgentMessagingProviderLinear:
+		return true
+	case AgentMessagingProviderMicrosoftTeams:
 		return true
 	case AgentMessagingProviderSlack:
 		return true
@@ -4489,7 +4492,7 @@ type AgentMessagingBinding struct {
 	// ModelRoute Default model route used by built-in messaging and by any turn that does not override the route.
 	ModelRoute *AgentModelRoute `json:"model_route,omitempty"`
 
-	// Provider Provider supported by built-in agent messaging: `slack`, `telegram`, or `linear` (Linear agent sessions).
+	// Provider Provider supported by built-in agent messaging: `slack`, `telegram`, `linear` (Linear agent sessions), or `microsoft_teams` (Microsoft Teams chats in one linked tenant). A binding's provider must equal its integration's provider.
 	Provider AgentMessagingProvider `json:"provider"`
 
 	// ReplyMode Reply mode for built-in messaging; currently `auto`.
@@ -4510,10 +4513,10 @@ type AgentMessagingBindingListResponse struct {
 
 // AgentMessagingBindingRequest defines model for AgentMessagingBindingRequest.
 type AgentMessagingBindingRequest struct {
-	// AllMessages Respond to every message in bound channels, not just mentions.
+	// AllMessages Respond to every message in bound channels, not just mentions. Must be false for microsoft_teams, where the agent answers in channels and group chats only when a person @mentions it.
 	AllMessages *bool `json:"all_messages,omitempty"`
 
-	// Channels Channel IDs the binding is scoped to (empty means all channels).
+	// Channels Channel and group IDs the binding is scoped to (empty means all). Direct messages ignore this list.
 	Channels *[]string `json:"channels,omitempty"`
 
 	// CompactionPolicy Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values.
@@ -4537,7 +4540,7 @@ type AgentMessagingBindingRequest struct {
 	// ModelRoute Default model route used by built-in messaging and by any turn that does not override the route.
 	ModelRoute *AgentModelRoute `json:"model_route,omitempty"`
 
-	// Provider Provider supported by built-in agent messaging: `slack`, `telegram`, or `linear` (Linear agent sessions).
+	// Provider Provider supported by built-in agent messaging: `slack`, `telegram`, `linear` (Linear agent sessions), or `microsoft_teams` (Microsoft Teams chats in one linked tenant). A binding's provider must equal its integration's provider.
 	Provider AgentMessagingProvider `json:"provider"`
 
 	// ReplaceExisting When enabling this binding, disable any other active agent binding for the same provider account.
@@ -4546,14 +4549,14 @@ type AgentMessagingBindingRequest struct {
 	// ReplyMode Reply mode for built-in messaging; currently `auto`.
 	ReplyMode *AgentMessagingReplyMode `json:"reply_mode,omitempty"`
 
-	// SenderAllow Sender IDs allowed to trigger the agent (empty means no allowlist).
+	// SenderAllow Sender IDs allowed to trigger the agent (empty means no allowlist). An enabled `telegram` binding requires at least one numeric Telegram user ID and refuses `*`.
 	SenderAllow *[]string `json:"sender_allow,omitempty"`
 }
 
 // AgentMessagingDMPolicy Direct-message access policy: `open`, `allowlist`, or `disabled`.
 type AgentMessagingDMPolicy string
 
-// AgentMessagingProvider Provider supported by built-in agent messaging: `slack`, `telegram`, or `linear` (Linear agent sessions).
+// AgentMessagingProvider Provider supported by built-in agent messaging: `slack`, `telegram`, `linear` (Linear agent sessions), or `microsoft_teams` (Microsoft Teams chats in one linked tenant). A binding's provider must equal its integration's provider.
 type AgentMessagingProvider string
 
 // AgentMessagingReplyMode Reply mode for built-in messaging; currently `auto`.
@@ -7172,7 +7175,7 @@ type NudgeSessionRequest struct {
 	Wake *bool `json:"wake,omitempty"`
 }
 
-// OAuthReturnOrigins The organization's allowlist of exact HTTPS origins an embedded partner may name as an OAuth connect `return_url`. Origins are stored normalized (lowercase host, default ports stripped). An empty list disables embedded return for the organization.
+// OAuthReturnOrigins The organization's allowlist of exact HTTPS origins an embedded partner may name as an OAuth connect `return_url`. Origins are stored normalized (lowercase host, default ports stripped). An empty list disables embedded return for the organization. Embedded return is currently disabled for every organization, so the list has no effect.
 type OAuthReturnOrigins struct {
 	// Origins Normalized exact HTTPS return origins (for example `https://app.partner.example`).
 	Origins []string `json:"origins"`
@@ -10466,6 +10469,12 @@ type DeleteBlueprintParams struct {
 type SetBlueprintProtectionParams struct {
 	// Namespace Blueprint namespace. Omit for an unnamespaced blueprint.
 	Namespace *string `form:"namespace,omitempty" json:"namespace,omitempty"`
+}
+
+// ListCatalogActionsParams defines parameters for ListCatalogActions.
+type ListCatalogActionsParams struct {
+	// AgentId Judge readiness for this agent's account grants.
+	AgentId *string `form:"agent_id,omitempty" json:"agent_id,omitempty"`
 }
 
 // ListConnectionGovernanceParams defines parameters for ListConnectionGovernance.
@@ -16391,7 +16400,7 @@ type ClientInterface interface {
 	SetBlueprintProtection(ctx context.Context, blueprintKey string, params *SetBlueprintProtectionParams, body SetBlueprintProtectionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListCatalogActions request
-	ListCatalogActions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListCatalogActions(ctx context.Context, params *ListCatalogActionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetCatalogAction request
 	GetCatalogAction(ctx context.Context, actionName ActionNameParam, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -17712,8 +17721,8 @@ func (c *Client) SetBlueprintProtection(ctx context.Context, blueprintKey string
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListCatalogActions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListCatalogActionsRequest(c.Server)
+func (c *Client) ListCatalogActions(ctx context.Context, params *ListCatalogActionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListCatalogActionsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -22688,7 +22697,7 @@ func NewSetBlueprintProtectionRequestWithBody(server string, blueprintKey string
 }
 
 // NewListCatalogActionsRequest generates requests for ListCatalogActions
-func NewListCatalogActionsRequest(server string) (*http.Request, error) {
+func NewListCatalogActionsRequest(server string, params *ListCatalogActionsParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -22704,6 +22713,33 @@ func NewListCatalogActionsRequest(server string) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.AgentId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "agent_id", *params.AgentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -28783,7 +28819,7 @@ type ClientWithResponsesInterface interface {
 	SetBlueprintProtectionWithResponse(ctx context.Context, blueprintKey string, params *SetBlueprintProtectionParams, body SetBlueprintProtectionJSONRequestBody, reqEditors ...RequestEditorFn) (*SetBlueprintProtectionResponse, error)
 
 	// ListCatalogActionsWithResponse request
-	ListCatalogActionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListCatalogActionsResponse, error)
+	ListCatalogActionsWithResponse(ctx context.Context, params *ListCatalogActionsParams, reqEditors ...RequestEditorFn) (*ListCatalogActionsResponse, error)
 
 	// GetCatalogActionWithResponse request
 	GetCatalogActionWithResponse(ctx context.Context, actionName ActionNameParam, reqEditors ...RequestEditorFn) (*GetCatalogActionResponse, error)
@@ -35762,8 +35798,8 @@ func (c *ClientWithResponses) SetBlueprintProtectionWithResponse(ctx context.Con
 }
 
 // ListCatalogActionsWithResponse request returning *ListCatalogActionsResponse
-func (c *ClientWithResponses) ListCatalogActionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListCatalogActionsResponse, error) {
-	rsp, err := c.ListCatalogActions(ctx, reqEditors...)
+func (c *ClientWithResponses) ListCatalogActionsWithResponse(ctx context.Context, params *ListCatalogActionsParams, reqEditors ...RequestEditorFn) (*ListCatalogActionsResponse, error) {
+	rsp, err := c.ListCatalogActions(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}

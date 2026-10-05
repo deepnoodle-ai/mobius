@@ -634,10 +634,16 @@ paths:
       tags:
       - catalog
       summary: List actions
-      description: 'Returns the full catalog of actions available to this org: org-owned HTTP
-        actions and platform-provided integration actions (Slack, GitHub, etc.). The `available`
-        flag indicates whether the action can currently be invoked. Custom HTTP actions are
-        created and managed on the `/actions` resource.'
+      description: |-
+        Returns the full catalog of actions available to this org: org-owned HTTP actions and platform-provided integration actions (Slack, GitHub, etc.). The `available` flag indicates whether the action can currently be invoked. Custom HTTP actions are created and managed on the `/actions` resource.
+
+        Readiness is judged for the caller's own accounts. Pass `agent_id` to judge it as that agent's turns would: an action is ready when an account the agent holds a grant for backs it, including a team-managed one.
+      parameters:
+      - name: agent_id
+        in: query
+        description: Judge readiness for this agent's account grants.
+        schema:
+          type: string
       responses:
         '200':
           description: OK
@@ -1453,10 +1459,10 @@ paths:
       - organizations
       x-public: true
       summary: Get the org's OAuth return-origin allowlist
-      description: Returns the active organization's allowlist of exact HTTPS origins that
-        an embedded partner may name as a `return_url` when starting a provider connection.
-        An empty list means embedded return is disabled for the organization. Requires `Admin`
-        or `Owner` membership.
+      description: |-
+        Returns the active organization's allowlist of exact HTTPS origins that an embedded partner may name as a `return_url` when starting a provider connection. An empty list means embedded return is disabled for the organization. Requires `Admin` or `Owner` membership.
+
+        Embedded return is currently disabled for every organization, so this list has no effect: connect requests carrying `return_url` fail with `400 embedded_return_disabled`, and connections finish in Mobius for the person who started them.
       responses:
         '200':
           description: OK
@@ -1476,11 +1482,10 @@ paths:
       - organizations
       x-public: true
       summary: Replace the org's OAuth return-origin allowlist
-      description: Full-replace of the active organization's OAuth return-origin allowlist.
-        Each entry must be an exact HTTPS origin (scheme, host, and optional non-default port);
-        it is normalized to lowercase host with default ports stripped, and duplicates are
-        collapsed. At most 20 origins are accepted. Sending an empty list disables embedded
-        return. Requires `Admin` or `Owner` membership.
+      description: |-
+        Full-replace of the active organization's OAuth return-origin allowlist. Each entry must be an exact HTTPS origin (scheme, host, and optional non-default port); it is normalized to lowercase host with default ports stripped, and duplicates are collapsed. At most 20 origins are accepted. Sending an empty list disables embedded return. Requires `Admin` or `Owner` membership.
+
+        Embedded return is currently disabled for every organization, so the stored list has no effect: connect requests carrying `return_url` fail with `400 embedded_return_disabled`.
       requestBody:
         required: true
         content:
@@ -2332,6 +2337,8 @@ paths:
       - agents
       summary: Save agent messaging binding
       description: Saves one provider-account binding used to route messages to this agent.
+        Only organization owners and admins can create, change, enable, or disable a binding;
+        anyone else gets 403.
       parameters:
       - $ref: '#/components/parameters/IDParam'
       requestBody:
@@ -2376,7 +2383,8 @@ paths:
       tags:
       - agents
       summary: Delete agent messaging binding
-      description: Deletes one messaging binding from the agent and provider account.
+      description: Deletes one messaging binding from the agent and provider account. Only
+        organization owners and admins can delete a binding; anyone else gets 403.
       parameters:
       - $ref: '#/components/parameters/IDParam'
       - name: binding_id
@@ -9740,6 +9748,115 @@ components:
         display_name:
           type: string
           description: Human controller display name, when available.
+    AgentMessagingProvider:
+      type: string
+      enum:
+      - slack
+      - telegram
+      - linear
+      - microsoft_teams
+      description: 'Provider supported by built-in agent messaging: `slack`, `telegram`, `linear`
+        (Linear agent sessions), or `microsoft_teams` (Microsoft Teams chats in one linked
+        tenant). A binding''s provider must equal its integration''s provider.'
+    AgentMessagingDMPolicy:
+      type: string
+      enum:
+      - open
+      - allowlist
+      - disabled
+      description: 'Direct-message access policy: `open`, `allowlist`, or `disabled`.'
+    AgentMessagingReplyMode:
+      type: string
+      enum:
+      - auto
+      description: Reply mode for built-in messaging; currently `auto`.
+    AgentMessagingBinding:
+      type: object
+      additionalProperties: false
+      description: Messaging provider account that an agent can answer from.
+      required:
+      - id
+      - agent_id
+      - provider
+      - integration_id
+      - enabled
+      - dms
+      - mentions
+      - all_messages
+      - channels
+      - dm_policy
+      - sender_allow
+      - reply_mode
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          description: Messaging binding identifier.
+        agent_id:
+          type: string
+          description: Agent this binding belongs to.
+        provider:
+          $ref: '#/components/schemas/AgentMessagingProvider'
+          description: 'Messaging provider for this binding: `slack` or `telegram`.'
+        integration_id:
+          type: string
+          description: Connected integration account this binding applies to.
+        enabled:
+          type: boolean
+          description: Whether the agent can currently answer on this account.
+        dms:
+          type: boolean
+          description: Whether direct messages are accepted.
+        mentions:
+          type: boolean
+          description: Whether channel/group mentions activate the agent.
+        all_messages:
+          type: boolean
+          description: Whether every message in the allowed conversations activates the agent.
+        channels:
+          type: array
+          description: Optional provider conversation allowlist. Empty means any conversation
+            on the integration.
+          items:
+            type: string
+        dm_policy:
+          $ref: '#/components/schemas/AgentMessagingDMPolicy'
+          description: 'Who may direct-message this agent: `open`, `allowlist`, or `disabled`.'
+        sender_allow:
+          type: array
+          description: Optional provider sender allowlist. Empty means any sender.
+          items:
+            type: string
+        reply_mode:
+          $ref: '#/components/schemas/AgentMessagingReplyMode'
+          description: How the agent replies to inbound provider messages.
+        model_route:
+          $ref: '#/components/schemas/AgentModelRoute'
+          description: Optional model route override used for replies through this binding.
+        compaction_policy:
+          $ref: '#/components/schemas/SessionCompactionPolicy'
+          description: Optional compaction policy applied to sessions created from this binding.
+            Unset inherits the agent default.
+        created_at:
+          type: string
+          format: date-time
+          description: Time the binding was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Time the binding was last updated.
+    AgentMessagingBindingListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          description: Messaging bindings configured for this agent.
+          items:
+            $ref: '#/components/schemas/AgentMessagingBinding'
     BillingUsageEvent:
       type: object
       additionalProperties: false
@@ -10208,6 +10325,7 @@ components:
       description: The organization's allowlist of exact HTTPS origins an embedded partner
         may name as an OAuth connect `return_url`. Origins are stored normalized (lowercase
         host, default ports stripped). An empty list disables embedded return for the organization.
+        Embedded return is currently disabled for every organization, so the list has no effect.
       required:
       - origins
       properties:
@@ -11391,102 +11509,6 @@ components:
           maximum: 245760
           description: UTF-8 byte budget. Omit or send `0` for the selected mode's default.
             Off mode ignores this field.
-    AgentMessagingDMPolicy:
-      type: string
-      enum:
-      - open
-      - allowlist
-      - disabled
-      description: 'Direct-message access policy: `open`, `allowlist`, or `disabled`.'
-    AgentMessagingReplyMode:
-      type: string
-      enum:
-      - auto
-      description: Reply mode for built-in messaging; currently `auto`.
-    AgentMessagingProvider:
-      type: string
-      enum:
-      - slack
-      - telegram
-      - linear
-      description: 'Provider supported by built-in agent messaging: `slack`, `telegram`, or
-        `linear` (Linear agent sessions).'
-    AgentMessagingBinding:
-      type: object
-      additionalProperties: false
-      description: Messaging provider account that an agent can answer from.
-      required:
-      - id
-      - agent_id
-      - provider
-      - integration_id
-      - enabled
-      - dms
-      - mentions
-      - all_messages
-      - channels
-      - dm_policy
-      - sender_allow
-      - reply_mode
-      - created_at
-      - updated_at
-      properties:
-        id:
-          type: string
-          description: Messaging binding identifier.
-        agent_id:
-          type: string
-          description: Agent this binding belongs to.
-        provider:
-          $ref: '#/components/schemas/AgentMessagingProvider'
-          description: 'Messaging provider for this binding: `slack` or `telegram`.'
-        integration_id:
-          type: string
-          description: Connected integration account this binding applies to.
-        enabled:
-          type: boolean
-          description: Whether the agent can currently answer on this account.
-        dms:
-          type: boolean
-          description: Whether direct messages are accepted.
-        mentions:
-          type: boolean
-          description: Whether channel/group mentions activate the agent.
-        all_messages:
-          type: boolean
-          description: Whether every message in the allowed conversations activates the agent.
-        channels:
-          type: array
-          description: Optional provider conversation allowlist. Empty means any conversation
-            on the integration.
-          items:
-            type: string
-        dm_policy:
-          $ref: '#/components/schemas/AgentMessagingDMPolicy'
-          description: 'Who may direct-message this agent: `open`, `allowlist`, or `disabled`.'
-        sender_allow:
-          type: array
-          description: Optional provider sender allowlist. Empty means any sender.
-          items:
-            type: string
-        reply_mode:
-          $ref: '#/components/schemas/AgentMessagingReplyMode'
-          description: How the agent replies to inbound provider messages.
-        model_route:
-          $ref: '#/components/schemas/AgentModelRoute'
-          description: Optional model route override used for replies through this binding.
-        compaction_policy:
-          $ref: '#/components/schemas/SessionCompactionPolicy'
-          description: Optional compaction policy applied to sessions created from this binding.
-            Unset inherits the agent default.
-        created_at:
-          type: string
-          format: date-time
-          description: Time the binding was created.
-        updated_at:
-          type: string
-          format: date-time
-          description: Time the binding was last updated.
     AgentMessagingBindingRequest:
       type: object
       additionalProperties: false
@@ -11520,12 +11542,15 @@ components:
         all_messages:
           type: boolean
           default: false
-          description: Respond to every message in bound channels, not just mentions.
+          description: Respond to every message in bound channels, not just mentions. Must
+            be false for microsoft_teams, where the agent answers in channels and group chats
+            only when a person @mentions it.
         channels:
           type: array
           items:
             type: string
-          description: Channel IDs the binding is scoped to (empty means all channels).
+          description: Channel and group IDs the binding is scoped to (empty means all). Direct
+            messages ignore this list.
         dm_policy:
           $ref: '#/components/schemas/AgentMessagingDMPolicy'
           description: 'Who may direct-message this agent: `open`, `allowlist`, or `disabled`.'
@@ -11534,6 +11559,8 @@ components:
           items:
             type: string
           description: Sender IDs allowed to trigger the agent (empty means no allowlist).
+            An enabled `telegram` binding requires at least one numeric Telegram user ID and
+            refuses `*`.
         reply_mode:
           $ref: '#/components/schemas/AgentMessagingReplyMode'
           description: Reply behavior for provider messages; currently `auto`.
@@ -11544,17 +11571,6 @@ components:
           $ref: '#/components/schemas/SessionCompactionPolicy'
           description: Optional compaction policy applied to sessions created from this binding.
             Unset inherits the agent default.
-    AgentMessagingBindingListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      properties:
-        items:
-          type: array
-          description: Messaging bindings configured for this agent.
-          items:
-            $ref: '#/components/schemas/AgentMessagingBinding'
     SkillAssignment:
       type: object
       additionalProperties: false

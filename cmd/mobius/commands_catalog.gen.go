@@ -36,6 +36,9 @@ func registerCatalogCommands(app *cli.App) {
 
 	catalogGrp.Command("list-actions").
 		Description("List actions").
+		Flags(
+			cli.String("agent-id", "").Help("Judge readiness for this agent's account grants."),
+		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -43,7 +46,12 @@ func registerCatalogCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			resp, err := client.ListCatalogActionsWithResponse(ctx.Context())
+			params := &api.ListCatalogActionsParams{}
+			if ctx.IsSet("agent-id") {
+				v := ctx.String("agent-id")
+				params.AgentId = &v
+			}
+			resp, err := client.ListCatalogActionsWithResponse(ctx.Context(), params)
 			if err != nil {
 				return err
 			}
