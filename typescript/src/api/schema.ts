@@ -158,6 +158,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/action-invocations/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a direct action invocation
+         * @description Returns the status and retained result of a direct invocation to the principal that started it.
+         */
+        get: operations["getActionInvocation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/actions/{action_name}/invoke": {
         parameters: {
             query?: never;
@@ -617,6 +637,50 @@ export interface paths {
          * @description Deletes a single role assignment by ID. The underlying role and principal are not deleted, but the principal immediately loses permissions granted only through this assignment.
          */
         delete: operations["deleteRoleAssignment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/orgs/{org_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Schedule organization deletion
+         * @description An owner may schedule deletion of a self-serve organization. A current administrator of its enabled governing parent may schedule a managed child. The exact organization name must be confirmed. Access stops immediately, while Clerk, Stripe, and stored data remain untouched for seven days. Repeating this request returns the active attempt.
+         */
+        delete: operations["scheduleOrgDeletion"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/orgs/{org_id}/deletion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get organization deletion status
+         * @description The initiating principal can poll after the org and its memberships are gone. A still-authorized governing parent administrator can also poll a managed child's attempt. Terminal records remain for at least 30 days. An unrelated principal receives 404.
+         */
+        get: operations["getOrgDeletion"];
+        put?: never;
+        post?: never;
+        /**
+         * Cancel pending organization deletion
+         * @description Restores local access only while the attempt is pending and before purge_after. No external organization or subscription needs recreation.
+         */
+        delete: operations["cancelOrgDeletion"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1215,7 +1279,7 @@ export interface paths {
         };
         /**
          * Get session
-         * @description Returns one durable conversation session.
+         * @description Returns one durable conversation session. During the web-client transition, callers that already posted a read mark may send X-Mobius-Safe-Read as 1 to suppress the legacy GET watermark write.
          */
         get: operations["getSession"];
         put?: never;
@@ -1232,6 +1296,26 @@ export interface paths {
          * @description Updates session display or lifecycle fields. Setting `status` to `archived` hides the session from the current list while keeping it restorable; setting it to `active` restores an archived session. Deleted sessions are retained tombstones and cannot be restored.
          */
         patch: operations["updateSession"];
+        trace?: never;
+    };
+    "/v1/sessions/{session_id}/read-mark": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Advance the caller's session read mark
+         * @description Idempotently records that the caller opened this authorized session.
+         */
+        post: operations["markSessionRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/sessions/{session_id}/attachments": {
@@ -1860,6 +1944,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/routines/occurrences/{occurrence_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get one routine occurrence
+         * @description Returns a durable occurrence after checking reach to its routine.
+         */
+        get: operations["getRoutineOccurrence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/routines/{routine_id}": {
         parameters: {
             query?: never;
@@ -1869,7 +1973,7 @@ export interface paths {
         };
         /**
          * Get a routine
-         * @description Returns one reachable routine and its current schedule and lifecycle state.
+         * @description Returns one reachable routine and its current schedule and lifecycle state. During the web-client transition, callers that already posted a read mark may send X-Mobius-Safe-Read as 1 to suppress the legacy GET watermark write.
          */
         get: operations["getRoutine"];
         put?: never;
@@ -1886,6 +1990,26 @@ export interface paths {
          * @description Updates mutable instructions, display, schedule, or spend ceilings without changing execution identity.
          */
         patch: operations["updateRoutine"];
+        trace?: never;
+    };
+    "/v1/routines/{routine_id}/read-mark": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark the caller's routine occurrences read
+         * @description Idempotently advances the caller's read marks for reachable completed occurrences.
+         */
+        post: operations["markRoutineRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/routines/{routine_id}/changes": {
@@ -3941,6 +4065,8 @@ export interface components {
             label: string;
             description: string;
             event_types: string[];
+            /** @description Event-type patterns for which a new routine that names no follow_target follows this target. */
+            default_for?: string[];
         };
         WorkerSocketModelCapability: {
             /** @description LLM provider identifier, such as `ollama`. */
@@ -4502,6 +4628,24 @@ export interface components {
             /** @description Resolved to a role ID server-side. Mutually exclusive with `role_id`. */
             role_name?: string;
         } & (unknown | unknown);
+        OrgDeletionRequest: {
+            confirmation_name: string;
+        };
+        OrgDeletion: {
+            org_id: string;
+            /** @enum {string} */
+            status: "pending_purge" | "purging" | "completed" | "cancelled" | "failed";
+            /** Format: date-time */
+            purge_after: string;
+            /** Format: date-time */
+            requested_at: string;
+            /** Format: date-time */
+            completed_at?: string | null;
+            /** Format: date-time */
+            cancelled_at?: string | null;
+            /** @description Stable step code when status is failed; omitted otherwise. */
+            failure_reason?: string;
+        };
         /** @description The organization's allowlist of exact HTTPS origins an embedded partner may name as an OAuth connect `return_url`. Origins are stored normalized (lowercase host, default ports stripped). An empty list disables embedded return for the organization. */
         OAuthReturnOrigins: {
             /** @description Normalized exact HTTPS return origins (for example `https://app.partner.example`). */
@@ -5525,6 +5669,27 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** @description Plain-language phrasing for a tool call, recorded when the call is made. Clients show these words instead of the tool name or its arguments. */
+        SessionToolDisplay: {
+            /** @description What the tool does, in sentence case, for example "Export a PDF". */
+            label: string;
+            /** @description Phrase while the call runs, for example "Exporting a PDF…". */
+            running?: string;
+            /** @description Phrase once it succeeds, for example: Exported "Q3 update.pdf". */
+            done?: string;
+            /** @description Phrase for a group of these calls; "{n}" is replaced by the count. */
+            done_many?: string;
+            /** @description The one thing the call acted on, such as a file name. Never message bodies. */
+            subject?: string;
+            /** @description The artifact the call created or changed, when there is one. */
+            artifact_id?: string;
+            /** @description The integration's name as people know it, shown before the label, for example "GitHub". */
+            integration?: string;
+            /** @description Provider key for the integration icon, for example "github". */
+            integration_key?: string;
+            /** @description One safe line explaining a failure, only for Mobius's own tools. Empty for integration and third party tools, whose error text can quote private content. */
+            error?: string;
+        };
         /** @description A tool call the agent issued. */
         SessionToolUseBlock: {
             /**
@@ -5547,6 +5712,7 @@ export interface components {
                 [key: string]: unknown;
             };
             resolved_action?: components["schemas"]["SessionResolvedAction"];
+            display?: components["schemas"]["SessionToolDisplay"];
         } & {
             [key: string]: unknown;
         };
@@ -5565,6 +5731,7 @@ export interface components {
             content?: string | components["schemas"]["SessionContentBlock"][];
             /** @description True when the tool reported a failure. */
             is_error?: boolean;
+            display?: components["schemas"]["SessionToolDisplay"];
         } & {
             [key: string]: unknown;
         };
@@ -6072,6 +6239,7 @@ export interface components {
                 [key: string]: unknown;
             } | null;
             resolved_action?: components["schemas"]["SessionResolvedAction"];
+            display?: components["schemas"]["SessionToolDisplay"];
         };
         MessageDeltaFrame: {
             /**
@@ -7019,7 +7187,7 @@ export interface components {
         };
         /** @description Exactly one of `schedule` and `event` is required: a routine runs on a schedule or when an event arrives, not both. */
         RoutineCreateRequest: {
-            /** @description Immutable follow target from the event catalog. Null or event creates a conversation per event; routine shares one conversation; custom evaluates follow_key. Provider targets derive the event subscription. */
+            /** @description Immutable follow target from the event catalog. Omitted uses the catalog target whose default_for matches the event type, or event when none does; event always creates a conversation per event; routine shares one conversation; custom evaluates follow_key. A provider target keeps an event type it covers and otherwise subscribes to the whole provider. */
             follow_target?: string | null;
             /** @description Immutable expr over event and meta; required only with custom. Must yield a non-empty string of at most 2048 bytes. */
             follow_key?: string | null;
@@ -7065,7 +7233,7 @@ export interface components {
             follower_principal_ids?: string[];
         };
         RoutineUpdateRequest: {
-            /** @description Immutable follow target. May be omitted or echo the current value; changing it is rejected. Create a new routine to follow a different target. */
+            /** @description Immutable follow target. May be omitted or echo the current value (null and event are the same value); changing it is rejected. Create a new routine to follow a different target. */
             follow_target?: string | null;
             /** @description Immutable custom follow expression. May be omitted or echo the current value; changing it is rejected. Create a new routine to use a different expression. */
             follow_key?: string | null;
@@ -8796,6 +8964,30 @@ export interface operations {
             403: components["responses"]["Forbidden"];
         };
     };
+    getActionInvocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current or terminal invocation result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionInvocationResult"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     invokeAction: {
         parameters: {
             query?: never;
@@ -8843,6 +9035,8 @@ export interface operations {
             /** @description Accepted — asynchronous invocation is still active */
             202: {
                 headers: {
+                    /** @description Pollable invocation result. */
+                    Location?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9563,6 +9757,90 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    scheduleOrgDeletion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Organization ID. */
+                org_id: components["parameters"]["OrgIDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrgDeletionRequest"];
+            };
+        };
+        responses: {
+            /** @description Deletion scheduled; poll Location for progress */
+            202: {
+                headers: {
+                    /** @description Path of this organization's deletion resource. */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgDeletion"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getOrgDeletion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Organization ID. */
+                org_id: components["parameters"]["OrgIDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current or terminal deletion state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgDeletion"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    cancelOrgDeletion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Organization ID. */
+                org_id: components["parameters"]["OrgIDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deletion cancelled and local access restored */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     getOAuthReturnOrigins: {
@@ -10933,6 +11211,8 @@ export interface operations {
             /** @description The turn was accepted and is running. */
             202: {
                 headers: {
+                    /** @description Pollable session turn. */
+                    Location?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11110,6 +11390,30 @@ export interface operations {
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             429: components["responses"]["TooManyRequests"];
+        };
+    };
+    markSessionRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Read mark advanced */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     createSessionAttachment: {
@@ -11492,6 +11796,8 @@ export interface operations {
             /** @description The turn was accepted and is running. */
             202: {
                 headers: {
+                    /** @description Pollable session turn. */
+                    Location?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11633,6 +11939,8 @@ export interface operations {
             /** @description The nudge input was accepted for delivery. */
             202: {
                 headers: {
+                    /** @description Pollable session nudge. */
+                    Location?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12112,6 +12420,8 @@ export interface operations {
             query?: {
                 limit?: number;
                 cursor?: string;
+                /** @description When true, returns only threads at their turn limit. They skip new events until a manager resumes them. */
+                paused?: boolean;
             };
             header?: never;
             path: {
@@ -12320,6 +12630,31 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    getRoutineOccurrence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                occurrence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current or terminal occurrence. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoutineOccurrence"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     getRoutine: {
         parameters: {
             query?: never;
@@ -12397,6 +12732,29 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    markRoutineRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                routine_id: components["parameters"]["RoutineID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Read marks advanced */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     listRoutineChanges: {
         parameters: {
             query?: {
@@ -12445,6 +12803,8 @@ export interface operations {
              */
             202: {
                 headers: {
+                    /** @description Pollable occurrence. */
+                    Location?: string;
                     [name: string]: unknown;
                 };
                 content: {

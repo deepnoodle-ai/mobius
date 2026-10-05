@@ -10,6 +10,15 @@ the minor version.
 
 ## [Unreleased]
 
+### Added
+
+- Organizations can schedule, inspect, and cancel deletion
+  (`organizations schedule-deletion` / `get-deletion` / `cancel-deletion`).
+- Sessions and routines expose read marks (`mark-read`), routines can fetch a
+  single occurrence, and actions can fetch a single direct invocation.
+- Session tool blocks carry a `display` summary (`SessionToolDisplay`), and the
+  event catalog reports `default_for` follow targets for new routines.
+
 ## [0.2.0] - 2026-09-25
 
 ### Added

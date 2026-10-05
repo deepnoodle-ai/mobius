@@ -834,6 +834,24 @@ func registerSessionsCommands(app *cli.App) {
 			return printResponse(ctx, "listSessionTurns", resp.StatusCode(), resp.Body)
 		})
 
+	sessionsGrp.Command("mark-read").
+		Description("Advance the caller's session read mark").
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.SessionIdParam(ctx.Arg(0))
+			resp, err := client.MarkSessionReadWithResponse(ctx.Context(), p0)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "markSessionRead", resp.StatusCode(), resp.Body)
+		})
+
 	sessionsGrp.Command("nudge").
 		Description("Nudge a session").
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).

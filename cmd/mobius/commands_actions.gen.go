@@ -37,6 +37,24 @@ func registerActionsCommands(app *cli.App) {
 			return printResponse(ctx, "deleteAction", resp.StatusCode(), resp.Body)
 		})
 
+	actionsGrp.Command("get-invocation").
+		Description("Get a direct action invocation").
+		Args("job-id").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := ctx.Arg(0)
+			resp, err := client.GetActionInvocationWithResponse(ctx.Context(), p0)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "getActionInvocation", resp.StatusCode(), resp.Body)
+		})
+
 	actionsGrp.Command("invoke").
 		Description("Invoke action").
 		AddArg(&cli.Arg{Name: "action-name", Description: "Action name as registered in the catalog.", Required: true}).

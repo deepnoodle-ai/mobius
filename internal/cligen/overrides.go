@@ -93,6 +93,8 @@ var overrides = map[string]Override{
 	"replaceOAuthReturnOrigins": {Skip: true},
 	// Pairs with `get-context`, which derives cleanly.
 	"replaceOrgContext": {Command: "replace-context"},
+	// Pairs with `get-deletion` / `cancel-deletion`, which derive cleanly.
+	"scheduleOrgDeletion": {Command: "schedule-deletion"},
 
 	// --- permissions ------------------------------------------------------
 	"listOrgPermissions": {Command: "list"},
@@ -131,13 +133,15 @@ var overrides = map[string]Override{
 	"resumeRoutine":          {Command: "resume"},
 	"approveRoutineProposal": {Command: "approve-proposal"},
 	"dismissRoutineProposal": {Command: "dismiss-proposal"},
+	"markRoutineRead":        {Command: "mark-read"},
 
 	// --- sessions ---------------------------------------------------------
 	// `cancelTurn` and `cancelSession` both auto-derive to `cancel` (the
 	// trailing resource word is stripped), so one would land as `cancel-2`.
 	// Name the turn-scoped op explicitly so it joins the turn family
 	// (`get-turn`/`start-turn`/`list-turns`); `cancelSession` keeps `cancel`.
-	"cancelTurn": {Command: "cancel-turn"},
+	"cancelTurn":      {Command: "cancel-turn"},
+	"markSessionRead": {Command: "mark-read"},
 	// Keep nudge lifecycle commands explicit. Without overrides, `cancelNudge`
 	// steals the existing `cancel` leaf from `cancelSession`, and `nudgeSession`
 	// redundantly renders as `nudge-session` inside the sessions group.

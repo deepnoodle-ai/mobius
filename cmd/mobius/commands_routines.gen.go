@@ -116,7 +116,7 @@ func registerRoutinesCommands(app *cli.App) {
 			cli.Int("daily-ceiling-milli", "").Help("[required] daily-ceiling-milli"),
 			cli.String("event", "").Help("Runs the routine when a matching integration event arrives. Each matched event creates a ledger entry for each followed thread. Runs… Accepts JSON, @file, or @-."),
 			cli.String("follow-key", "").Help("Immutable expr over event and meta; required only with custom. Must yield a non-empty string of at most 2048 bytes."),
-			cli.String("follow-target", "").Help("Immutable follow target from the event catalog. Null or event creates a conversation per event; routine shares one conversation; custom…"),
+			cli.String("follow-target", "").Help("Immutable follow target from the event catalog. Omitted uses the catalog target whose default_for matches the event type, or event when…"),
 			cli.Strings("follower-principal-ids", "").Help("Principals who opt into the routine's results. The creator is added automatically."),
 			cli.Int("idle-after", "").Help("Seconds without events before an open thread is shown as idle."),
 			cli.String("instructions", "").Help("[required] instructions Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
@@ -305,6 +305,24 @@ func registerRoutinesCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "getRoutine", resp.StatusCode(), resp.Body)
+		})
+
+	routinesGrp.Command("get-occurrence").
+		Description("Get one routine occurrence").
+		Args("occurrence-id").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := ctx.Arg(0)
+			resp, err := client.GetRoutineOccurrenceWithResponse(ctx.Context(), p0)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "getRoutineOccurrence", resp.StatusCode(), resp.Body)
 		})
 
 	routinesGrp.Command("get-thread").
@@ -508,6 +526,7 @@ func registerRoutinesCommands(app *cli.App) {
 		Flags(
 			cli.Int("limit", "").Help("limit"),
 			cli.String("cursor", "").Help("cursor"),
+			cli.Bool("paused", "").Help("When true, returns only threads at their turn limit. They skip new events until a manager resumes them."),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -526,11 +545,33 @@ func registerRoutinesCommands(app *cli.App) {
 				v := ctx.String("cursor")
 				params.Cursor = &v
 			}
+			if ctx.IsSet("paused") {
+				v := ctx.Bool("paused")
+				params.Paused = &v
+			}
 			resp, err := client.ListRoutineThreadsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
 			return printResponse(ctx, "listRoutineThreads", resp.StatusCode(), resp.Body)
+		})
+
+	routinesGrp.Command("mark-read").
+		Description("Mark the caller's routine occurrences read").
+		Args("routine-id").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.RoutineID(ctx.Arg(0))
+			resp, err := client.MarkRoutineReadWithResponse(ctx.Context(), p0)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "markRoutineRead", resp.StatusCode(), resp.Body)
 		})
 
 	routinesGrp.Command("pause").
@@ -683,7 +724,7 @@ func registerRoutinesCommands(app *cli.App) {
 			cli.Int("daily-ceiling-milli", "").Help("Must remain at least the per-occurrence ceiling. A person may move it either way; an agent may only lower it."),
 			cli.String("event", "").Help("Makes this an event routine, dropping any schedule it had. Rejected together with `schedule`. Accepts JSON, @file, or @-."),
 			cli.String("follow-key", "").Help("Immutable custom follow expression. May be omitted or echo the current value; changing it is rejected. Create a new routine to use a…"),
-			cli.String("follow-target", "").Help("Immutable follow target. May be omitted or echo the current value; changing it is rejected. Create a new routine to follow a different…"),
+			cli.String("follow-target", "").Help("Immutable follow target. May be omitted or echo the current value (null and event are the same value); changing it is rejected. Create a…"),
 			cli.Int("idle-after", "").Help("Seconds without events before an open thread is shown as idle."),
 			cli.String("instructions", "").Help("instructions Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
 			cli.String("managed-by", "").Help("Only a person may change this. An agent manager receives 403."),
