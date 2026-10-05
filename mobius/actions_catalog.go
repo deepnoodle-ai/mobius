@@ -18,7 +18,7 @@ import (
 // integration is missing credentials" should consult this list before
 // calling [Context.RunServerAction].
 func (c *Client) ListActionCatalog(ctx context.Context) ([]api.ActionCatalogEntry, error) {
-	resp, err := c.ac.ListCatalogActionsWithResponse(ctx)
+	resp, err := c.ac.ListCatalogActionsWithResponse(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: list action catalog: %w", err)
 	}

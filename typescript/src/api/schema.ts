@@ -228,6 +228,8 @@ export interface paths {
         /**
          * List actions
          * @description Returns the full catalog of actions available to this org: org-owned HTTP actions and platform-provided integration actions (Slack, GitHub, etc.). The `available` flag indicates whether the action can currently be invoked. Custom HTTP actions are created and managed on the `/actions` resource.
+         *
+         *     Readiness is judged for the caller's own accounts. Pass `agent_id` to judge it as that agent's turns would: an action is ready when an account the agent holds a grant for backs it, including a team-managed one.
          */
         get: operations["listCatalogActions"];
         put?: never;
@@ -696,11 +698,15 @@ export interface paths {
         /**
          * Get the org's OAuth return-origin allowlist
          * @description Returns the active organization's allowlist of exact HTTPS origins that an embedded partner may name as a `return_url` when starting a provider connection. An empty list means embedded return is disabled for the organization. Requires `Admin` or `Owner` membership.
+         *
+         *     Embedded return is currently disabled for every organization, so this list has no effect: connect requests carrying `return_url` fail with `400 embedded_return_disabled`, and connections finish in Mobius for the person who started them.
          */
         get: operations["getOAuthReturnOrigins"];
         /**
          * Replace the org's OAuth return-origin allowlist
          * @description Full-replace of the active organization's OAuth return-origin allowlist. Each entry must be an exact HTTPS origin (scheme, host, and optional non-default port); it is normalized to lowercase host with default ports stripped, and duplicates are collapsed. At most 20 origins are accepted. Sending an empty list disables embedded return. Requires `Admin` or `Owner` membership.
+         *
+         *     Embedded return is currently disabled for every organization, so the stored list has no effect: connect requests carrying `return_url` fail with `400 embedded_return_disabled`.
          */
         put: operations["replaceOAuthReturnOrigins"];
         post?: never;
@@ -1032,7 +1038,7 @@ export interface paths {
         get: operations["listAgentMessagingBindings"];
         /**
          * Save agent messaging binding
-         * @description Saves one provider-account binding used to route messages to this agent.
+         * @description Saves one provider-account binding used to route messages to this agent. Only organization owners and admins can create, change, enable, or disable a binding; anyone else gets 403.
          */
         put: operations["saveAgentMessagingBinding"];
         post?: never;
@@ -1054,7 +1060,7 @@ export interface paths {
         post?: never;
         /**
          * Delete agent messaging binding
-         * @description Deletes one messaging binding from the agent and provider account.
+         * @description Deletes one messaging binding from the agent and provider account. Only organization owners and admins can delete a binding; anyone else gets 403.
          */
         delete: operations["deleteAgentMessagingBinding"];
         options?: never;
@@ -4445,6 +4451,66 @@ export interface components {
             /** @description Human controller display name, when available. */
             display_name?: string;
         };
+        /**
+         * @description Provider supported by built-in agent messaging: `slack`, `telegram`, `linear` (Linear agent sessions), or `microsoft_teams` (Microsoft Teams chats in one linked tenant). A binding's provider must equal its integration's provider.
+         * @enum {string}
+         */
+        AgentMessagingProvider: "slack" | "telegram" | "linear" | "microsoft_teams";
+        /**
+         * @description Direct-message access policy: `open`, `allowlist`, or `disabled`.
+         * @enum {string}
+         */
+        AgentMessagingDMPolicy: "open" | "allowlist" | "disabled";
+        /**
+         * @description Reply mode for built-in messaging; currently `auto`.
+         * @enum {string}
+         */
+        AgentMessagingReplyMode: "auto";
+        /** @description Messaging provider account that an agent can answer from. */
+        AgentMessagingBinding: {
+            /** @description Messaging binding identifier. */
+            id: string;
+            /** @description Agent this binding belongs to. */
+            agent_id: string;
+            /** @description Messaging provider for this binding: `slack` or `telegram`. */
+            provider: components["schemas"]["AgentMessagingProvider"];
+            /** @description Connected integration account this binding applies to. */
+            integration_id: string;
+            /** @description Whether the agent can currently answer on this account. */
+            enabled: boolean;
+            /** @description Whether direct messages are accepted. */
+            dms: boolean;
+            /** @description Whether channel/group mentions activate the agent. */
+            mentions: boolean;
+            /** @description Whether every message in the allowed conversations activates the agent. */
+            all_messages: boolean;
+            /** @description Optional provider conversation allowlist. Empty means any conversation on the integration. */
+            channels: string[];
+            /** @description Who may direct-message this agent: `open`, `allowlist`, or `disabled`. */
+            dm_policy: components["schemas"]["AgentMessagingDMPolicy"];
+            /** @description Optional provider sender allowlist. Empty means any sender. */
+            sender_allow: string[];
+            /** @description How the agent replies to inbound provider messages. */
+            reply_mode: components["schemas"]["AgentMessagingReplyMode"];
+            /** @description Optional model route override used for replies through this binding. */
+            model_route?: components["schemas"]["AgentModelRoute"];
+            /** @description Optional compaction policy applied to sessions created from this binding. Unset inherits the agent default. */
+            compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
+            /**
+             * Format: date-time
+             * @description Time the binding was created.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description Time the binding was last updated.
+             */
+            updated_at: string;
+        };
+        AgentMessagingBindingListResponse: {
+            /** @description Messaging bindings configured for this agent. */
+            items: components["schemas"]["AgentMessagingBinding"][];
+        };
         BillingUsageEvent: {
             id: string;
             api_key_id: string;
@@ -4646,7 +4712,7 @@ export interface components {
             /** @description Stable step code when status is failed; omitted otherwise. */
             failure_reason?: string;
         };
-        /** @description The organization's allowlist of exact HTTPS origins an embedded partner may name as an OAuth connect `return_url`. Origins are stored normalized (lowercase host, default ports stripped). An empty list disables embedded return for the organization. */
+        /** @description The organization's allowlist of exact HTTPS origins an embedded partner may name as an OAuth connect `return_url`. Origins are stored normalized (lowercase host, default ports stripped). An empty list disables embedded return for the organization. Embedded return is currently disabled for every organization, so the list has no effect. */
         OAuthReturnOrigins: {
             /** @description Normalized exact HTTPS return origins (for example `https://app.partner.example`). */
             origins: string[];
@@ -5203,62 +5269,6 @@ export interface components {
             /** @description UTF-8 byte budget. Omit or send `0` for the selected mode's default. Off mode ignores this field. */
             max_bytes?: number;
         };
-        /**
-         * @description Direct-message access policy: `open`, `allowlist`, or `disabled`.
-         * @enum {string}
-         */
-        AgentMessagingDMPolicy: "open" | "allowlist" | "disabled";
-        /**
-         * @description Reply mode for built-in messaging; currently `auto`.
-         * @enum {string}
-         */
-        AgentMessagingReplyMode: "auto";
-        /**
-         * @description Provider supported by built-in agent messaging: `slack`, `telegram`, or `linear` (Linear agent sessions).
-         * @enum {string}
-         */
-        AgentMessagingProvider: "slack" | "telegram" | "linear";
-        /** @description Messaging provider account that an agent can answer from. */
-        AgentMessagingBinding: {
-            /** @description Messaging binding identifier. */
-            id: string;
-            /** @description Agent this binding belongs to. */
-            agent_id: string;
-            /** @description Messaging provider for this binding: `slack` or `telegram`. */
-            provider: components["schemas"]["AgentMessagingProvider"];
-            /** @description Connected integration account this binding applies to. */
-            integration_id: string;
-            /** @description Whether the agent can currently answer on this account. */
-            enabled: boolean;
-            /** @description Whether direct messages are accepted. */
-            dms: boolean;
-            /** @description Whether channel/group mentions activate the agent. */
-            mentions: boolean;
-            /** @description Whether every message in the allowed conversations activates the agent. */
-            all_messages: boolean;
-            /** @description Optional provider conversation allowlist. Empty means any conversation on the integration. */
-            channels: string[];
-            /** @description Who may direct-message this agent: `open`, `allowlist`, or `disabled`. */
-            dm_policy: components["schemas"]["AgentMessagingDMPolicy"];
-            /** @description Optional provider sender allowlist. Empty means any sender. */
-            sender_allow: string[];
-            /** @description How the agent replies to inbound provider messages. */
-            reply_mode: components["schemas"]["AgentMessagingReplyMode"];
-            /** @description Optional model route override used for replies through this binding. */
-            model_route?: components["schemas"]["AgentModelRoute"];
-            /** @description Optional compaction policy applied to sessions created from this binding. Unset inherits the agent default. */
-            compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
-            /**
-             * Format: date-time
-             * @description Time the binding was created.
-             */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description Time the binding was last updated.
-             */
-            updated_at: string;
-        };
         AgentMessagingBindingRequest: {
             /** @description Messaging provider for this binding: `slack` or `telegram`. */
             provider: components["schemas"]["AgentMessagingProvider"];
@@ -5285,15 +5295,15 @@ export interface components {
              */
             mentions?: boolean;
             /**
-             * @description Respond to every message in bound channels, not just mentions.
+             * @description Respond to every message in bound channels, not just mentions. Must be false for microsoft_teams, where the agent answers in channels and group chats only when a person @mentions it.
              * @default false
              */
             all_messages?: boolean;
-            /** @description Channel IDs the binding is scoped to (empty means all channels). */
+            /** @description Channel and group IDs the binding is scoped to (empty means all). Direct messages ignore this list. */
             channels?: string[];
             /** @description Who may direct-message this agent: `open`, `allowlist`, or `disabled`. */
             dm_policy?: components["schemas"]["AgentMessagingDMPolicy"];
-            /** @description Sender IDs allowed to trigger the agent (empty means no allowlist). */
+            /** @description Sender IDs allowed to trigger the agent (empty means no allowlist). An enabled `telegram` binding requires at least one numeric Telegram user ID and refuses `*`. */
             sender_allow?: string[];
             /** @description Reply behavior for provider messages; currently `auto`. */
             reply_mode?: components["schemas"]["AgentMessagingReplyMode"];
@@ -5301,10 +5311,6 @@ export interface components {
             model_route?: components["schemas"]["AgentModelRoute"];
             /** @description Optional compaction policy applied to sessions created from this binding. Unset inherits the agent default. */
             compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
-        };
-        AgentMessagingBindingListResponse: {
-            /** @description Messaging bindings configured for this agent. */
-            items: components["schemas"]["AgentMessagingBinding"][];
         };
         /** @description Assignment linking a skill to an agent. */
         SkillAssignment: {
@@ -9081,7 +9087,10 @@ export interface operations {
     };
     listCatalogActions: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Judge readiness for this agent's account grants. */
+                agent_id?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
