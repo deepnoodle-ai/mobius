@@ -198,30 +198,76 @@ func (h *spriteHold) run(ctx context.Context, opts holdRunOptions) error {
 		}
 	}
 	held := false
+	// A wanted hold that failed to establish is retried on retryC. A hold is
+	// wanted while a job is in flight or until resumeUntil after an idle
+	// resume, so a Tasks-API blip never leaves the Sprite free to pause under
+	// a job or before the worker claims the job that woke it.
+	var resumeUntil time.Time
+	var retry *time.Timer
+	var retryC <-chan time.Time
+	stopRetry := func() {
+		if retry != nil {
+			retry.Stop()
+			retry = nil
+			retryC = nil
+		}
+	}
+	wantHold := func() bool {
+		return h.active() || time.Now().Before(resumeUntil)
+	}
+	armRetry := func() {
+		stopRetry()
+		if !held && wantHold() {
+			retry = time.NewTimer(h.retryDelay)
+			retryC = retry.C
+		}
+	}
+	tryHold := func() {
+		stopRetry()
+		held = h.putTask(ctx)
+		armRetry()
+	}
 	releaseOnExit := true
 	defer func() {
 		stopGrace()
+		stopRetry()
 		if held && releaseOnExit {
 			h.deleteTask()
 		}
 	}()
 	for {
-		if h.takeRefresh() && held {
-			// The environment resumed from a pause: the task may have expired
-			// mid-suspend. Re-establish it before anything else.
-			if ok := h.putTaskRetrying(ctx, opts); !ok && opts.Required {
-				releaseOnExit = false
-				return fmt.Errorf("mobius: required Sprite keep-warm hold could not be re-established after resume for task %q", h.taskName)
+		if h.takeRefresh() {
+			switch {
+			case held:
+				// The environment resumed from a pause: the task may have
+				// expired mid-suspend. Re-establish it before anything else.
+				if ok := h.putTaskRetrying(ctx, opts); !ok && opts.Required {
+					releaseOnExit = false
+					return fmt.Errorf("mobius: required Sprite keep-warm hold could not be re-established after resume for task %q", h.taskName)
+				}
+			case h.releaseGrace > 0:
+				// Resumed while idle and unheld. Something woke this Sprite,
+				// almost always the server about to hand the worker a job.
+				// Without a hold the Sprite pauses again as soon as the waking
+				// exec ends, before the worker reconnects and claims, and the
+				// job is failed as worker-unavailable. Hold for the keep-warm
+				// window; the idle branch below arms its release.
+				resumeUntil = time.Now().Add(h.releaseGrace)
+				tryHold()
 			}
 		}
 		switch active := h.active(); {
 		case active && !held:
 			stopGrace()
+			stopRetry()
 			held = h.putTaskRetrying(ctx, opts)
 			if !held && opts.Required {
 				releaseOnExit = false
 				return fmt.Errorf("mobius: required Sprite keep-warm hold could not be established for task %q", h.taskName)
 			}
+			// Best-effort mode: keep trying while the job runs rather than
+			// leaving it unheld until the next acquire.
+			armRetry()
 		case active && held:
 			// Work resumed (or never stopped) within the grace window — keep the
 			// hold and cancel any pending release.
@@ -243,6 +289,13 @@ func (h *spriteHold) run(ctx context.Context, opts holdRunOptions) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-h.wake:
+		case <-retryC:
+			retry, retryC = nil, nil
+			// While a job is active the switch above retries on the next pass;
+			// only an idle resume window needs the PUT here.
+			if !held && !h.active() && wantHold() {
+				tryHold()
+			}
 		case <-t.C:
 			if held {
 				if ok := h.putTaskRetrying(ctx, opts); !ok && opts.Required {
