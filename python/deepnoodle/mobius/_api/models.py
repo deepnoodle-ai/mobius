@@ -710,6 +710,25 @@ class SessionCompactionProgress(BaseModel):
     )
 
 
+class SessionChatAppConversation(BaseModel):
+    """
+    The chat-app conversation behind a session: which app, and the channel, group, or direct message the people in it are talking in.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    provider: str = Field(..., description='The chat app, such as `slack`.')
+    name: str | None = Field(
+        None,
+        description="The conversation's name as the app last reported it, such as the Slack channel name. Absent for a direct message or when the app did not report one.",
+    )
+    kind: str | None = Field(
+        None,
+        description='The kind of conversation as the app reported it, such as `channel`, `group`, or `dm`.',
+    )
+
+
 class Session(BaseModel):
     """
     Durable conversation transcript owned by an agent.
@@ -779,6 +798,10 @@ class Session(BaseModel):
     compaction: SessionCompactionProgress | None = Field(
         None,
         description='Live compaction progress plus the threshold that triggers the next pass. Returned on the single-session read; absent from list entries.',
+    )
+    chat_app: SessionChatAppConversation | None = Field(
+        None,
+        description='The chat-app conversation this session answers, when it came from Slack, Teams, or Telegram. Returned on the single-session read; absent from list entries and from sessions that did not come from a chat app.',
     )
     message_count: int = Field(
         ...,
@@ -2177,6 +2200,10 @@ class ConnectionGrant(BaseModel):
     provider: str
     controlled_by_organization: bool
     represented_actor: str | None = None
+    identity_label: str | None = Field(
+        None,
+        description="The provider's short account identity, such as an email address. Presentation only.",
+    )
     can_manage: bool
 
 
@@ -2350,6 +2377,10 @@ class AgentMessagingBinding(BaseModel):
     )
     enabled: bool = Field(
         ..., description='Whether the agent can currently answer on this account.'
+    )
+    show_progress_updates: bool = Field(
+        ...,
+        description='Whether this Slack or Teams answering binding shows public progress. Defaults to false for new bindings.',
     )
     dms: bool = Field(..., description='Whether direct messages are accepted.')
     mentions: bool = Field(
@@ -3520,6 +3551,10 @@ class AgentMessagingBindingRequest(BaseModel):
         False,
         description='When enabling this binding, disable any other active agent binding for the same provider account.',
     )
+    show_progress_updates: bool | None = Field(
+        None,
+        description='Show public progress for Slack or Teams. Omitted preserves the stored preference; explicit false disables it. New bindings default to false.',
+    )
     dms: bool = Field(True, description='Respond to direct messages.')
     mentions: bool = Field(True, description='Respond when the agent is @-mentioned.')
     all_messages: bool = Field(
@@ -4404,26 +4439,35 @@ class SessionEventProjection(BaseModel):
 
 class Kind13(StrEnum):
     """
-    The principal's kind, resolved from the principal record.
+    The principal's kind, resolved from the principal record. `external` is a person in a chat app, who is not a Mobius principal.
     """
 
     human = 'human'
     agent = 'agent'
     service = 'service'
     system = 'system'
+    external = 'external'
 
 
 class SessionMessageAuthor(BaseModel):
     """
-    The principal that wrote a message, resolved from the authenticated sender at read time so the transcript can render a name and avatar without a lookup per message. Never accepted on write.
+    The principal that wrote a message, resolved from the authenticated sender at read time so the transcript can render a name and avatar without a lookup per message. Never accepted on write. A message that arrived through a chat app has an `external` author: the person in that app, named as the app reported them.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    id: str = Field(..., description='Principal id of the author.')
+    id: str = Field(
+        ...,
+        description='Principal id of the author. For an `external` author, a stable id for that person in that chat app account; it is not a principal.',
+    )
     kind: Kind13 = Field(
-        ..., description="The principal's kind, resolved from the principal record."
+        ...,
+        description="The principal's kind, resolved from the principal record. `external` is a person in a chat app, who is not a Mobius principal.",
+    )
+    provider: str | None = Field(
+        None,
+        description='The chat app an `external` author wrote from, such as `slack`.',
     )
     display_name: str = Field(..., description='Single-line label for the author.')
     avatar_url: str | None = Field(
@@ -7920,7 +7964,6 @@ class Routine(BaseModel):
         description='Absent on an event routine, which has no next fire to predict.',
     )
     last_fire_at: AwareDatetime | None = None
-    occurrence_count: int
     completed_at: AwareDatetime | None = None
     per_occurrence_ceiling_milli: int
     daily_ceiling_milli: int

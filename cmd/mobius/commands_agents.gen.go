@@ -888,6 +888,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.Bool("replace-existing", "").Help("When enabling this binding, disable any other active agent binding for the same provider account."),
 			cli.String("reply-mode", "").Help("Reply mode for built-in messaging; currently `auto`."),
 			cli.Strings("sender-allow", "").Help("Sender IDs allowed to trigger the agent (empty means no allowlist). An enabled `telegram` binding requires at least one numeric Telegram…"),
+			cli.Bool("show-progress-updates", "").Help("Show public progress for Slack or Teams. Omitted preserves the stored preference; explicit false disables it. New bindings default to false."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -954,6 +955,10 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.IsSet("sender-allow") {
 				v := ctx.Strings("sender-allow")
 				body.SenderAllow = &v
+			}
+			if ctx.IsSet("show-progress-updates") {
+				v := ctx.Bool("show-progress-updates")
+				body.ShowProgressUpdates = &v
 			}
 			if body.IntegrationId == "" {
 				return fmt.Errorf("--integration-id is required (or supply it via --file)")

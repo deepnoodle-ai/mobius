@@ -2620,16 +2620,19 @@ func (e SessionImageSourceType) Valid() bool {
 
 // Defines values for SessionMessageAuthorKind.
 const (
-	SessionMessageAuthorKindAgent   SessionMessageAuthorKind = "agent"
-	SessionMessageAuthorKindHuman   SessionMessageAuthorKind = "human"
-	SessionMessageAuthorKindService SessionMessageAuthorKind = "service"
-	SessionMessageAuthorKindSystem  SessionMessageAuthorKind = "system"
+	SessionMessageAuthorKindAgent    SessionMessageAuthorKind = "agent"
+	SessionMessageAuthorKindExternal SessionMessageAuthorKind = "external"
+	SessionMessageAuthorKindHuman    SessionMessageAuthorKind = "human"
+	SessionMessageAuthorKindService  SessionMessageAuthorKind = "service"
+	SessionMessageAuthorKindSystem   SessionMessageAuthorKind = "system"
 )
 
 // Valid indicates whether the value is a known member of the SessionMessageAuthorKind enum.
 func (e SessionMessageAuthorKind) Valid() bool {
 	switch e {
 	case SessionMessageAuthorKindAgent:
+		return true
+	case SessionMessageAuthorKindExternal:
 		return true
 	case SessionMessageAuthorKindHuman:
 		return true
@@ -4501,6 +4504,9 @@ type AgentMessagingBinding struct {
 	// SenderAllow Optional provider sender allowlist. Empty means any sender.
 	SenderAllow []string `json:"sender_allow"`
 
+	// ShowProgressUpdates Whether this Slack or Teams answering binding shows public progress. Defaults to false for new bindings.
+	ShowProgressUpdates bool `json:"show_progress_updates"`
+
 	// UpdatedAt Time the binding was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -4551,6 +4557,9 @@ type AgentMessagingBindingRequest struct {
 
 	// SenderAllow Sender IDs allowed to trigger the agent (empty means no allowlist). An enabled `telegram` binding requires at least one numeric Telegram user ID and refuses `*`.
 	SenderAllow *[]string `json:"sender_allow,omitempty"`
+
+	// ShowProgressUpdates Show public progress for Slack or Teams. Omitted preserves the stored preference; explicit false disables it. New bindings default to false.
+	ShowProgressUpdates *bool `json:"show_progress_updates,omitempty"`
 }
 
 // AgentMessagingDMPolicy Direct-message access policy: `open`, `allowlist`, or `disabled`.
@@ -5640,8 +5649,11 @@ type ConnectionGrant struct {
 	ControlledByOrganization bool                    `json:"controlled_by_organization"`
 	CreatedAt                time.Time               `json:"created_at"`
 	Id                       string                  `json:"id"`
-	Provider                 string                  `json:"provider"`
-	RepresentedActor         *string                 `json:"represented_actor,omitempty"`
+
+	// IdentityLabel The provider's short account identity, such as an email address. Presentation only.
+	IdentityLabel    *string `json:"identity_label,omitempty"`
+	Provider         string  `json:"provider"`
+	RepresentedActor *string `json:"represented_actor,omitempty"`
 }
 
 // ConnectionGrantAudience defines model for ConnectionGrantAudience.
@@ -7061,7 +7073,7 @@ type MessageDeltaFrameEventType string
 type MessageUpsertFrame struct {
 	AgentId string `json:"agent_id"`
 
-	// Author The principal that wrote a message, resolved from the authenticated sender at read time so the transcript can render a name and avatar without a lookup per message. Never accepted on write.
+	// Author The principal that wrote a message, resolved from the authenticated sender at read time so the transcript can render a name and avatar without a lookup per message. Never accepted on write. A message that arrived through a chat app has an `external` author: the person in that app, named as the app reported them.
 	Author                *SessionMessageAuthor `json:"author,omitempty"`
 	Content               []SessionContentBlock `json:"content"`
 	CoversThroughSequence *int                  `json:"covers_through_sequence,omitempty"`
@@ -7627,9 +7639,8 @@ type Routine struct {
 	Name              string `json:"name"`
 
 	// NextFireAt Absent on an event routine, which has no next fire to predict.
-	NextFireAt      *time.Time `json:"next_fire_at,omitempty"`
-	OccurrenceCount int        `json:"occurrence_count"`
-	OrgId           string     `json:"org_id"`
+	NextFireAt *time.Time `json:"next_fire_at,omitempty"`
+	OrgId      string     `json:"org_id"`
 
 	// OriginSessionId The conversation the routine was proposed in, kept as provenance and nothing more. Each occurrence runs in its own session, so this is absent for a form-created routine and for one whose conversation has since been deleted. Archiving it does not stop the routine.
 	OriginSessionId *string `json:"origin_session_id,omitempty"`
@@ -8100,6 +8111,9 @@ type Session struct {
 	// CacheReadInputTotal Lifetime prompt-cache-read input-token total for this session.
 	CacheReadInputTotal int `json:"cache_read_input_total"`
 
+	// ChatApp The chat-app conversation behind a session: which app, and the channel, group, or direct message the people in it are talking in.
+	ChatApp *SessionChatAppConversation `json:"chat_app,omitempty"`
+
 	// Compaction Whether a compaction pass is running on this session right now, and the threshold that will trigger the next one.
 	//
 	// This is the poll-side counterpart to the `compaction.started` / `compaction.created` / `compaction.failed` stream events: those events are live-only, so a client that connects mid-pass reads this instead. On the single-session read the object is always present, so a client binds one shape — an idle session reports `in_progress: false` and nothing else but the threshold. List entries omit it entirely.
@@ -8211,6 +8225,18 @@ type SessionAttachmentResponse struct {
 
 	// ContentBlock One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, `image`, and `document`, plus host-managed `reminder` blocks when caller runtime context is explicitly included. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers.
 	ContentBlock SessionContentBlock `json:"content_block"`
+}
+
+// SessionChatAppConversation The chat-app conversation behind a session: which app, and the channel, group, or direct message the people in it are talking in.
+type SessionChatAppConversation struct {
+	// Kind The kind of conversation as the app reported it, such as `channel`, `group`, or `dm`.
+	Kind *string `json:"kind,omitempty"`
+
+	// Name The conversation's name as the app last reported it, such as the Slack channel name. Absent for a direct message or when the app did not report one.
+	Name *string `json:"name,omitempty"`
+
+	// Provider The chat app, such as `slack`.
+	Provider string `json:"provider"`
 }
 
 // SessionCompactionBoundary Pointer to the latest compaction marker in a session's transcript. The marker is itself a transcript message (role `compaction`); everything at or below `covers_through_sequence` is summarized history.
@@ -8550,7 +8576,7 @@ type SessionMessage struct {
 	// AgentId Agent container executing the parent session.
 	AgentId string `json:"agent_id"`
 
-	// Author The principal that wrote a message, resolved from the authenticated sender at read time so the transcript can render a name and avatar without a lookup per message. Never accepted on write.
+	// Author The principal that wrote a message, resolved from the authenticated sender at read time so the transcript can render a name and avatar without a lookup per message. Never accepted on write. A message that arrived through a chat app has an `external` author: the person in that app, named as the app reported them.
 	Author *SessionMessageAuthor `json:"author,omitempty"`
 
 	// Content Ordered canonical content blocks (text, thinking, tool_use, tool_result, image, document).
@@ -8587,7 +8613,7 @@ type SessionMessage struct {
 	TurnId *string `json:"turn_id,omitempty"`
 }
 
-// SessionMessageAuthor The principal that wrote a message, resolved from the authenticated sender at read time so the transcript can render a name and avatar without a lookup per message. Never accepted on write.
+// SessionMessageAuthor The principal that wrote a message, resolved from the authenticated sender at read time so the transcript can render a name and avatar without a lookup per message. Never accepted on write. A message that arrived through a chat app has an `external` author: the person in that app, named as the app reported them.
 type SessionMessageAuthor struct {
 	// AvatarUrl Avatar image, when the principal has one.
 	AvatarUrl *string `json:"avatar_url,omitempty"`
@@ -8598,14 +8624,17 @@ type SessionMessageAuthor struct {
 	// DisplayName Single-line label for the author.
 	DisplayName string `json:"display_name"`
 
-	// Id Principal id of the author.
+	// Id Principal id of the author. For an `external` author, a stable id for that person in that chat app account; it is not a principal.
 	Id string `json:"id"`
 
-	// Kind The principal's kind, resolved from the principal record.
+	// Kind The principal's kind, resolved from the principal record. `external` is a person in a chat app, who is not a Mobius principal.
 	Kind SessionMessageAuthorKind `json:"kind"`
+
+	// Provider The chat app an `external` author wrote from, such as `slack`.
+	Provider *string `json:"provider,omitempty"`
 }
 
-// SessionMessageAuthorKind The principal's kind, resolved from the principal record.
+// SessionMessageAuthorKind The principal's kind, resolved from the principal record. `external` is a person in a chat app, who is not a Mobius principal.
 type SessionMessageAuthorKind string
 
 // SessionMessageEntryType Transcript entry type: `message` or `compaction`.
@@ -8937,7 +8966,7 @@ type SessionTranscriptFrame struct {
 type SessionTranscriptMessage struct {
 	AgentId string `json:"agent_id"`
 
-	// Author The principal that wrote a message, resolved from the authenticated sender at read time so the transcript can render a name and avatar without a lookup per message. Never accepted on write.
+	// Author The principal that wrote a message, resolved from the authenticated sender at read time so the transcript can render a name and avatar without a lookup per message. Never accepted on write. A message that arrived through a chat app has an `external` author: the person in that app, named as the app reported them.
 	Author                *SessionMessageAuthor `json:"author,omitempty"`
 	Content               []SessionContentBlock `json:"content"`
 	CoversThroughSequence *int                  `json:"covers_through_sequence,omitempty"`

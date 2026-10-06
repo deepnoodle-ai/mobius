@@ -7421,6 +7421,25 @@ components:
         through_sequence: 987
         message_count: 63
         threshold_tokens: 150000
+    SessionChatAppConversation:
+      type: object
+      additionalProperties: false
+      description: 'The chat-app conversation behind a session: which app, and the channel,
+        group, or direct message the people in it are talking in.'
+      required:
+      - provider
+      properties:
+        provider:
+          type: string
+          description: The chat app, such as `slack`.
+        name:
+          type: string
+          description: The conversation's name as the app last reported it, such as the Slack
+            channel name. Absent for a direct message or when the app did not report one.
+        kind:
+          type: string
+          description: The kind of conversation as the app reported it, such as `channel`,
+            `group`, or `dm`.
     Session:
       type: object
       additionalProperties: false
@@ -7527,6 +7546,11 @@ components:
           $ref: '#/components/schemas/SessionCompactionProgress'
           description: Live compaction progress plus the threshold that triggers the next
             pass. Returned on the single-session read; absent from list entries.
+        chat_app:
+          $ref: '#/components/schemas/SessionChatAppConversation'
+          description: The chat-app conversation this session answers, when it came from Slack,
+            Teams, or Telegram. Returned on the single-session read; absent from list entries
+            and from sessions that did not come from a chat app.
         message_count:
           type: integer
           description: Non-decreasing transcript sequence high-water mark, including tombstoned
@@ -9490,6 +9514,10 @@ components:
           type: boolean
         represented_actor:
           type: string
+        identity_label:
+          type: string
+          description: The provider's short account identity, such as an email address. Presentation
+            only.
         can_manage:
           type: boolean
     ConnectionGrantListResponse:
@@ -9780,6 +9808,7 @@ components:
       - provider
       - integration_id
       - enabled
+      - show_progress_updates
       - dms
       - mentions
       - all_messages
@@ -9805,6 +9834,10 @@ components:
         enabled:
           type: boolean
           description: Whether the agent can currently answer on this account.
+        show_progress_updates:
+          type: boolean
+          description: Whether this Slack or Teams answering binding shows public progress.
+            Defaults to false for new bindings.
         dms:
           type: boolean
           description: Whether direct messages are accepted.
@@ -11531,6 +11564,10 @@ components:
           default: false
           description: When enabling this binding, disable any other active agent binding
             for the same provider account.
+        show_progress_updates:
+          type: boolean
+          description: Show public progress for Slack or Teams. Omitted preserves the stored
+            preference; explicit false disables it. New bindings default to false.
         dms:
           type: boolean
           default: true
@@ -12640,9 +12677,10 @@ components:
     SessionMessageAuthor:
       type: object
       additionalProperties: false
-      description: The principal that wrote a message, resolved from the authenticated sender
+      description: 'The principal that wrote a message, resolved from the authenticated sender
         at read time so the transcript can render a name and avatar without a lookup per message.
-        Never accepted on write.
+        Never accepted on write. A message that arrived through a chat app has an `external`
+        author: the person in that app, named as the app reported them.'
       required:
       - id
       - kind
@@ -12650,7 +12688,8 @@ components:
       properties:
         id:
           type: string
-          description: Principal id of the author.
+          description: Principal id of the author. For an `external` author, a stable id for
+            that person in that chat app account; it is not a principal.
         kind:
           type: string
           enum:
@@ -12658,7 +12697,12 @@ components:
           - agent
           - service
           - system
-          description: The principal's kind, resolved from the principal record.
+          - external
+          description: The principal's kind, resolved from the principal record. `external`
+            is a person in a chat app, who is not a Mobius principal.
+        provider:
+          type: string
+          description: The chat app an `external` author wrote from, such as `slack`.
         display_name:
           type: string
           description: Single-line label for the author.
@@ -15261,7 +15305,6 @@ components:
       - trigger
       - timezone
       - status
-      - occurrence_count
       - per_occurrence_ceiling_milli
       - daily_ceiling_milli
       - following
@@ -15400,8 +15443,6 @@ components:
         last_fire_at:
           type: string
           format: date-time
-        occurrence_count:
-          type: integer
         completed_at:
           type: string
           format: date-time
