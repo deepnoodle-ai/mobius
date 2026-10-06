@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -11,6 +12,54 @@ import (
 	"github.com/deepnoodle-ai/wonton/assert"
 	"github.com/deepnoodle-ai/wonton/cli"
 )
+
+func TestGeneratedMessagingBindingProgressUpdates(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		flags   []string
+		present bool
+	}{
+		{name: "omitted"},
+		{name: "explicit false", flags: []string{"--show-progress-updates=false"}, present: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			requests := make(chan []byte, 1)
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				body, err := io.ReadAll(r.Body)
+				if err != nil {
+					t.Errorf("read request body: %v", err)
+					http.Error(w, "cannot read request", http.StatusBadRequest)
+					return
+				}
+				requests <- body
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{}`))
+			}))
+			defer srv.Close()
+
+			args := []string{
+				"agents", "save-messaging-binding", "agent_test",
+				"--provider", "slack", "--integration-id", "integration_test",
+				"--api-url", srv.URL, "--api-key", "mbx_test", "--output", "json",
+			}
+			result := newApp().Test(t, cli.TestArgs(append(args, tc.flags...)...))
+			assert.True(t, result.Success(), "save binding failed: %v\nstderr: %s", result.Err, result.Stderr)
+
+			var body map[string]any
+			select {
+			case raw := <-requests:
+				assert.NoError(t, json.Unmarshal(raw, &body))
+			default:
+				t.Fatal("save binding did not send a request")
+			}
+			value, present := body["show_progress_updates"]
+			assert.Equal(t, tc.present, present, "show_progress_updates presence")
+			if tc.present {
+				assert.Equal(t, any(false), value, "show_progress_updates value")
+			}
+		})
+	}
+}
 
 func TestGeneratedCommandRejectsUnknownRequestFileField(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "agent.yaml")
