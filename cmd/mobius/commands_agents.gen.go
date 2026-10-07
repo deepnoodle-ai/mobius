@@ -875,8 +875,8 @@ func registerAgentsCommands(app *cli.App) {
 		Description("Save agent messaging binding").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
-			cli.Bool("all-messages", "").Help("Respond to every message in bound channels, not just mentions."),
-			cli.Strings("channels", "").Help("Channel IDs the binding is scoped to (empty means all channels)."),
+			cli.Bool("all-messages", "").Help("Respond to every message in bound channels, not just mentions. Must be false for microsoft_teams, where the agent answers in channels and…"),
+			cli.Strings("channels", "").Help("Channel and group IDs the binding is scoped to (empty means all). Direct messages ignore this list."),
 			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
 			cli.String("dm-policy", "").Help("Direct-message access policy: `open`, `allowlist`, or `disabled`."),
 			cli.Bool("dms", "").Help("Respond to direct messages."),
@@ -884,10 +884,11 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("integration-id", "").Help("[required] ID of the connected integration that backs this binding."),
 			cli.Bool("mentions", "").Help("Respond when the agent is @-mentioned."),
 			cli.String("model-route", "").Help("Default model route used by built-in messaging and by any turn that does not override the route. Accepts JSON, @file, or @-."),
-			cli.String("provider", "").Help("[required] Provider supported by built-in agent messaging: `slack`, `telegram`, or `linear` (Linear agent sessions)."),
+			cli.String("provider", "").Help("[required] Provider supported by built-in agent messaging: `slack`, `telegram`, `linear` (Linear agent sessions), or `microsoft_teams` (Microsoft…"),
 			cli.Bool("replace-existing", "").Help("When enabling this binding, disable any other active agent binding for the same provider account."),
 			cli.String("reply-mode", "").Help("Reply mode for built-in messaging; currently `auto`."),
-			cli.Strings("sender-allow", "").Help("Sender IDs allowed to trigger the agent (empty means no allowlist)."),
+			cli.Strings("sender-allow", "").Help("Sender IDs allowed to trigger the agent (empty means no allowlist). An enabled `telegram` binding requires at least one numeric Telegram…"),
+			cli.Bool("show-progress-updates", "").Help("Show public progress for Slack or Teams. Omitted preserves the stored preference; explicit false disables it. New bindings default to false."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -954,6 +955,10 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.IsSet("sender-allow") {
 				v := ctx.Strings("sender-allow")
 				body.SenderAllow = &v
+			}
+			if ctx.IsSet("show-progress-updates") {
+				v := ctx.Bool("show-progress-updates")
+				body.ShowProgressUpdates = &v
 			}
 			if body.IntegrationId == "" {
 				return fmt.Errorf("--integration-id is required (or supply it via --file)")

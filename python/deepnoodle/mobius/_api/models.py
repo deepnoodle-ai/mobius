@@ -710,6 +710,25 @@ class SessionCompactionProgress(BaseModel):
     )
 
 
+class SessionChatAppConversation(BaseModel):
+    """
+    The chat-app conversation behind a session: which app, and the channel, group, or direct message the people in it are talking in.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    provider: str = Field(..., description='The chat app, such as `slack`.')
+    name: str | None = Field(
+        None,
+        description="The conversation's name as the app last reported it, such as the Slack channel name. Absent for a direct message or when the app did not report one.",
+    )
+    kind: str | None = Field(
+        None,
+        description='The kind of conversation as the app reported it, such as `channel`, `group`, or `dm`.',
+    )
+
+
 class Session(BaseModel):
     """
     Durable conversation transcript owned by an agent.
@@ -779,6 +798,10 @@ class Session(BaseModel):
     compaction: SessionCompactionProgress | None = Field(
         None,
         description='Live compaction progress plus the threshold that triggers the next pass. Returned on the single-session read; absent from list entries.',
+    )
+    chat_app: SessionChatAppConversation | None = Field(
+        None,
+        description='The chat-app conversation this session answers, when it came from Slack, Teams, or Telegram. Returned on the single-session read; absent from list entries and from sessions that did not come from a chat app.',
     )
     message_count: int = Field(
         ...,
@@ -2177,6 +2200,10 @@ class ConnectionGrant(BaseModel):
     provider: str
     controlled_by_organization: bool
     represented_actor: str | None = None
+    identity_label: str | None = Field(
+        None,
+        description="The provider's short account identity, such as an email address. Presentation only.",
+    )
     can_manage: bool
 
 
@@ -2300,6 +2327,103 @@ class ConnectionController(BaseModel):
     )
     display_name: str | None = Field(
         None, description='Human controller display name, when available.'
+    )
+
+
+class AgentMessagingProvider(StrEnum):
+    """
+    Provider supported by built-in agent messaging: `slack`, `telegram`, `linear` (Linear agent sessions), or `microsoft_teams` (Microsoft Teams chats in one linked tenant). A binding's provider must equal its integration's provider.
+    """
+
+    slack = 'slack'
+    telegram = 'telegram'
+    linear = 'linear'
+    microsoft_teams = 'microsoft_teams'
+
+
+class AgentMessagingDMPolicy(StrEnum):
+    """
+    Direct-message access policy: `open`, `allowlist`, or `disabled`.
+    """
+
+    open = 'open'
+    allowlist = 'allowlist'
+    disabled = 'disabled'
+
+
+class AgentMessagingReplyMode(StrEnum):
+    """
+    Reply mode for built-in messaging; currently `auto`.
+    """
+
+    auto = 'auto'
+
+
+class AgentMessagingBinding(BaseModel):
+    """
+    Messaging provider account that an agent can answer from.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Messaging binding identifier.')
+    agent_id: str = Field(..., description='Agent this binding belongs to.')
+    provider: AgentMessagingProvider = Field(
+        ..., description='Messaging provider for this binding: `slack` or `telegram`.'
+    )
+    integration_id: str = Field(
+        ..., description='Connected integration account this binding applies to.'
+    )
+    enabled: bool = Field(
+        ..., description='Whether the agent can currently answer on this account.'
+    )
+    show_progress_updates: bool = Field(
+        ...,
+        description='Whether this Slack or Teams answering binding shows public progress. Defaults to false for new bindings.',
+    )
+    dms: bool = Field(..., description='Whether direct messages are accepted.')
+    mentions: bool = Field(
+        ..., description='Whether channel/group mentions activate the agent.'
+    )
+    all_messages: bool = Field(
+        ...,
+        description='Whether every message in the allowed conversations activates the agent.',
+    )
+    channels: list[str] = Field(
+        ...,
+        description='Optional provider conversation allowlist. Empty means any conversation on the integration.',
+    )
+    dm_policy: AgentMessagingDMPolicy = Field(
+        ...,
+        description='Who may direct-message this agent: `open`, `allowlist`, or `disabled`.',
+    )
+    sender_allow: list[str] = Field(
+        ..., description='Optional provider sender allowlist. Empty means any sender.'
+    )
+    reply_mode: AgentMessagingReplyMode = Field(
+        ..., description='How the agent replies to inbound provider messages.'
+    )
+    model_route: AgentModelRoute | None = Field(
+        None,
+        description='Optional model route override used for replies through this binding.',
+    )
+    compaction_policy: SessionCompactionPolicy | None = Field(
+        None,
+        description='Optional compaction policy applied to sessions created from this binding. Unset inherits the agent default.',
+    )
+    created_at: AwareDatetime = Field(..., description='Time the binding was created.')
+    updated_at: AwareDatetime = Field(
+        ..., description='Time the binding was last updated.'
+    )
+
+
+class AgentMessagingBindingListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[AgentMessagingBinding] = Field(
+        ..., description='Messaging bindings configured for this agent.'
     )
 
 
@@ -2639,7 +2763,7 @@ class OrgDeletion(BaseModel):
 
 class OAuthReturnOrigins(BaseModel):
     """
-    The organization's allowlist of exact HTTPS origins an embedded partner may name as an OAuth connect `return_url`. Origins are stored normalized (lowercase host, default ports stripped). An empty list disables embedded return for the organization.
+    The organization's allowlist of exact HTTPS origins an embedded partner may name as an OAuth connect `return_url`. Origins are stored normalized (lowercase host, default ports stripped). An empty list disables embedded return for the organization. Embedded return is currently disabled for every organization, so the list has no effect.
     """
 
     model_config = ConfigDict(
@@ -3409,89 +3533,6 @@ class UpdateMemoryContextPolicy(BaseModel):
     )
 
 
-class AgentMessagingDMPolicy(StrEnum):
-    """
-    Direct-message access policy: `open`, `allowlist`, or `disabled`.
-    """
-
-    open = 'open'
-    allowlist = 'allowlist'
-    disabled = 'disabled'
-
-
-class AgentMessagingReplyMode(StrEnum):
-    """
-    Reply mode for built-in messaging; currently `auto`.
-    """
-
-    auto = 'auto'
-
-
-class AgentMessagingProvider(StrEnum):
-    """
-    Provider supported by built-in agent messaging: `slack`, `telegram`, or `linear` (Linear agent sessions).
-    """
-
-    slack = 'slack'
-    telegram = 'telegram'
-    linear = 'linear'
-
-
-class AgentMessagingBinding(BaseModel):
-    """
-    Messaging provider account that an agent can answer from.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Messaging binding identifier.')
-    agent_id: str = Field(..., description='Agent this binding belongs to.')
-    provider: AgentMessagingProvider = Field(
-        ..., description='Messaging provider for this binding: `slack` or `telegram`.'
-    )
-    integration_id: str = Field(
-        ..., description='Connected integration account this binding applies to.'
-    )
-    enabled: bool = Field(
-        ..., description='Whether the agent can currently answer on this account.'
-    )
-    dms: bool = Field(..., description='Whether direct messages are accepted.')
-    mentions: bool = Field(
-        ..., description='Whether channel/group mentions activate the agent.'
-    )
-    all_messages: bool = Field(
-        ...,
-        description='Whether every message in the allowed conversations activates the agent.',
-    )
-    channels: list[str] = Field(
-        ...,
-        description='Optional provider conversation allowlist. Empty means any conversation on the integration.',
-    )
-    dm_policy: AgentMessagingDMPolicy = Field(
-        ...,
-        description='Who may direct-message this agent: `open`, `allowlist`, or `disabled`.',
-    )
-    sender_allow: list[str] = Field(
-        ..., description='Optional provider sender allowlist. Empty means any sender.'
-    )
-    reply_mode: AgentMessagingReplyMode = Field(
-        ..., description='How the agent replies to inbound provider messages.'
-    )
-    model_route: AgentModelRoute | None = Field(
-        None,
-        description='Optional model route override used for replies through this binding.',
-    )
-    compaction_policy: SessionCompactionPolicy | None = Field(
-        None,
-        description='Optional compaction policy applied to sessions created from this binding. Unset inherits the agent default.',
-    )
-    created_at: AwareDatetime = Field(..., description='Time the binding was created.')
-    updated_at: AwareDatetime = Field(
-        ..., description='Time the binding was last updated.'
-    )
-
-
 class AgentMessagingBindingRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -3510,15 +3551,19 @@ class AgentMessagingBindingRequest(BaseModel):
         False,
         description='When enabling this binding, disable any other active agent binding for the same provider account.',
     )
+    show_progress_updates: bool | None = Field(
+        None,
+        description='Show public progress for Slack or Teams. Omitted preserves the stored preference; explicit false disables it. New bindings default to false.',
+    )
     dms: bool = Field(True, description='Respond to direct messages.')
     mentions: bool = Field(True, description='Respond when the agent is @-mentioned.')
     all_messages: bool = Field(
         False,
-        description='Respond to every message in bound channels, not just mentions.',
+        description='Respond to every message in bound channels, not just mentions. Must be false for microsoft_teams, where the agent answers in channels and group chats only when a person @mentions it.',
     )
     channels: list[str] | None = Field(
         None,
-        description='Channel IDs the binding is scoped to (empty means all channels).',
+        description='Channel and group IDs the binding is scoped to (empty means all). Direct messages ignore this list.',
     )
     dm_policy: AgentMessagingDMPolicy | None = Field(
         None,
@@ -3526,7 +3571,7 @@ class AgentMessagingBindingRequest(BaseModel):
     )
     sender_allow: list[str] | None = Field(
         None,
-        description='Sender IDs allowed to trigger the agent (empty means no allowlist).',
+        description='Sender IDs allowed to trigger the agent (empty means no allowlist). An enabled `telegram` binding requires at least one numeric Telegram user ID and refuses `*`.',
     )
     reply_mode: AgentMessagingReplyMode | None = Field(
         None, description='Reply behavior for provider messages; currently `auto`.'
@@ -3538,15 +3583,6 @@ class AgentMessagingBindingRequest(BaseModel):
     compaction_policy: SessionCompactionPolicy | None = Field(
         None,
         description='Optional compaction policy applied to sessions created from this binding. Unset inherits the agent default.',
-    )
-
-
-class AgentMessagingBindingListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[AgentMessagingBinding] = Field(
-        ..., description='Messaging bindings configured for this agent.'
     )
 
 
@@ -4403,26 +4439,35 @@ class SessionEventProjection(BaseModel):
 
 class Kind13(StrEnum):
     """
-    The principal's kind, resolved from the principal record.
+    The principal's kind, resolved from the principal record. `external` is a person in a chat app, who is not a Mobius principal.
     """
 
     human = 'human'
     agent = 'agent'
     service = 'service'
     system = 'system'
+    external = 'external'
 
 
 class SessionMessageAuthor(BaseModel):
     """
-    The principal that wrote a message, resolved from the authenticated sender at read time so the transcript can render a name and avatar without a lookup per message. Never accepted on write.
+    The principal that wrote a message, resolved from the authenticated sender at read time so the transcript can render a name and avatar without a lookup per message. Never accepted on write. A message that arrived through a chat app has an `external` author: the person in that app, named as the app reported them.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    id: str = Field(..., description='Principal id of the author.')
+    id: str = Field(
+        ...,
+        description='Principal id of the author. For an `external` author, a stable id for that person in that chat app account; it is not a principal.',
+    )
     kind: Kind13 = Field(
-        ..., description="The principal's kind, resolved from the principal record."
+        ...,
+        description="The principal's kind, resolved from the principal record. `external` is a person in a chat app, who is not a Mobius principal.",
+    )
+    provider: str | None = Field(
+        None,
+        description='The chat app an `external` author wrote from, such as `slack`.',
     )
     display_name: str = Field(..., description='Single-line label for the author.')
     avatar_url: str | None = Field(
@@ -7919,7 +7964,6 @@ class Routine(BaseModel):
         description='Absent on an event routine, which has no next fire to predict.',
     )
     last_fire_at: AwareDatetime | None = None
-    occurrence_count: int
     completed_at: AwareDatetime | None = None
     per_occurrence_ceiling_milli: int
     daily_ceiling_milli: int

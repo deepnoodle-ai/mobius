@@ -264,6 +264,7 @@ export type SaveAgentMemoryEntryRequest = components["schemas"]["SaveAgentMemory
 export type SearchRowsRequest = components["schemas"]["SearchRowsRequest"];
 export type Session = components["schemas"]["Session"];
 export type SessionAttachmentResponse = components["schemas"]["SessionAttachmentResponse"];
+export type SessionChatAppConversation = components["schemas"]["SessionChatAppConversation"];
 export type SessionCompactionBoundary = components["schemas"]["SessionCompactionBoundary"];
 export type SessionCompactionPolicy = components["schemas"]["SessionCompactionPolicy"];
 export type SessionCompactionProgress = components["schemas"]["SessionCompactionProgress"];
