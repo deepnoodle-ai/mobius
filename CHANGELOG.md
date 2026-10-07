@@ -10,6 +10,22 @@ the minor version.
 
 ## [Unreleased]
 
+### Added
+
+- `ListCatalogActions` takes an optional `agent_id`
+  (`catalog list-actions --agent-id`) to judge readiness from that agent's
+  account grants, including team-managed ones. Go's `Client.ListActionCatalog`
+  is unchanged ([#230](https://github.com/deepnoodle-ai/mobius/pull/230)).
+- Agent messaging supports Microsoft Teams (`microsoft_teams`), and Slack and
+  Teams bindings gain `show_progress_updates` (default false).
+- A session read returns `chat_app` with the Slack, Teams, or Telegram
+  conversation behind it, and integrations carry an `identity_label`.
+
+### Changed
+
+- Embedded OAuth return is disabled for every organization: connect requests
+  with `return_url` fail with `400 embedded_return_disabled`.
+
 ## [0.2.2] - 2026-10-04
 
 ### Fixed
