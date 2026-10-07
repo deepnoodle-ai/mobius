@@ -3183,6 +3183,15 @@ export interface components {
             /** @description Estimated-token size at which this session compacts automatically, resolved from its policy and model. Absent when the session does not compact automatically (`manual`, `disabled`). */
             threshold_tokens?: number;
         };
+        /** @description The chat-app conversation behind a session: which app, and the channel, group, or direct message the people in it are talking in. */
+        SessionChatAppConversation: {
+            /** @description The chat app, such as `slack`. */
+            provider: string;
+            /** @description The conversation's name as the app last reported it, such as the Slack channel name. Absent for a direct message or when the app did not report one. */
+            name?: string;
+            /** @description The kind of conversation as the app reported it, such as `channel`, `group`, or `dm`. */
+            kind?: string;
+        };
         /** @description Durable conversation transcript owned by an agent. */
         Session: {
             /** @description Stable session identifier. */
@@ -3231,6 +3240,8 @@ export interface components {
             latest_compaction?: components["schemas"]["SessionCompactionBoundary"];
             /** @description Live compaction progress plus the threshold that triggers the next pass. Returned on the single-session read; absent from list entries. */
             compaction?: components["schemas"]["SessionCompactionProgress"];
+            /** @description The chat-app conversation this session answers, when it came from Slack, Teams, or Telegram. Returned on the single-session read; absent from list entries and from sessions that did not come from a chat app. */
+            chat_app?: components["schemas"]["SessionChatAppConversation"];
             /** @description Non-decreasing transcript sequence high-water mark, including tombstoned rows and compaction summaries; not the number of live messages. */
             message_count: number;
             /** @description Lifetime fresh (uncached) input-token total for this session. Prompt-cache tokens are reported separately in `cache_read_input_total` and `cache_creation_input_total`. */
@@ -4333,6 +4344,8 @@ export interface components {
             provider: string;
             controlled_by_organization: boolean;
             represented_actor?: string;
+            /** @description The provider's short account identity, such as an email address. Presentation only. */
+            identity_label?: string;
             can_manage: boolean;
         };
         ConnectionGrantListResponse: {
@@ -4478,6 +4491,8 @@ export interface components {
             integration_id: string;
             /** @description Whether the agent can currently answer on this account. */
             enabled: boolean;
+            /** @description Whether this Slack or Teams answering binding shows public progress. Defaults to false for new bindings. */
+            show_progress_updates: boolean;
             /** @description Whether direct messages are accepted. */
             dms: boolean;
             /** @description Whether channel/group mentions activate the agent. */
@@ -5284,6 +5299,8 @@ export interface components {
              * @default false
              */
             replace_existing?: boolean;
+            /** @description Show public progress for Slack or Teams. Omitted preserves the stored preference; explicit false disables it. New bindings default to false. */
+            show_progress_updates?: boolean;
             /**
              * @description Respond to direct messages.
              * @default true
@@ -5888,15 +5905,17 @@ export interface components {
             /** @description Small provider-selected facts; never arbitrary payload fields. */
             attributes?: components["schemas"]["SessionEventProjectionAttribute"][];
         };
-        /** @description The principal that wrote a message, resolved from the authenticated sender at read time so the transcript can render a name and avatar without a lookup per message. Never accepted on write. */
+        /** @description The principal that wrote a message, resolved from the authenticated sender at read time so the transcript can render a name and avatar without a lookup per message. Never accepted on write. A message that arrived through a chat app has an `external` author: the person in that app, named as the app reported them. */
         SessionMessageAuthor: {
-            /** @description Principal id of the author. */
+            /** @description Principal id of the author. For an `external` author, a stable id for that person in that chat app account; it is not a principal. */
             id: string;
             /**
-             * @description The principal's kind, resolved from the principal record.
+             * @description The principal's kind, resolved from the principal record. `external` is a person in a chat app, who is not a Mobius principal.
              * @enum {string}
              */
-            kind: "human" | "agent" | "service" | "system";
+            kind: "human" | "agent" | "service" | "system" | "external";
+            /** @description The chat app an `external` author wrote from, such as `slack`. */
+            provider?: string;
             /** @description Single-line label for the author. */
             display_name: string;
             /** @description Avatar image, when the principal has one. */
@@ -7348,7 +7367,6 @@ export interface components {
             next_fire_at?: string;
             /** Format: date-time */
             last_fire_at?: string;
-            occurrence_count: number;
             /** Format: date-time */
             completed_at?: string;
             /** Format: int64 */
