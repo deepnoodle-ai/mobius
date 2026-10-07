@@ -338,6 +338,13 @@ func writeArtifactMultipart(writer *multipart.Writer, upload artifactUpload) err
 }
 
 func (c *Client) DownloadArtifactToFile(ctx context.Context, artifactID, path string, maxBytes int64) (*ArtifactDownload, error) {
+	return c.DownloadArtifactToFileWithLease(ctx, artifactID, path, maxBytes, "")
+}
+
+// DownloadArtifactToFileWithLease downloads on an active job lease, which lets
+// a session workspace worker read the file its download job names with the
+// conversation person's access. An empty lease uses only the client's key.
+func (c *Client) DownloadArtifactToFileWithLease(ctx context.Context, artifactID, path string, maxBytes int64, leaseToken string) (*ArtifactDownload, error) {
 	if c == nil {
 		return nil, fmt.Errorf("mobius: nil client")
 	}
@@ -357,6 +364,9 @@ func (c *Client) DownloadArtifactToFile(ctx context.Context, artifactID, path st
 	}
 	if c.apiKey != "" {
 		req.Header.Set("Authorization", "Bearer "+c.apiKey)
+	}
+	if leaseToken = strings.TrimSpace(leaseToken); leaseToken != "" {
+		req.Header.Set("X-Mobius-Lease-Token", leaseToken)
 	}
 	// Artifact bodies can take longer than the general-purpose client's 60s
 	// whole-exchange timeout; the transfer client bounds only the phases that
