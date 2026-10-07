@@ -10,6 +10,8 @@ the minor version.
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-10-07
+
 ### Added
 
 - `ListCatalogActions` takes an optional `agent_id`
@@ -25,6 +27,13 @@ the minor version.
 
 - Embedded OAuth return is disabled for every organization: connect requests
   with `return_url` fail with `400 embedded_return_disabled`.
+
+### Fixed
+
+- A session workspace worker now sends the job lease when it downloads an
+  artifact, so a person's private uploads no longer 404 in the workspace. Go
+  adds `DownloadArtifactToFileWithLease`
+  ([#225](https://github.com/deepnoodle-ai/mobius/pull/225)).
 
 ## [0.2.2] - 2026-10-04
 
