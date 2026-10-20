@@ -544,6 +544,7 @@ func registerSessionsCommands(app *cli.App) {
 			cli.String("provider", "").Help("Filter messaging sessions by provider metadata, e.g. `slack` or `telegram`."),
 			cli.String("integration-id", "").Help("Filter to sessions created by this integration, e.g. agent sessions started from a connected provider."),
 			cli.String("since", "").Help("Only include sessions with activity after this timestamp. Accepts an RFC3339 timestamp (for example: 2026-07-22T12:00:00Z)."),
+			cli.Int("per-agent-limit", "").Help("Return at most this many sessions per agent, each agent's newest activity first, so one busy agent cannot crowd the others out of the page…"),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
@@ -589,6 +590,10 @@ func registerSessionsCommands(app *cli.App) {
 					return err
 				}
 				params.Since = &v
+			}
+			if ctx.IsSet("per-agent-limit") {
+				v := ctx.Int("per-agent-limit")
+				params.PerAgentLimit = &v
 			}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))

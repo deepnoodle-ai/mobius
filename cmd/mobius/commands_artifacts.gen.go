@@ -22,6 +22,7 @@ func registerArtifactsCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "artifact-id", Description: "ID of the artifact", Required: true}).
 		Flags(
 			cli.Int("ttl-seconds", "").Help("Requested signed URL TTL. The server caps this at the maximum supported artifact download TTL."),
+			cli.String("disposition", "").Help("How a browser should treat the bytes. `inline` lets the browser render them. `attachment` makes the browser save them under the artifact's…"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -35,6 +36,10 @@ func registerArtifactsCommands(app *cli.App) {
 			if ctx.IsSet("ttl-seconds") {
 				v := int64(ctx.Int("ttl-seconds"))
 				params.TtlSeconds = &v
+			}
+			if ctx.IsSet("disposition") {
+				v := api.CreateArtifactSignedUrlParamsDisposition(ctx.String("disposition"))
+				params.Disposition = &v
 			}
 			resp, err := client.CreateArtifactSignedUrlWithResponse(ctx.Context(), p0, params)
 			if err != nil {
@@ -65,6 +70,7 @@ func registerArtifactsCommands(app *cli.App) {
 		Description("List folders").
 		Flags(
 			cli.String("parent", "").Help("Folder whose children are listed. Omit for the root."),
+			cli.String("place", "").Help("Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read…"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -77,6 +83,10 @@ func registerArtifactsCommands(app *cli.App) {
 			if ctx.IsSet("parent") {
 				v := ctx.String("parent")
 				params.Parent = &v
+			}
+			if ctx.IsSet("place") {
+				v := api.ListArtifactFoldersParamsPlace(ctx.String("place"))
+				params.Place = &v
 			}
 			resp, err := client.ListArtifactFoldersWithResponse(ctx.Context(), params)
 			if err != nil {
@@ -140,12 +150,14 @@ func registerArtifactsCommands(app *cli.App) {
 	artifactsGrp.Command("list").
 		Description("List artifacts").
 		Flags(
-			cli.Bool("latest-only", "").Help("Return the latest accessible available version per root before filtering and pagination. The Library uses true; omitted preserves the full…"),
+			cli.Bool("latest-only", "").Help("Return the explicitly selected current version when accessible, otherwise the latest available and accessible version per root. Excludes…"),
+			cli.Bool("no-latest-only", "").Help("Turn off --latest-only, which the server applies by default."),
 			cli.String("mime", "").Help("Mime prefix filter (e.g. `image/`)"),
 			cli.String("q", "").Help("Case-insensitive substring match on the artifact name. Filenames are how people and agents refer to a file, so this is the search key for…"),
 			cli.String("folder", "").Help("Folder to list, as a relative path with no leading or trailing slash. A file's folder is the directory part of its `name`, so…"),
 			cli.Bool("recursive", "").Help("Include files in subfolders of `folder`. With `false`, only files whose folder is exactly `folder` are returned; at the root that means…"),
 			cli.Bool("no-recursive", "").Help("Turn off --recursive, which the server applies by default."),
+			cli.String("place", "").Help("Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read…"),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
@@ -157,7 +169,10 @@ func registerArtifactsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			params := &api.ListArtifactsParams{}
-			if ctx.IsSet("latest-only") {
+			if ctx.Bool("no-latest-only") {
+				v := false
+				params.LatestOnly = &v
+			} else if ctx.IsSet("latest-only") {
 				v := ctx.Bool("latest-only")
 				params.LatestOnly = &v
 			}
@@ -179,6 +194,10 @@ func registerArtifactsCommands(app *cli.App) {
 			} else if ctx.IsSet("recursive") {
 				v := ctx.Bool("recursive")
 				params.Recursive = &v
+			}
+			if ctx.IsSet("place") {
+				v := api.ListArtifactsParamsPlace(ctx.String("place"))
+				params.Place = &v
 			}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))

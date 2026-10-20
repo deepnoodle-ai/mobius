@@ -209,6 +209,7 @@ func (e ActionInvocationEntryDefinitionScope) Valid() bool {
 // Defines values for ActionInvocationEntryOwnerKind.
 const (
 	ActionInvocationEntryOwnerKindPerson ActionInvocationEntryOwnerKind = "person"
+	ActionInvocationEntryOwnerKindPlace  ActionInvocationEntryOwnerKind = "place"
 	ActionInvocationEntryOwnerKindTeam   ActionInvocationEntryOwnerKind = "team"
 )
 
@@ -216,6 +217,8 @@ const (
 func (e ActionInvocationEntryOwnerKind) Valid() bool {
 	switch e {
 	case ActionInvocationEntryOwnerKindPerson:
+		return true
+	case ActionInvocationEntryOwnerKindPlace:
 		return true
 	case ActionInvocationEntryOwnerKindTeam:
 		return true
@@ -2180,6 +2183,7 @@ func (e RoutineManagedBy) Valid() bool {
 // Defines values for RoutineOccurrenceStatus.
 const (
 	RoutineOccurrenceStatusAdmitted  RoutineOccurrenceStatus = "admitted"
+	RoutineOccurrenceStatusBlocked   RoutineOccurrenceStatus = "blocked"
 	RoutineOccurrenceStatusCompleted RoutineOccurrenceStatus = "completed"
 	RoutineOccurrenceStatusFailed    RoutineOccurrenceStatus = "failed"
 	RoutineOccurrenceStatusMissed    RoutineOccurrenceStatus = "missed"
@@ -2191,6 +2195,8 @@ const (
 func (e RoutineOccurrenceStatus) Valid() bool {
 	switch e {
 	case RoutineOccurrenceStatusAdmitted:
+		return true
+	case RoutineOccurrenceStatusBlocked:
 		return true
 	case RoutineOccurrenceStatusCompleted:
 		return true
@@ -2747,6 +2753,7 @@ func (e SessionNudgeStatus) Valid() bool {
 // Defines values for SessionOrigin.
 const (
 	SessionOriginApi         SessionOrigin = "api"
+	SessionOriginAssistant   SessionOrigin = "assistant"
 	SessionOriginInteraction SessionOrigin = "interaction"
 	SessionOriginManual      SessionOrigin = "manual"
 	SessionOriginRoutine     SessionOrigin = "routine"
@@ -2756,6 +2763,8 @@ const (
 func (e SessionOrigin) Valid() bool {
 	switch e {
 	case SessionOriginApi:
+		return true
+	case SessionOriginAssistant:
 		return true
 	case SessionOriginInteraction:
 		return true
@@ -2995,13 +3004,16 @@ func (e StreamEndFrameEventType) Valid() bool {
 
 // Defines values for StreamEndFrameReason.
 const (
-	StreamEndFrameReasonIdle   StreamEndFrameReason = "idle"
-	StreamEndFrameReasonRotate StreamEndFrameReason = "rotate"
+	StreamEndFrameReasonAccessEnded StreamEndFrameReason = "access_ended"
+	StreamEndFrameReasonIdle        StreamEndFrameReason = "idle"
+	StreamEndFrameReasonRotate      StreamEndFrameReason = "rotate"
 )
 
 // Valid indicates whether the value is a known member of the StreamEndFrameReason enum.
 func (e StreamEndFrameReason) Valid() bool {
 	switch e {
+	case StreamEndFrameReasonAccessEnded:
+		return true
 	case StreamEndFrameReasonIdle:
 		return true
 	case StreamEndFrameReasonRotate:
@@ -3482,6 +3494,24 @@ func (e WorkerSocketWorkerDrainingFrameType) Valid() bool {
 	}
 }
 
+// Defines values for LibraryPlaceParam.
+const (
+	LibraryPlaceParamCompany  LibraryPlaceParam = "company"
+	LibraryPlaceParamPersonal LibraryPlaceParam = "personal"
+)
+
+// Valid indicates whether the value is a known member of the LibraryPlaceParam enum.
+func (e LibraryPlaceParam) Valid() bool {
+	switch e {
+	case LibraryPlaceParamCompany:
+		return true
+	case LibraryPlaceParamPersonal:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for OrderParam.
 const (
 	OrderParamAsc  OrderParam = "asc"
@@ -3512,6 +3542,60 @@ func (e ListActionInvocationsParamsDefinitionScope) Valid() bool {
 	case ListActionInvocationsParamsDefinitionScopeCustom:
 		return true
 	case ListActionInvocationsParamsDefinitionScopePlatform:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListArtifactFoldersParamsPlace.
+const (
+	ListArtifactFoldersParamsPlaceCompany  ListArtifactFoldersParamsPlace = "company"
+	ListArtifactFoldersParamsPlacePersonal ListArtifactFoldersParamsPlace = "personal"
+)
+
+// Valid indicates whether the value is a known member of the ListArtifactFoldersParamsPlace enum.
+func (e ListArtifactFoldersParamsPlace) Valid() bool {
+	switch e {
+	case ListArtifactFoldersParamsPlaceCompany:
+		return true
+	case ListArtifactFoldersParamsPlacePersonal:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListArtifactsParamsPlace.
+const (
+	ListArtifactsParamsPlaceCompany  ListArtifactsParamsPlace = "company"
+	ListArtifactsParamsPlacePersonal ListArtifactsParamsPlace = "personal"
+)
+
+// Valid indicates whether the value is a known member of the ListArtifactsParamsPlace enum.
+func (e ListArtifactsParamsPlace) Valid() bool {
+	switch e {
+	case ListArtifactsParamsPlaceCompany:
+		return true
+	case ListArtifactsParamsPlacePersonal:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateArtifactSignedUrlParamsDisposition.
+const (
+	CreateArtifactSignedUrlParamsDispositionAttachment CreateArtifactSignedUrlParamsDisposition = "attachment"
+	CreateArtifactSignedUrlParamsDispositionInline     CreateArtifactSignedUrlParamsDisposition = "inline"
+)
+
+// Valid indicates whether the value is a known member of the CreateArtifactSignedUrlParamsDisposition enum.
+func (e CreateArtifactSignedUrlParamsDisposition) Valid() bool {
+	switch e {
+	case CreateArtifactSignedUrlParamsDispositionAttachment:
+		return true
+	case CreateArtifactSignedUrlParamsDispositionInline:
 		return true
 	default:
 		return false
@@ -3575,6 +3659,7 @@ func (e ListRoutinesParamsAttention) Valid() bool {
 // Defines values for ListRoutineOccurrencesParamsStatus.
 const (
 	ListRoutineOccurrencesParamsStatusAdmitted  ListRoutineOccurrencesParamsStatus = "admitted"
+	ListRoutineOccurrencesParamsStatusBlocked   ListRoutineOccurrencesParamsStatus = "blocked"
 	ListRoutineOccurrencesParamsStatusCompleted ListRoutineOccurrencesParamsStatus = "completed"
 	ListRoutineOccurrencesParamsStatusFailed    ListRoutineOccurrencesParamsStatus = "failed"
 	ListRoutineOccurrencesParamsStatusMissed    ListRoutineOccurrencesParamsStatus = "missed"
@@ -3586,6 +3671,8 @@ const (
 func (e ListRoutineOccurrencesParamsStatus) Valid() bool {
 	switch e {
 	case ListRoutineOccurrencesParamsStatusAdmitted:
+		return true
+	case ListRoutineOccurrencesParamsStatusBlocked:
 		return true
 	case ListRoutineOccurrencesParamsStatusCompleted:
 		return true
@@ -3992,6 +4079,9 @@ type ActionInvocationEntry struct {
 	// ChannelExchangeId Channel exchange correlated with this invocation, when applicable.
 	ChannelExchangeId *string `json:"channel_exchange_id,omitempty"`
 
+	// ConnectionId Connected account the call was dispatched on, when it used one.
+	ConnectionId *string `json:"connection_id,omitempty"`
+
 	// CorrelationId Request or dispatch identity that correlated the invocation.
 	CorrelationId *string `json:"correlation_id,omitempty"`
 
@@ -4004,7 +4094,7 @@ type ActionInvocationEntry struct {
 	// EnvironmentId Environment that executed this invocation, if environment-backed.
 	EnvironmentId *string `json:"environment_id,omitempty"`
 
-	// ErrorMessage Human-readable error detail when status is "failed".
+	// ErrorMessage Human-readable error detail when status is "failed". Withheld, like `parameters`, when `parameters_redacted` is set.
 	ErrorMessage *string `json:"error_message,omitempty"`
 
 	// ErrorType Machine-readable error classification when status is "failed".
@@ -4012,6 +4102,9 @@ type ActionInvocationEntry struct {
 
 	// FinishedAt Timestamp when this invocation completed.
 	FinishedAt time.Time `json:"finished_at"`
+
+	// GrantId Grant that admitted the call to the account. Absent when a person used their own account directly.
+	GrantId *string `json:"grant_id,omitempty"`
 
 	// HttpStatus Receiver HTTP status for a completed delivery attempt.
 	HttpStatus *int `json:"http_status,omitempty"`
@@ -4031,13 +4124,13 @@ type ActionInvocationEntry struct {
 	// OwnerId Principal that holds custody when `owner_kind` is `person`.
 	OwnerId *string `json:"owner_id,omitempty"`
 
-	// OwnerKind Custody of the work this invocation belongs to: the session owner when it ran in a session, else the agent owner, else the human actor.
+	// OwnerKind Custody of the work this invocation belongs to: the session owner when it ran in a session, else the agent owner, else the human actor. `place` is a chat in a chat app: only administrators see these records, and only the action name, times, and status.
 	OwnerKind *ActionInvocationEntryOwnerKind `json:"owner_kind,omitempty"`
 
 	// Parameters Input parameters passed to the action, with credential-like keys redacted. Absent when `parameters_redacted` is true.
 	Parameters *map[string]interface{} `json:"parameters,omitempty"`
 
-	// ParametersRedacted True when `parameters` were withheld because the record is private to someone else and the caller is reading it as an administrator.
+	// ParametersRedacted True when `parameters` were withheld because the record is private to someone else, or belongs to a chat place, and the caller is reading it as an administrator.
 	ParametersRedacted *bool `json:"parameters_redacted,omitempty"`
 
 	// RetryCount Number of retry attempts before this terminal status was reached.
@@ -4077,7 +4170,7 @@ type ActionInvocationEntryActorPrincipalType string
 // ActionInvocationEntryDefinitionScope Scope that owned the selected action definition.
 type ActionInvocationEntryDefinitionScope string
 
-// ActionInvocationEntryOwnerKind Custody of the work this invocation belongs to: the session owner when it ran in a session, else the agent owner, else the human actor.
+// ActionInvocationEntryOwnerKind Custody of the work this invocation belongs to: the session owner when it ran in a session, else the agent owner, else the human actor. `place` is a chat in a chat app: only administrators see these records, and only the action name, times, and status.
 type ActionInvocationEntryOwnerKind string
 
 // ActionInvocationEntryVisibility Who may read the record's content, following the owning session or agent.
@@ -4695,7 +4788,7 @@ type AgentTurn struct {
 	// UpdatedAt Time the turn was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
 
-	// Usage Aggregate token accounting for one completed turn, summed over every LLM call the turn made. It is a usage report, not a bill — see the billing usage events for charged amounts.
+	// Usage Aggregate token accounting for one terminal turn, summed over every LLM call the turn made, across every segment of a resumed turn. On the turn resource, a failed turn reports the calls that finished before it failed; `turn.failed` carries no usage. It is a usage report, not a bill — see the billing usage events for charged amounts.
 	Usage *AgentTurnUsage `json:"usage,omitempty"`
 }
 
@@ -4726,7 +4819,7 @@ type AgentTurnOutputSource string
 // AgentTurnStatus Agent turn lifecycle status: `queued`, `running`, `waiting`, `completed`, `failed`, or `cancelled`.
 type AgentTurnStatus string
 
-// AgentTurnUsage Aggregate token accounting for one completed turn, summed over every LLM call the turn made. It is a usage report, not a bill — see the billing usage events for charged amounts.
+// AgentTurnUsage Aggregate token accounting for one terminal turn, summed over every LLM call the turn made, across every segment of a resumed turn. On the turn resource, a failed turn reports the calls that finished before it failed; `turn.failed` carries no usage. It is a usage report, not a bill — see the billing usage events for charged amounts.
 type AgentTurnUsage struct {
 	// CacheCreationInputTokens Prompt tokens written into the provider's prompt cache. Omitted when zero.
 	CacheCreationInputTokens *int `json:"cache_creation_input_tokens,omitempty"`
@@ -4744,7 +4837,10 @@ type AgentTurnUsage struct {
 	OutputTokens *int `json:"output_tokens,omitempty"`
 
 	// ReasoningTokens Hidden reasoning tokens billed as output but absent from the visible reply. Omitted when zero or unreported by the provider.
-	ReasoningTokens      *int                   `json:"reasoning_tokens,omitempty"`
+	ReasoningTokens *int `json:"reasoning_tokens,omitempty"`
+
+	// TotalTokens Total processed tokens across the turn: fresh (uncached) input + cache read + cache creation + output.
+	TotalTokens          *int                   `json:"total_tokens,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
@@ -4889,7 +4985,7 @@ type ApplyBlueprintRequest struct {
 	Resources BlueprintResources `json:"resources"`
 }
 
-// Artifact Stored file or generated artifact metadata. Lineage fields are included by artifact-versions, latest_only=true listings, and uploads declaring previous_artifact_id. Ordinary calls omit the new fields for existing SDKs with strict response decoders.
+// Artifact Stored file or generated artifact metadata. Lineage fields are included by artifact-versions, explicit latest_only=true listings, and uploads declaring previous_artifact_id. Ordinary calls omit the new fields for existing SDKs with strict response decoders.
 type Artifact struct {
 	// Container The agent that contains this resource and may further narrow who can reach it.
 	Container *ResourceContainer `json:"container,omitempty"`
@@ -5760,7 +5856,7 @@ type CreateActionRequest struct {
 
 // CreateAgentRequest defines model for CreateAgentRequest.
 type CreateAgentRequest struct {
-	// ActionSelectors The agent's action selection. Omit for an agent with no selected catalog actions.
+	// ActionSelectors The agent's action selection. Omit to select every Mobius action and every Firecrawl action. Send an empty list for an agent with no selected catalog actions.
 	ActionSelectors *[]ActionSelector `json:"action_selectors,omitempty"`
 
 	// Color Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a hash-derived color.
@@ -7833,10 +7929,13 @@ type RoutineManagedBy string
 // RoutineOccurrence One run of a routine, and the durable record of it. Status, outcome, error, credits, and timing all live here, so a run whose transcript is gone is still a complete row.
 type RoutineOccurrence struct {
 	// CoalescedInto Occurrence ID retaining this event when skipped as coalesced.
-	CoalescedInto     *string `json:"coalesced_into,omitempty"`
-	CreditsSpentMilli int64   `json:"credits_spent_milli"`
-	ErrorCode         *string `json:"error_code,omitempty"`
-	ErrorMessage      *string `json:"error_message,omitempty"`
+	CoalescedInto *string `json:"coalesced_into,omitempty"`
+
+	// ConnectionBindings The accounts this run was cleared to use, as admission checked them. Absent before admission and for a run that uses no account.
+	ConnectionBindings *ConnectionBindings `json:"connection_bindings,omitempty"`
+	CreditsSpentMilli  int64               `json:"credits_spent_milli"`
+	ErrorCode          *string             `json:"error_code,omitempty"`
+	ErrorMessage       *string             `json:"error_message,omitempty"`
 
 	// EventSourceBinding The exact connection and grant pair whose event started this run. Immutable server-authored provenance, not action authority.
 	EventSourceBinding *ConnectionBinding `json:"event_source_binding,omitempty"`
@@ -7846,6 +7945,9 @@ type RoutineOccurrence struct {
 	Id                   string    `json:"id"`
 	IntakeAt             time.Time `json:"intake_at"`
 	LatenessMilliseconds int64     `json:"lateness_milliseconds"`
+
+	// NextAttemptAt When a pending run that already ran once will be tried again. Absent otherwise.
+	NextAttemptAt *time.Time `json:"next_attempt_at,omitempty"`
 
 	// Outcome A completed run's headline: one line saying what it did, derived from the run's own final message with markdown removed and length capped, falling back to the scheduled time when the run said nothing. Safe to render in a table cell as-is.
 	Outcome   *string `json:"outcome,omitempty"`
@@ -7859,8 +7961,10 @@ type RoutineOccurrence struct {
 	SessionId *string `json:"session_id,omitempty"`
 
 	// SourceEventId The source event that started this run. Present only when `trigger` is `event`; it is the row the integration events list shows for the delivery.
-	SourceEventId *string                 `json:"source_event_id,omitempty"`
-	Status        RoutineOccurrenceStatus `json:"status"`
+	SourceEventId *string `json:"source_event_id,omitempty"`
+
+	// Status `blocked` is a run that ended without doing its work: the assistant reported it (`error_code` `agent_reported`), or the conversation's files could not be opened (`workspace_unavailable`). `error_message` says why. A pending run with `next_attempt_at` is waiting to be tried again after an attempt that stopped.
+	Status RoutineOccurrenceStatus `json:"status"`
 
 	// ThreadKey Stable URL-safe key of the followed thread.
 	ThreadKey *string `json:"thread_key,omitempty"`
@@ -7882,7 +7986,7 @@ type RoutineOccurrence struct {
 	Unread *bool `json:"unread,omitempty"`
 }
 
-// RoutineOccurrenceStatus defines model for RoutineOccurrence.Status.
+// RoutineOccurrenceStatus `blocked` is a run that ended without doing its work: the assistant reported it (`error_code` `agent_reported`), or the conversation's files could not be opened (`workspace_unavailable`). `error_message` says why. A pending run with `next_attempt_at` is waiting to be tried again after an attempt that stopped.
 type RoutineOccurrenceStatus string
 
 // RoutineOccurrenceTrigger What put this run on the ledger: the routine's schedule, a principal asking for it now, or an integration event that matched the routine's event trigger. Every kind is bounded and recorded the same way. Always present — a row written before manual runs existed reads as `schedule`, which is what it was.
@@ -7927,9 +8031,14 @@ type RoutinePrincipalList struct {
 
 // RoutineProposal defines model for RoutineProposal.
 type RoutineProposal struct {
-	AgentId    string                 `json:"agent_id"`
-	ExpiresAt  time.Time              `json:"expires_at"`
-	Id         string                 `json:"id"`
+	AgentId string `json:"agent_id"`
+
+	// ApprovedPayload What the owner approved, edits included. Present once approved.
+	ApprovedPayload *map[string]interface{} `json:"approved_payload,omitempty"`
+	ExpiresAt       time.Time               `json:"expires_at"`
+	Id              string                  `json:"id"`
+
+	// Payload What the agent proposed.
 	Payload    map[string]interface{} `json:"payload"`
 	ProposedTo string                 `json:"proposed_to"`
 	RoutineId  *string                `json:"routine_id,omitempty"`
@@ -7939,6 +8048,28 @@ type RoutineProposal struct {
 
 // RoutineProposalStatus defines model for RoutineProposal.Status.
 type RoutineProposalStatus string
+
+// RoutineProposalApproval The owner's approval, with any changes made on the card. An omitted field keeps the proposal's value. Changing the schedule or a ceiling recomputes the 30-day maximum.
+type RoutineProposalApproval struct {
+	// ConfirmAudienceExpansion Confirm sharing existing and future routine results with the proposed named people.
+	ConfirmAudienceExpansion *bool `json:"confirm_audience_expansion,omitempty"`
+
+	// ConnectionBindings Connected accounts each run uses, replacing the proposed ones. An empty object uses none.
+	ConnectionBindings *ConnectionBindings `json:"connection_bindings,omitempty"`
+	DailyCeilingMilli  *int64              `json:"daily_ceiling_milli,omitempty"`
+
+	// FollowerPrincipalIds People to share the routine with, replacing the proposed list. An empty list shares it with nobody. Naming anyone requires confirm_audience_expansion.
+	FollowerPrincipalIds *[]string `json:"follower_principal_ids,omitempty"`
+	Instructions         *string   `json:"instructions,omitempty"`
+	Name                 *string   `json:"name,omitempty"`
+
+	// OutputFolder Library folder for the routine's files. An empty string means the top level of the Library.
+	OutputFolder              *string `json:"output_folder,omitempty"`
+	PerOccurrenceCeilingMilli *int64  `json:"per_occurrence_ceiling_milli,omitempty"`
+
+	// Schedule Exactly one of at, interval, or cron is required.
+	Schedule *RoutineSchedule `json:"schedule,omitempty"`
+}
 
 // RoutineRelationship The relationship a principal holds to a routine. `follower` is opt-in attention, `responsible` is the person the routine waits on, `manager` may change it. One principal may hold more than one.
 type RoutineRelationship string
@@ -7952,12 +8083,6 @@ type RoutineSchedule struct {
 	MaxOccurrences *int       `json:"max_occurrences,omitempty"`
 	StartsAt       *time.Time `json:"starts_at,omitempty"`
 	Timezone       *string    `json:"timezone,omitempty"`
-}
-
-// RoutineSharingConfirmation defines model for RoutineSharingConfirmation.
-type RoutineSharingConfirmation struct {
-	// ConfirmAudienceExpansion Confirm sharing existing and future routine results with the proposed named people.
-	ConfirmAudienceExpansion *bool `json:"confirm_audience_expansion,omitempty"`
 }
 
 // RoutineStatus defines model for RoutineStatus.
@@ -8118,7 +8243,7 @@ type Session struct {
 	//
 	// This is the poll-side counterpart to the `compaction.started` / `compaction.created` / `compaction.failed` stream events: those events are live-only, so a client that connects mid-pass reads this instead. On the single-session read the object is always present, so a client binds one shape — an idle session reports `in_progress: false` and nothing else but the threshold. List entries omit it entirely.
 	//
-	// Paired with `token_input_total` (or a client-side estimate over the transcript it already renders), `threshold_tokens` supports a context-capacity gauge rather than a spinner that appears without warning.
+	// Paired with a client-side estimate over the transcript it already renders, `threshold_tokens` supports a context-capacity gauge rather than a spinner that appears without warning. The session token totals are lifetime sums over every model call, not the current context size, so they do not fit that gauge.
 	Compaction *SessionCompactionProgress `json:"compaction,omitempty"`
 
 	// CompactionPolicy Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values.
@@ -8166,7 +8291,7 @@ type Session struct {
 	// ModelProvider Provider for the recorded `model`.
 	ModelProvider *string `json:"model_provider,omitempty"`
 
-	// Origin Surface that created the session: `manual`, `api`, `interaction`, or `routine`.
+	// Origin Surface that created the session: `manual`, `api`, `interaction`, `routine`, or `assistant` (one of a person's assistants asking another of theirs a question).
 	Origin SessionOrigin `json:"origin"`
 
 	// Owner The human or team responsible for this resource.
@@ -8220,7 +8345,7 @@ type Session struct {
 
 // SessionAttachmentResponse defines model for SessionAttachmentResponse.
 type SessionAttachmentResponse struct {
-	// Artifact Stored file or generated artifact metadata. Lineage fields are included by artifact-versions, latest_only=true listings, and uploads declaring previous_artifact_id. Ordinary calls omit the new fields for existing SDKs with strict response decoders.
+	// Artifact Stored file or generated artifact metadata. Lineage fields are included by artifact-versions, explicit latest_only=true listings, and uploads declaring previous_artifact_id. Ordinary calls omit the new fields for existing SDKs with strict response decoders.
 	Artifact Artifact `json:"artifact"`
 
 	// ContentBlock One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, `image`, and `document`, plus host-managed `reminder` blocks when caller runtime context is explicitly included. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers.
@@ -8273,7 +8398,7 @@ type SessionCompactionPolicyStrategy string
 //
 // This is the poll-side counterpart to the `compaction.started` / `compaction.created` / `compaction.failed` stream events: those events are live-only, so a client that connects mid-pass reads this instead. On the single-session read the object is always present, so a client binds one shape — an idle session reports `in_progress: false` and nothing else but the threshold. List entries omit it entirely.
 //
-// Paired with `token_input_total` (or a client-side estimate over the transcript it already renders), `threshold_tokens` supports a context-capacity gauge rather than a spinner that appears without warning.
+// Paired with a client-side estimate over the transcript it already renders, `threshold_tokens` supports a context-capacity gauge rather than a spinner that appears without warning. The session token totals are lifetime sums over every model call, not the current context size, so they do not fit that gauge.
 type SessionCompactionProgress struct {
 	// Deadline When the running pass gives up. Absent when no pass is running. A pass still marked in progress past this point has died.
 	Deadline *time.Time `json:"deadline,omitempty"`
@@ -8769,7 +8894,7 @@ type SessionNudgeTurn struct {
 	Status AgentTurnStatus `json:"status"`
 }
 
-// SessionOrigin Surface that created the session: `manual`, `api`, `interaction`, or `routine`.
+// SessionOrigin Surface that created the session: `manual`, `api`, `interaction`, `routine`, or `assistant` (one of a person's assistants asking another of theirs a question).
 type SessionOrigin string
 
 // SessionReminderBlock Host-managed runtime context returned only when the request explicitly includes caller-supplied context.
@@ -8872,6 +8997,9 @@ type SessionToolDisplay struct {
 	// ArtifactId The artifact the call created or changed, when there is one.
 	ArtifactId *string `json:"artifact_id,omitempty"`
 
+	// ArtifactRootId The first version of the document artifact_id belongs to, when the call made a document version. Revisions of one document share it.
+	ArtifactRootId *string `json:"artifact_root_id,omitempty"`
+
 	// Done Phrase once it succeeds, for example: Exported "Q3 update.pdf".
 	Done *string `json:"done,omitempty"`
 
@@ -8892,6 +9020,9 @@ type SessionToolDisplay struct {
 
 	// Running Phrase while the call runs, for example "Exporting a PDF…".
 	Running *string `json:"running,omitempty"`
+
+	// SessionId The private assistant exchange opened by this call, when there is one. Access is checked when opened.
+	SessionId *string `json:"session_id,omitempty"`
 
 	// Subject The one thing the call acted on, such as a file name. Never message bodies.
 	Subject *string `json:"subject,omitempty"`
@@ -9034,7 +9165,7 @@ type SessionTranscriptTurn struct {
 	Status    string    `json:"status"`
 	UpdatedAt time.Time `json:"updated_at"`
 
-	// Usage Aggregate token accounting for one completed turn, summed over every LLM call the turn made. It is a usage report, not a bill — see the billing usage events for charged amounts.
+	// Usage Aggregate token accounting for one terminal turn, summed over every LLM call the turn made, across every segment of a resumed turn. On the turn resource, a failed turn reports the calls that finished before it failed; `turn.failed` carries no usage. It is a usage report, not a bill — see the billing usage events for charged amounts.
 	Usage *AgentTurnUsage        `json:"usage,omitempty"`
 	Wait  *SessionTranscriptWait `json:"wait,omitempty"`
 }
@@ -9254,7 +9385,7 @@ type StartTurnRequest struct {
 // StartTurnRequestRole Role of the input message. A turn carries caller input, so only `user` is accepted; defaults to `user` when omitted.
 type StartTurnRequestRole string
 
-// StreamEndFrame Final envelope on a deliberate session-stream close. An idle close means no non-terminal turn remains; a rotate close asks the client to reconnect immediately with the same durable transcript cursor.
+// StreamEndFrame Final envelope on a deliberate session-stream close. An idle close means no non-terminal turn remains; a rotate close asks the client to reconnect immediately with the same durable transcript cursor. An access_ended close means the caller can no longer read the conversation, for example because its owner stopped sharing it; the client should not reconnect.
 type StreamEndFrame struct {
 	EventType StreamEndFrameEventType `json:"event_type"`
 	Reason    StreamEndFrameReason    `json:"reason"`
@@ -9501,7 +9632,7 @@ type TurnCancelledPayload struct {
 
 // TurnCompletedPayload Payload of a `turn.completed` event — the terminal idle marker carrying token usage. The assistant output is not duplicated here; it is delivered as `agent.message` content events when the transcript commits. The same usage is readable after the fact on the turn resource, so a consumer that missed the pulse never has to replay the stream for it.
 type TurnCompletedPayload struct {
-	// Usage Aggregate token accounting for one completed turn, summed over every LLM call the turn made. It is a usage report, not a bill — see the billing usage events for charged amounts.
+	// Usage Aggregate token accounting for one terminal turn, summed over every LLM call the turn made, across every segment of a resumed turn. On the turn resource, a failed turn reports the calls that finished before it failed; `turn.failed` carries no usage. It is a usage report, not a bill — see the billing usage events for charged amounts.
 	Usage                *AgentTurnUsage        `json:"usage,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
@@ -9549,7 +9680,7 @@ type TurnUpsertFrame struct {
 	Status    string    `json:"status"`
 	UpdatedAt time.Time `json:"updated_at"`
 
-	// Usage Aggregate token accounting for one completed turn, summed over every LLM call the turn made. It is a usage report, not a bill — see the billing usage events for charged amounts.
+	// Usage Aggregate token accounting for one terminal turn, summed over every LLM call the turn made, across every segment of a resumed turn. On the turn resource, a failed turn reports the calls that finished before it failed; `turn.failed` carries no usage. It is a usage report, not a bill — see the billing usage events for charged amounts.
 	Usage *AgentTurnUsage        `json:"usage,omitempty"`
 	Wait  *SessionTranscriptWait `json:"wait,omitempty"`
 }
@@ -10194,6 +10325,9 @@ type IDParam = string
 // LastEventIDParam defines model for LastEventIDParam.
 type LastEventIDParam = int64
 
+// LibraryPlaceParam defines model for LibraryPlaceParam.
+type LibraryPlaceParam string
+
 // LimitParam defines model for LimitParam.
 type LimitParam = int
 
@@ -10304,6 +10438,9 @@ type ListActionInvocationsParams struct {
 	// CorrelationId Filter to the request or dispatch correlation identity.
 	CorrelationId *string `form:"correlation_id,omitempty" json:"correlation_id,omitempty"`
 
+	// ConnectionId Filter to calls dispatched on this connected account.
+	ConnectionId *string `form:"connection_id,omitempty" json:"connection_id,omitempty"`
+
 	// Status Filter by terminal status (e.g. "success", "failed").
 	Status *string `form:"status,omitempty" json:"status,omitempty"`
 }
@@ -10405,11 +10542,17 @@ type ListAPIKeysParams struct {
 type ListArtifactFoldersParams struct {
 	// Parent Folder whose children are listed. Omit for the root.
 	Parent *string `form:"parent,omitempty" json:"parent,omitempty"`
+
+	// Place Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read. `personal` is the caller's own files, which only the caller can read. Omit it to list every section the caller can read.
+	Place *ListArtifactFoldersParamsPlace `form:"place,omitempty" json:"place,omitempty"`
 }
+
+// ListArtifactFoldersParamsPlace defines parameters for ListArtifactFolders.
+type ListArtifactFoldersParamsPlace string
 
 // ListArtifactsParams defines parameters for ListArtifacts.
 type ListArtifactsParams struct {
-	// LatestOnly Return the latest accessible available version per root before filtering and pagination. The Library uses true; omitted preserves the full listing.
+	// LatestOnly Return the explicitly selected current version when accessible, otherwise the latest available and accessible version per root. Excludes trashed files. Apply before name/MIME filters and pagination. This is the default, and what the Library shows. Only an explicit `true` adds the lineage fields (`root_id`, `previous_id`, `version`) to each item. `false` returns every available version of every file, including superseded versions and files in the trash.
 	LatestOnly *bool `form:"latest_only,omitempty" json:"latest_only,omitempty"`
 
 	// Mime Mime prefix filter (e.g. `image/`)
@@ -10424,12 +10567,18 @@ type ListArtifactsParams struct {
 	// Recursive Include files in subfolders of `folder`. With `false`, only files whose folder is exactly `folder` are returned; at the root that means files whose name carries no folder at all.
 	Recursive *bool `form:"recursive,omitempty" json:"recursive,omitempty"`
 
+	// Place Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read. `personal` is the caller's own files, which only the caller can read. Omit it to list every section the caller can read.
+	Place *ListArtifactsParamsPlace `form:"place,omitempty" json:"place,omitempty"`
+
 	// Cursor Cursor for pagination (opaque string from previous response)
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
 
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
+
+// ListArtifactsParamsPlace defines parameters for ListArtifacts.
+type ListArtifactsParamsPlace string
 
 // CreateArtifactParams defines parameters for CreateArtifact.
 type CreateArtifactParams struct {
@@ -10444,7 +10593,13 @@ type CreateArtifactParams struct {
 type CreateArtifactSignedUrlParams struct {
 	// TtlSeconds Requested signed URL TTL. The server caps this at the maximum supported artifact download TTL.
 	TtlSeconds *int64 `form:"ttl_seconds,omitempty" json:"ttl_seconds,omitempty"`
+
+	// Disposition How a browser should treat the bytes. `inline` lets the browser render them. `attachment` makes the browser save them under the artifact's file name.
+	Disposition *CreateArtifactSignedUrlParamsDisposition `form:"disposition,omitempty" json:"disposition,omitempty"`
 }
+
+// CreateArtifactSignedUrlParamsDisposition defines parameters for CreateArtifactSignedUrl.
+type CreateArtifactSignedUrlParamsDisposition string
 
 // ListBillingUsageEventsParams defines parameters for ListBillingUsageEvents.
 type ListBillingUsageEventsParams struct {
@@ -10468,6 +10623,9 @@ type ListBillingUsageEventsParams struct {
 
 	// ApiKeyId Filter to usage recorded for one API key.
 	ApiKeyId *string `form:"api_key_id,omitempty" json:"api_key_id,omitempty"`
+
+	// ChargedOnly Return only events that cost credits, leaving out zero-credit evidence such as accepted events and bring-your-own-key usage.
+	ChargedOnly *bool `form:"charged_only,omitempty" json:"charged_only,omitempty"`
 
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
@@ -10672,6 +10830,9 @@ type ListSessionsParams struct {
 
 	// Since Only include sessions with activity after this timestamp.
 	Since *time.Time `form:"since,omitempty" json:"since,omitempty"`
+
+	// PerAgentLimit Return at most this many sessions per agent, each agent's newest activity first, so one busy agent cannot crowd the others out of the page. `limit` still caps the total. Cannot be combined with `cursor`, `agent_id`, or `agent_name`.
+	PerAgentLimit *int `form:"per_agent_limit,omitempty" json:"per_agent_limit,omitempty"`
 
 	// Cursor Cursor for pagination (opaque string from previous response)
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
@@ -10952,7 +11113,7 @@ type CreateRoutineJSONRequestBody = RoutineCreateRequest
 type PreviewRoutineFollowKeyJSONRequestBody = RoutineFollowPreviewRequest
 
 // ApproveRoutineProposalJSONRequestBody defines body for ApproveRoutineProposal for application/json ContentType.
-type ApproveRoutineProposalJSONRequestBody = RoutineSharingConfirmation
+type ApproveRoutineProposalJSONRequestBody = RoutineProposalApproval
 
 // UpdateRoutineJSONRequestBody defines body for UpdateRoutine for application/json ContentType.
 type UpdateRoutineJSONRequestBody = RoutineUpdateRequest
@@ -11313,6 +11474,14 @@ func (a *AgentTurnUsage) UnmarshalJSON(b []byte) error {
 		delete(object, "reasoning_tokens")
 	}
 
+	if raw, found := object["total_tokens"]; found {
+		err = json.Unmarshal(raw, &a.TotalTokens)
+		if err != nil {
+			return fmt.Errorf("error reading 'total_tokens': %w", err)
+		}
+		delete(object, "total_tokens")
+	}
+
 	if len(object) != 0 {
 		a.AdditionalProperties = make(map[string]interface{})
 		for fieldName, fieldBuf := range object {
@@ -11371,6 +11540,13 @@ func (a AgentTurnUsage) MarshalJSON() ([]byte, error) {
 		object["reasoning_tokens"], err = json.Marshal(a.ReasoningTokens)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'reasoning_tokens': %w", err)
+		}
+	}
+
+	if a.TotalTokens != nil {
+		object["total_tokens"], err = json.Marshal(a.TotalTokens)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'total_tokens': %w", err)
 		}
 	}
 
@@ -16598,6 +16774,9 @@ type ClientInterface interface {
 	// GetRoutineOccurrence request
 	GetRoutineOccurrence(ctx context.Context, occurrenceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetRoutineProposal request
+	GetRoutineProposal(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ApproveRoutineProposalWithBody request with any body
 	ApproveRoutineProposalWithBody(ctx context.Context, proposalId RoutineProposalID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -18494,6 +18673,18 @@ func (c *Client) GetRoutineOccurrence(ctx context.Context, occurrenceId string, 
 	return c.Client.Do(req)
 }
 
+func (c *Client) GetRoutineProposal(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetRoutineProposalRequest(c.Server, proposalId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ApproveRoutineProposalWithBody(ctx context.Context, proposalId RoutineProposalID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewApproveRoutineProposalRequestWithBody(c.Server, proposalId, contentType, body)
 	if err != nil {
@@ -19821,6 +20012,18 @@ func NewListActionInvocationsRequest(server string, params *ListActionInvocation
 		if params.CorrelationId != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "correlation_id", *params.CorrelationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ConnectionId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "connection_id", *params.ConnectionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -21809,6 +22012,18 @@ func NewListArtifactFoldersRequest(server string, params *ListArtifactFoldersPar
 
 		}
 
+		if params.Place != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "place", *params.Place, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if encoded := queryValues.Encode(); encoded != "" {
 			rawQueryFragments = append(rawQueryFragments, encoded)
 		}
@@ -21976,6 +22191,18 @@ func NewListArtifactsRequest(server string, params *ListArtifactsParams) (*http.
 		if params.Recursive != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "recursive", *params.Recursive, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Place != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "place", *params.Place, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -22308,6 +22535,18 @@ func NewCreateArtifactSignedUrlRequest(server string, artifactId ArtifactIdParam
 
 		}
 
+		if params.Disposition != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "disposition", *params.Disposition, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if encoded := queryValues.Encode(); encoded != "" {
 			rawQueryFragments = append(rawQueryFragments, encoded)
 		}
@@ -22425,6 +22664,18 @@ func NewListBillingUsageEventsRequest(server string, params *ListBillingUsageEve
 		if params.ApiKeyId != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "api_key_id", *params.ApiKeyId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ChargedOnly != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "charged_only", *params.ChargedOnly, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -24873,6 +25124,40 @@ func NewGetRoutineOccurrenceRequest(server string, occurrenceId string) (*http.R
 	return req, nil
 }
 
+// NewGetRoutineProposalRequest generates requests for GetRoutineProposal
+func NewGetRoutineProposalRequest(server string, proposalId RoutineProposalID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "proposal_id", proposalId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/routines/proposals/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewApproveRoutineProposalRequest calls the generic ApproveRoutineProposal builder with application/json body
 func NewApproveRoutineProposalRequest(server string, proposalId RoutineProposalID, body ApproveRoutineProposalJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -25709,6 +25994,18 @@ func NewListSessionsRequest(server string, params *ListSessionsParams) (*http.Re
 		if params.Since != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "since", *params.Since, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PerAgentLimit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "per_agent_limit", *params.PerAgentLimit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -29016,6 +29313,9 @@ type ClientWithResponsesInterface interface {
 
 	// GetRoutineOccurrenceWithResponse request
 	GetRoutineOccurrenceWithResponse(ctx context.Context, occurrenceId string, reqEditors ...RequestEditorFn) (*GetRoutineOccurrenceResponse, error)
+
+	// GetRoutineProposalWithResponse request
+	GetRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*GetRoutineProposalResponse, error)
 
 	// ApproveRoutineProposalWithBodyWithResponse request with any body
 	ApproveRoutineProposalWithBodyWithResponse(ctx context.Context, proposalId RoutineProposalID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ApproveRoutineProposalResponse, error)
@@ -32704,6 +33004,38 @@ func (r GetRoutineOccurrenceResponse) ContentType() string {
 	return ""
 }
 
+type GetRoutineProposalResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RoutineProposal
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetRoutineProposalResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetRoutineProposalResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetRoutineProposalResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ApproveRoutineProposalResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -33239,6 +33571,7 @@ type ListSessionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *SessionListResponse
+	JSON400      *BadRequest
 	JSON401      *Unauthorized
 	JSON403      *Forbidden
 	JSON404      *NotFound
@@ -36366,6 +36699,15 @@ func (c *ClientWithResponses) GetRoutineOccurrenceWithResponse(ctx context.Conte
 		return nil, err
 	}
 	return ParseGetRoutineOccurrenceResponse(rsp)
+}
+
+// GetRoutineProposalWithResponse request returning *GetRoutineProposalResponse
+func (c *ClientWithResponses) GetRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*GetRoutineProposalResponse, error) {
+	rsp, err := c.GetRoutineProposal(ctx, proposalId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetRoutineProposalResponse(rsp)
 }
 
 // ApproveRoutineProposalWithBodyWithResponse request with arbitrary body returning *ApproveRoutineProposalResponse
@@ -42394,6 +42736,46 @@ func ParseGetRoutineOccurrenceResponse(rsp *http.Response) (*GetRoutineOccurrenc
 	return response, nil
 }
 
+// ParseGetRoutineProposalResponse parses an HTTP response from a GetRoutineProposalWithResponse call
+func ParseGetRoutineProposalResponse(rsp *http.Response) (*GetRoutineProposalResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetRoutineProposalResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RoutineProposal
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseApproveRoutineProposalResponse parses an HTTP response from a ApproveRoutineProposalWithResponse call
 func ParseApproveRoutineProposalResponse(rsp *http.Response) (*ApproveRoutineProposalResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -43187,6 +43569,13 @@ func ParseListSessionsResponse(rsp *http.Response) (*ListSessionsResponse, error
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized
