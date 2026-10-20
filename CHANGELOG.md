@@ -10,6 +10,41 @@ the minor version.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-20
+
+### Changed
+
+- Artifact listings default to `latest_only=true`: each file's current
+  version, without trashed files. Pass `latest_only=false` for every version.
+  Only an explicit `true` adds the lineage fields.
+- Approving a routine proposal takes `RoutineProposalApproval`, which replaces
+  `RoutineSharingConfirmation` and can carry the owner's edits (name,
+  instructions, schedule, ceilings, followers, connection bindings).
+- An administrator reading someone else's private action invocation no longer
+  sees `error_message`; `error_type` stays.
+
+### Added
+
+- `GetRoutineProposal` (`GET /v1/routines/proposals/{proposal_id}`) for the
+  proposed owner.
+- Routine runs gain a `blocked` status, `next_attempt_at`, and
+  `connection_bindings`.
+- Action invocations carry `connection_id` and `grant_id`, filter by
+  `connection_id`, and add a `place` owner kind for chat-app chats.
+- Library listings take `place` (`company` or `personal`); artifact downloads
+  take `disposition` (`inline` or `attachment`).
+- Session listings take `per_agent_limit`; sessions gain an `assistant`
+  source; the stream can close with `access_ended`.
+- Billing usage events take `charged_only`.
+- Turn usage adds `total_tokens` and is recorded on failed turns too.
+
+### Fixed
+
+- Brokered git calls in a session workspace (`environment.git.fetch`, the
+  PR-commit checkout, a second clone) no longer print a 403 from the global
+  credential helper before succeeding
+  ([#234](https://github.com/deepnoodle-ai/mobius/pull/234)).
+
 ## [0.2.3] - 2026-10-07
 
 ### Added
