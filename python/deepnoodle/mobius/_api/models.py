@@ -602,13 +602,14 @@ class AgentTurnStatus(StrEnum):
 
 class SessionOrigin(StrEnum):
     """
-    Surface that created the session: `manual`, `api`, `interaction`, or `routine`.
+    Surface that created the session: `manual`, `api`, `interaction`, `routine`, or `assistant` (one of a person's assistants asking another of theirs a question).
     """
 
     manual = 'manual'
     api = 'api'
     interaction = 'interaction'
     routine = 'routine'
+    assistant = 'assistant'
 
 
 class SessionScope(StrEnum):
@@ -676,7 +677,7 @@ class SessionCompactionProgress(BaseModel):
 
     This is the poll-side counterpart to the `compaction.started` / `compaction.created` / `compaction.failed` stream events: those events are live-only, so a client that connects mid-pass reads this instead. On the single-session read the object is always present, so a client binds one shape — an idle session reports `in_progress: false` and nothing else but the threshold. List entries omit it entirely.
 
-    Paired with `token_input_total` (or a client-side estimate over the transcript it already renders), `threshold_tokens` supports a context-capacity gauge rather than a spinner that appears without warning.
+    Paired with a client-side estimate over the transcript it already renders, `threshold_tokens` supports a context-capacity gauge rather than a spinner that appears without warning. The session token totals are lifetime sums over every model call, not the current context size, so they do not fit that gauge.
     """
 
     model_config = ConfigDict(
@@ -1445,11 +1446,12 @@ class ActorPrincipalType(StrEnum):
 
 class OwnerKind(StrEnum):
     """
-    Custody of the work this invocation belongs to: the session owner when it ran in a session, else the agent owner, else the human actor.
+    Custody of the work this invocation belongs to: the session owner when it ran in a session, else the agent owner, else the human actor. `place` is a chat in a chat app: only administrators see these records, and only the action name, times, and status.
     """
 
     person = 'person'
     team = 'team'
+    place = 'place'
 
 
 class Visibility(StrEnum):
@@ -1504,7 +1506,7 @@ class ActionInvocationEntry(BaseModel):
     )
     owner_kind: OwnerKind | None = Field(
         None,
-        description='Custody of the work this invocation belongs to: the session owner when it ran in a session, else the agent owner, else the human actor.',
+        description='Custody of the work this invocation belongs to: the session owner when it ran in a session, else the agent owner, else the human actor. `place` is a chat in a chat app: only administrators see these records, and only the action name, times, and status.',
     )
     owner_id: str | None = Field(
         None, description='Principal that holds custody when `owner_kind` is `person`.'
@@ -1515,7 +1517,7 @@ class ActionInvocationEntry(BaseModel):
     )
     parameters_redacted: bool | None = Field(
         None,
-        description='True when `parameters` were withheld because the record is private to someone else and the caller is reading it as an administrator.',
+        description='True when `parameters` were withheld because the record is private to someone else, or belongs to a chat place, and the caller is reading it as an administrator.',
     )
     channel_exchange_id: str | None = Field(
         None,
@@ -1538,6 +1540,14 @@ class ActionInvocationEntry(BaseModel):
     )
     correlation_id: str | None = Field(
         None, description='Request or dispatch identity that correlated the invocation.'
+    )
+    connection_id: str | None = Field(
+        None,
+        description='Connected account the call was dispatched on, when it used one.',
+    )
+    grant_id: str | None = Field(
+        None,
+        description='Grant that admitted the call to the account. Absent when a person used their own account directly.',
     )
     secret_version: int | None = Field(
         None, description='Signing-secret version used for the HTTP delivery.', ge=1
@@ -1578,7 +1588,8 @@ class ActionInvocationEntry(BaseModel):
         description='Machine-readable error classification when status is "failed".',
     )
     error_message: str | None = Field(
-        None, description='Human-readable error detail when status is "failed".'
+        None,
+        description='Human-readable error detail when status is "failed". Withheld, like `parameters`, when `parameters_redacted` is set.',
     )
 
 
@@ -3697,7 +3708,7 @@ class CreateAgentRequest(BaseModel):
     )
     action_selectors: list[ActionSelector] | None = Field(
         None,
-        description="The agent's action selection. Omit for an agent with no selected catalog actions.",
+        description="The agent's action selection. Omit to select every Mobius action and every Firecrawl action. Send an empty list for an agent with no selected catalog actions.",
     )
     system_prompt: str | None = Field(
         None,
@@ -4164,6 +4175,14 @@ class SessionToolDisplay(BaseModel):
     artifact_id: str | None = Field(
         None, description='The artifact the call created or changed, when there is one.'
     )
+    artifact_root_id: str | None = Field(
+        None,
+        description='The first version of the document artifact_id belongs to, when the call made a document version. Revisions of one document share it.',
+    )
+    session_id: str | None = Field(
+        None,
+        description='The private assistant exchange opened by this call, when there is one. Access is checked when opened.',
+    )
     integration: str | None = Field(
         None,
         description='The integration\'s name as people know it, shown before the label, for example "GitHub".',
@@ -4554,11 +4573,15 @@ class AgentTurnOutputSource(StrEnum):
 
 class AgentTurnUsage(BaseModel):
     """
-    Aggregate token accounting for one completed turn, summed over every LLM call the turn made. It is a usage report, not a bill — see the billing usage events for charged amounts.
+    Aggregate token accounting for one terminal turn, summed over every LLM call the turn made, across every segment of a resumed turn. On the turn resource, a failed turn reports the calls that finished before it failed; `turn.failed` carries no usage. It is a usage report, not a bill — see the billing usage events for charged amounts.
     """
 
     model_config = ConfigDict(
         extra='allow',
+    )
+    total_tokens: int | None = Field(
+        None,
+        description='Total processed tokens across the turn: fresh (uncached) input + cache read + cache creation + output.',
     )
     input_tokens: int | None = Field(
         None,
@@ -4739,11 +4762,12 @@ class EventType10(StrEnum):
 class Reason1(StrEnum):
     idle = 'idle'
     rotate = 'rotate'
+    access_ended = 'access_ended'
 
 
 class StreamEndFrame(BaseModel):
     """
-    Final envelope on a deliberate session-stream close. An idle close means no non-terminal turn remains; a rotate close asks the client to reconnect immediately with the same durable transcript cursor.
+    Final envelope on a deliberate session-stream close. An idle close means no non-terminal turn remains; a rotate close asks the client to reconnect immediately with the same durable transcript cursor. An access_ended close means the caller can no longer read the conversation, for example because its owner stopped sharing it; the client should not reconnect.
     """
 
     model_config = ConfigDict(
@@ -4814,7 +4838,10 @@ class TurnCompletedPayload(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
-    usage: AgentTurnUsage | None = None
+    usage: AgentTurnUsage | None = Field(
+        None,
+        description="Token usage of the completed turn. A failed turn emits `turn.failed`, which carries no usage; read a failed turn's usage from the turn resource.",
+    )
 
 
 class TurnFailedPayload(BaseModel):
@@ -5534,7 +5561,7 @@ class ArtifactDelivery(BaseModel):
 
 class Artifact(BaseModel):
     """
-    Stored file or generated artifact metadata. Lineage fields are included by artifact-versions, latest_only=true listings, and uploads declaring previous_artifact_id. Ordinary calls omit the new fields for existing SDKs with strict response decoders.
+    Stored file or generated artifact metadata. Lineage fields are included by artifact-versions, explicit latest_only=true listings, and uploads declaring previous_artifact_id. Ordinary calls omit the new fields for existing SDKs with strict response decoders.
     """
 
     model_config = ConfigDict(
@@ -5778,82 +5805,17 @@ class Trigger(StrEnum):
 
 
 class Status4(StrEnum):
+    """
+    `blocked` is a run that ended without doing its work: the assistant reported it (`error_code` `agent_reported`), or the conversation's files could not be opened (`workspace_unavailable`). `error_message` says why. A pending run with `next_attempt_at` is waiting to be tried again after an attempt that stopped.
+    """
+
     pending = 'pending'
     admitted = 'admitted'
     completed = 'completed'
     failed = 'failed'
+    blocked = 'blocked'
     skipped = 'skipped'
     missed = 'missed'
-
-
-class RoutineOccurrence(BaseModel):
-    """
-    One run of a routine, and the durable record of it. Status, outcome, error, credits, and timing all live here, so a run whose transcript is gone is still a complete row.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    thread_key: str | None = Field(
-        None, description='Stable URL-safe key of the followed thread.'
-    )
-    thread_title: str | None = Field(
-        None, description='Followed item title at event intake.'
-    )
-    coalesced_into: str | None = Field(
-        None,
-        description='Occurrence ID retaining this event when skipped as coalesced.',
-    )
-    id: str
-    routine_id: str
-    routine_name: str | None = Field(
-        None,
-        description="The routine's current name, carried on the row so a cross-routine ledger renders without joining against every routine in the organization.",
-    )
-    session_id: str | None = Field(
-        None,
-        description='The conversation this run happened in, minted at admission. Absent for a run skipped before admission, and for one whose session has since been deleted.',
-    )
-    scheduled_at: AwareDatetime
-    intake_at: AwareDatetime
-    lateness_milliseconds: int
-    trigger: Trigger = Field(
-        ...,
-        description="What put this run on the ledger: the routine's schedule, a principal asking for it now, or an integration event that matched the routine's event trigger. Every kind is bounded and recorded the same way. Always present — a row written before manual runs existed reads as `schedule`, which is what it was.",
-    )
-    triggered_by: str | None = Field(
-        None,
-        description="The principal who put this run on the ledger, named the same way the routine's changelog names an actor: a human or an agent, either of which can ask for a run through the API. Always present when `trigger` is `manual`, because a manual run is somebody's act and the record has to say whose. For a scheduled or event run it is the routine's own custodian, and so absent under team custody, which has no custodian to name.",
-    )
-    source_event_id: str | None = Field(
-        None,
-        description='The source event that started this run. Present only when `trigger` is `event`; it is the row the integration events list shows for the delivery.',
-    )
-    event_source_binding: ConnectionBinding | None = Field(
-        None,
-        description='The exact connection and grant pair whose event started this run. Immutable server-authored provenance, not action authority.',
-    )
-    event_type: str | None = Field(
-        None,
-        description='The concrete event type that arrived (`github.issues.opened`), not the pattern the routine subscribed to. Present only when `trigger` is `event`.',
-    )
-    status: Status4
-    outcome: str | None = Field(
-        None,
-        description="A completed run's headline: one line saying what it did, derived from the run's own final message with markdown removed and length capped, falling back to the scheduled time when the run said nothing. Safe to render in a table cell as-is.",
-    )
-    error_code: str | None = None
-    error_message: str | None = None
-    turn_id: str | None = None
-    credits_spent_milli: int
-    unread: bool | None = Field(
-        None,
-        description='Whether this run landed after the calling principal last opened its session. Computed per caller from their session read marks, never stored, and always false on a routine they do not follow.',
-    )
-    transcript_url: str | None = Field(
-        None,
-        description="Link to the run's transcript, which is the whole of session_id's conversation: one session holds exactly one occurrence. Absent whenever session_id is; render the row without it rather than as an error.",
-    )
 
 
 class Changes(BaseModel):
@@ -5917,15 +5879,6 @@ class RoutineChangeList(BaseModel):
     next_cursor: str | None = None
 
 
-class RoutineOccurrenceList(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[RoutineOccurrence]
-    has_more: bool
-    next_cursor: str | None = None
-
-
 class Status6(StrEnum):
     pending = 'pending'
     approved = 'approved'
@@ -5944,16 +5897,10 @@ class RoutineProposal(BaseModel):
     status: Status6
     routine_id: str | None = None
     expires_at: AwareDatetime
-    payload: dict[str, Any]
-
-
-class RoutineSharingConfirmation(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    confirm_audience_expansion: bool | None = Field(
+    payload: dict[str, Any] = Field(..., description='What the agent proposed.')
+    approved_payload: dict[str, Any] | None = Field(
         None,
-        description='Confirm sharing existing and future routine results with the proposed named people.',
+        description='What the owner approved, edits included. Present once approved.',
     )
 
 
@@ -7562,7 +7509,7 @@ class AgentTurn(BaseModel):
     )
     usage: AgentTurnUsage | None = Field(
         None,
-        description='Token usage recorded when the turn completed. Absent on turns that never reached the model and on turns that failed.',
+        description='Token usage recorded when the turn completed or failed. On a failed turn it covers the model calls that finished before the failure. Absent on turns that never reached the model, on turns that a cancel request or the reaper settled, and on a failed resumed turn whose suspended usage could not be read.',
     )
     effective_timeout_seconds: int | None = Field(
         None, description='Authoritative active-execution budget selected for the turn.'
@@ -7613,7 +7560,7 @@ class SessionTranscriptTurn(BaseModel):
     error_message: str | None = None
     usage: AgentTurnUsage | None = Field(
         None,
-        description='Token usage recorded when the turn completed. Identical to the `usage` on the turn resource, and identical on the bootstrap and cursored reads of this snapshot.',
+        description='Token usage recorded when the turn completed or failed. On a failed turn it covers the model calls that finished before the failure. Identical to the `usage` on the turn resource, and identical on the bootstrap and cursored reads of this snapshot.',
     )
     output: dict[str, Any] | None = Field(
         None,
@@ -7979,6 +7926,128 @@ class RoutineList(BaseModel):
     items: list[Routine]
     has_more: bool
     next_cursor: str | None = None
+
+
+class RoutineOccurrence(BaseModel):
+    """
+    One run of a routine, and the durable record of it. Status, outcome, error, credits, and timing all live here, so a run whose transcript is gone is still a complete row.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    thread_key: str | None = Field(
+        None, description='Stable URL-safe key of the followed thread.'
+    )
+    thread_title: str | None = Field(
+        None, description='Followed item title at event intake.'
+    )
+    coalesced_into: str | None = Field(
+        None,
+        description='Occurrence ID retaining this event when skipped as coalesced.',
+    )
+    id: str
+    routine_id: str
+    routine_name: str | None = Field(
+        None,
+        description="The routine's current name, carried on the row so a cross-routine ledger renders without joining against every routine in the organization.",
+    )
+    session_id: str | None = Field(
+        None,
+        description='The conversation this run happened in, minted at admission. Absent for a run skipped before admission, and for one whose session has since been deleted.',
+    )
+    scheduled_at: AwareDatetime
+    intake_at: AwareDatetime
+    lateness_milliseconds: int
+    trigger: Trigger = Field(
+        ...,
+        description="What put this run on the ledger: the routine's schedule, a principal asking for it now, or an integration event that matched the routine's event trigger. Every kind is bounded and recorded the same way. Always present — a row written before manual runs existed reads as `schedule`, which is what it was.",
+    )
+    triggered_by: str | None = Field(
+        None,
+        description="The principal who put this run on the ledger, named the same way the routine's changelog names an actor: a human or an agent, either of which can ask for a run through the API. Always present when `trigger` is `manual`, because a manual run is somebody's act and the record has to say whose. For a scheduled or event run it is the routine's own custodian, and so absent under team custody, which has no custodian to name.",
+    )
+    source_event_id: str | None = Field(
+        None,
+        description='The source event that started this run. Present only when `trigger` is `event`; it is the row the integration events list shows for the delivery.',
+    )
+    event_source_binding: ConnectionBinding | None = Field(
+        None,
+        description='The exact connection and grant pair whose event started this run. Immutable server-authored provenance, not action authority.',
+    )
+    connection_bindings: ConnectionBindings | None = Field(
+        None,
+        description='The accounts this run was cleared to use, as admission checked them. Absent before admission and for a run that uses no account.',
+    )
+    event_type: str | None = Field(
+        None,
+        description='The concrete event type that arrived (`github.issues.opened`), not the pattern the routine subscribed to. Present only when `trigger` is `event`.',
+    )
+    status: Status4 = Field(
+        ...,
+        description="`blocked` is a run that ended without doing its work: the assistant reported it (`error_code` `agent_reported`), or the conversation's files could not be opened (`workspace_unavailable`). `error_message` says why. A pending run with `next_attempt_at` is waiting to be tried again after an attempt that stopped.",
+    )
+    next_attempt_at: AwareDatetime | None = Field(
+        None,
+        description='When a pending run that already ran once will be tried again. Absent otherwise.',
+    )
+    outcome: str | None = Field(
+        None,
+        description="A completed run's headline: one line saying what it did, derived from the run's own final message with markdown removed and length capped, falling back to the scheduled time when the run said nothing. Safe to render in a table cell as-is.",
+    )
+    error_code: str | None = None
+    error_message: str | None = None
+    turn_id: str | None = None
+    credits_spent_milli: int
+    unread: bool | None = Field(
+        None,
+        description='Whether this run landed after the calling principal last opened its session. Computed per caller from their session read marks, never stored, and always false on a routine they do not follow.',
+    )
+    transcript_url: str | None = Field(
+        None,
+        description="Link to the run's transcript, which is the whole of session_id's conversation: one session holds exactly one occurrence. Absent whenever session_id is; render the row without it rather than as an error.",
+    )
+
+
+class RoutineOccurrenceList(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[RoutineOccurrence]
+    has_more: bool
+    next_cursor: str | None = None
+
+
+class RoutineProposalApproval(BaseModel):
+    """
+    The owner's approval, with any changes made on the card. An omitted field keeps the proposal's value. Changing the schedule or a ceiling recomputes the 30-day maximum.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    confirm_audience_expansion: bool | None = Field(
+        None,
+        description='Confirm sharing existing and future routine results with the proposed named people.',
+    )
+    name: str | None = None
+    instructions: str | None = Field(None, min_length=1)
+    schedule: RoutineSchedule | None = None
+    output_folder: str | None = Field(
+        None,
+        description="Library folder for the routine's files. An empty string means the top level of the Library.",
+        max_length=256,
+    )
+    per_occurrence_ceiling_milli: int | None = Field(None, ge=1)
+    daily_ceiling_milli: int | None = Field(None, ge=1)
+    follower_principal_ids: list[str] | None = Field(
+        None,
+        description='People to share the routine with, replacing the proposed list. An empty list shares it with nobody. Naming anyone requires confirm_audience_expansion.',
+    )
+    connection_bindings: ConnectionBindings | None = Field(
+        None,
+        description='Connected accounts each run uses, replacing the proposed ones. An empty object uses none.',
+    )
 
 
 class BlueprintResourceRef(BaseModel):

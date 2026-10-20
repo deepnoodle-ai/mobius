@@ -59,7 +59,7 @@ func registerAgentsCommands(app *cli.App) {
 	agentsGrp.Command("create").
 		Description("Create agent").
 		Flags(
-			cli.String("action-selectors", "").Help("The agent's action selection. Omit for an agent with no selected catalog actions. Accepts JSON, @file, or @-."),
+			cli.String("action-selectors", "").Help("The agent's action selection. Omit to select every Mobius action and every Firecrawl action. Send an empty list for an agent with no… Accepts JSON, @file, or @-."),
 			cli.String("color", "").Help("Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a hash-derived color."),
 			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Optional human-readable description."),

@@ -26,6 +26,7 @@ func registerBillingCommands(app *cli.App) {
 			cli.String("source-id", "").Help("Filter to one source identifier."),
 			cli.String("job-id", "").Help("Filter to usage attributed to one job."),
 			cli.String("api-key-id", "").Help("Filter to usage recorded for one API key."),
+			cli.Bool("charged-only", "").Help("Return only events that cost credits, leaving out zero-credit evidence such as accepted events and bring-your-own-key usage."),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 		).
@@ -70,6 +71,10 @@ func registerBillingCommands(app *cli.App) {
 			if ctx.IsSet("api-key-id") {
 				v := ctx.String("api-key-id")
 				params.ApiKeyId = &v
+			}
+			if ctx.IsSet("charged-only") {
+				v := ctx.Bool("charged-only")
+				params.ChargedOnly = &v
 			}
 			if ctx.IsSet("limit") {
 				v := api.LimitParam(ctx.Int("limit"))

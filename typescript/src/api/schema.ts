@@ -147,7 +147,7 @@ export interface paths {
          * List invocations
          * @description Lists recent action invocation audit records from agents, direct invocations, and job-backed execution.
          *
-         *     Each record belongs to the conversation or configuration it ran under. A caller sees their own records, team-owned records, and organization-visible records. An organization administrator sees every record, but `parameters` are withheld on a private record the administrator does not own and `parameters_redacted` is set.
+         *     Each record belongs to the conversation or configuration it ran under. A caller sees their own records, team-owned records, and organization-visible records. An organization administrator sees every record, but `parameters` and `error_message` are withheld on a private record the administrator does not own and `parameters_redacted` is set. `error_type` stays, so the failure is still legible.
          */
         get: operations["listActionInvocations"];
         put?: never;
@@ -2158,6 +2158,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/routines/proposals/{proposal_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a proposal as its proposed human owner
+         * @description Returns the proposal's current status, so a chat card can show whether it still needs approval. Anyone other than the proposed owner gets not found.
+         */
+        get: operations["getRoutineProposal"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/routines/proposals/{proposal_id}/approve": {
         parameters: {
             query?: never;
@@ -2169,7 +2189,7 @@ export interface paths {
         put?: never;
         /**
          * Approve a pending proposal as its proposed human owner
-         * @description Atomically materializes a pending proposal as a routine after human approval.
+         * @description Atomically materializes a pending proposal as a routine after human approval, with any changes the owner made on the card.
          */
         post: operations["approveRoutineProposal"];
         delete?: never;
@@ -2617,7 +2637,7 @@ export interface paths {
         put?: never;
         /**
          * Create artifact
-         * @description Accepts an org-authorized multipart file upload. Without a worker lease, the caller needs `mobius.resource.build`; the artifact is private to the authenticated principal and has no run or step lineage. A worker may instead supply `X-Mobius-Lease-Token` with `mobius.job.execute`; Mobius then derives run, step, job, worker session, attempt, and shared visibility from the active claim. Execution attribution is server-derived. A version requires edit access to the exact parent and inherits its custody and visibility. It is declared with previous_artifact_id (or the leased publish action source_artifact_id), which must name the file's latest version: naming an older one is refused with 409 rather than branching the file's history. A person's upload whose name is already taken by one of their files also becomes that file's next version; the response's `version` and `previous_id` say so.
+         * @description Accepts an org-authorized multipart file upload. Without a worker lease, the caller needs `mobius.resource.build`; the artifact is private to the authenticated principal and has no run or step lineage. A worker may instead supply `X-Mobius-Lease-Token` with `mobius.job.execute`; Mobius then derives run, step, job, worker session, attempt, and shared visibility from the active claim. Execution attribution is server-derived. A version requires edit access to the exact parent and inherits its custody and visibility. Direct uploads declare previous_artifact_id, while leased publish updates use the job's destination and expected version. The expected parent must name the file's latest version: naming an older one is refused with 409 rather than branching the file's history. A person's upload whose name is already taken by one of their files also becomes that file's next version; the response's `version` and `previous_id` say so.
          *
          *     DOCX, XLSX, and PPTX uploads may pass `convert=true` to start asynchronous Markdown extraction for later model delivery.
          */
@@ -3106,10 +3126,10 @@ export interface components {
          */
         AgentTurnStatus: "queued" | "running" | "waiting" | "completed" | "failed" | "cancelled";
         /**
-         * @description Surface that created the session: `manual`, `api`, `interaction`, or `routine`.
+         * @description Surface that created the session: `manual`, `api`, `interaction`, `routine`, or `assistant` (one of a person's assistants asking another of theirs a question).
          * @enum {string}
          */
-        SessionOrigin: "manual" | "api" | "interaction" | "routine";
+        SessionOrigin: "manual" | "api" | "interaction" | "routine" | "assistant";
         /**
          * @description Boundary used to resolve named sessions.
          * @enum {string}
@@ -3150,7 +3170,7 @@ export interface components {
          *
          *     This is the poll-side counterpart to the `compaction.started` / `compaction.created` / `compaction.failed` stream events: those events are live-only, so a client that connects mid-pass reads this instead. On the single-session read the object is always present, so a client binds one shape — an idle session reports `in_progress: false` and nothing else but the threshold. List entries omit it entirely.
          *
-         *     Paired with `token_input_total` (or a client-side estimate over the transcript it already renders), `threshold_tokens` supports a context-capacity gauge rather than a spinner that appears without warning.
+         *     Paired with a client-side estimate over the transcript it already renders, `threshold_tokens` supports a context-capacity gauge rather than a spinner that appears without warning. The session token totals are lifetime sums over every model call, not the current context size, so they do not fit that gauge.
          * @example {
          *       "in_progress": true,
          *       "started_at": "2026-08-02T15:04:05Z",
@@ -3883,10 +3903,10 @@ export interface components {
             /** @description Agent resource ID when the actor was an agent. */
             agent_id?: string;
             /**
-             * @description Custody of the work this invocation belongs to: the session owner when it ran in a session, else the agent owner, else the human actor.
+             * @description Custody of the work this invocation belongs to: the session owner when it ran in a session, else the agent owner, else the human actor. `place` is a chat in a chat app: only administrators see these records, and only the action name, times, and status.
              * @enum {string}
              */
-            owner_kind?: "person" | "team";
+            owner_kind?: "person" | "team" | "place";
             /** @description Principal that holds custody when `owner_kind` is `person`. */
             owner_id?: string;
             /**
@@ -3894,7 +3914,7 @@ export interface components {
              * @enum {string}
              */
             visibility?: "private" | "organization";
-            /** @description True when `parameters` were withheld because the record is private to someone else and the caller is reading it as an administrator. */
+            /** @description True when `parameters` were withheld because the record is private to someone else, or belongs to a chat place, and the caller is reading it as an administrator. */
             parameters_redacted?: boolean;
             /** @description Channel exchange correlated with this invocation, when applicable. */
             channel_exchange_id?: string;
@@ -3908,6 +3928,10 @@ export interface components {
             delivery_id?: string;
             /** @description Request or dispatch identity that correlated the invocation. */
             correlation_id?: string;
+            /** @description Connected account the call was dispatched on, when it used one. */
+            connection_id?: string;
+            /** @description Grant that admitted the call to the account. Absent when a person used their own account directly. */
+            grant_id?: string;
             /**
              * Format: int64
              * @description Signing-secret version used for the HTTP delivery.
@@ -3941,7 +3965,7 @@ export interface components {
             finished_at: string;
             /** @description Machine-readable error classification when status is "failed". */
             error_type?: string;
-            /** @description Human-readable error detail when status is "failed". */
+            /** @description Human-readable error detail when status is "failed". Withheld, like `parameters`, when `parameters_redacted` is set. */
             error_message?: string;
         };
         /** @description Paginated list of action invocation telemetry records. */
@@ -5433,7 +5457,7 @@ export interface components {
             model_route?: components["schemas"]["AgentModelRoute"];
             /** @description Omit to use the create-time default, `flat`. */
             tool_presentation?: components["schemas"]["AgentToolPresentation"];
-            /** @description The agent's action selection. Omit for an agent with no selected catalog actions. */
+            /** @description The agent's action selection. Omit to select every Mobius action and every Firecrawl action. Send an empty list for an agent with no selected catalog actions. */
             action_selectors?: components["schemas"]["ActionSelector"][];
             /** @description Custom system prompt for agents. Empty uses the generated default. */
             system_prompt?: string;
@@ -5706,6 +5730,10 @@ export interface components {
             subject?: string;
             /** @description The artifact the call created or changed, when there is one. */
             artifact_id?: string;
+            /** @description The first version of the document artifact_id belongs to, when the call made a document version. Revisions of one document share it. */
+            artifact_root_id?: string;
+            /** @description The private assistant exchange opened by this call, when there is one. Access is checked when opened. */
+            session_id?: string;
             /** @description The integration's name as people know it, shown before the label, for example "GitHub". */
             integration?: string;
             /** @description Provider key for the integration icon, for example "github". */
@@ -6079,7 +6107,7 @@ export interface components {
             };
             /** @description Where `output` came from: a `mobius_submit_output` submission (`tool`) or the schema-valid final-text fallback (`text`). */
             output_source?: components["schemas"]["AgentTurnOutputSource"];
-            /** @description Token usage recorded when the turn completed. Absent on turns that never reached the model and on turns that failed. */
+            /** @description Token usage recorded when the turn completed or failed. On a failed turn it covers the model calls that finished before the failure. Absent on turns that never reached the model, on turns that a cancel request or the reaper settled, and on a failed resumed turn whose suspended usage could not be read. */
             usage?: components["schemas"]["AgentTurnUsage"];
             /**
              * Format: int64
@@ -6108,8 +6136,9 @@ export interface components {
             deleted_at?: string | null;
         };
         /**
-         * @description Aggregate token accounting for one completed turn, summed over every LLM call the turn made. It is a usage report, not a bill — see the billing usage events for charged amounts.
+         * @description Aggregate token accounting for one terminal turn, summed over every LLM call the turn made, across every segment of a resumed turn. On the turn resource, a failed turn reports the calls that finished before it failed; `turn.failed` carries no usage. It is a usage report, not a bill — see the billing usage events for charged amounts.
          * @example {
+         *       "total_tokens": 22732,
          *       "input_tokens": 1840,
          *       "output_tokens": 412,
          *       "cache_read_input_tokens": 20480,
@@ -6117,6 +6146,8 @@ export interface components {
          *     }
          */
         AgentTurnUsage: {
+            /** @description Total processed tokens across the turn: fresh (uncached) input + cache read + cache creation + output. */
+            total_tokens?: number;
             /** @description Fresh (uncached) prompt tokens. Cache traffic is reported separately and is never folded in here. */
             input_tokens?: number;
             /** @description Tokens the model generated, including reasoning tokens. */
@@ -6195,7 +6226,7 @@ export interface components {
             seq?: number;
             error_type?: string;
             error_message?: string;
-            /** @description Token usage recorded when the turn completed. Identical to the `usage` on the turn resource, and identical on the bootstrap and cursored reads of this snapshot. */
+            /** @description Token usage recorded when the turn completed or failed. On a failed turn it covers the model calls that finished before the failure. Identical to the `usage` on the turn resource, and identical on the bootstrap and cursored reads of this snapshot. */
             usage?: components["schemas"]["AgentTurnUsage"];
             /** @description The validated structured output, delivered on the terminal `turn.upsert` frame. Present only on a `completed` turn that declared an output schema. */
             output?: {
@@ -6375,7 +6406,7 @@ export interface components {
             /** @description Machine-readable resync reason, e.g. `subscriber_overflow`. */
             reason: string;
         };
-        /** @description Final envelope on a deliberate session-stream close. An idle close means no non-terminal turn remains; a rotate close asks the client to reconnect immediately with the same durable transcript cursor. */
+        /** @description Final envelope on a deliberate session-stream close. An idle close means no non-terminal turn remains; a rotate close asks the client to reconnect immediately with the same durable transcript cursor. An access_ended close means the caller can no longer read the conversation, for example because its owner stopped sharing it; the client should not reconnect. */
         StreamEndFrame: {
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -6384,7 +6415,7 @@ export interface components {
             event_type: "stream.end";
             session_id: string;
             /** @enum {string} */
-            reason: "idle" | "rotate";
+            reason: "idle" | "rotate" | "access_ended";
         };
         /** @description Payload of a `user.message` content event: the durable encoding of one non-assistant transcript message — caller input, or a user-role message carrying tool results. It mirrors the transcript row exactly, carrying the message identity (`message_id` + `sequence`) and full content. Replaying these events reconstructs the same view as reading the messages API. */
         SessionUserMessagePayload: {
@@ -6488,6 +6519,7 @@ export interface components {
         };
         /** @description Payload of a `turn.completed` event — the terminal idle marker carrying token usage. The assistant output is not duplicated here; it is delivered as `agent.message` content events when the transcript commits. The same usage is readable after the fact on the turn resource, so a consumer that missed the pulse never has to replay the stream for it. */
         TurnCompletedPayload: {
+            /** @description Token usage of the completed turn. A failed turn emits `turn.failed`, which carries no usage; read a failed turn's usage from the turn resource. */
             usage?: components["schemas"]["AgentTurnUsage"];
         } & {
             [key: string]: unknown;
@@ -7060,7 +7092,7 @@ export interface components {
             delivered_at: string;
         };
         /**
-         * @description Stored file or generated artifact metadata. Lineage fields are included by artifact-versions, latest_only=true listings, and uploads declaring previous_artifact_id. Ordinary calls omit the new fields for existing SDKs with strict response decoders.
+         * @description Stored file or generated artifact metadata. Lineage fields are included by artifact-versions, explicit latest_only=true listings, and uploads declaring previous_artifact_id. Ordinary calls omit the new fields for existing SDKs with strict response decoders.
          * @example {
          *       "id": "art_2m7q9x5v3p8n4r6t",
          *       "owner": {
@@ -7415,10 +7447,20 @@ export interface components {
             source_event_id?: string;
             /** @description The exact connection and grant pair whose event started this run. Immutable server-authored provenance, not action authority. */
             event_source_binding?: components["schemas"]["ConnectionBinding"];
+            /** @description The accounts this run was cleared to use, as admission checked them. Absent before admission and for a run that uses no account. */
+            connection_bindings?: components["schemas"]["ConnectionBindings"];
             /** @description The concrete event type that arrived (`github.issues.opened`), not the pattern the routine subscribed to. Present only when `trigger` is `event`. */
             event_type?: string;
-            /** @enum {string} */
-            status: "pending" | "admitted" | "completed" | "failed" | "skipped" | "missed";
+            /**
+             * @description `blocked` is a run that ended without doing its work: the assistant reported it (`error_code` `agent_reported`), or the conversation's files could not be opened (`workspace_unavailable`). `error_message` says why. A pending run with `next_attempt_at` is waiting to be tried again after an attempt that stopped.
+             * @enum {string}
+             */
+            status: "pending" | "admitted" | "completed" | "failed" | "blocked" | "skipped" | "missed";
+            /**
+             * Format: date-time
+             * @description When a pending run that already ran once will be tried again. Absent otherwise.
+             */
+            next_attempt_at?: string;
             /** @description A completed run's headline: one line saying what it did, derived from the run's own final message with markdown removed and length capped, falling back to the scheduled time when the run said nothing. Safe to render in a table cell as-is. */
             outcome?: string;
             error_code?: string;
@@ -7481,13 +7523,32 @@ export interface components {
             routine_id?: string;
             /** Format: date-time */
             expires_at: string;
+            /** @description What the agent proposed. */
             payload: {
                 [key: string]: unknown;
             };
+            /** @description What the owner approved, edits included. Present once approved. */
+            approved_payload?: {
+                [key: string]: unknown;
+            };
         };
-        RoutineSharingConfirmation: {
+        /** @description The owner's approval, with any changes made on the card. An omitted field keeps the proposal's value. Changing the schedule or a ceiling recomputes the 30-day maximum. */
+        RoutineProposalApproval: {
             /** @description Confirm sharing existing and future routine results with the proposed named people. */
             confirm_audience_expansion?: boolean;
+            name?: string;
+            instructions?: string;
+            schedule?: components["schemas"]["RoutineSchedule"];
+            /** @description Library folder for the routine's files. An empty string means the top level of the Library. */
+            output_folder?: string;
+            /** Format: int64 */
+            per_occurrence_ceiling_milli?: number;
+            /** Format: int64 */
+            daily_ceiling_milli?: number;
+            /** @description People to share the routine with, replacing the proposed list. An empty list shares it with nobody. Naming anyone requires confirm_audience_expansion. */
+            follower_principal_ids?: string[];
+            /** @description Connected accounts each run uses, replacing the proposed ones. An empty object uses none. */
+            connection_bindings?: components["schemas"]["ConnectionBindings"];
         };
         RoutineThread: {
             /** @description Opaque stable URL-safe thread key. */
@@ -8563,6 +8624,8 @@ export interface components {
         TableNameQueryParam: string;
         /** @description ID of the declared folder */
         ArtifactFolderIdParam: string;
+        /** @description Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read. `personal` is the caller's own files, which only the caller can read. Omit it to list every section the caller can read. */
+        LibraryPlaceParam: "company" | "personal";
         /** @description Authoring format the template applies to */
         DocumentTemplateFormatParam: "docx" | "pptx";
     };
@@ -8966,6 +9029,8 @@ export interface operations {
                 delivery_id?: string;
                 /** @description Filter to the request or dispatch correlation identity. */
                 correlation_id?: string;
+                /** @description Filter to calls dispatched on this connected account. */
+                connection_id?: string;
                 /** @description Filter by terminal status (e.g. "success", "failed"). */
                 status?: string;
             };
@@ -9521,6 +9586,8 @@ export interface operations {
                 job_id?: string;
                 /** @description Filter to usage recorded for one API key. */
                 api_key_id?: string;
+                /** @description Return only events that cost credits, leaving out zero-credit evidence such as accepted events and bring-your-own-key usage. */
+                charged_only?: boolean;
                 /** @description Maximum number of items to return */
                 limit?: components["parameters"]["LimitParam"];
                 /** @description Cursor for pagination (opaque string from previous response) */
@@ -11281,6 +11348,8 @@ export interface operations {
                 integration_id?: string;
                 /** @description Only include sessions with activity after this timestamp. */
                 since?: string;
+                /** @description Return at most this many sessions per agent, each agent's newest activity first, so one busy agent cannot crowd the others out of the page. `limit` still caps the total. Cannot be combined with `cursor`, `agent_id`, or `agent_name`. */
+                per_agent_limit?: number;
                 /** @description Cursor for pagination (opaque string from previous response) */
                 cursor?: components["parameters"]["CursorParam"];
                 /** @description Maximum number of items to return */
@@ -11301,6 +11370,7 @@ export interface operations {
                     "application/json": components["schemas"]["SessionListResponse"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
@@ -12627,7 +12697,7 @@ export interface operations {
                 /** @description Narrow to routines one person is the custodian of. Team-custody routines have no owner and never match. */
                 owner_id?: string;
                 /** @description Narrow to these occurrence statuses. */
-                status?: ("pending" | "admitted" | "completed" | "failed" | "skipped" | "missed")[];
+                status?: ("pending" | "admitted" | "completed" | "failed" | "blocked" | "skipped" | "missed")[];
                 /** @description Only occurrences scheduled at or after this time. */
                 since?: string;
                 /** @description Only occurrences scheduled before this time. */
@@ -12976,6 +13046,30 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
+    getRoutineProposal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                proposal_id: components["parameters"]["RoutineProposalID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The proposal. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoutineProposal"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     approveRoutineProposal: {
         parameters: {
             query?: never;
@@ -12987,7 +13081,7 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": components["schemas"]["RoutineSharingConfirmation"];
+                "application/json": components["schemas"]["RoutineProposalApproval"];
             };
         };
         responses: {
@@ -14334,7 +14428,7 @@ export interface operations {
     listArtifacts: {
         parameters: {
             query?: {
-                /** @description Return the latest accessible available version per root before filtering and pagination. The Library uses true; omitted preserves the full listing. */
+                /** @description Return the explicitly selected current version when accessible, otherwise the latest available and accessible version per root. Excludes trashed files. Apply before name/MIME filters and pagination. This is the default, and what the Library shows. Only an explicit `true` adds the lineage fields (`root_id`, `previous_id`, `version`) to each item. `false` returns every available version of every file, including superseded versions and files in the trash. */
                 latest_only?: boolean;
                 /** @description Mime prefix filter (e.g. `image/`) */
                 mime?: string;
@@ -14344,6 +14438,8 @@ export interface operations {
                 folder?: string;
                 /** @description Include files in subfolders of `folder`. With `false`, only files whose folder is exactly `folder` are returned; at the root that means files whose name carries no folder at all. */
                 recursive?: boolean;
+                /** @description Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read. `personal` is the caller's own files, which only the caller can read. Omit it to list every section the caller can read. */
+                place?: components["parameters"]["LibraryPlaceParam"];
                 /** @description Cursor for pagination (opaque string from previous response) */
                 cursor?: components["parameters"]["CursorParam"];
                 /** @description Maximum number of items to return */
@@ -14543,6 +14639,8 @@ export interface operations {
             query?: {
                 /** @description Requested signed URL TTL. The server caps this at the maximum supported artifact download TTL. */
                 ttl_seconds?: number;
+                /** @description How a browser should treat the bytes. `inline` lets the browser render them. `attachment` makes the browser save them under the artifact's file name. */
+                disposition?: "inline" | "attachment";
             };
             header?: never;
             path: {
@@ -14623,6 +14721,8 @@ export interface operations {
             query?: {
                 /** @description Folder whose children are listed. Omit for the root. */
                 parent?: string;
+                /** @description Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read. `personal` is the caller's own files, which only the caller can read. Omit it to list every section the caller can read. */
+                place?: components["parameters"]["LibraryPlaceParam"];
             };
             header?: never;
             path?: never;

@@ -115,6 +115,7 @@ func registerActionsCommands(app *cli.App) {
 			cli.Int("secret-version", "").Help("Filter to deliveries signed with a specific secret version."),
 			cli.String("delivery-id", "").Help("Filter to a signed delivery identity."),
 			cli.String("correlation-id", "").Help("Filter to the request or dispatch correlation identity."),
+			cli.String("connection-id", "").Help("Filter to calls dispatched on this connected account."),
 			cli.String("status", "").Help("Filter by terminal status (e.g. \"success\", \"failed\")."),
 		).
 		Use(requireAuth()).
@@ -186,6 +187,10 @@ func registerActionsCommands(app *cli.App) {
 			if ctx.IsSet("correlation-id") {
 				v := ctx.String("correlation-id")
 				params.CorrelationId = &v
+			}
+			if ctx.IsSet("connection-id") {
+				v := ctx.String("connection-id")
+				params.ConnectionId = &v
 			}
 			if ctx.IsSet("status") {
 				v := ctx.String("status")

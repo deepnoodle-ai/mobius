@@ -77,6 +77,14 @@ func registerRoutinesCommands(app *cli.App) {
 		Args("proposal-id").
 		Flags(
 			cli.Bool("confirm-audience-expansion", "").Help("Confirm sharing existing and future routine results with the proposed named people."),
+			cli.String("connection-bindings", "").Help("Connected accounts each run uses, replacing the proposed ones. An empty object uses none. Accepts JSON, @file, or @-."),
+			cli.Int("daily-ceiling-milli", "").Help("daily-ceiling-milli"),
+			cli.Strings("follower-principal-ids", "").Help("People to share the routine with, replacing the proposed list. An empty list shares it with nobody. Naming anyone requires…"),
+			cli.String("instructions", "").Help("instructions Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
+			cli.String("name", "").Help("name"),
+			cli.String("output-folder", "").Help("Library folder for the routine's files. An empty string means the top level of the Library."),
+			cli.Int("per-occurrence-ceiling-milli", "").Help("per-occurrence-ceiling-milli"),
+			cli.String("schedule", "").Help("Exactly one of at, interval, or cron is required. Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -96,8 +104,45 @@ func registerRoutinesCommands(app *cli.App) {
 				v := ctx.Bool("confirm-audience-expansion")
 				body.ConfirmAudienceExpansion = &v
 			}
+			if ctx.IsSet("connection-bindings") {
+				if err := decodeFlagJSON(ctx, "connection-bindings", ctx.String("connection-bindings"), &body.ConnectionBindings); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("daily-ceiling-milli") {
+				v := int64(ctx.Int("daily-ceiling-milli"))
+				body.DailyCeilingMilli = &v
+			}
+			if ctx.IsSet("follower-principal-ids") {
+				v := ctx.Strings("follower-principal-ids")
+				body.FollowerPrincipalIds = &v
+			}
+			if ctx.IsSet("instructions") {
+				v, err := decodeFlagText(ctx, "instructions", ctx.String("instructions"))
+				if err != nil {
+					return err
+				}
+				body.Instructions = &v
+			}
+			if ctx.IsSet("name") {
+				v := ctx.String("name")
+				body.Name = &v
+			}
+			if ctx.IsSet("output-folder") {
+				v := ctx.String("output-folder")
+				body.OutputFolder = &v
+			}
+			if ctx.IsSet("per-occurrence-ceiling-milli") {
+				v := int64(ctx.Int("per-occurrence-ceiling-milli"))
+				body.PerOccurrenceCeilingMilli = &v
+			}
+			if ctx.IsSet("schedule") {
+				if err := decodeFlagJSON(ctx, "schedule", ctx.String("schedule"), &body.Schedule); err != nil {
+					return err
+				}
+			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "connection_bindings", "schedule")
 			}
 			resp, err := client.ApproveRoutineProposalWithResponse(ctx.Context(), p0, body)
 			if err != nil {
@@ -323,6 +368,24 @@ func registerRoutinesCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "getRoutineOccurrence", resp.StatusCode(), resp.Body)
+		})
+
+	routinesGrp.Command("get-proposal").
+		Description("Get a proposal as its proposed human owner").
+		Args("proposal-id").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.RoutineProposalID(ctx.Arg(0))
+			resp, err := client.GetRoutineProposalWithResponse(ctx.Context(), p0)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "getRoutineProposal", resp.StatusCode(), resp.Body)
 		})
 
 	routinesGrp.Command("get-thread").

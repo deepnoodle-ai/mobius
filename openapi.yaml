@@ -431,7 +431,7 @@ paths:
       description: |-
         Lists recent action invocation audit records from agents, direct invocations, and job-backed execution.
 
-        Each record belongs to the conversation or configuration it ran under. A caller sees their own records, team-owned records, and organization-visible records. An organization administrator sees every record, but `parameters` are withheld on a private record the administrator does not own and `parameters_redacted` is set.
+        Each record belongs to the conversation or configuration it ran under. A caller sees their own records, team-owned records, and organization-visible records. An organization administrator sees every record, but `parameters` and `error_message` are withheld on a private record the administrator does not own and `parameters_redacted` is set. `error_type` stays, so the failure is still legible.
       parameters:
       - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
@@ -503,6 +503,11 @@ paths:
       - name: correlation_id
         in: query
         description: Filter to the request or dispatch correlation identity.
+        schema:
+          type: string
+      - name: connection_id
+        in: query
+        description: Filter to calls dispatched on this connected account.
         schema:
           type: string
       - name: status
@@ -1126,6 +1131,13 @@ paths:
         description: Filter to usage recorded for one API key.
         schema:
           type: string
+      - name: charged_only
+        in: query
+        required: false
+        description: Return only events that cost credits, leaving out zero-credit evidence
+          such as accepted events and bring-your-own-key usage.
+        schema:
+          type: boolean
       - $ref: '#/components/parameters/LimitParam'
       - $ref: '#/components/parameters/CursorParam'
       responses:
@@ -2887,6 +2899,15 @@ paths:
         schema:
           type: string
           format: date-time
+      - name: per_agent_limit
+        in: query
+        description: Return at most this many sessions per agent, each agent's newest activity
+          first, so one busy agent cannot crowd the others out of the page. `limit` still
+          caps the total. Cannot be combined with `cursor`, `agent_id`, or `agent_name`.
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 20
       - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
       responses:
@@ -2896,6 +2917,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SessionListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -4304,6 +4327,7 @@ paths:
             - admitted
             - completed
             - failed
+            - blocked
             - skipped
             - missed
         explode: false
@@ -4676,13 +4700,35 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+  /v1/routines/proposals/{proposal_id}:
+    get:
+      operationId: getRoutineProposal
+      tags:
+      - routines
+      summary: Get a proposal as its proposed human owner
+      description: Returns the proposal's current status, so a chat card can show whether
+        it still needs approval. Anyone other than the proposed owner gets not found.
+      parameters:
+      - $ref: '#/components/parameters/RoutineProposalID'
+      responses:
+        '200':
+          description: The proposal.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoutineProposal'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/routines/proposals/{proposal_id}/approve:
     post:
       operationId: approveRoutineProposal
       tags:
       - routines
       summary: Approve a pending proposal as its proposed human owner
-      description: Atomically materializes a pending proposal as a routine after human approval.
+      description: Atomically materializes a pending proposal as a routine after human approval,
+        with any changes the owner made on the card.
       parameters:
       - $ref: '#/components/parameters/RoutineProposalID'
       requestBody:
@@ -4690,7 +4736,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RoutineSharingConfirmation'
+              $ref: '#/components/schemas/RoutineProposalApproval'
       responses:
         '200':
           description: Existing routine returned for an idempotent replay.
@@ -5941,9 +5987,13 @@ paths:
         required: false
         schema:
           type: boolean
-          default: false
-        description: Return the latest accessible available version per root before filtering
-          and pagination. The Library uses true; omitted preserves the full listing.
+          default: true
+        description: Return the explicitly selected current version when accessible, otherwise
+          the latest available and accessible version per root. Excludes trashed files. Apply
+          before name/MIME filters and pagination. This is the default, and what the Library
+          shows. Only an explicit `true` adds the lineage fields (`root_id`, `previous_id`,
+          `version`) to each item. `false` returns every available version of every file,
+          including superseded versions and files in the trash.
       - name: mime
         in: query
         required: false
@@ -5977,6 +6027,7 @@ paths:
         description: Include files in subfolders of `folder`. With `false`, only files whose
           folder is exactly `folder` are returned; at the root that means files whose name
           carries no folder at all.
+      - $ref: '#/components/parameters/LibraryPlaceParam'
       - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
       responses:
@@ -5996,7 +6047,7 @@ paths:
       - artifacts
       summary: Create artifact
       description: |-
-        Accepts an org-authorized multipart file upload. Without a worker lease, the caller needs `mobius.resource.build`; the artifact is private to the authenticated principal and has no run or step lineage. A worker may instead supply `X-Mobius-Lease-Token` with `mobius.job.execute`; Mobius then derives run, step, job, worker session, attempt, and shared visibility from the active claim. Execution attribution is server-derived. A version requires edit access to the exact parent and inherits its custody and visibility. It is declared with previous_artifact_id (or the leased publish action source_artifact_id), which must name the file's latest version: naming an older one is refused with 409 rather than branching the file's history. A person's upload whose name is already taken by one of their files also becomes that file's next version; the response's `version` and `previous_id` say so.
+        Accepts an org-authorized multipart file upload. Without a worker lease, the caller needs `mobius.resource.build`; the artifact is private to the authenticated principal and has no run or step lineage. A worker may instead supply `X-Mobius-Lease-Token` with `mobius.job.execute`; Mobius then derives run, step, job, worker session, attempt, and shared visibility from the active claim. Execution attribution is server-derived. A version requires edit access to the exact parent and inherits its custody and visibility. Direct uploads declare previous_artifact_id, while leased publish updates use the job's destination and expected version. The expected parent must name the file's latest version: naming an older one is refused with 409 rather than branching the file's history. A person's upload whose name is already taken by one of their files also becomes that file's next version; the response's `version` and `previous_id` say so.
 
         DOCX, XLSX, and PPTX uploads may pass `convert=true` to start asynchronous Markdown extraction for later model delivery.
       parameters:
@@ -6178,6 +6229,17 @@ paths:
           minimum: 1
         description: Requested signed URL TTL. The server caps this at the maximum supported
           artifact download TTL.
+      - name: disposition
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - inline
+          - attachment
+          default: inline
+        description: How a browser should treat the bytes. `inline` lets the browser render
+          them. `attachment` makes the browser save them under the artifact's file name.
       responses:
         '200':
           description: Signed URL created
@@ -6257,6 +6319,7 @@ paths:
           type: string
           maxLength: 256
         description: Folder whose children are listed. Omit for the root.
+      - $ref: '#/components/parameters/LibraryPlaceParam'
       responses:
         '200':
           description: OK
@@ -6606,6 +6669,19 @@ components:
         type: string
         pattern: ^afd_[A-Za-z0-9]+$
       description: ID of the declared folder
+    LibraryPlaceParam:
+      name: place
+      in: query
+      required: false
+      schema:
+        type: string
+        enum:
+        - company
+        - personal
+      description: Narrows the listing to one section of the Library. `company` is the company's
+        files, which everyone in the organization can read. `personal` is the caller's own
+        files, which only the caller can read. Omit it to list every section the caller can
+        read.
     DocumentTemplateFormatParam:
       name: format
       in: path
@@ -7316,7 +7392,9 @@ components:
       - api
       - interaction
       - routine
-      description: 'Surface that created the session: `manual`, `api`, `interaction`, or `routine`.'
+      - assistant
+      description: 'Surface that created the session: `manual`, `api`, `interaction`, `routine`,
+        or `assistant` (one of a person''s assistants asking another of theirs a question).'
     SessionScope:
       type: string
       enum:
@@ -7381,7 +7459,7 @@ components:
 
         This is the poll-side counterpart to the `compaction.started` / `compaction.created` / `compaction.failed` stream events: those events are live-only, so a client that connects mid-pass reads this instead. On the single-session read the object is always present, so a client binds one shape — an idle session reports `in_progress: false` and nothing else but the threshold. List entries omit it entirely.
 
-        Paired with `token_input_total` (or a client-side estimate over the transcript it already renders), `threshold_tokens` supports a context-capacity gauge rather than a spinner that appears without warning.
+        Paired with a client-side estimate over the transcript it already renders, `threshold_tokens` supports a context-capacity gauge rather than a spinner that appears without warning. The session token totals are lifetime sums over every model call, not the current context size, so they do not fit that gauge.
       required:
       - in_progress
       properties:
@@ -8492,8 +8570,11 @@ components:
           enum:
           - person
           - team
+          - place
           description: 'Custody of the work this invocation belongs to: the session owner
-            when it ran in a session, else the agent owner, else the human actor.'
+            when it ran in a session, else the agent owner, else the human actor. `place`
+            is a chat in a chat app: only administrators see these records, and only the action
+            name, times, and status.'
         owner_id:
           type: string
           description: Principal that holds custody when `owner_kind` is `person`.
@@ -8507,7 +8588,8 @@ components:
         parameters_redacted:
           type: boolean
           description: True when `parameters` were withheld because the record is private
-            to someone else and the caller is reading it as an administrator.
+            to someone else, or belongs to a chat place, and the caller is reading it as an
+            administrator.
         channel_exchange_id:
           type: string
           description: Channel exchange correlated with this invocation, when applicable.
@@ -8526,6 +8608,13 @@ components:
         correlation_id:
           type: string
           description: Request or dispatch identity that correlated the invocation.
+        connection_id:
+          type: string
+          description: Connected account the call was dispatched on, when it used one.
+        grant_id:
+          type: string
+          description: Grant that admitted the call to the account. Absent when a person used
+            their own account directly.
         secret_version:
           type: integer
           format: int64
@@ -8569,7 +8658,8 @@ components:
           description: Machine-readable error classification when status is "failed".
         error_message:
           type: string
-          description: Human-readable error detail when status is "failed".
+          description: Human-readable error detail when status is "failed". Withheld, like
+            `parameters`, when `parameters_redacted` is set.
     ActionInvocationListResponse:
       type: object
       additionalProperties: false
@@ -11823,7 +11913,8 @@ components:
           description: Omit to use the create-time default, `flat`.
         action_selectors:
           type: array
-          description: The agent's action selection. Omit for an agent with no selected catalog
+          description: The agent's action selection. Omit to select every Mobius action and
+            every Firecrawl action. Send an empty list for an agent with no selected catalog
             actions.
           items:
             $ref: '#/components/schemas/ActionSelector'
@@ -12343,6 +12434,14 @@ components:
         artifact_id:
           type: string
           description: The artifact the call created or changed, when there is one.
+        artifact_root_id:
+          type: string
+          description: The first version of the document artifact_id belongs to, when the
+            call made a document version. Revisions of one document share it.
+        session_id:
+          type: string
+          description: The private assistant exchange opened by this call, when there is one.
+            Access is checked when opened.
         integration:
           type: string
           description: The integration's name as people know it, shown before the label, for
@@ -12981,8 +13080,10 @@ components:
             or the schema-valid final-text fallback (`text`).'
         usage:
           $ref: '#/components/schemas/AgentTurnUsage'
-          description: Token usage recorded when the turn completed. Absent on turns that
-            never reached the model and on turns that failed.
+          description: Token usage recorded when the turn completed or failed. On a failed
+            turn it covers the model calls that finished before the failure. Absent on turns
+            that never reached the model, on turns that a cancel request or the reaper settled,
+            and on a failed resumed turn whose suspended usage could not be read.
         effective_timeout_seconds:
           type: integer
           format: int64
@@ -13010,10 +13111,16 @@ components:
     AgentTurnUsage:
       type: object
       additionalProperties: true
-      description: Aggregate token accounting for one completed turn, summed over every LLM
-        call the turn made. It is a usage report, not a bill — see the billing usage events
-        for charged amounts.
+      description: Aggregate token accounting for one terminal turn, summed over every LLM
+        call the turn made, across every segment of a resumed turn. On the turn resource,
+        a failed turn reports the calls that finished before it failed; `turn.failed` carries
+        no usage. It is a usage report, not a bill — see the billing usage events for charged
+        amounts.
       properties:
+        total_tokens:
+          type: integer
+          description: 'Total processed tokens across the turn: fresh (uncached) input + cache
+            read + cache creation + output.'
         input_tokens:
           type: integer
           description: Fresh (uncached) prompt tokens. Cache traffic is reported separately
@@ -13037,6 +13144,7 @@ components:
           type: integer
           description: LLM calls folded into this turn's totals. Omitted when zero.
       example:
+        total_tokens: 22732
         input_tokens: 1840
         output_tokens: 412
         cache_read_input_tokens: 20480
@@ -13197,9 +13305,10 @@ components:
           type: string
         usage:
           $ref: '#/components/schemas/AgentTurnUsage'
-          description: Token usage recorded when the turn completed. Identical to the `usage`
-            on the turn resource, and identical on the bootstrap and cursored reads of this
-            snapshot.
+          description: Token usage recorded when the turn completed or failed. On a failed
+            turn it covers the model calls that finished before the failure. Identical to
+            the `usage` on the turn resource, and identical on the bootstrap and cursored
+            reads of this snapshot.
         output:
           type: object
           additionalProperties: true
@@ -13545,7 +13654,9 @@ components:
       - reason
       description: Final envelope on a deliberate session-stream close. An idle close means
         no non-terminal turn remains; a rotate close asks the client to reconnect immediately
-        with the same durable transcript cursor.
+        with the same durable transcript cursor. An access_ended close means the caller can
+        no longer read the conversation, for example because its owner stopped sharing it;
+        the client should not reconnect.
       properties:
         event_type:
           type: string
@@ -13558,6 +13669,7 @@ components:
           enum:
           - idle
           - rotate
+          - access_ended
     SessionUserMessagePayload:
       type: object
       additionalProperties: true
@@ -13730,6 +13842,8 @@ components:
       properties:
         usage:
           $ref: '#/components/schemas/AgentTurnUsage'
+          description: Token usage of the completed turn. A failed turn emits `turn.failed`,
+            which carries no usage; read a failed turn's usage from the turn resource.
     TurnFailedPayload:
       type: object
       additionalProperties: true
@@ -14851,7 +14965,7 @@ components:
     Artifact:
       type: object
       description: Stored file or generated artifact metadata. Lineage fields are included
-        by artifact-versions, latest_only=true listings, and uploads declaring previous_artifact_id.
+        by artifact-versions, explicit latest_only=true listings, and uploads declaring previous_artifact_id.
         Ordinary calls omit the new fields for existing SDKs with strict response decoders.
       required:
       - id
@@ -15548,6 +15662,11 @@ components:
           - $ref: '#/components/schemas/ConnectionBinding'
           description: The exact connection and grant pair whose event started this run. Immutable
             server-authored provenance, not action authority.
+        connection_bindings:
+          allOf:
+          - $ref: '#/components/schemas/ConnectionBindings'
+          description: The accounts this run was cleared to use, as admission checked them.
+            Absent before admission and for a run that uses no account.
         event_type:
           type: string
           description: The concrete event type that arrived (`github.issues.opened`), not
@@ -15559,8 +15678,18 @@ components:
           - admitted
           - completed
           - failed
+          - blocked
           - skipped
           - missed
+          description: '`blocked` is a run that ended without doing its work: the assistant
+            reported it (`error_code` `agent_reported`), or the conversation''s files could
+            not be opened (`workspace_unavailable`). `error_message` says why. A pending run
+            with `next_attempt_at` is waiting to be tried again after an attempt that stopped.'
+        next_attempt_at:
+          type: string
+          format: date-time
+          description: When a pending run that already ran once will be tried again. Absent
+            otherwise.
         outcome:
           type: string
           description: 'A completed run''s headline: one line saying what it did, derived
@@ -15702,14 +15831,53 @@ components:
         payload:
           type: object
           additionalProperties: true
-    RoutineSharingConfirmation:
+          description: What the agent proposed.
+        approved_payload:
+          type: object
+          additionalProperties: true
+          description: What the owner approved, edits included. Present once approved.
+    RoutineProposalApproval:
       type: object
       additionalProperties: false
+      description: The owner's approval, with any changes made on the card. An omitted field
+        keeps the proposal's value. Changing the schedule or a ceiling recomputes the 30-day
+        maximum.
       properties:
         confirm_audience_expansion:
           type: boolean
           description: Confirm sharing existing and future routine results with the proposed
             named people.
+        name:
+          type: string
+        instructions:
+          type: string
+          minLength: 1
+        schedule:
+          $ref: '#/components/schemas/RoutineSchedule'
+        output_folder:
+          type: string
+          maxLength: 256
+          description: Library folder for the routine's files. An empty string means the top
+            level of the Library.
+        per_occurrence_ceiling_milli:
+          type: integer
+          format: int64
+          minimum: 1
+        daily_ceiling_milli:
+          type: integer
+          format: int64
+          minimum: 1
+        follower_principal_ids:
+          type: array
+          items:
+            type: string
+          description: People to share the routine with, replacing the proposed list. An empty
+            list shares it with nobody. Naming anyone requires confirm_audience_expansion.
+        connection_bindings:
+          allOf:
+          - $ref: '#/components/schemas/ConnectionBindings'
+          description: Connected accounts each run uses, replacing the proposed ones. An empty
+            object uses none.
     RoutineThread:
       type: object
       additionalProperties: false

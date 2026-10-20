@@ -692,6 +692,62 @@ func TestConfigureEnvironmentGitIdentityForcesBotIdentity(t *testing.T) {
 	}
 }
 
+// After a clone installs the global credential helper, a brokered fetch must
+// authenticate through its own askpass alone. The helper runs without the job
+// lease, so letting git call it printed a 403 into every follow-up fetch.
+func TestRunGitWithCredentialSkipsGlobalCredentialHelper(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("GIT_CONFIG_GLOBAL", filepath.Join(tmp, "gitconfig"))
+	t.Setenv("GIT_CONFIG_SYSTEM", filepath.Join(tmp, "gitconfig-system"))
+	helper := filepath.Join(tmp, "helper.sh")
+	writeFile(t, tmp, "helper.sh", "#!/bin/sh\necho 'global helper ran' >&2\nexit 1\n")
+	if err := os.Chmod(helper, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	if err := runGitConfigGlobal(ctx, "credential.useHttpPath", "true"); err != nil {
+		t.Fatal(err)
+	}
+	if err := runGitConfigGlobal(ctx, "credential.helper", "!"+helper); err != nil {
+		t.Fatal(err)
+	}
+
+	var sawToken bool
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/v1/environments/env_test/git/credentials" {
+			_, _ = w.Write([]byte(`{"username":"x-access-token","token":"tok_brokered"}`))
+			return
+		}
+		if user, pass, ok := r.BasicAuth(); ok && user == "x-access-token" && pass == "tok_brokered" {
+			sawToken = true
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("WWW-Authenticate", `Basic realm="git"`)
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	t.Cleanup(srv.Close)
+	client, err := mobius.NewClient(mobius.WithBaseURL(srv.URL), mobius.WithAPIKey("mbx_worker"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	actx := testClientLeasedActionContext{testLeasedActionContext{testActionContext{Context: ctx}}, client}
+	repo := realPath(t, t.TempDir())
+	runGit(t, repo, "init", "-q")
+
+	out, err := runGitWithCredential(actx, "o/r", "fetch", repo, []string{"fetch", srv.URL + "/o/r.git"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, _ := out.(map[string]any)
+	if stderr := fmt.Sprint(result["stderr"]); strings.Contains(stderr, "global helper ran") {
+		t.Fatalf("brokered fetch ran the global credential helper: %q", stderr)
+	}
+	if !sawToken {
+		t.Fatalf("git never sent the brokered token: %#v", out)
+	}
+}
+
 // gitGlobalConfig reads a value from the (test-sandboxed) global git config.
 func gitGlobalConfig(t *testing.T, key string) string {
 	t.Helper()
