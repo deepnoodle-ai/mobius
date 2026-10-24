@@ -388,7 +388,9 @@ class SessionCompactionPolicy(BaseModel):
         le=10000000,
     )
     summary_model: str | None = Field(
-        None, description='Model used to produce compaction summaries.'
+        None,
+        deprecated=True,
+        description='Ignored. Every session is summarized by the same platform model. Accepted until web clients that send it are gone; never returned.',
     )
 
 
@@ -506,7 +508,7 @@ class Agent(BaseModel):
     )
     timeout_seconds: int | None = Field(
         None,
-        description="Execution timeout, in seconds, for a single turn of this agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A request's `operation.timeout_seconds` overrides this for that turn.",
+        description="Execution timeout, in seconds, for a single turn of this agent. `0` (or omitted) uses the platform default (1800s / 30 minutes). A request's `operation.timeout_seconds` overrides this for that turn.",
         ge=0,
     )
     compaction_policy: SessionCompactionPolicy | None = Field(
@@ -673,11 +675,11 @@ class SessionCompactionBoundary(BaseModel):
 
 class SessionCompactionProgress(BaseModel):
     """
-    Whether a compaction pass is running on this session right now, and the threshold that will trigger the next one.
+    The threshold that will trigger the session's next compaction.
 
-    This is the poll-side counterpart to the `compaction.started` / `compaction.created` / `compaction.failed` stream events: those events are live-only, so a client that connects mid-pass reads this instead. On the single-session read the object is always present, so a client binds one shape — an idle session reports `in_progress: false` and nothing else but the threshold. List entries omit it entirely.
+    Compaction runs inside a turn, so whether one is running is read from the session's turns: a turn with `compacting: true`, or a `compaction` turn that is queued or running.
 
-    Paired with a client-side estimate over the transcript it already renders, `threshold_tokens` supports a context-capacity gauge rather than a spinner that appears without warning. The session token totals are lifetime sums over every model call, not the current context size, so they do not fit that gauge.
+    Paired with a client-side estimate over the transcript it already renders, `threshold_tokens` supports a context-capacity gauge rather than a spinner that appears without warning. The session token totals are lifetime sums over every model call, not the current context size, so they do not fit that gauge. On the single-session read the object is always present; list entries omit it entirely.
     """
 
     model_config = ConfigDict(
@@ -685,25 +687,8 @@ class SessionCompactionProgress(BaseModel):
     )
     in_progress: bool = Field(
         ...,
-        description='True while a summarization pass is running. Derived: a pass that dies without clearing its marker reads false once its `deadline` passes.',
-    )
-    started_at: AwareDatetime | None = Field(
-        None,
-        description='When the running pass started. Absent when no pass is running.',
-    )
-    deadline: AwareDatetime | None = Field(
-        None,
-        description='When the running pass gives up. Absent when no pass is running. A pass still marked in progress past this point has died.',
-    )
-    from_sequence: int | None = Field(
-        None, description='Lowest transcript sequence the running pass is summarizing.'
-    )
-    through_sequence: int | None = Field(
-        None, description='Highest transcript sequence the running pass is summarizing.'
-    )
-    message_count: int | None = Field(
-        None,
-        description='Number of transcript messages the running pass is folding into its summary.',
+        deprecated=True,
+        description="Always false. Read the session's turns instead. Kept until web clients that read it are gone.",
     )
     threshold_tokens: int | None = Field(
         None,
@@ -3716,7 +3701,7 @@ class CreateAgentRequest(BaseModel):
     )
     timeout_seconds: int | None = Field(
         None,
-        description="Per-turn execution timeout in seconds for this agent. Omit or `0` to use the platform default (600s / 10 minutes); a request's `operation.timeout_seconds` overrides it for that turn.",
+        description="Per-turn execution timeout in seconds for this agent. Omit or `0` to use the platform default (1800s / 30 minutes); a request's `operation.timeout_seconds` overrides it for that turn.",
         ge=0,
     )
     compaction_policy: SessionCompactionPolicy | None = Field(
@@ -3827,7 +3812,7 @@ class UpdateAgentRequest(BaseModel):
     )
     timeout_seconds: int | None = Field(
         None,
-        description="Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (600s / 10 minutes); a request's `operation.timeout_seconds` overrides it for that turn.",
+        description="Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (1800s / 30 minutes); a request's `operation.timeout_seconds` overrides it for that turn.",
         ge=0,
     )
     status: Status3 | None = Field(
@@ -4389,7 +4374,7 @@ class SessionReminderBlock(BaseModel):
 
 class SessionEventProjectionKind(StrEnum):
     """
-    Stable UI treatment for a projected event. `interaction` is the outcome of a question the agent asked with mobius.interaction.open: answered, dismissed, or expired.
+    Stable UI treatment for a projected event. `interaction` is the outcome of a question the agent asked with mobius.interaction.create: answered, dismissed, or expired.
     """
 
     generic = 'generic'
@@ -4569,6 +4554,15 @@ class AgentTurnOutputSource(StrEnum):
 
     tool = 'tool'
     text = 'text'
+
+
+class AgentTurnKind(StrEnum):
+    """
+    What the turn does. `agent` turns run the agent. A `compaction` turn, queued by a compact request, only summarizes older history; it runs in the session's turn order like any other turn and writes no messages of its own besides the summary.
+    """
+
+    agent = 'agent'
+    compaction = 'compaction'
 
 
 class AgentTurnUsage(BaseModel):
@@ -4861,7 +4855,7 @@ class TurnCancelledPayload(BaseModel):
 
 class CompactionTrigger(StrEnum):
     """
-    What started a compaction pass. `auto` is the threshold-gated pass that runs after a turn commits; `append` is the threshold-gated pass that runs inline on a message append; `manual` is an explicit compact request.
+    What started a compaction pass. `auto` is the threshold-gated pass a turn runs before it loads its context; `manual` is a compaction turn queued by a compact request. `append` appears only on summaries written before compaction moved into turns.
     """
 
     auto = 'auto'
@@ -5259,7 +5253,7 @@ class NudgeSessionRequest(BaseModel):
     )
     wake: bool = Field(
         False,
-        description='When true and the target turn is waiting on an interruptible agent tool, resolve that tool call with `{ "interrupted": true, "reason": "user_direction" }` and resume the same turn. Running and newly queued turns ignore this field.\n\nA turn waiting on the outcome of a question it asked with `mobius.interaction.open` (`mobius_event_wait` on `interaction.resolved`) is resumed by every nudge, with or without this field. The question stays open: the tool result also carries `interaction_id` and `interaction_status: "pending"`, and the question\'s outcome still arrives in the conversation as its own input.',
+        description='When true and the target turn is waiting on an interruptible agent tool, resolve that tool call with `{ "interrupted": true, "reason": "user_direction" }` and resume the same turn. Running and newly queued turns ignore this field.\n\nA turn waiting on the outcome of a question it asked with `mobius.interaction.create` (`mobius_event_wait` on `interaction.resolved`) is resumed by every nudge, with or without this field. The question stays open: the tool result also carries `interaction_id` and `interaction_status: "pending"`, and the question\'s outcome still arrives in the conversation as its own input.',
     )
 
 
@@ -7482,6 +7476,11 @@ class AgentTurn(BaseModel):
     routine_name: str | None = Field(
         None, description="Display-only routine name for a scheduled turn's live state."
     )
+    kind: AgentTurnKind | None = None
+    compacting: bool | None = Field(
+        None,
+        description='True while this turn is summarizing older history before it runs. Meaningful only while the turn is `running`; a turn interrupted mid-compaction is requeued and starts the summary again.',
+    )
     attempt: int = Field(
         ..., description='1-based attempt number; retries create new turns.'
     )
@@ -7513,6 +7512,10 @@ class AgentTurn(BaseModel):
     )
     effective_timeout_seconds: int | None = Field(
         None, description='Authoritative active-execution budget selected for the turn.'
+    )
+    credits_spent_milli: int | None = Field(
+        None,
+        description="Credits the turn has spent so far, in thousandths of a credit, by the turn's own meter. A failed or timed-out turn reports what it spent before it stopped. Absent when the turn spent nothing.",
     )
     created_at: AwareDatetime = Field(..., description='Time the turn was created.')
     updated_at: AwareDatetime = Field(
@@ -7552,6 +7555,10 @@ class SessionTranscriptTurn(BaseModel):
     session_id: str
     channel_exchange_id: str | None = None
     attempt: int
+    kind: AgentTurnKind | None = None
+    compacting: bool | None = Field(
+        None, description='Same as `compacting` on the turn resource.'
+    )
     status: str = Field(
         ..., description='Known AgentTurn status; unknown values must be preserved.'
     )

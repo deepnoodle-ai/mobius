@@ -10,6 +10,26 @@ the minor version.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-23
+
+### Changed
+
+- Compacting a session (`CompactSession`) now queues a `compaction` turn that
+  runs in turn order; it returns the session as queued and 409s when
+  compaction is disabled. Follow progress on the session's turns.
+- `SessionCompactionStatus` drops `started_at`, `deadline`, `from_sequence`,
+  `through_sequence`, and `message_count`; `in_progress` is deprecated and
+  always false. Read `compacting` / `kind` on turns instead.
+- `SessionCompactionPolicy.summary_model` is deprecated and ignored.
+- The platform default per-turn timeout is now 1800s (was 600s).
+
+### Added
+
+- Agent turns (and turn stream rows) gain `kind` (`agent` | `compaction`)
+  and `compacting`; turns also report `credits_spent_milli`.
+- `streamSessionTranscript` accepts `tail=true` to start at the session's
+  current end instead of replaying history (`mobius sessions stream-transcript --tail`).
+
 ## [0.3.0] - 2026-10-20
 
 ### Changed

@@ -309,7 +309,9 @@ func (c *Client) CancelSession(ctx context.Context, sessionID string) (*api.Sess
 	return resp.JSON200, nil
 }
 
-// CompactSession requests manual compaction of a session transcript.
+// CompactSession queues a compaction turn that summarizes the transcript since
+// the last compaction. It returns the session as it was when the turn was
+// queued; watch the session's turns for progress.
 func (c *Client) CompactSession(ctx context.Context, sessionID string) (*api.Session, error) {
 	resp, err := c.ac.CompactSessionWithResponse(ctx, api.SessionIdParam(sessionID))
 	if err != nil {

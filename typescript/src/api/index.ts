@@ -62,6 +62,7 @@ export type AgentToolManifest = components["schemas"]["AgentToolManifest"];
 export type AgentToolPresentation = components["schemas"]["AgentToolPresentation"];
 export type AgentTurn = components["schemas"]["AgentTurn"];
 export type AgentTurnErrorScope = components["schemas"]["AgentTurnErrorScope"];
+export type AgentTurnKind = components["schemas"]["AgentTurnKind"];
 export type AgentTurnListResponse = components["schemas"]["AgentTurnListResponse"];
 export type AgentTurnOperationPolicy = components["schemas"]["AgentTurnOperationPolicy"];
 export type AgentTurnOutputSource = components["schemas"]["AgentTurnOutputSource"];

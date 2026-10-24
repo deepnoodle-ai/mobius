@@ -146,7 +146,7 @@ func registerSessionsCommands(app *cli.App) {
 		})
 
 	sessionsGrp.Command("compact").
-		Description("Compact the session transcript now").
+		Description("Compact the session transcript").
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -1029,6 +1029,7 @@ func registerSessionsCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Flags(
 			cli.String("cursor", "").Help("Opaque resume cursor."),
+			cli.Bool("tail", "").Help("With no cursor, start at the session's current end instead of replaying its history. The stream still sends the in-flight rows, the turns…"),
 			cli.String("last-event-id", "").Help("Opaque resume cursor from the last delivered state frame."),
 		).
 		Use(requireAuth()).
@@ -1043,6 +1044,10 @@ func registerSessionsCommands(app *cli.App) {
 			if ctx.IsSet("cursor") {
 				v := ctx.String("cursor")
 				params.Cursor = &v
+			}
+			if ctx.IsSet("tail") {
+				v := ctx.Bool("tail")
+				params.Tail = &v
 			}
 			if ctx.IsSet("last-event-id") {
 				v := ctx.String("last-event-id")
