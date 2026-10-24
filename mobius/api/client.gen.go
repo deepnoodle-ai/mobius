@@ -593,6 +593,24 @@ func (e AgentTurnErrorScope) Valid() bool {
 	}
 }
 
+// Defines values for AgentTurnKind.
+const (
+	AgentTurnKindAgent      AgentTurnKind = "agent"
+	AgentTurnKindCompaction AgentTurnKind = "compaction"
+)
+
+// Valid indicates whether the value is a known member of the AgentTurnKind enum.
+func (e AgentTurnKind) Valid() bool {
+	switch e {
+	case AgentTurnKindAgent:
+		return true
+	case AgentTurnKindCompaction:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AgentTurnOutputSource.
 const (
 	AgentTurnOutputSourceText AgentTurnOutputSource = "text"
@@ -4325,7 +4343,7 @@ type Agent struct {
 	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session, or the provider's own default when nothing sets a level.
 	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
 
-	// TimeoutSeconds Execution timeout, in seconds, for a single turn of this agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A request's `operation.timeout_seconds` overrides this for that turn.
+	// TimeoutSeconds Execution timeout, in seconds, for a single turn of this agent. `0` (or omitted) uses the platform default (1800s / 30 minutes). A request's `operation.timeout_seconds` overrides this for that turn.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 
 	// ToolPresentation Controls how selected actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
@@ -4740,11 +4758,17 @@ type AgentTurn struct {
 	// ChannelExchangeId Inbound channel exchange that triggered this turn. Absent for direct sends.
 	ChannelExchangeId *string `json:"channel_exchange_id,omitempty"`
 
+	// Compacting True while this turn is summarizing older history before it runs. Meaningful only while the turn is `running`; a turn interrupted mid-compaction is requeued and starts the summary again.
+	Compacting *bool `json:"compacting,omitempty"`
+
 	// CompletedAt When the turn reached a terminal status.
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
 
 	// CreatedAt Time the turn was created.
 	CreatedAt time.Time `json:"created_at"`
+
+	// CreditsSpentMilli Credits the turn has spent so far, in thousandths of a credit, by the turn's own meter. A failed or timed-out turn reports what it spent before it stopped. Absent when the turn spent nothing.
+	CreditsSpentMilli *int64 `json:"credits_spent_milli,omitempty"`
 
 	// Deferrable True for scheduled work that yields admission priority to direct turns.
 	Deferrable *bool `json:"deferrable,omitempty"`
@@ -4766,6 +4790,9 @@ type AgentTurn struct {
 
 	// Id Stable turn identifier.
 	Id string `json:"id"`
+
+	// Kind What the turn does. `agent` turns run the agent. A `compaction` turn, queued by a compact request, only summarizes older history; it runs in the session's turn order like any other turn and writes no messages of its own besides the summary.
+	Kind *AgentTurnKind `json:"kind,omitempty"`
 
 	// Output The validated structured output. Present only on a `completed` turn that declared an output schema. Read this instead of parsing the transcript.
 	Output *map[string]interface{} `json:"output,omitempty"`
@@ -4794,6 +4821,9 @@ type AgentTurn struct {
 
 // AgentTurnErrorScope Present when the overall agent-turn budget was exhausted.
 type AgentTurnErrorScope string
+
+// AgentTurnKind What the turn does. `agent` turns run the agent. A `compaction` turn, queued by a compact request, only summarizes older history; it runs in the session's turn order like any other turn and writes no messages of its own besides the summary.
+type AgentTurnKind string
 
 // AgentTurnListResponse defines model for AgentTurnListResponse.
 type AgentTurnListResponse struct {
@@ -5608,7 +5638,7 @@ type CompactionCreatedPayload struct {
 	// SummaryModel Model that produced the summary.
 	SummaryModel *string `json:"summary_model,omitempty"`
 
-	// Trigger What started a compaction pass. `auto` is the threshold-gated pass that runs after a turn commits; `append` is the threshold-gated pass that runs inline on a message append; `manual` is an explicit compact request.
+	// Trigger What started a compaction pass. `auto` is the threshold-gated pass a turn runs before it loads its context; `manual` is a compaction turn queued by a compact request. `append` appears only on summaries written before compaction moved into turns.
 	Trigger              *CompactionTrigger     `json:"trigger,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
@@ -5627,7 +5657,7 @@ type CompactionFailedPayload struct {
 	// ThroughSequence Highest transcript sequence the failed pass was summarizing.
 	ThroughSequence *int `json:"through_sequence,omitempty"`
 
-	// Trigger What started a compaction pass. `auto` is the threshold-gated pass that runs after a turn commits; `append` is the threshold-gated pass that runs inline on a message append; `manual` is an explicit compact request.
+	// Trigger What started a compaction pass. `auto` is the threshold-gated pass a turn runs before it loads its context; `manual` is a compaction turn queued by a compact request. `append` appears only on summaries written before compaction moved into turns.
 	Trigger              *CompactionTrigger     `json:"trigger,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
@@ -5649,12 +5679,12 @@ type CompactionStartedPayload struct {
 	// ThroughSequence Highest transcript sequence this pass is summarizing.
 	ThroughSequence *int `json:"through_sequence,omitempty"`
 
-	// Trigger What started a compaction pass. `auto` is the threshold-gated pass that runs after a turn commits; `append` is the threshold-gated pass that runs inline on a message append; `manual` is an explicit compact request.
+	// Trigger What started a compaction pass. `auto` is the threshold-gated pass a turn runs before it loads its context; `manual` is a compaction turn queued by a compact request. `append` appears only on summaries written before compaction moved into turns.
 	Trigger              *CompactionTrigger     `json:"trigger,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// CompactionTrigger What started a compaction pass. `auto` is the threshold-gated pass that runs after a turn commits; `append` is the threshold-gated pass that runs inline on a message append; `manual` is an explicit compact request.
+// CompactionTrigger What started a compaction pass. `auto` is the threshold-gated pass a turn runs before it loads its context; `manual` is a compaction turn queued by a compact request. `append` appears only on summaries written before compaction moved into turns.
 type CompactionTrigger string
 
 // CompleteSessionPDFUploadRequest defines model for CompleteSessionPDFUploadRequest.
@@ -5909,7 +5939,7 @@ type CreateAgentRequest struct {
 	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session, or the provider's own default when nothing sets a level.
 	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
 
-	// TimeoutSeconds Per-turn execution timeout in seconds for this agent. Omit or `0` to use the platform default (600s / 10 minutes); a request's `operation.timeout_seconds` overrides it for that turn.
+	// TimeoutSeconds Per-turn execution timeout in seconds for this agent. Omit or `0` to use the platform default (1800s / 30 minutes); a request's `operation.timeout_seconds` overrides it for that turn.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 
 	// ToolPresentation Controls how selected actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
@@ -7279,7 +7309,7 @@ type NudgeSessionRequest struct {
 
 	// Wake When true and the target turn is waiting on an interruptible agent tool, resolve that tool call with `{ "interrupted": true, "reason": "user_direction" }` and resume the same turn. Running and newly queued turns ignore this field.
 	//
-	// A turn waiting on the outcome of a question it asked with `mobius.interaction.open` (`mobius_event_wait` on `interaction.resolved`) is resumed by every nudge, with or without this field. The question stays open: the tool result also carries `interaction_id` and `interaction_status: "pending"`, and the question's outcome still arrives in the conversation as its own input.
+	// A turn waiting on the outcome of a question it asked with `mobius.interaction.create` (`mobius_event_wait` on `interaction.resolved`) is resumed by every nudge, with or without this field. The question stays open: the tool result also carries `interaction_id` and `interaction_status: "pending"`, and the question's outcome still arrives in the conversation as its own input.
 	Wake *bool `json:"wake,omitempty"`
 }
 
@@ -8239,11 +8269,11 @@ type Session struct {
 	// ChatApp The chat-app conversation behind a session: which app, and the channel, group, or direct message the people in it are talking in.
 	ChatApp *SessionChatAppConversation `json:"chat_app,omitempty"`
 
-	// Compaction Whether a compaction pass is running on this session right now, and the threshold that will trigger the next one.
+	// Compaction The threshold that will trigger the session's next compaction.
 	//
-	// This is the poll-side counterpart to the `compaction.started` / `compaction.created` / `compaction.failed` stream events: those events are live-only, so a client that connects mid-pass reads this instead. On the single-session read the object is always present, so a client binds one shape — an idle session reports `in_progress: false` and nothing else but the threshold. List entries omit it entirely.
+	// Compaction runs inside a turn, so whether one is running is read from the session's turns: a turn with `compacting: true`, or a `compaction` turn that is queued or running.
 	//
-	// Paired with a client-side estimate over the transcript it already renders, `threshold_tokens` supports a context-capacity gauge rather than a spinner that appears without warning. The session token totals are lifetime sums over every model call, not the current context size, so they do not fit that gauge.
+	// Paired with a client-side estimate over the transcript it already renders, `threshold_tokens` supports a context-capacity gauge rather than a spinner that appears without warning. The session token totals are lifetime sums over every model call, not the current context size, so they do not fit that gauge. On the single-session read the object is always present; list entries omit it entirely.
 	Compaction *SessionCompactionProgress `json:"compaction,omitempty"`
 
 	// CompactionPolicy Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values.
@@ -8381,7 +8411,8 @@ type SessionCompactionPolicy struct {
 	// Strategy `auto` (default) compacts automatically when the transcript crosses the model-relative `threshold` or exact `threshold_tokens` trigger. `manual` only compacts on an explicit compact request. `disabled` (alias `none`) never compacts.
 	Strategy *SessionCompactionPolicyStrategy `json:"strategy,omitempty"`
 
-	// SummaryModel Model used to produce compaction summaries.
+	// SummaryModel Ignored. Every session is summarized by the same platform model. Accepted until web clients that send it are gone; never returned.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	SummaryModel *string `json:"summary_model,omitempty"`
 
 	// Threshold T-shirt size selecting when `auto` compaction triggers as a percentage of the session model's input context window: `xs` 10%, `sm` 20%, `md` 40%, `lg` 60%, and `xl` 80%. Unknown/custom models use a conservative 200k-token context window. `sm` is the default.
@@ -8394,32 +8425,18 @@ type SessionCompactionPolicy struct {
 // SessionCompactionPolicyStrategy `auto` (default) compacts automatically when the transcript crosses the model-relative `threshold` or exact `threshold_tokens` trigger. `manual` only compacts on an explicit compact request. `disabled` (alias `none`) never compacts.
 type SessionCompactionPolicyStrategy string
 
-// SessionCompactionProgress Whether a compaction pass is running on this session right now, and the threshold that will trigger the next one.
+// SessionCompactionProgress The threshold that will trigger the session's next compaction.
 //
-// This is the poll-side counterpart to the `compaction.started` / `compaction.created` / `compaction.failed` stream events: those events are live-only, so a client that connects mid-pass reads this instead. On the single-session read the object is always present, so a client binds one shape — an idle session reports `in_progress: false` and nothing else but the threshold. List entries omit it entirely.
+// Compaction runs inside a turn, so whether one is running is read from the session's turns: a turn with `compacting: true`, or a `compaction` turn that is queued or running.
 //
-// Paired with a client-side estimate over the transcript it already renders, `threshold_tokens` supports a context-capacity gauge rather than a spinner that appears without warning. The session token totals are lifetime sums over every model call, not the current context size, so they do not fit that gauge.
+// Paired with a client-side estimate over the transcript it already renders, `threshold_tokens` supports a context-capacity gauge rather than a spinner that appears without warning. The session token totals are lifetime sums over every model call, not the current context size, so they do not fit that gauge. On the single-session read the object is always present; list entries omit it entirely.
 type SessionCompactionProgress struct {
-	// Deadline When the running pass gives up. Absent when no pass is running. A pass still marked in progress past this point has died.
-	Deadline *time.Time `json:"deadline,omitempty"`
-
-	// FromSequence Lowest transcript sequence the running pass is summarizing.
-	FromSequence *int `json:"from_sequence,omitempty"`
-
-	// InProgress True while a summarization pass is running. Derived: a pass that dies without clearing its marker reads false once its `deadline` passes.
+	// InProgress Always false. Read the session's turns instead. Kept until web clients that read it are gone.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	InProgress bool `json:"in_progress"`
-
-	// MessageCount Number of transcript messages the running pass is folding into its summary.
-	MessageCount *int `json:"message_count,omitempty"`
-
-	// StartedAt When the running pass started. Absent when no pass is running.
-	StartedAt *time.Time `json:"started_at,omitempty"`
 
 	// ThresholdTokens Estimated-token size at which this session compacts automatically, resolved from its policy and model. Absent when the session does not compact automatically (`manual`, `disabled`).
 	ThresholdTokens *int `json:"threshold_tokens,omitempty"`
-
-	// ThroughSequence Highest transcript sequence the running pass is summarizing.
-	ThroughSequence *int `json:"through_sequence,omitempty"`
 }
 
 // SessionCompactionThreshold T-shirt size selecting when `auto` compaction triggers as a percentage of the session model's input context window: `xs` 10%, `sm` 20%, `md` 40%, `lg` 60%, and `xl` 80%. Unknown/custom models use a conservative 200k-token context window. `sm` is the default.
@@ -8527,7 +8544,7 @@ type SessionEventProjection struct {
 	// Excerpt Optional bounded plain-text excerpt from the event, such as a comment or review body.
 	Excerpt *string `json:"excerpt,omitempty"`
 
-	// Kind Stable UI treatment for a projected event. `interaction` is the outcome of a question the agent asked with mobius.interaction.open: answered, dismissed, or expired.
+	// Kind Stable UI treatment for a projected event. `interaction` is the outcome of a question the agent asked with mobius.interaction.create: answered, dismissed, or expired.
 	Kind SessionEventProjectionKind `json:"kind"`
 
 	// OccurredAt Upstream occurrence time, falling back to receipt time.
@@ -8558,7 +8575,7 @@ type SessionEventProjectionAttribute struct {
 	Value string `json:"value"`
 }
 
-// SessionEventProjectionKind Stable UI treatment for a projected event. `interaction` is the outcome of a question the agent asked with mobius.interaction.open: answered, dismissed, or expired.
+// SessionEventProjectionKind Stable UI treatment for a projected event. `interaction` is the outcome of a question the agent asked with mobius.interaction.create: answered, dismissed, or expired.
 type SessionEventProjectionKind string
 
 // SessionEventSubscription defines model for SessionEventSubscription.
@@ -9141,17 +9158,23 @@ type SessionTranscriptSnapshot struct {
 
 // SessionTranscriptTurn defines model for SessionTranscriptTurn.
 type SessionTranscriptTurn struct {
-	AgentId           string     `json:"agent_id"`
-	Attempt           int        `json:"attempt"`
-	ChannelExchangeId *string    `json:"channel_exchange_id,omitempty"`
-	CompletedAt       *time.Time `json:"completed_at,omitempty"`
-	CreatedAt         time.Time  `json:"created_at"`
+	AgentId           string  `json:"agent_id"`
+	Attempt           int     `json:"attempt"`
+	ChannelExchangeId *string `json:"channel_exchange_id,omitempty"`
+
+	// Compacting Same as `compacting` on the turn resource.
+	Compacting  *bool      `json:"compacting,omitempty"`
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
 
 	// DeletedAt Set when the turn has been taken back. A reducer that receives this drops the turn and every row belonging to it; the turn frame is the whole signal, since the removed message rows are never re-sent.
 	DeletedAt    *time.Time `json:"deleted_at,omitempty"`
 	ErrorMessage *string    `json:"error_message,omitempty"`
 	ErrorType    *string    `json:"error_type,omitempty"`
 	Id           string     `json:"id"`
+
+	// Kind What the turn does. `agent` turns run the agent. A `compaction` turn, queued by a compact request, only summarizes older history; it runs in the session's turn order like any other turn and writes no messages of its own besides the summary.
+	Kind *AgentTurnKind `json:"kind,omitempty"`
 
 	// Output The validated structured output, delivered on the terminal `turn.upsert` frame. Present only on a `completed` turn that declared an output schema.
 	Output *map[string]interface{} `json:"output,omitempty"`
@@ -9655,11 +9678,14 @@ type TurnStartedPayload map[string]interface{}
 
 // TurnUpsertFrame defines model for TurnUpsertFrame.
 type TurnUpsertFrame struct {
-	AgentId           string     `json:"agent_id"`
-	Attempt           int        `json:"attempt"`
-	ChannelExchangeId *string    `json:"channel_exchange_id,omitempty"`
-	CompletedAt       *time.Time `json:"completed_at,omitempty"`
-	CreatedAt         time.Time  `json:"created_at"`
+	AgentId           string  `json:"agent_id"`
+	Attempt           int     `json:"attempt"`
+	ChannelExchangeId *string `json:"channel_exchange_id,omitempty"`
+
+	// Compacting Same as `compacting` on the turn resource.
+	Compacting  *bool      `json:"compacting,omitempty"`
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
 
 	// DeletedAt Set when the turn has been taken back. A reducer that receives this drops the turn and every row belonging to it; the turn frame is the whole signal, since the removed message rows are never re-sent.
 	DeletedAt    *time.Time               `json:"deleted_at,omitempty"`
@@ -9667,6 +9693,9 @@ type TurnUpsertFrame struct {
 	ErrorType    *string                  `json:"error_type,omitempty"`
 	EventType    TurnUpsertFrameEventType `json:"event_type"`
 	Id           string                   `json:"id"`
+
+	// Kind What the turn does. `agent` turns run the agent. A `compaction` turn, queued by a compact request, only summarizes older history; it runs in the session's turn order like any other turn and writes no messages of its own besides the summary.
+	Kind *AgentTurnKind `json:"kind,omitempty"`
 
 	// Output The validated structured output, delivered on the terminal `turn.upsert` frame. Present only on a `completed` turn that declared an output schema.
 	Output *map[string]interface{} `json:"output,omitempty"`
@@ -9784,7 +9813,7 @@ type UpdateAgentRequest struct {
 	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session, or the provider's own default when nothing sets a level.
 	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
 
-	// TimeoutSeconds Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (600s / 10 minutes); a request's `operation.timeout_seconds` overrides it for that turn.
+	// TimeoutSeconds Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (1800s / 30 minutes); a request's `operation.timeout_seconds` overrides it for that turn.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 
 	// ToolPresentation Controls how selected actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
@@ -10954,6 +10983,9 @@ type GetSessionTranscriptParams struct {
 type StreamSessionTranscriptParams struct {
 	// Cursor Opaque resume cursor.
 	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Tail With no cursor, start at the session's current end instead of replaying its history. The stream still sends the in-flight rows, the turns that have not finished, and pending interactions, then `stream.ready`. For a client that reads the history from the messages API. A cursor takes precedence.
+	Tail *bool `form:"tail,omitempty" json:"tail,omitempty"`
 
 	// LastEventID Opaque resume cursor from the last delivered state frame.
 	LastEventID *string `json:"Last-Event-ID,omitempty"`
@@ -27525,6 +27557,18 @@ func NewStreamSessionTranscriptRequest(server string, sessionId SessionIdParam, 
 		if params.Cursor != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Tail != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "tail", *params.Tail, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {

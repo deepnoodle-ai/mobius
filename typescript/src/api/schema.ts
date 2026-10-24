@@ -871,7 +871,7 @@ export interface paths {
          * Create agent
          * @description Creates an agent. An agent IS a principal (principals.kind = agent): its backing identity row is created atomically with the agent — there is no separate machine-identity side record. The agent principal is for identity, ownership, and attribution; an agent's tools come from its own `action_selectors`, not from roles.
          *
-         *     By default (`if_exists: error`, the default), a duplicate `name` or `external_ref` returns 409. Set `if_exists: adopt` together with `external_ref` to make the call safely retryable: when a live agent already carries that `external_ref`, it is returned unchanged with `200` instead of erroring — mutable fields are ignored, since no write happens. `external_ref` is required to use `adopt`; omitting it returns 400. A soft-deleted agent still owns its `external_ref`: it is never resurrected and never replaced, so a match against a deleted agent returns 409 even with `adopt`.
+         *     By default (`if_exists: error`, the default), a duplicate `name` or `external_ref` returns 409. Set `if_exists: adopt` together with `external_ref` to make the call safely retryable: when a live agent already carries that `external_ref`, it is returned unchanged with `200` instead of erroring — mutable fields are ignored, since no write happens. `external_ref` is required to use `adopt`; omitting it returns 400. A soft-deleted agent still owns its `external_ref`: it is never resurrected and never replaced, so a match against a deleted agent returns 409 even with `adopt`. So does a match against an agent outside the caller's audience: adopt returns only an agent the caller could read with `GET /v1/agents/{id}`.
          */
         post: operations["createAgent"];
         delete?: never;
@@ -1816,8 +1816,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Compact the session transcript now
-         * @description Compact messages appended since the last compaction immediately, regardless of the configured strategy or token threshold. This is a no-op when there is nothing new to compact. Returns the updated session.
+         * Compact the session transcript
+         * @description Queue a compaction turn that summarizes messages appended since the last compaction, regardless of the token threshold. It runs in the session's turn order, after any turn already running, and is a no-op when there is nothing new to compact. Watch the session's turns for its progress. Returns the session as it was when the turn was queued. Refused with 409 when compaction is disabled for the session.
          */
         post: operations["compactSession"];
         delete?: never;
@@ -2972,8 +2972,7 @@ export interface components {
          * @description Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values.
          * @example {
          *       "strategy": "auto",
-         *       "threshold": "sm",
-         *       "summary_model": "claude-haiku-4-5-20251001"
+         *       "threshold": "sm"
          *     }
          */
         SessionCompactionPolicy: {
@@ -2989,7 +2988,10 @@ export interface components {
              * @description Exact estimated-token count at which `auto` compacts. Use this for advanced workloads that need a specific threshold rather than a model-relative preset. Mutually exclusive with `threshold`.
              */
             threshold_tokens?: number;
-            /** @description Model used to produce compaction summaries. */
+            /**
+             * @deprecated
+             * @description Ignored. Every session is summarized by the same platform model. Accepted until web clients that send it are gone; never returned.
+             */
             summary_model?: string;
         };
         /**
@@ -3069,7 +3071,7 @@ export interface components {
             system_prompt?: string;
             /**
              * Format: int64
-             * @description Execution timeout, in seconds, for a single turn of this agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A request's `operation.timeout_seconds` overrides this for that turn.
+             * @description Execution timeout, in seconds, for a single turn of this agent. `0` (or omitted) uses the platform default (1800s / 30 minutes). A request's `operation.timeout_seconds` overrides this for that turn.
              */
             timeout_seconds?: number;
             /** @description Default session-compaction policy. New sessions opened against this agent inherit it (below server defaults, above explicit per-session overrides). Absent when the agent has no default. */
@@ -3166,40 +3168,22 @@ export interface components {
             covers_through_sequence: number;
         };
         /**
-         * @description Whether a compaction pass is running on this session right now, and the threshold that will trigger the next one.
+         * @description The threshold that will trigger the session's next compaction.
          *
-         *     This is the poll-side counterpart to the `compaction.started` / `compaction.created` / `compaction.failed` stream events: those events are live-only, so a client that connects mid-pass reads this instead. On the single-session read the object is always present, so a client binds one shape — an idle session reports `in_progress: false` and nothing else but the threshold. List entries omit it entirely.
+         *     Compaction runs inside a turn, so whether one is running is read from the session's turns: a turn with `compacting: true`, or a `compaction` turn that is queued or running.
          *
-         *     Paired with a client-side estimate over the transcript it already renders, `threshold_tokens` supports a context-capacity gauge rather than a spinner that appears without warning. The session token totals are lifetime sums over every model call, not the current context size, so they do not fit that gauge.
+         *     Paired with a client-side estimate over the transcript it already renders, `threshold_tokens` supports a context-capacity gauge rather than a spinner that appears without warning. The session token totals are lifetime sums over every model call, not the current context size, so they do not fit that gauge. On the single-session read the object is always present; list entries omit it entirely.
          * @example {
-         *       "in_progress": true,
-         *       "started_at": "2026-08-02T15:04:05Z",
-         *       "deadline": "2026-08-02T15:04:35Z",
-         *       "from_sequence": 412,
-         *       "through_sequence": 987,
-         *       "message_count": 63,
+         *       "in_progress": false,
          *       "threshold_tokens": 150000
          *     }
          */
         SessionCompactionProgress: {
-            /** @description True while a summarization pass is running. Derived: a pass that dies without clearing its marker reads false once its `deadline` passes. */
+            /**
+             * @deprecated
+             * @description Always false. Read the session's turns instead. Kept until web clients that read it are gone.
+             */
             in_progress: boolean;
-            /**
-             * Format: date-time
-             * @description When the running pass started. Absent when no pass is running.
-             */
-            started_at?: string;
-            /**
-             * Format: date-time
-             * @description When the running pass gives up. Absent when no pass is running. A pass still marked in progress past this point has died.
-             */
-            deadline?: string;
-            /** @description Lowest transcript sequence the running pass is summarizing. */
-            from_sequence?: number;
-            /** @description Highest transcript sequence the running pass is summarizing. */
-            through_sequence?: number;
-            /** @description Number of transcript messages the running pass is folding into its summary. */
-            message_count?: number;
             /** @description Estimated-token size at which this session compacts automatically, resolved from its policy and model. Absent when the session does not compact automatically (`manual`, `disabled`). */
             threshold_tokens?: number;
         };
@@ -5463,7 +5447,7 @@ export interface components {
             system_prompt?: string;
             /**
              * Format: int64
-             * @description Per-turn execution timeout in seconds for this agent. Omit or `0` to use the platform default (600s / 10 minutes); a request's `operation.timeout_seconds` overrides it for that turn.
+             * @description Per-turn execution timeout in seconds for this agent. Omit or `0` to use the platform default (1800s / 30 minutes); a request's `operation.timeout_seconds` overrides it for that turn.
              */
             timeout_seconds?: number;
             /** @description Default session-compaction policy new sessions inherit from this agent. */
@@ -5514,7 +5498,7 @@ export interface components {
             system_prompt?: string;
             /**
              * Format: int64
-             * @description Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (600s / 10 minutes); a request's `operation.timeout_seconds` overrides it for that turn.
+             * @description Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (1800s / 30 minutes); a request's `operation.timeout_seconds` overrides it for that turn.
              */
             timeout_seconds?: number;
             /**
@@ -5895,7 +5879,7 @@ export interface components {
             [key: string]: unknown;
         };
         /**
-         * @description Stable UI treatment for a projected event. `interaction` is the outcome of a question the agent asked with mobius.interaction.open: answered, dismissed, or expired.
+         * @description Stable UI treatment for a projected event. `interaction` is the outcome of a question the agent asked with mobius.interaction.create: answered, dismissed, or expired.
          * @enum {string}
          */
         SessionEventProjectionKind: "generic" | "repository_change" | "file_change" | "email" | "calendar_event" | "message" | "work_item" | "content_change" | "business_record" | "interaction";
@@ -6090,6 +6074,9 @@ export interface components {
             deferrable?: boolean;
             /** @description Display-only routine name for a scheduled turn's live state. */
             routine_name?: string;
+            kind?: components["schemas"]["AgentTurnKind"];
+            /** @description True while this turn is summarizing older history before it runs. Meaningful only while the turn is `running`; a turn interrupted mid-compaction is requeued and starts the summary again. */
+            compacting?: boolean;
             /** @description 1-based attempt number; retries create new turns. */
             attempt: number;
             /** @description Current lifecycle status of the agent turn. */
@@ -6115,6 +6102,11 @@ export interface components {
              */
             effective_timeout_seconds?: number;
             /**
+             * Format: int64
+             * @description Credits the turn has spent so far, in thousandths of a credit, by the turn's own meter. A failed or timed-out turn reports what it spent before it stopped. Absent when the turn spent nothing.
+             */
+            credits_spent_milli?: number;
+            /**
              * Format: date-time
              * @description Time the turn was created.
              */
@@ -6135,6 +6127,11 @@ export interface components {
              */
             deleted_at?: string | null;
         };
+        /**
+         * @description What the turn does. `agent` turns run the agent. A `compaction` turn, queued by a compact request, only summarizes older history; it runs in the session's turn order like any other turn and writes no messages of its own besides the summary.
+         * @enum {string}
+         */
+        AgentTurnKind: "agent" | "compaction";
         /**
          * @description Aggregate token accounting for one terminal turn, summed over every LLM call the turn made, across every segment of a resumed turn. On the turn resource, a failed turn reports the calls that finished before it failed; `turn.failed` carries no usage. It is a usage report, not a bill — see the billing usage events for charged amounts.
          * @example {
@@ -6221,6 +6218,9 @@ export interface components {
             session_id: string;
             channel_exchange_id?: string;
             attempt: number;
+            kind?: components["schemas"]["AgentTurnKind"];
+            /** @description Same as `compacting` on the turn resource. */
+            compacting?: boolean;
             /** @description Known AgentTurn status; unknown values must be preserved. */
             status: string;
             seq?: number;
@@ -6545,7 +6545,7 @@ export interface components {
             [key: string]: unknown;
         };
         /**
-         * @description What started a compaction pass. `auto` is the threshold-gated pass that runs after a turn commits; `append` is the threshold-gated pass that runs inline on a message append; `manual` is an explicit compact request.
+         * @description What started a compaction pass. `auto` is the threshold-gated pass a turn runs before it loads its context; `manual` is a compaction turn queued by a compact request. `append` appears only on summaries written before compaction moved into turns.
          * @enum {string}
          */
         CompactionTrigger: "auto" | "manual" | "append";
@@ -6840,7 +6840,7 @@ export interface components {
             /**
              * @description When true and the target turn is waiting on an interruptible agent tool, resolve that tool call with `{ "interrupted": true, "reason": "user_direction" }` and resume the same turn. Running and newly queued turns ignore this field.
              *
-             *     A turn waiting on the outcome of a question it asked with `mobius.interaction.open` (`mobius_event_wait` on `interaction.resolved`) is resumed by every nudge, with or without this field. The question stays open: the tool result also carries `interaction_id` and `interaction_status: "pending"`, and the question's outcome still arrives in the conversation as its own input.
+             *     A turn waiting on the outcome of a question it asked with `mobius.interaction.create` (`mobius_event_wait` on `interaction.resolved`) is resumed by every nudge, with or without this field. The question stays open: the tool result also carries `interaction_id` and `interaction_status: "pending"`, and the question's outcome still arrives in the conversation as its own input.
              * @default false
              */
             wake?: boolean;
@@ -12398,6 +12398,8 @@ export interface operations {
             query?: {
                 /** @description Opaque resume cursor. */
                 cursor?: string;
+                /** @description With no cursor, start at the session's current end instead of replaying its history. The stream still sends the in-flight rows, the turns that have not finished, and pending interactions, then `stream.ready`. For a client that reads the history from the messages API. A cursor takes precedence. */
+                tail?: boolean;
             };
             header?: {
                 /** @description Opaque resume cursor from the last delivered state frame. */
