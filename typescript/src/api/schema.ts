@@ -20,6 +20,8 @@ export interface paths {
         /**
          * Update a resource's custody or audience
          * @description Shares, un-shares, hands custody to the team, transfers custody to a person, or detaches a narrowing agent container. Audience-expanding changes require an explicit confirmation. Un-sharing is refused while the resource remains delegated to a wider agent audience.
+         *
+         *     A conversation's audience is set when it starts, so `session` always returns `409`. Share the chat instead, or start a new one.
          */
         patch: operations["updateResourceOwnership"];
         trace?: never;
@@ -39,7 +41,7 @@ export interface paths {
         put?: never;
         /**
          * Create API key
-         * @description Creates an API key for the active organization. Pass `principal_id` to bind the key to an existing machine principal — it authenticates as that principal and inherits its role assignments (optionally capped by `scope_role_id`). Omit `principal_id` to use the permanent organization principal with the chosen system `role` (defaults to `Admin`) as a mandatory key scope. The raw key value is returned in `key` and is never retrievable again after this response.
+         * @description Creates an API key for the active organization. Pass `principal_id` to bind the key to an existing API client (a standalone `service` principal) — it authenticates as that principal and inherits its role assignments (optionally capped by `scope_role_id`). Agents and platform identities cannot hold these keys. Tag keys starting with `mobius:` or `mobius/` are reserved and rejected. Omit `principal_id` to use the permanent organization principal with the chosen system `role` (defaults to `Admin`) as a mandatory key scope. The raw key value is returned in `key` and is never retrievable again after this response.
          */
         post: operations["createAPIKey"];
         delete?: never;
@@ -64,7 +66,7 @@ export interface paths {
         post?: never;
         /**
          * Delete API key
-         * @description Revokes the key. In-flight requests using this key will immediately start receiving 401 while credential metadata remains available for audit history.
+         * @description Revokes the key. In-flight requests using this key will immediately start receiving 401 while credential metadata remains available for audit history. Revoking a key whose authority includes the Owner role requires an organization Owner.
          */
         delete: operations["deleteAPIKey"];
         options?: never;
@@ -270,6 +272,8 @@ export interface paths {
         /**
          * List models
          * @description Returns assignable agent models grouped by provider. Providers appear only when the org has usable credentials, either from BYOK integration state or platform-managed configuration.
+         *
+         *     With `capability=voice`, returns the voice models a call can use instead: only when the organization has voice calls, only models its plan allows, and only from providers Mobius holds platform credentials for. Voice models never appear in the default text list.
          */
         get: operations["listCatalogModels"];
         put?: never;
@@ -2379,7 +2383,7 @@ export interface paths {
         };
         /**
          * List machine principals
-         * @description Returns org machine principals (`service`, `agent`, `system`) used by workers, agents, and integrations. Only active principals are returned by default; pass `include_disabled=true` to also include disabled ones (e.g. for an admin audit). Filter by `kind` to narrow to a single kind.
+         * @description Returns the organization's API clients (standalone `service` principals). Only active principals are returned by default; pass `include_disabled=true` to also include disabled ones (e.g. for an admin audit). `kind=agent` and `kind=system` return an empty list.
          */
         get: operations["listPrincipals"];
         put?: never;
@@ -2810,7 +2814,7 @@ export interface components {
         ErrorResponse: {
             /** @description Error detail. */
             error: {
-                /** @description Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. When the request-wide rate limiter refuses a call, `rate_limit_exceeded` carries `scope` (`key`, `org`, or `browser`), `window`, `limit`, and `retry_after_seconds` in `details`; an endpoint's own cap returns the same code without them. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family. */
+                /** @description Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. When the request-wide rate limiter refuses a call, `rate_limit_exceeded` carries `scope` (`key`, `org`, or `browser`), `window`, `limit`, and `retry_after_seconds` in `details`; an endpoint's own cap returns the same code without them. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`; a send or nudge while a voice call is in progress in the chat uses `voice_call_active`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family. */
                 code: string;
                 /** @description Human-readable error message */
                 message: string;
@@ -4015,9 +4019,14 @@ export interface components {
              */
             kind: "capability" | "utility";
         };
+        /**
+         * @description What a model is for. `text` models are assignable to agents. `voice` models serve voice calls only.
+         * @enum {string}
+         */
+        ModelCapability: "text" | "voice";
         /** @description Models a platform agent can be assigned in this org, grouped by available provider. */
         ModelCatalogResponse: {
-            /** @description Model id assigned when an agent specifies no model. */
+            /** @description Model id assigned when an agent specifies no model. With `capability=voice`, the voice model a call uses when it names none. */
             default_model: string;
             /** @description Available providers in display order. Providers with no configured credentials are omitted. */
             items: components["schemas"]["ModelProviderGroup"][];
@@ -4499,7 +4508,7 @@ export interface components {
             integration_id: string;
             /** @description Whether the agent can currently answer on this account. */
             enabled: boolean;
-            /** @description Whether this Slack or Teams answering binding shows public progress. Defaults to false for new bindings. */
+            /** @description Always true. Every answered message shows progress where the chat app can edit or stream a reply. Read-only; kept for older clients. */
             show_progress_updates: boolean;
             /** @description Whether direct messages are accepted. */
             dms: boolean;
@@ -5268,6 +5277,7 @@ export interface components {
             /** @enum {string} */
             relationship: "delegation" | "container";
             visibility: components["schemas"]["ResourceVisibility"];
+            /** @description The decisions accepted for this row. A contained conversation offers only keep_and_widen, because its audience is set when it starts. */
             allowed_actions: ("revoke" | "make_private" | "keep_and_widen")[];
         };
         AgentAudienceResourceDisposition: {
@@ -5307,7 +5317,7 @@ export interface components {
              * @default false
              */
             replace_existing?: boolean;
-            /** @description Show public progress for Slack or Teams. Omitted preserves the stored preference; explicit false disables it. New bindings default to false. */
+            /** @description Ignored. Progress is no longer a per-binding choice; every answered message shows progress where the chat app can. */
             show_progress_updates?: boolean;
             /**
              * @description Respond to direct messages.
@@ -6128,10 +6138,10 @@ export interface components {
             deleted_at?: string | null;
         };
         /**
-         * @description What the turn does. `agent` turns run the agent. A `compaction` turn, queued by a compact request, only summarizes older history; it runs in the session's turn order like any other turn and writes no messages of its own besides the summary.
+         * @description What the turn does. `agent` turns run the agent. A `compaction` turn, queued by a compact request, only summarizes older history; it runs in the session's turn order like any other turn and writes no messages of its own besides the summary. A `voice` turn is one spoken exchange in a voice call.
          * @enum {string}
          */
-        AgentTurnKind: "agent" | "compaction";
+        AgentTurnKind: "agent" | "compaction" | "voice";
         /**
          * @description Aggregate token accounting for one terminal turn, summed over every LLM call the turn made, across every segment of a resumed turn. On the turn resource, a failed turn reports the calls that finished before it failed; `turn.failed` carries no usage. It is a usage report, not a bill — see the billing usage events for charged amounts.
          * @example {
@@ -6258,7 +6268,7 @@ export interface components {
             /** @description Opaque continuation present when has_more is true. */
             next_page_token?: string;
         };
-        SessionTranscriptFrame: components["schemas"]["MessageUpsertFrame"] | components["schemas"]["MessageBlockFrame"] | components["schemas"]["MessageBlockPatchFrame"] | components["schemas"]["MessageDeltaFrame"] | components["schemas"]["TurnUpsertFrame"] | components["schemas"]["InteractionUpsertFrame"] | components["schemas"]["StreamReadyFrame"] | components["schemas"]["StreamEndFrame"];
+        SessionTranscriptFrame: components["schemas"]["MessageUpsertFrame"] | components["schemas"]["MessageBlockFrame"] | components["schemas"]["MessageBlockPatchFrame"] | components["schemas"]["MessageDeltaFrame"] | components["schemas"]["TurnUpsertFrame"] | components["schemas"]["InteractionUpsertFrame"] | components["schemas"]["StreamReadyFrame"] | components["schemas"]["StreamEndFrame"] | components["schemas"]["VoiceCallStartedFrame"] | components["schemas"]["VoiceCallEndedFrame"];
         MessageUpsertFrame: components["schemas"]["SessionTranscriptMessage"] & {
             /** @enum {string} */
             event_type: "message.upsert";
@@ -6416,6 +6426,37 @@ export interface components {
             session_id: string;
             /** @enum {string} */
             reason: "idle" | "rotate" | "access_ended";
+        };
+        /** @description Live pulse: a voice call started in the chat. Not replayed on reconnect; read the session's `active_voice_call` instead. */
+        VoiceCallStartedFrame: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event_type: "voice_call.started";
+            session_id: string;
+            voice_call: components["schemas"]["VoiceCallFrameCall"];
+        };
+        /** @description The call a `voice_call.started` frame announces. */
+        VoiceCallFrameCall: {
+            id: string;
+            /** Format: date-time */
+            started_at: string;
+            principal_id: string;
+        };
+        /** @description Live pulse: the chat's voice call ended, and sends work again. Not replayed on reconnect; read the session's `active_voice_call` instead. */
+        VoiceCallEndedFrame: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event_type: "voice_call.ended";
+            session_id: string;
+            voice_call_id: string;
+            /** @description Why the call ended. Known values are hangup, time_limit, funding, provider_error, client_gone, server_shutdown, disabled, and lost. */
+            end_reason: string;
+            /** Format: date-time */
+            ended_at?: string;
         };
         /** @description Payload of a `user.message` content event: the durable encoding of one non-assistant transcript message — caller input, or a user-role message carrying tool results. It mirrors the transcript row exactly, carrying the message identity (`message_id` + `sequence`) and full content. Replaying these events reconstructs the same view as reading the messages API. */
         SessionUserMessagePayload: {
@@ -9221,7 +9262,10 @@ export interface operations {
     };
     listCatalogModels: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Which models to list. Defaults to `text`. */
+                capability?: components["schemas"]["ModelCapability"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -11317,7 +11361,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            /** @description A distinct direct invocation is already queued, running, or waiting. The `session_turn_active` error details contain its `turn_id` and `status`. */
+            /** @description A distinct direct invocation is already queued, running, or waiting. The `session_turn_active` error details contain its `turn_id` and `status`. While a voice call is in progress in the chat, a send returns `voice_call_active` with the message "A voice call is in progress in this chat." */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -11905,7 +11949,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            /** @description A distinct direct invocation is already queued, running, or waiting. The `session_turn_active` error details contain its `turn_id` and `status`. */
+            /** @description A distinct direct invocation is already queued, running, or waiting. The `session_turn_active` error details contain its `turn_id` and `status`. While a voice call is in progress in the chat, a send returns `voice_call_active` with the message "A voice call is in progress in this chat." */
             409: {
                 headers: {
                     [name: string]: unknown;

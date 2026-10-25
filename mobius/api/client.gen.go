@@ -597,6 +597,7 @@ func (e AgentTurnErrorScope) Valid() bool {
 const (
 	AgentTurnKindAgent      AgentTurnKind = "agent"
 	AgentTurnKindCompaction AgentTurnKind = "compaction"
+	AgentTurnKindVoice      AgentTurnKind = "voice"
 )
 
 // Valid indicates whether the value is a known member of the AgentTurnKind enum.
@@ -605,6 +606,8 @@ func (e AgentTurnKind) Valid() bool {
 	case AgentTurnKindAgent:
 		return true
 	case AgentTurnKindCompaction:
+		return true
+	case AgentTurnKindVoice:
 		return true
 	default:
 		return false
@@ -1679,6 +1682,24 @@ const (
 func (e MessageUpsertFrameEventType) Valid() bool {
 	switch e {
 	case MessageUpsertFrameEventTypeMessageUpsert:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ModelCapability.
+const (
+	ModelCapabilityText  ModelCapability = "text"
+	ModelCapabilityVoice ModelCapability = "voice"
+)
+
+// Valid indicates whether the value is a known member of the ModelCapability enum.
+func (e ModelCapability) Valid() bool {
+	switch e {
+	case ModelCapabilityText:
+		return true
+	case ModelCapabilityVoice:
 		return true
 	default:
 		return false
@@ -3131,6 +3152,36 @@ func (e UpdateAgentRequestStrandedDisposition) Valid() bool {
 	case UpdateAgentRequestStrandedDispositionDelete:
 		return true
 	case UpdateAgentRequestStrandedDispositionRetain:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for VoiceCallEndedFrameEventType.
+const (
+	VoiceCallEndedFrameEventTypeVoiceCallEnded VoiceCallEndedFrameEventType = "voice_call.ended"
+)
+
+// Valid indicates whether the value is a known member of the VoiceCallEndedFrameEventType enum.
+func (e VoiceCallEndedFrameEventType) Valid() bool {
+	switch e {
+	case VoiceCallEndedFrameEventTypeVoiceCallEnded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for VoiceCallStartedFrameEventType.
+const (
+	VoiceCallStartedFrameEventTypeVoiceCallStarted VoiceCallStartedFrameEventType = "voice_call.started"
+)
+
+// Valid indicates whether the value is a known member of the VoiceCallStartedFrameEventType enum.
+func (e VoiceCallStartedFrameEventType) Valid() bool {
+	switch e {
+	case VoiceCallStartedFrameEventTypeVoiceCallStarted:
 		return true
 	default:
 		return false
@@ -4615,7 +4666,7 @@ type AgentMessagingBinding struct {
 	// SenderAllow Optional provider sender allowlist. Empty means any sender.
 	SenderAllow []string `json:"sender_allow"`
 
-	// ShowProgressUpdates Whether this Slack or Teams answering binding shows public progress. Defaults to false for new bindings.
+	// ShowProgressUpdates Always true. Every answered message shows progress where the chat app can edit or stream a reply. Read-only; kept for older clients.
 	ShowProgressUpdates bool `json:"show_progress_updates"`
 
 	// UpdatedAt Time the binding was last updated.
@@ -4669,7 +4720,7 @@ type AgentMessagingBindingRequest struct {
 	// SenderAllow Sender IDs allowed to trigger the agent (empty means no allowlist). An enabled `telegram` binding requires at least one numeric Telegram user ID and refuses `*`.
 	SenderAllow *[]string `json:"sender_allow,omitempty"`
 
-	// ShowProgressUpdates Show public progress for Slack or Teams. Omitted preserves the stored preference; explicit false disables it. New bindings default to false.
+	// ShowProgressUpdates Ignored. Progress is no longer a per-binding choice; every answered message shows progress where the chat app can.
 	ShowProgressUpdates *bool `json:"show_progress_updates,omitempty"`
 }
 
@@ -4791,7 +4842,7 @@ type AgentTurn struct {
 	// Id Stable turn identifier.
 	Id string `json:"id"`
 
-	// Kind What the turn does. `agent` turns run the agent. A `compaction` turn, queued by a compact request, only summarizes older history; it runs in the session's turn order like any other turn and writes no messages of its own besides the summary.
+	// Kind What the turn does. `agent` turns run the agent. A `compaction` turn, queued by a compact request, only summarizes older history; it runs in the session's turn order like any other turn and writes no messages of its own besides the summary. A `voice` turn is one spoken exchange in a voice call.
 	Kind *AgentTurnKind `json:"kind,omitempty"`
 
 	// Output The validated structured output. Present only on a `completed` turn that declared an output schema. Read this instead of parsing the transcript.
@@ -4822,7 +4873,7 @@ type AgentTurn struct {
 // AgentTurnErrorScope Present when the overall agent-turn budget was exhausted.
 type AgentTurnErrorScope string
 
-// AgentTurnKind What the turn does. `agent` turns run the agent. A `compaction` turn, queued by a compact request, only summarizes older history; it runs in the session's turn order like any other turn and writes no messages of its own besides the summary.
+// AgentTurnKind What the turn does. `agent` turns run the agent. A `compaction` turn, queued by a compact request, only summarizes older history; it runs in the session's turn order like any other turn and writes no messages of its own besides the summary. A `voice` turn is one spoken exchange in a voice call.
 type AgentTurnKind string
 
 // AgentTurnListResponse defines model for AgentTurnListResponse.
@@ -4887,6 +4938,7 @@ type AgentVisibility string
 
 // AgentVisibilityAffectedResource defines model for AgentVisibilityAffectedResource.
 type AgentVisibilityAffectedResource struct {
+	// AllowedActions The decisions accepted for this row. A contained conversation offers only keep_and_widen, because its audience is set when it starts.
 	AllowedActions []AgentVisibilityAffectedResourceAllowedActions `json:"allowed_actions"`
 
 	// Name Configuration name. Omitted for conversations and outputs.
@@ -6246,7 +6298,7 @@ type EmailDelivery struct {
 type ErrorResponse struct {
 	// Error Error detail.
 	Error struct {
-		// Code Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. When the request-wide rate limiter refuses a call, `rate_limit_exceeded` carries `scope` (`key`, `org`, or `browser`), `window`, `limit`, and `retry_after_seconds` in `details`; an endpoint's own cap returns the same code without them. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family.
+		// Code Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. When the request-wide rate limiter refuses a call, `rate_limit_exceeded` carries `scope` (`key`, `org`, or `browser`), `window`, `limit`, and `retry_after_seconds` in `details`; an endpoint's own cap returns the same code without them. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`; a send or nudge while a voice call is in progress in the chat uses `voice_call_active`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family.
 		Code string `json:"code"`
 
 		// Details Optional structured details specific to a `code`. Endpoints that set this document the per-code shape inline. Absent for codes whose `code` + `message` are sufficient.
@@ -7230,9 +7282,12 @@ type MessageUpsertFrame struct {
 // MessageUpsertFrameEventType defines model for MessageUpsertFrame.EventType.
 type MessageUpsertFrameEventType string
 
+// ModelCapability What a model is for. `text` models are assignable to agents. `voice` models serve voice calls only.
+type ModelCapability string
+
 // ModelCatalogResponse Models a platform agent can be assigned in this org, grouped by available provider.
 type ModelCatalogResponse struct {
-	// DefaultModel Model id assigned when an agent specifies no model.
+	// DefaultModel Model id assigned when an agent specifies no model. With `capability=voice`, the voice model a call uses when it names none.
 	DefaultModel string `json:"default_model"`
 
 	// Items Available providers in display order. Providers with no configured credentials are omitted.
@@ -9173,7 +9228,7 @@ type SessionTranscriptTurn struct {
 	ErrorType    *string    `json:"error_type,omitempty"`
 	Id           string     `json:"id"`
 
-	// Kind What the turn does. `agent` turns run the agent. A `compaction` turn, queued by a compact request, only summarizes older history; it runs in the session's turn order like any other turn and writes no messages of its own besides the summary.
+	// Kind What the turn does. `agent` turns run the agent. A `compaction` turn, queued by a compact request, only summarizes older history; it runs in the session's turn order like any other turn and writes no messages of its own besides the summary. A `voice` turn is one spoken exchange in a voice call.
 	Kind *AgentTurnKind `json:"kind,omitempty"`
 
 	// Output The validated structured output, delivered on the terminal `turn.upsert` frame. Present only on a `completed` turn that declared an output schema.
@@ -9694,7 +9749,7 @@ type TurnUpsertFrame struct {
 	EventType    TurnUpsertFrameEventType `json:"event_type"`
 	Id           string                   `json:"id"`
 
-	// Kind What the turn does. `agent` turns run the agent. A `compaction` turn, queued by a compact request, only summarizes older history; it runs in the session's turn order like any other turn and writes no messages of its own besides the summary.
+	// Kind What the turn does. `agent` turns run the agent. A `compaction` turn, queued by a compact request, only summarizes older history; it runs in the session's turn order like any other turn and writes no messages of its own besides the summary. A `voice` turn is one spoken exchange in a voice call.
 	Kind *AgentTurnKind `json:"kind,omitempty"`
 
 	// Output The validated structured output, delivered on the terminal `turn.upsert` frame. Present only on a `completed` turn that declared an output schema.
@@ -9942,6 +9997,38 @@ type UpsertRowResult struct {
 	// Row One stored row in a table.
 	Row TableRow `json:"row"`
 }
+
+// VoiceCallEndedFrame Live pulse: the chat's voice call ended, and sends work again. Not replayed on reconnect; read the session's `active_voice_call` instead.
+type VoiceCallEndedFrame struct {
+	// EndReason Why the call ended. Known values are hangup, time_limit, funding, provider_error, client_gone, server_shutdown, disabled, and lost.
+	EndReason   string                       `json:"end_reason"`
+	EndedAt     *time.Time                   `json:"ended_at,omitempty"`
+	EventType   VoiceCallEndedFrameEventType `json:"event_type"`
+	SessionId   string                       `json:"session_id"`
+	VoiceCallId string                       `json:"voice_call_id"`
+}
+
+// VoiceCallEndedFrameEventType defines model for VoiceCallEndedFrame.EventType.
+type VoiceCallEndedFrameEventType string
+
+// VoiceCallFrameCall The call a `voice_call.started` frame announces.
+type VoiceCallFrameCall struct {
+	Id          string    `json:"id"`
+	PrincipalId string    `json:"principal_id"`
+	StartedAt   time.Time `json:"started_at"`
+}
+
+// VoiceCallStartedFrame Live pulse: a voice call started in the chat. Not replayed on reconnect; read the session's `active_voice_call` instead.
+type VoiceCallStartedFrame struct {
+	EventType VoiceCallStartedFrameEventType `json:"event_type"`
+	SessionId string                         `json:"session_id"`
+
+	// VoiceCall The call a `voice_call.started` frame announces.
+	VoiceCall VoiceCallFrameCall `json:"voice_call"`
+}
+
+// VoiceCallStartedFrameEventType defines model for VoiceCallStartedFrame.EventType.
+type VoiceCallStartedFrameEventType string
 
 // WorkerModelCatalogItem One exact local model route available through online workers.
 type WorkerModelCatalogItem struct {
@@ -10691,6 +10778,12 @@ type SetBlueprintProtectionParams struct {
 type ListCatalogActionsParams struct {
 	// AgentId Judge readiness for this agent's account grants.
 	AgentId *string `form:"agent_id,omitempty" json:"agent_id,omitempty"`
+}
+
+// ListCatalogModelsParams defines parameters for ListCatalogModels.
+type ListCatalogModelsParams struct {
+	// Capability Which models to list. Defaults to `text`.
+	Capability *ModelCapability `form:"capability,omitempty" json:"capability,omitempty"`
 }
 
 // ListConnectionGovernanceParams defines parameters for ListConnectionGovernance.
@@ -15836,6 +15929,62 @@ func (t *SessionTranscriptFrame) MergeStreamEndFrame(v StreamEndFrame) error {
 	return err
 }
 
+// AsVoiceCallStartedFrame returns the union data inside the SessionTranscriptFrame as a VoiceCallStartedFrame
+func (t SessionTranscriptFrame) AsVoiceCallStartedFrame() (VoiceCallStartedFrame, error) {
+	var body VoiceCallStartedFrame
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromVoiceCallStartedFrame overwrites any union data inside the SessionTranscriptFrame as the provided VoiceCallStartedFrame
+func (t *SessionTranscriptFrame) FromVoiceCallStartedFrame(v VoiceCallStartedFrame) error {
+	v.EventType = "voice_call.started"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeVoiceCallStartedFrame performs a merge with any union data inside the SessionTranscriptFrame, using the provided VoiceCallStartedFrame
+func (t *SessionTranscriptFrame) MergeVoiceCallStartedFrame(v VoiceCallStartedFrame) error {
+	v.EventType = "voice_call.started"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsVoiceCallEndedFrame returns the union data inside the SessionTranscriptFrame as a VoiceCallEndedFrame
+func (t SessionTranscriptFrame) AsVoiceCallEndedFrame() (VoiceCallEndedFrame, error) {
+	var body VoiceCallEndedFrame
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromVoiceCallEndedFrame overwrites any union data inside the SessionTranscriptFrame as the provided VoiceCallEndedFrame
+func (t *SessionTranscriptFrame) FromVoiceCallEndedFrame(v VoiceCallEndedFrame) error {
+	v.EventType = "voice_call.ended"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeVoiceCallEndedFrame performs a merge with any union data inside the SessionTranscriptFrame, using the provided VoiceCallEndedFrame
+func (t *SessionTranscriptFrame) MergeVoiceCallEndedFrame(v VoiceCallEndedFrame) error {
+	v.EventType = "voice_call.ended"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t SessionTranscriptFrame) Discriminator() (string, error) {
 	var discriminator struct {
 		Discriminator string `json:"event_type"`
@@ -15866,6 +16015,10 @@ func (t SessionTranscriptFrame) ValueByDiscriminator() (interface{}, error) {
 		return t.AsStreamReadyFrame()
 	case "turn.upsert":
 		return t.AsTurnUpsertFrame()
+	case "voice_call.ended":
+		return t.AsVoiceCallEndedFrame()
+	case "voice_call.started":
+		return t.AsVoiceCallStartedFrame()
 	default:
 		return nil, errors.New("unknown discriminator value: " + discriminator)
 	}
@@ -16646,7 +16799,7 @@ type ClientInterface interface {
 	ListCatalogEvents(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListCatalogModels request
-	ListCatalogModels(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListCatalogModels(ctx context.Context, params *ListCatalogModelsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListCatalogWorkerModels request
 	ListCatalogWorkerModels(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -17997,8 +18150,8 @@ func (c *Client) ListCatalogEvents(ctx context.Context, reqEditors ...RequestEdi
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListCatalogModels(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListCatalogModelsRequest(c.Server)
+func (c *Client) ListCatalogModels(ctx context.Context, params *ListCatalogModelsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListCatalogModelsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -23124,7 +23277,7 @@ func NewListCatalogEventsRequest(server string) (*http.Request, error) {
 }
 
 // NewListCatalogModelsRequest generates requests for ListCatalogModels
-func NewListCatalogModelsRequest(server string) (*http.Request, error) {
+func NewListCatalogModelsRequest(server string, params *ListCatalogModelsParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -23140,6 +23293,33 @@ func NewListCatalogModelsRequest(server string) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Capability != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "capability", *params.Capability, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -29198,7 +29378,7 @@ type ClientWithResponsesInterface interface {
 	ListCatalogEventsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListCatalogEventsResponse, error)
 
 	// ListCatalogModelsWithResponse request
-	ListCatalogModelsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListCatalogModelsResponse, error)
+	ListCatalogModelsWithResponse(ctx context.Context, params *ListCatalogModelsParams, reqEditors ...RequestEditorFn) (*ListCatalogModelsResponse, error)
 
 	// ListCatalogWorkerModelsWithResponse request
 	ListCatalogWorkerModelsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListCatalogWorkerModelsResponse, error)
@@ -36231,8 +36411,8 @@ func (c *ClientWithResponses) ListCatalogEventsWithResponse(ctx context.Context,
 }
 
 // ListCatalogModelsWithResponse request returning *ListCatalogModelsResponse
-func (c *ClientWithResponses) ListCatalogModelsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListCatalogModelsResponse, error) {
-	rsp, err := c.ListCatalogModels(ctx, reqEditors...)
+func (c *ClientWithResponses) ListCatalogModelsWithResponse(ctx context.Context, params *ListCatalogModelsParams, reqEditors ...RequestEditorFn) (*ListCatalogModelsResponse, error) {
+	rsp, err := c.ListCatalogModels(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
