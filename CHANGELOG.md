@@ -10,6 +10,8 @@ the minor version.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-24
+
 ### Changed
 
 - Go: `ListCatalogModels`, `ListCatalogModelsWithResponse`, and
