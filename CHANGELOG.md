@@ -21,7 +21,8 @@ the minor version.
   starting with `mobius:` or `mobius/`. Revoking an Owner-scoped key requires
   an organization Owner.
 - `updateResourceOwnership` on a `session` always returns 409: a chat's audience
-  is set when it starts.
+  is set when it starts. Audience-confirmation rows' `allowed_actions` may hold
+  a single entry (`minItems` 2 to 1).
 - `show_progress_updates` on agent channel bindings is ignored on write and
   always true on read.
 
