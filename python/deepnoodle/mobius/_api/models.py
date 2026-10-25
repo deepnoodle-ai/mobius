@@ -27,7 +27,7 @@ class Error(BaseModel):
     )
     code: str = Field(
         ...,
-        description="Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. When the request-wide rate limiter refuses a call, `rate_limit_exceeded` carries `scope` (`key`, `org`, or `browser`), `window`, `limit`, and `retry_after_seconds` in `details`; an endpoint's own cap returns the same code without them. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family.",
+        description="Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. When the request-wide rate limiter refuses a call, `rate_limit_exceeded` carries `scope` (`key`, `org`, or `browser`), `window`, `limit`, and `retry_after_seconds` in `details`; an endpoint's own cap returns the same code without them. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`; a send or nudge while a voice call is in progress in the chat uses `voice_call_active`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family.",
     )
     message: str = Field(..., description='Human-readable error message')
     details: dict[str, Any] | None = Field(
@@ -1654,6 +1654,15 @@ class EventCatalogReservedPrefix(BaseModel):
     )
 
 
+class ModelCapability(StrEnum):
+    """
+    What a model is for. `text` models are assignable to agents. `voice` models serve voice calls only.
+    """
+
+    text = 'text'
+    voice = 'voice'
+
+
 class Reason(StrEnum):
     """
     Present when `items` is empty because the request was denied rather than because no catalog exists. `platform_funding_denied` means Mobius-managed provider credentials are gated by billing or plan state; `credentials_unavailable` means no usable provider credentials were available.
@@ -2376,7 +2385,7 @@ class AgentMessagingBinding(BaseModel):
     )
     show_progress_updates: bool = Field(
         ...,
-        description='Whether this Slack or Teams answering binding shows public progress. Defaults to false for new bindings.',
+        description='Always true. Every answered message shows progress where the chat app can edit or stream a reply. Read-only; kept for older clients.',
     )
     dms: bool = Field(..., description='Whether direct messages are accepted.')
     mentions: bool = Field(
@@ -3479,7 +3488,12 @@ class AgentVisibilityAffectedResource(BaseModel):
     resource_class: ResourceClass
     relationship: Relationship
     visibility: ResourceVisibility
-    allowed_actions: list[AllowedAction] = Field(..., max_length=2, min_length=2)
+    allowed_actions: list[AllowedAction] = Field(
+        ...,
+        description='The decisions accepted for this row. A contained conversation offers only keep_and_widen, because its audience is set when it starts.',
+        max_length=2,
+        min_length=1,
+    )
 
 
 class Action4(StrEnum):
@@ -3549,7 +3563,7 @@ class AgentMessagingBindingRequest(BaseModel):
     )
     show_progress_updates: bool | None = Field(
         None,
-        description='Show public progress for Slack or Teams. Omitted preserves the stored preference; explicit false disables it. New bindings default to false.',
+        description='Ignored. Progress is no longer a per-binding choice; every answered message shows progress where the chat app can.',
     )
     dms: bool = Field(True, description='Respond to direct messages.')
     mentions: bool = Field(True, description='Respond when the agent is @-mentioned.')
@@ -4558,11 +4572,12 @@ class AgentTurnOutputSource(StrEnum):
 
 class AgentTurnKind(StrEnum):
     """
-    What the turn does. `agent` turns run the agent. A `compaction` turn, queued by a compact request, only summarizes older history; it runs in the session's turn order like any other turn and writes no messages of its own besides the summary.
+    What the turn does. `agent` turns run the agent. A `compaction` turn, queued by a compact request, only summarizes older history; it runs in the session's turn order like any other turn and writes no messages of its own besides the summary. A `voice` turn is one spoken exchange in a voice call.
     """
 
     agent = 'agent'
     compaction = 'compaction'
+    voice = 'voice'
 
 
 class AgentTurnUsage(BaseModel):
@@ -4770,6 +4785,45 @@ class StreamEndFrame(BaseModel):
     event_type: Literal['stream.end']
     session_id: str
     reason: Reason1
+
+
+class EventType11(StrEnum):
+    voice_call_started = 'voice_call.started'
+
+
+class VoiceCallFrameCall(BaseModel):
+    """
+    The call a `voice_call.started` frame announces.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    started_at: AwareDatetime
+    principal_id: str
+
+
+class EventType12(StrEnum):
+    voice_call_ended = 'voice_call.ended'
+
+
+class VoiceCallEndedFrame(BaseModel):
+    """
+    Live pulse: the chat's voice call ended, and sends work again. Not replayed on reconnect; read the session's `active_voice_call` instead.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    event_type: Literal['voice_call.ended']
+    session_id: str
+    voice_call_id: str
+    end_reason: str = Field(
+        ...,
+        description='Why the call ended. Known values are hangup, time_limit, funding, provider_error, client_gone, server_shutdown, disabled, and lost.',
+    )
+    ended_at: AwareDatetime | None = None
 
 
 class TurnStartedPayload(BaseModel):
@@ -7590,6 +7644,19 @@ class TurnUpsertFrame(SessionTranscriptTurn):
     event_type: Literal['turn.upsert']
 
 
+class VoiceCallStartedFrame(BaseModel):
+    """
+    Live pulse: a voice call started in the chat. Not replayed on reconnect; read the session's `active_voice_call` instead.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    event_type: Literal['voice_call.started']
+    session_id: str
+    voice_call: VoiceCallFrameCall
+
+
 class TurnWaitingPayload(BaseModel):
     model_config = ConfigDict(
         extra='allow',
@@ -8215,7 +8282,8 @@ class ModelCatalogResponse(BaseModel):
         extra='forbid',
     )
     default_model: str = Field(
-        ..., description='Model id assigned when an agent specifies no model.'
+        ...,
+        description='Model id assigned when an agent specifies no model. With `capability=voice`, the voice model a call uses when it names none.',
     )
     items: list[ModelProviderGroup] = Field(
         ...,
@@ -8921,6 +8989,8 @@ class SessionTranscriptFrame(
         | InteractionUpsertFrame
         | StreamReadyFrame
         | StreamEndFrame
+        | VoiceCallStartedFrame
+        | VoiceCallEndedFrame
     ]
 ):
     root: (
@@ -8932,6 +9002,8 @@ class SessionTranscriptFrame(
         | InteractionUpsertFrame
         | StreamReadyFrame
         | StreamEndFrame
+        | VoiceCallStartedFrame
+        | VoiceCallEndedFrame
     ) = Field(..., discriminator='event_type')
 
 

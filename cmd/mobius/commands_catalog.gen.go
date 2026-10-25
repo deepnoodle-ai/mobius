@@ -76,6 +76,9 @@ func registerCatalogCommands(app *cli.App) {
 
 	catalogGrp.Command("list-models").
 		Description("List models").
+		Flags(
+			cli.String("capability", "").Help("Which models to list. Defaults to `text`."),
+		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -83,7 +86,12 @@ func registerCatalogCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			resp, err := client.ListCatalogModelsWithResponse(ctx.Context())
+			params := &api.ListCatalogModelsParams{}
+			if ctx.IsSet("capability") {
+				v := api.ModelCapability(ctx.String("capability"))
+				params.Capability = &v
+			}
+			resp, err := client.ListCatalogModelsWithResponse(ctx.Context(), params)
 			if err != nil {
 				return err
 			}

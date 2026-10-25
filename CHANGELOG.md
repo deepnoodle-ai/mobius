@@ -10,6 +10,28 @@ the minor version.
 
 ## [Unreleased]
 
+### Changed
+
+- Go: `ListCatalogModels`, `ListCatalogModelsWithResponse`, and
+  `NewListCatalogModelsRequest` take a `*ListCatalogModelsParams` argument
+  (pass `nil` for the previous behavior).
+- `listPrincipals` returns only API clients (standalone `service`
+  principals); `kind=agent` and `kind=system` return an empty list.
+- `createAPIKey` binds only to API-client principals and rejects tag keys
+  starting with `mobius:` or `mobius/`. Revoking an Owner-scoped key requires
+  an organization Owner.
+- `updateResourceOwnership` on a `session` always returns 409: a chat's audience
+  is set when it starts.
+- `show_progress_updates` on agent channel bindings is ignored on write and
+  always true on read.
+
+### Added
+
+- `listCatalogModels` takes `capability` (`text` | `voice`); new
+  `ModelCapability` schema (`mobius catalog list-models --capability`).
+- Transcript stream frames `voice_call.started` and `voice_call.ended`, turn
+  kind `voice`, and error code `voice_call_active` for sends during a call.
+
 ## [0.4.0] - 2026-10-23
 
 ### Changed
