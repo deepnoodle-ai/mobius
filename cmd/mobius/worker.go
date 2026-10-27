@@ -72,8 +72,10 @@ func registerWorkerCommand(app *cli.App) {
 		).
 		Run(func(ctx *cli.Context) error {
 			// The worker reports the same version it registers with, so the
-			// usage logs and worker_sessions.version agree.
-			client, err := clientFromContextAs(ctx, "worker", ctx.String("worker-version"))
+			// usage logs and worker_sessions.version agree. An explicitly
+			// empty --worker-version falls back to the build version, as the
+			// Python and TypeScript workers fall back to the SDK version.
+			client, err := clientFromContextAs(ctx, "worker", workerClientVersion(ctx.String("worker-version")))
 			if err != nil {
 				return err
 			}

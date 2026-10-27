@@ -24,3 +24,14 @@ func TestResolveVersion(t *testing.T) {
 		})
 	}
 }
+
+func TestWorkerClientVersion(t *testing.T) {
+	if got := workerClientVersion("v1.2.3"); got != "v1.2.3" {
+		t.Fatalf("workerClientVersion(v1.2.3) = %q", got)
+	}
+	for _, flag := range []string{"", "  "} {
+		if got := workerClientVersion(flag); got != buildVersion() {
+			t.Fatalf("workerClientVersion(%q) = %q, want build version %q", flag, got, buildVersion())
+		}
+	}
+}

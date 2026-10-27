@@ -669,6 +669,8 @@ export class Client {
   }
 
   /**
+   * @internal Used by {@link Worker} to open its socket.
+   *
    * Headers for the worker socket handshake: the API key and
    * `X-Mobius-Client: <clientHeader>`. Only runtimes whose WebSocket can set
    * handshake headers, such as Node, can send them.

@@ -88,6 +88,15 @@ func clientFromContextAs(ctx *cli.Context, name, version string) (*mobius.Client
 	)
 }
 
+// workerClientVersion is the version in the worker's X-Mobius-Client value:
+// the --worker-version flag, else the build version.
+func workerClientVersion(flag string) string {
+	if v := strings.TrimSpace(flag); v != "" {
+		return v
+	}
+	return buildVersion()
+}
+
 // cliClientHeader is the X-Mobius-Client value for the CLI's own raw HTTP
 // requests, the ones that do not go through *mobius.Client.
 func cliClientHeader() string {
