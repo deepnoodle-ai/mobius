@@ -39,6 +39,41 @@ type Client struct {
 	maxRetries     int
 	ac             *api.ClientWithResponses
 	config         *ClientConfig
+	// clientHeader is the X-Mobius-Client value sent on every request.
+	clientHeader string
+}
+
+// ClientHeader names the program that made a request, for the server's usage
+// logs. It is reporting only: the server authorizes nothing on it. The value
+// is "<name>/<version>", for example "sdk-go/v0.5.0" or "worker/v0.10.0".
+const ClientHeader = "X-Mobius-Client"
+
+// WithClientName overrides the X-Mobius-Client value, which defaults to
+// "sdk-go/<module version>". Programs built on the SDK, such as the mobius
+// CLI and worker, pass their own name and version. The server keeps a name of
+// up to 32 characters from [a-z0-9._-] and a version of up to 64 characters
+// from [A-Za-z0-9._+-]; an empty version sends the name alone.
+func WithClientName(name, version string) Option {
+	return func(c *Client) { c.clientHeader = clientHeaderValue(name, version) }
+}
+
+func clientHeaderValue(name, version string) string {
+	name, version = strings.TrimSpace(name), strings.TrimSpace(version)
+	if version == "" {
+		return name
+	}
+	return name + "/" + version
+}
+
+// setRequestHeaders sets the headers every request carries: the API key, when
+// one is configured, and X-Mobius-Client.
+func (c *Client) setRequestHeaders(h http.Header) {
+	if c.apiKey != "" {
+		h.Set("Authorization", "Bearer "+c.apiKey)
+	}
+	if c.clientHeader != "" {
+		h.Set(ClientHeader, c.clientHeader)
+	}
 }
 
 // ClientConfig holds optional client configuration.
@@ -101,6 +136,7 @@ func NewClient(opts ...Option) (*Client, error) {
 		config: &ClientConfig{
 			Logger: slog.Default(),
 		},
+		clientHeader: clientHeaderValue("sdk-go", sdkVersion()),
 	}
 	for _, opt := range opts {
 		opt(c)
@@ -126,9 +162,7 @@ func NewClient(opts ...Option) (*Client, error) {
 	ac, err := api.NewClientWithResponses(c.baseURL,
 		api.WithHTTPClient(c.httpClient),
 		api.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
-			if c.apiKey != "" {
-				req.Header.Set("Authorization", "Bearer "+c.apiKey)
-			}
+			c.setRequestHeaders(req.Header)
 			return nil
 		}),
 	)
@@ -180,9 +214,7 @@ func (c *Client) doWithHeaders(ctx context.Context, hc *http.Client, method, pat
 	if err != nil {
 		return err
 	}
-	if c.apiKey != "" {
-		req.Header.Set("Authorization", "Bearer "+c.apiKey)
-	}
+	c.setRequestHeaders(req.Header)
 	if contentType != "" {
 		req.Header.Set("Content-Type", contentType)
 	}

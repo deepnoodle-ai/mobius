@@ -17,7 +17,7 @@ from ._api.models import (
     WorkerSocketJobsClaimFrame,
     WorkerSocketRegisterFrame,
 )
-from .client import Client
+from .client import MOBIUS_CLIENT, MOBIUS_CLIENT_HEADER, Client
 from .errors import AuthRevokedError, WorkerInstanceConflictError
 
 ActionFunc = Callable[..., Any]
@@ -165,7 +165,10 @@ class Worker:
         except ImportError as exc:  # pragma: no cover - dependency/environment guard
             raise RuntimeError("install the 'websockets' package to run Python workers") from exc
 
-        headers = {"Authorization": f"Bearer {self.client.api_key}"}
+        headers = {
+            "Authorization": f"Bearer {self.client.api_key}",
+            MOBIUS_CLIENT_HEADER: MOBIUS_CLIENT,
+        }
         async with websockets.connect(self.client.worker_socket_url(), additional_headers=headers) as ws:
             await self._serve_socket(ws)
 

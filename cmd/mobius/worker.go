@@ -71,7 +71,9 @@ func registerWorkerCommand(app *cli.App) {
 				Help("Base URL of the local Ollama server"),
 		).
 		Run(func(ctx *cli.Context) error {
-			client, err := clientFromContext(ctx)
+			// The worker reports the same version it registers with, so the
+			// usage logs and worker_sessions.version agree.
+			client, err := clientFromContextAs(ctx, "worker", ctx.String("worker-version"))
 			if err != nil {
 				return err
 			}

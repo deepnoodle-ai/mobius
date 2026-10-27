@@ -10,6 +10,12 @@ the minor version.
 
 ## [Unreleased]
 
+### Added
+
+- Every request sends `X-Mobius-Client` (`sdk-go/`, `sdk-python/`, `sdk-ts/`,
+  `cli/`, or `worker/` plus a version) so server usage logs can tell callers
+  apart. Go: `WithClientName` overrides it. Reporting only.
+
 ## [0.5.0] - 2026-10-24
 
 ### Changed

@@ -82,6 +82,7 @@ import {
   isTerminalTurnStatus,
   type TranscriptStreamEvent,
 } from "./transcript.js";
+import { MOBIUS_CLIENT, MOBIUS_CLIENT_HEADER } from "./version.js";
 
 export { RateLimitError } from "./retry.js";
 
@@ -646,6 +647,7 @@ export class Client {
     this.headers = {
       Authorization: `Bearer ${opts.apiKey}`,
       "Content-Type": "application/json",
+      [MOBIUS_CLIENT_HEADER]: MOBIUS_CLIENT,
     };
     this.timeoutMs = opts.timeoutMs ?? 60_000;
     this.logger = opts.logger;

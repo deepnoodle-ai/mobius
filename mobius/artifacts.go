@@ -362,9 +362,7 @@ func (c *Client) DownloadArtifactToFileWithLease(ctx context.Context, artifactID
 	if err != nil {
 		return nil, err
 	}
-	if c.apiKey != "" {
-		req.Header.Set("Authorization", "Bearer "+c.apiKey)
-	}
+	c.setRequestHeaders(req.Header)
 	if leaseToken = strings.TrimSpace(leaseToken); leaseToken != "" {
 		req.Header.Set("X-Mobius-Lease-Token", leaseToken)
 	}

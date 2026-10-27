@@ -101,9 +101,7 @@ func (c *Client) dialWorkerSocket(ctx context.Context) (*workerSocket, *http.Res
 		return nil, nil, err
 	}
 	header := http.Header{}
-	if c.apiKey != "" {
-		header.Set("Authorization", "Bearer "+c.apiKey)
-	}
+	c.setRequestHeaders(header)
 	conn, resp, err := websocket.DefaultDialer.DialContext(ctx, u, header)
 	if err != nil {
 		return nil, resp, err
