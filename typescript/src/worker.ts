@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { hostname as systemHostname } from "node:os";
+import { SDK_VERSION } from "./version.js";
 import type {
   WorkerSocketClaimedJob,
   WorkerSocketGenerationDeltaFrame,
@@ -234,7 +235,25 @@ export class Worker {
   // openSocket dials the worker WebSocket. Isolated so tests can substitute a
   // fake socket and drive the frame loop deterministically.
   protected openSocket(): WebSocket {
-    return new WebSocket(this.client.workerSocketURL());
+    // The worker runs on Node (it imports node:crypto and node:os), whose
+    // WebSocket (undici) accepts handshake headers in an options object. The
+    // DOM typings only know protocols, hence the cast.
+    const NodeWebSocket = WebSocket as unknown as new (
+      url: string,
+      init: { headers: Record<string, string> },
+    ) => WebSocket;
+    return new NodeWebSocket(this.client.workerSocketURL(), {
+      headers: this.client.workerSocketHeaders(this.clientHeader()),
+    });
+  }
+
+  /**
+   * The socket's X-Mobius-Client value: `worker/<version>`, the version the
+   * worker registers with, else the SDK's. The server counts socket traffic
+   * as worker traffic by this name.
+   */
+  protected clientHeader(): string {
+    return `worker/${this.config.version || SDK_VERSION}`;
   }
 
   private async runSocket(signal?: AbortSignal): Promise<void> {

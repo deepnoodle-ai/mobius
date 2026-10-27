@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"runtime/debug"
 	"testing"
+
+	"github.com/gorilla/websocket"
 )
 
 // The server's X-Mobius-Client rules: a name of up to 32 [a-z0-9._-], then an
@@ -49,6 +51,49 @@ func TestClientSendsClientHeader(t *testing.T) {
 			}
 			if !serverClientValue.MatchString(tc.want) {
 				t.Fatalf("%q does not match the server's rules", tc.want)
+			}
+		})
+	}
+}
+
+func TestWorkerSocketSendsClientHeader(t *testing.T) {
+	headers := make(chan http.Header, 1)
+	upgrader := websocket.Upgrader{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		headers <- r.Header.Clone()
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err == nil {
+			_ = conn.Close()
+		}
+	}))
+	defer srv.Close()
+
+	for _, tc := range []struct {
+		name    string
+		opts    []Option
+		version string
+		want    string
+	}{
+		{name: "sdk worker names itself", version: "v1.2.3", want: "worker/v1.2.3"},
+		{name: "sdk worker without a version", want: "worker/" + sdkVersion()},
+		{name: "program name wins", opts: []Option{WithClientName("worker", "v0.10.0")}, version: "ignored", want: "worker/v0.10.0"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			c, err := NewClient(append([]Option{WithBaseURL(srv.URL), WithAPIKey("k")}, tc.opts...)...)
+			if err != nil {
+				t.Fatal(err)
+			}
+			socket, _, err := c.dialWorkerSocket(context.Background(), tc.version)
+			if err != nil {
+				t.Fatal(err)
+			}
+			_ = socket.conn.Close()
+			h := <-headers
+			if got := h.Get(ClientHeader); got != tc.want {
+				t.Fatalf("X-Mobius-Client = %q, want %q", got, tc.want)
+			}
+			if got := h.Get("Authorization"); got != "Bearer k" {
+				t.Fatalf("Authorization = %q", got)
 			}
 		})
 	}

@@ -12,9 +12,14 @@ the minor version.
 
 ### Added
 
-- Every request sends `X-Mobius-Client` (`sdk-go/`, `sdk-python/`, `sdk-ts/`,
-  `cli/`, or `worker/` plus a version) so server usage logs can tell callers
-  apart. Go: `WithClientName` overrides it. Reporting only.
+- Requests to the Mobius API, worker sockets included, send `X-Mobius-Client`
+  (`sdk-go/`, `sdk-python/`, `sdk-ts/`, `cli/`, or `worker/` plus a version)
+  for server usage logs. Go: `WithClientName` overrides it. Synthetic webhook
+  deliveries to your own endpoint do not send it.
+
+### Fixed
+
+- TypeScript: the worker socket handshake now sends the API key.
 
 ## [0.5.0] - 2026-10-24
 

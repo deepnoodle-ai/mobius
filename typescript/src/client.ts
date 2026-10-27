@@ -668,6 +668,18 @@ export class Client {
     );
   }
 
+  /**
+   * Headers for the worker socket handshake: the API key and
+   * `X-Mobius-Client: <clientHeader>`. Only runtimes whose WebSocket can set
+   * handshake headers, such as Node, can send them.
+   */
+  workerSocketHeaders(clientHeader: string): Record<string, string> {
+    return {
+      Authorization: this.headers.Authorization,
+      [MOBIUS_CLIENT_HEADER]: clientHeader,
+    };
+  }
+
   workerSocketURL(): string {
     const url = new URL(this.baseURL);
     if (url.protocol === "http:") url.protocol = "ws:";

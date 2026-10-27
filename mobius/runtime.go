@@ -95,13 +95,23 @@ func (s *workerSocket) extendReadDeadline() {
 	_ = s.conn.SetReadDeadline(time.Now().Add(socketPongWait))
 }
 
-func (c *Client) dialWorkerSocket(ctx context.Context) (*workerSocket, *http.Response, error) {
+// dialWorkerSocket dials the worker socket. workerVersion names the worker in
+// X-Mobius-Client as "worker/<workerVersion>", so the server counts socket
+// traffic as worker traffic, unless the program set its own name with
+// WithClientName (the mobius CLI's worker sets "worker/<version>" there).
+func (c *Client) dialWorkerSocket(ctx context.Context, workerVersion string) (*workerSocket, *http.Response, error) {
 	u, err := c.workerSocketURL()
 	if err != nil {
 		return nil, nil, err
 	}
 	header := http.Header{}
 	c.setRequestHeaders(header)
+	if !c.clientHeaderSet {
+		if workerVersion == "" {
+			workerVersion = sdkVersion()
+		}
+		header.Set(ClientHeader, clientHeaderValue("worker", workerVersion))
+	}
 	conn, resp, err := websocket.DefaultDialer.DialContext(ctx, u, header)
 	if err != nil {
 		return nil, resp, err

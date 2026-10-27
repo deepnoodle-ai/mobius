@@ -41,6 +41,9 @@ type Client struct {
 	config         *ClientConfig
 	// clientHeader is the X-Mobius-Client value sent on every request.
 	clientHeader string
+	// clientHeaderSet records that WithClientName chose clientHeader, so the
+	// worker socket keeps it instead of naming itself "worker/<version>".
+	clientHeaderSet bool
 }
 
 // ClientHeader names the program that made a request, for the server's usage
@@ -49,12 +52,16 @@ type Client struct {
 const ClientHeader = "X-Mobius-Client"
 
 // WithClientName overrides the X-Mobius-Client value, which defaults to
-// "sdk-go/<module version>". Programs built on the SDK, such as the mobius
-// CLI and worker, pass their own name and version. The server keeps a name of
+// "sdk-go/<module version>" on API calls and "worker/<WorkerConfig.Version>"
+// on the worker socket. Programs built on the SDK, such as the mobius CLI and
+// worker, pass their own name and version, and it then applies everywhere. The server keeps a name of
 // up to 32 characters from [a-z0-9._-] and a version of up to 64 characters
 // from [A-Za-z0-9._+-]; an empty version sends the name alone.
 func WithClientName(name, version string) Option {
-	return func(c *Client) { c.clientHeader = clientHeaderValue(name, version) }
+	return func(c *Client) {
+		c.clientHeader = clientHeaderValue(name, version)
+		c.clientHeaderSet = true
+	}
 }
 
 func clientHeaderValue(name, version string) string {
