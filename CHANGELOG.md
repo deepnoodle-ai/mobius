@@ -10,6 +10,8 @@ the minor version.
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-10-28
+
 ### Added
 
 - Requests to the Mobius API, worker sockets included, send `X-Mobius-Client`
