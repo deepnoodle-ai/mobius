@@ -71,13 +71,36 @@ func newApp() *cli.App {
 // authMiddleware. An empty key is accepted here; individual subcommands that
 // require auth should attach the requireAuth middleware.
 func clientFromContext(ctx *cli.Context) (*mobius.Client, error) {
+	return clientFromContextAs(ctx, "cli", buildVersion())
+}
+
+// clientFromContextAs is clientFromContext with the X-Mobius-Client name and
+// version the client reports, so the worker can name itself apart from the
+// CLI in the server's usage logs.
+func clientFromContextAs(ctx *cli.Context, name, version string) (*mobius.Client, error) {
 	auth := authFor(ctx)
 	logger := newLogger(ctx.String("log-level"))
 	return mobius.NewClient(
 		mobius.WithBaseURL(auth.APIURL),
 		mobius.WithAPIKey(auth.APIKey),
 		mobius.WithLogger(logger),
+		mobius.WithClientName(name, version),
 	)
+}
+
+// workerClientVersion is the version in the worker's X-Mobius-Client value:
+// the --worker-version flag, else the build version.
+func workerClientVersion(flag string) string {
+	if v := strings.TrimSpace(flag); v != "" {
+		return v
+	}
+	return buildVersion()
+}
+
+// cliClientHeader is the X-Mobius-Client value for the CLI's own raw HTTP
+// requests, the ones that do not go through *mobius.Client.
+func cliClientHeader() string {
+	return "cli/" + buildVersion()
 }
 
 func newLogger(level string) *slog.Logger {

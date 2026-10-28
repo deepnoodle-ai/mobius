@@ -17,7 +17,7 @@ from ._api.models import (
     WorkerSocketJobsClaimFrame,
     WorkerSocketRegisterFrame,
 )
-from .client import Client
+from .client import MOBIUS_CLIENT_HEADER, Client, sdk_version
 from .errors import AuthRevokedError, WorkerInstanceConflictError
 
 ActionFunc = Callable[..., Any]
@@ -165,9 +165,20 @@ class Worker:
         except ImportError as exc:  # pragma: no cover - dependency/environment guard
             raise RuntimeError("install the 'websockets' package to run Python workers") from exc
 
-        headers = {"Authorization": f"Bearer {self.client.api_key}"}
+        headers = {
+            "Authorization": f"Bearer {self.client.api_key}",
+            MOBIUS_CLIENT_HEADER: self._client_header(),
+        }
         async with websockets.connect(self.client.worker_socket_url(), additional_headers=headers) as ws:
             await self._serve_socket(ws)
+
+    def _client_header(self) -> str:
+        """The socket's X-Mobius-Client value: "worker/<version>".
+
+        The server counts socket traffic as worker traffic by this name. The
+        version is the one the worker registers with, else the SDK's.
+        """
+        return f"worker/{self.config.version or sdk_version()}"
 
     async def _serve_socket(self, ws: Any) -> None:
         """Register, then claim and execute jobs over an open socket ``ws``.

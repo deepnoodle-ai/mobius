@@ -93,6 +93,24 @@ from .transcript import (
 )
 
 DEFAULT_BASE_URL = "https://api.mobiusops.com"
+# Names the program that made a request, for the server's usage logs. It is
+# reporting only: the server authorizes nothing on it.
+MOBIUS_CLIENT_HEADER = "X-Mobius-Client"
+
+
+def sdk_version() -> str:
+    """The installed deepnoodle-mobius version, or "dev" when not installed."""
+    try:
+        from importlib.metadata import PackageNotFoundError, version
+
+        return version("deepnoodle-mobius")
+    except (ImportError, PackageNotFoundError):
+        return "dev"
+
+
+# The X-Mobius-Client value API calls send: "sdk-python/<version>". The
+# worker socket sends "worker/<version>" instead (worker.py).
+MOBIUS_CLIENT = f"sdk-python/{sdk_version()}"
 # Staged PDF upload limits: every part but the last is exactly one chunk.
 SESSION_PDF_CHUNK_BYTES = 8 * 1024 * 1024
 SESSION_PDF_MAX_BYTES = 100 * 1024 * 1024
@@ -396,7 +414,10 @@ class Client:
             base_url=self.base_url,
             timeout=opts.timeout,
             transport=RetryingTransport(base_transport, max_retries=opts.retry),
-            headers={"Authorization": f"Bearer {opts.api_key}"},
+            headers={
+                "Authorization": f"Bearer {opts.api_key}",
+                MOBIUS_CLIENT_HEADER: MOBIUS_CLIENT,
+            },
         )
 
     def close(self) -> None:

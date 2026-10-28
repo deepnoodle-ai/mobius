@@ -213,6 +213,7 @@ func postDeviceCode(ctx context.Context, client *http.Client, apiURL string, for
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set(mobius.ClientHeader, cliClientHeader())
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("request device code: %w", err)
@@ -340,6 +341,7 @@ func pollForToken(ctx context.Context, client *http.Client, apiURL string, ch *d
 			return "", "", err
 		}
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set(mobius.ClientHeader, cliClientHeader())
 		resp, err := client.Do(req)
 		if err != nil {
 			return "", "", fmt.Errorf("poll for token: %w", err)
@@ -655,6 +657,7 @@ func authAPIURL(ctx *cli.Context, path string) string {
 }
 
 func authAPISetHeaders(ctx *cli.Context, req *http.Request) {
+	req.Header.Set(mobius.ClientHeader, cliClientHeader())
 	if key := authFor(ctx).APIKey; key != "" {
 		req.Header.Set("Authorization", "Bearer "+key)
 	}

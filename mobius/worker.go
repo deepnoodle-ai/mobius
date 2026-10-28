@@ -525,7 +525,7 @@ func contextDoneError(err error) bool {
 }
 
 func (w *Worker) runSocket(ctx context.Context) error {
-	socket, resp, err := w.client.dialWorkerSocket(ctx)
+	socket, resp, err := w.client.dialWorkerSocket(ctx, w.config.Version)
 	if err != nil {
 		if resp != nil {
 			switch resp.StatusCode {

@@ -82,6 +82,7 @@ import {
   isTerminalTurnStatus,
   type TranscriptStreamEvent,
 } from "./transcript.js";
+import { MOBIUS_CLIENT, MOBIUS_CLIENT_HEADER } from "./version.js";
 
 export { RateLimitError } from "./retry.js";
 
@@ -646,6 +647,7 @@ export class Client {
     this.headers = {
       Authorization: `Bearer ${opts.apiKey}`,
       "Content-Type": "application/json",
+      [MOBIUS_CLIENT_HEADER]: MOBIUS_CLIENT,
     };
     this.timeoutMs = opts.timeoutMs ?? 60_000;
     this.logger = opts.logger;
@@ -664,6 +666,20 @@ export class Client {
           }),
       },
     );
+  }
+
+  /**
+   * @internal Used by {@link Worker} to open its socket.
+   *
+   * Headers for the worker socket handshake: the API key and
+   * `X-Mobius-Client: <clientHeader>`. Only runtimes whose WebSocket can set
+   * handshake headers, such as Node, can send them.
+   */
+  workerSocketHeaders(clientHeader: string): Record<string, string> {
+    return {
+      Authorization: this.headers.Authorization,
+      [MOBIUS_CLIENT_HEADER]: clientHeader,
+    };
   }
 
   workerSocketURL(): string {
