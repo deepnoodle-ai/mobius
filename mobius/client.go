@@ -54,9 +54,10 @@ const ClientHeader = "X-Mobius-Client"
 // WithClientName overrides the X-Mobius-Client value, which defaults to
 // "sdk-go/<module version>" on API calls and "worker/<WorkerConfig.Version>"
 // on the worker socket. Programs built on the SDK, such as the mobius CLI and
-// worker, pass their own name and version, and it then applies everywhere. The server keeps a name of
-// up to 32 characters from [a-z0-9._-] and a version of up to 64 characters
-// from [A-Za-z0-9._+-]; an empty version sends the name alone.
+// worker, pass their own name and version, and it then applies everywhere.
+// The server keeps a name of up to 32 characters from [a-z0-9._-] and a
+// version of up to 64 characters from [A-Za-z0-9._+-]; an empty version sends
+// the name alone.
 func WithClientName(name, version string) Option {
 	return func(c *Client) {
 		c.clientHeader = clientHeaderValue(name, version)
