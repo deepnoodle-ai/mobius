@@ -212,29 +212,6 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
   /v1/api-keys/{resource_id}:
-    get:
-      operationId: getAPIKey
-      tags:
-      - api-keys
-      summary: Get API key
-      description: Returns metadata for a single API key without exposing the raw secret.
-      parameters:
-      - $ref: '#/components/parameters/IDParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIKey'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
     delete:
       operationId: deleteAPIKey
       tags:
@@ -692,9 +669,9 @@ paths:
       - catalog
       summary: List models
       description: |-
-        Returns assignable agent models grouped by provider. Providers appear only when the org has usable credentials, either from BYOK integration state or platform-managed configuration.
+        Returns assignable agent models grouped by provider. Providers appear only when the org has usable credentials, either from BYOK integration state or platform-managed configuration. Providers and models the organization has turned off are listed with `enabled: false` so settings can show them; pickers offer only enabled ones.
 
-        With `capability=voice`, returns the voice models a call can use instead: only when the organization has voice calls, only models its plan allows, and only from providers Mobius holds platform credentials for. Voice models never appear in the default text list.
+        With `capability=voice`, returns the voice models a call can use instead: only when the organization has voice calls, only models the organization has not turned off, and only from providers Mobius holds platform credentials for. Voice models never appear in the default text list.
       parameters:
       - name: capability
         in: query
@@ -1695,6 +1672,21 @@ paths:
         schema:
           type: boolean
         description: When true, returns only interactions visible to the authenticated user.
+      - name: responded_by_me
+        in: query
+        schema:
+          type: boolean
+        description: When true, returns only interactions the authenticated user submitted
+          a response to, newest answer first (ordered and paged by the caller's latest response
+          time). Cannot be combined with inbox=true; sent together, the request fails with
+          400.
+      - name: responded_since
+        in: query
+        schema:
+          type: string
+          format: date-time
+        description: Keeps only interactions the user responded to at or after this time.
+          Requires responded_by_me=true; sent without it, the request fails with 400.
       - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
       responses:
@@ -2123,16 +2115,79 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /v1/agents/deleted:
+    get:
+      operationId: listDeletedAgents
+      tags:
+      - agents
+      summary: List deleted agents
+      description: Returns this organization's deleted agents, newest delete first, with who
+        deleted each one when the audit log records it. Only organization Owners and Admins
+        may call it, including a provider Owner or Admin acting in a managed organization.
+        Everyone else gets 403. Follow `next_cursor` while `has_more` is true.
+      parameters:
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeletedAgentListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /v1/agents/{resource_id}/restore:
+    post:
+      operationId: restoreAgent
+      tags:
+      - agents
+      summary: Restore a deleted agent
+      description: |-
+        Brings a deleted agent back with the same ID, instructions, model, chats, memory, and Library. It comes back `active`. Skills, audience members, and connection grants come back when each is still valid. A grant on a person's own account comes back only when that person restores the agent in their own organization. Every API key and CLI token of the agent is revoked. Each thing that did not come back is listed in `not_restored`.
+
+        Only organization Owners and Admins may restore, including a provider Owner or Admin acting in a managed organization. Everyone else gets 403. Restore refuses with 409 and code `agent_name_taken` when a live agent uses the name (send a new `name`), `agent_custodian_gone` when the person who held a personal agent left, `agent_not_deleted` when the agent is live, and `blueprint_resource_protected` for a protected blueprint agent.
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestoreAgentRequest'
+            example:
+              name: Litigation strategist (Dan)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestoredAgentResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /v1/agents/{resource_id}/members:
     get:
       operationId: listAgentMembers
       tags:
       - agents
       summary: List agent members
-      description: |-
-        Returns the audience of a `restricted` or `private` agent.
-
-        The member list itself is returned only to callers who may manage the agent — an org admin, or the agent's creator while they remain a member. Every other member sees `count` alone, which is enough to answer "who else can see this" without turning the audience into a directory. An `organization` agent has no members and returns zero.
+      description: 'Returns the members of a group (`restricted`) or personal (`private`)
+        assistant to everyone who can reach it. `can_manage` says whether the caller may change
+        them: an Admin, or a manager of a group assistant whose role can build. An `organization`
+        agent has no members and returns zero.'
       parameters:
       - $ref: '#/components/parameters/IDParam'
       responses:
@@ -2156,7 +2211,7 @@ paths:
       description: |-
         Adds principals to a `restricted` agent's audience. Idempotent: adding a principal who is already a member changes nothing.
 
-        A new member reads the ENTIRE shared layer, including everything promoted before they joined. Adding a second member to a `private` agent is refused — share it by changing its visibility to `restricted`. An agent parked `inactive` for having no audience reactivates when a member is added.
+        A new member reads the ENTIRE shared layer, including everything promoted before they joined. A `private` agent's one member is the person it belongs to; adding anyone else is refused.
       parameters:
       - $ref: '#/components/parameters/IDParam'
       requestBody:
@@ -2182,13 +2237,16 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-    put:
-      operationId: replaceAgentMembers
+  /v1/agents/{resource_id}/copy:
+    post:
+      operationId: copyAgent
       tags:
       - agents
-      summary: Replace agent members
-      description: Sets the audience to exactly the supplied principals. A `private` agent
-        takes exactly one; a `restricted` agent at least one.
+      summary: Copy an assistant
+      description: |-
+        Creates a new assistant with this one's setup: instructions, model and model settings, tools, memory and conversation settings, the skills whose audience covers the new assistant's, and the picked files, copied into Company files. An assistant's kind never changes, so a copy is how a personal assistant becomes a group or team one.
+
+        Whoever can edit the assistant may copy it, and the create rules decide who may make the new kind. An Admin's copy is granted the same company accounts. Never copies chats, memory, accounts in a person's own name, chat-app bindings, the inbox, or routines. The source is unchanged.
       parameters:
       - $ref: '#/components/parameters/IDParam'
       requestBody:
@@ -2196,10 +2254,50 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ReplaceAgentMembersRequest'
+              $ref: '#/components/schemas/CopyAgentRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentCopy'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/agents/{resource_id}/members/{principal_id}:
+    patch:
+      operationId: updateAgentMember
+      tags:
+      - agents
+      summary: Update whether a member is a manager
+      description: Sets whether a member manages this group assistant. Managers edit its setup,
+        its members and managers, and its shared memory when their role can build. For managers
+        and Admins.
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      - name: principal_id
+        in: path
+        required: true
+        description: The member to change.
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAgentMemberRequest'
       responses:
         '200':
-          description: The audience after the replacement.
+          description: The members after the change.
           content:
             application/json:
               schema:
@@ -2212,7 +2310,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/agents/{resource_id}/members/{principal_id}:
     delete:
       operationId: removeAgentMember
       tags:
@@ -2221,7 +2318,7 @@ paths:
       description: |-
         Drops one principal from the audience. They lose reach on their next request.
 
-        Nothing they wrote is deleted: their private partition on this agent is retained and readable only by org admins, and anything they promoted stays, because promotion made it the group's. Removing the LAST member parks the agent as `inactive`, visible to org admins who may reassign or delete it — it is never silently reopened to the org.
+        Nothing they wrote is deleted: their private partition on this agent is retained and nobody can read it, and anything they promoted stays, because promotion made it the group's. Removing the last member is refused with `409`: delete the agent instead.
       parameters:
       - $ref: '#/components/parameters/IDParam'
       - name: principal_id
@@ -2239,45 +2336,8 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/agents/{resource_id}/visibility-impact:
-    get:
-      operationId: previewAgentVisibilityChange
-      tags:
-      - agents
-      summary: Preview a visibility change
-      description: |-
-        Reports what changing this agent's audience would do, without writing anything: how many shared memory entries a widening republishes, which member rows it drops, and which principals a narrowing would strand.
-
-        It is what makes the confirmation specific — "everyone in the org will be able to read the 14 things it knows" rather than a generic warning.
-      parameters:
-      - $ref: '#/components/parameters/IDParam'
-      - name: visibility
-        in: query
-        required: true
-        description: The visibility being considered.
-        schema:
-          $ref: '#/components/schemas/AgentVisibility'
-      - name: members
-        in: query
-        description: The audience being considered, as a comma-separated list of principal
-          IDs. Omit to evaluate against the current member list.
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AgentVisibilityImpact'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /v1/agents/{resource_id}/inbox:
     post:
       operationId: provisionAgentInbox
@@ -2304,33 +2364,6 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/turns/{turn_id}/messages:
-    get:
-      operationId: listTurnMessages
-      tags:
-      - agents
-      summary: List turn messages
-      description: Returns the transcript messages for one turn in sequence order. Use this
-        endpoint when a client already has a turn ID; use the session messages endpoint to
-        read the full session transcript.
-      parameters:
-      - $ref: '#/components/parameters/TurnIdParam'
-      - $ref: '#/components/parameters/AfterSequenceParam'
-      - $ref: '#/components/parameters/LimitParam'
-      - $ref: '#/components/parameters/ContextIncludeParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SessionMessageListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
   /v1/agents/{resource_id}/messaging-bindings:
     get:
       operationId: listAgentMessagingBindings
@@ -2397,33 +2430,6 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-  /v1/agents/{resource_id}/messaging-bindings/{binding_id}:
-    delete:
-      operationId: deleteAgentMessagingBinding
-      tags:
-      - agents
-      summary: Delete agent messaging binding
-      description: Deletes one messaging binding from the agent and provider account. Only
-        organization owners and admins can delete a binding; anyone else gets 403.
-      parameters:
-      - $ref: '#/components/parameters/IDParam'
-      - name: binding_id
-        in: path
-        required: true
-        description: Messaging binding identifier.
-        schema:
-          type: string
-      responses:
-        '204':
-          description: No Content
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/agents/{resource_id}/skill-assignments:
@@ -5707,11 +5713,16 @@ paths:
       tags:
       - tables
       summary: Search rows
-      description: 'Search rows within one table using keyword, semantic, or hybrid mode.
-        Keyword matching is token-prefix based. Punctuation, including hyphens, splits terms:
-        searching `from-ui` matches a value like `from-ui-insert` because the `from` and `ui`
-        tokens match. Optional field filters use the same syntax as row queries and are applied
-        before search.'
+      description: |-
+        Search rows within one table using keyword, semantic, or hybrid mode.
+
+        Keyword search matches the words in row values. Column names are not searched. Case and accents are ignored. Punctuation splits words, so `jane.doe@acme.com`, `acme.com`, `3.14`, and `2026-10-29` match as typed: a term with punctuation must appear in that order. A word of three or more characters also matches longer words that start with it; shorter words match whole words only. Each Chinese, Japanese, and Korean character is a word, so `都庁` matches `東京都庁`.
+
+        Syntax: words are all required; `"quoted words"` must appear together, in order, as whole words; `OR` (uppercase) between two terms accepts either and binds tighter than the implied AND; `-word` or `-"phrase"` excludes rows that contain it. Rows that match every term as a whole word rank first. Semantic mode ignores the syntax.
+
+        A query with no words, with only exclusions, with an exclusion inside `OR`, or with more than 128 words returns 400.
+
+        Optional field filters use the same syntax as row queries and are applied before search.
       parameters:
       - $ref: '#/components/parameters/TableIDParam'
       requestBody:
@@ -6051,6 +6062,13 @@ paths:
         description: Include files in subfolders of `folder`. With `false`, only files whose
           folder is exactly `folder` are returned; at the root that means files whose name
           carries no folder at all.
+      - name: agent_id
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Only files this assistant made, in any folder. An assistant picks a folder
+          for each file, so its files are not in one place.
       - $ref: '#/components/parameters/LibraryPlaceParam'
       - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
@@ -6668,6 +6686,18 @@ components:
       required: true
       schema:
         type: string
+    WorkflowID:
+      name: workflow_id
+      in: path
+      required: true
+      schema:
+        type: string
+    WorkflowRunID:
+      name: run_id
+      in: path
+      required: true
+      schema:
+        type: string
     TableIDParam:
       name: table_id
       in: path
@@ -6813,8 +6843,10 @@ components:
                 codes clients can rely on across endpoints are: `bad_request` (malformed input
                 / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`,
                 `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`.
-                When the request-wide rate limiter refuses a call, `rate_limit_exceeded` carries
-                `scope` (`key`, `org`, or `browser`), `window`, `limit`, and `retry_after_seconds`
+                A request that matches no API route returns 404 with `route_not_found`, distinct
+                from the `not_found` an operation returns for a missing resource. When the
+                request-wide rate limiter refuses a call, `rate_limit_exceeded` carries `scope`
+                (`key`, `org`, or `browser`), `window`, `limit`, and `retry_after_seconds`
                 in `details`; an endpoint''s own cap returns the same code without them. Direct
                 session invocation conflicts use `session_turn_active` with the blocking `turn_id`
                 and `status` in `details`; a send or nudge while a voice call is in progress
@@ -7028,13 +7060,6 @@ components:
           $ref: '#/components/schemas/ResourceContainer'
         posture:
           $ref: '#/components/schemas/ResourcePosture'
-    RoutineStatus:
-      type: string
-      enum:
-      - active
-      - paused
-      - completed
-      - cancelled
     AgentStatus:
       type: string
       enum:
@@ -7182,6 +7207,18 @@ components:
             default (1536 bytes for index, 131072 bytes for full); `0` also selects that default.
             Full mode fails the turn rather than truncating when the snapshot does not fit.
             Off mode ignores this field and injects no automatic memory context.
+    ToolApprovalMode:
+      type: string
+      enum:
+      - never
+      - destructive
+      - writes
+      description: Which tool calls on a connected account or a remote tool wait for a person's
+        approval. `never` asks before nothing. `destructive` asks before a call that cannot
+        be undone, such as sending an email, deleting, or posting publicly. `writes` asks
+        before any call that is not read-only. Tools inside Mobius (memory, Library, tables,
+        the workspace) never ask. One approval covers that tool for the rest of the message,
+        or the routine run.
     ThinkingEffort:
       type: string
       enum:
@@ -7229,6 +7266,8 @@ components:
       - created_at
       - updated_at
       - memory_enabled
+      - tool_approval_mode
+      - can_edit
       properties:
         id:
           type: string
@@ -7310,18 +7349,13 @@ components:
         memory_context:
           $ref: '#/components/schemas/MemoryContextPolicy'
           description: Automatic memory delivery policy. Absent means the bounded index default.
+        tool_approval_mode:
+          $ref: '#/components/schemas/ToolApprovalMode'
         thinking_effort:
           $ref: '#/components/schemas/ThinkingEffort'
           description: Default reasoning-effort level. New sessions inherit it, above the
             provider default and below an explicit per-session override. Absent when the agent
             has no default.
-        output_folder:
-          type: string
-          nullable: true
-          maxLength: 256
-          description: Library folder this assistant's files are saved to outside a routine
-            occurrence, where the routine's folder wins. Empty means the top level of the
-            Library. A file name that already contains a folder is never moved into it.
         status:
           $ref: '#/components/schemas/AgentStatus'
           description: 'Current agent status: `active` or `inactive`.'
@@ -7334,6 +7368,11 @@ components:
           type: integer
           description: How many principals are in this agent's audience. Zero for an `organization`
             agent, which carries no member rows.
+        can_edit:
+          type: boolean
+          description: 'Whether the caller may change this assistant''s setup: exactly what
+            `PATCH /v1/agents/{resource_id}` would allow. False on internal administration
+            listings.'
         email_address:
           type: string
           description: Inbox address provisioned via POST /v1/agents/{resource_id}/inbox (opt-in;
@@ -7695,6 +7734,13 @@ components:
       - message
       - compaction
       description: 'Transcript entry type: `message` or `compaction`.'
+    RoutineStatus:
+      type: string
+      enum:
+      - active
+      - paused
+      - completed
+      - cancelled
     APIKey:
       type: object
       additionalProperties: false
@@ -8340,6 +8386,11 @@ components:
         description:
           type: string
           description: Markdown description of what the action does.
+        exact_only:
+          type: boolean
+          description: True when only an exact selector naming this action reaches it. Group,
+            provider, and wildcard selectors never include it, so a person turns it on by
+            name.
         endpoint_kind:
           type: string
           enum:
@@ -8812,12 +8863,13 @@ components:
       properties:
         default_model:
           type: string
-          description: Model id assigned when an agent specifies no model. With `capability=voice`,
-            the voice model a call uses when it names none.
+          description: 'Model id an agent that specifies no model runs on: the organization''s
+            default model when it set one and it is enabled, else the platform default. With
+            `capability=voice`, the voice model a call uses when it names none.'
         items:
           type: array
-          description: Available providers in display order. Providers with no configured
-            credentials are omitted.
+          description: 'Available providers in display order, including providers the organization
+            turned off (`enabled: false`). Providers with no configured credentials are omitted.'
           items:
             $ref: '#/components/schemas/ModelProviderGroup'
         reason:
@@ -8836,6 +8888,7 @@ components:
       - provider
       - display_name
       - source
+      - enabled
       - models
       description: Available model choices for one provider.
       properties:
@@ -8843,6 +8896,9 @@ components:
           type: string
           description: Canonical provider id (`anthropic`, `openai`, `openrouter`, `gemini`,
             `xai`).
+        enabled:
+          type: boolean
+          description: False when the organization has turned this provider off.
         display_name:
           type: string
           description: Human-readable provider label.
@@ -8867,11 +8923,22 @@ components:
       - provider
       - label
       - context_window_tokens
+      - enabled
       properties:
         id:
           type: string
           description: Model id assigned to an agent's `model` field. Some catalog ids, such
             as OpenRouter slugs, include `/`.
+        enabled:
+          type: boolean
+          description: False when the organization has turned this model or its provider off,
+            or its billing plan does not include the model. Assistants cannot run on a model
+            that is not enabled.
+        plan_excluded:
+          type: boolean
+          description: True when the organization's billing plan does not include this model,
+            whatever the organization's own model settings say. A plan-excluded model is never
+            enabled.
         provider:
           type: string
           description: Canonical provider id this model belongs to.
@@ -9560,6 +9627,38 @@ components:
           type: string
         grant_id:
           type: string
+    EventTrigger:
+      type: object
+      additionalProperties: false
+      required:
+      - source_bindings
+      description: Starts a routine's or a workflow's run when a matching integration event
+        arrives from one of the watched accounts.
+      properties:
+        event_type:
+          type: string
+          x-go-type-skip-optional-pointer: true
+          example: github.issues.opened
+          description: 'The integration event to react to: a concrete type from the event
+            catalog (`github.issues.opened`) or a wildcard on a prefix (`github.issues.*`,
+            `github.*`). The first segment must name a registered integration provider; built-in
+            Mobius events are not accepted here.'
+        source_bindings:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/ConnectionBinding'
+          description: Exact connection and grant pairs whose matching events may start a
+            run, between 1 and 20 for an integration event. This selection does not authorize
+            provider actions.
+        condition:
+          type: string
+          example: event.repository.full_name == "acme/api"
+          description: Optional expression over the event's `{event, meta}` envelope. The
+            run starts only when it returns true. A condition that cannot be evaluated against
+            an event records a `failed` run with `error_code` `trigger_condition_error` and
+            starts nothing.
     ConnectionExecutionMode:
       type: string
       enum:
@@ -10064,6 +10163,14 @@ components:
         model_class:
           type: string
           description: Model class that produced the usage. Empty string when not applicable.
+        org_llm_key_id:
+          type: string
+          description: Organization model provider credit key that paid for this model call.
+            Absent when the call ran on the connected key, Mobius credits, or anything else.
+        org_llm_key_label:
+          type: string
+          description: Label of the credit key in `org_llm_key_id`, as it is now (or as last
+            recorded if the key was deleted). Absent with `org_llm_key_id`.
         metadata:
           type: object
           additionalProperties: true
@@ -10521,6 +10628,35 @@ components:
           type: string
           maxLength: 16384
           description: The new context, in Markdown. At most 16384 bytes of UTF-8.
+    AgentCopyLeftOut:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - id
+      - name
+      - reason
+      properties:
+        kind:
+          type: string
+          enum:
+          - skill
+          - connection
+          - file
+        id:
+          type: string
+        name:
+          type: string
+          description: Empty for a file.
+        reason:
+          type: string
+          enum:
+          - audience
+          - needs_admin
+          - failed
+          description: '`audience`: the skill is private to fewer people than the copy is
+            for; its custodian can share it. `needs_admin`: only an Admin grants a company
+            account. `failed`: the copy or grant failed.'
     InteractionMode:
       type: string
       enum:
@@ -10857,6 +10993,7 @@ components:
           - agent_tool
           - http_subscriber
           - none
+          - mcp_server_approval
         agent_tool:
           type: object
           allOf:
@@ -10871,6 +11008,22 @@ components:
           nullable: true
           description: HTTP callback target when `kind=http_subscriber`; null for other consumer
             kinds.
+    InteractionSourceConversation:
+      type: object
+      additionalProperties: false
+      required:
+      - session_id
+      - title
+      description: A conversation the caller can open, named for display.
+      properties:
+        session_id:
+          type: string
+        title:
+          type: string
+          description: The conversation's title; empty when it has none yet.
+        agent_id:
+          type: string
+          description: The assistant the conversation is with.
     AgentToolConsumer:
       type: object
       additionalProperties: false
@@ -10885,6 +11038,116 @@ components:
         session_id:
           type: string
           description: Session whose turn raised this interaction, when session-scoped.
+        held_call:
+          type: boolean
+          readOnly: true
+          description: True when Mobius opened this approval for tool calls it held because
+            the assistant's approval mode asks before them, rather than a question the assistant
+            asked. Its outcome resumes the held calls.
+    HeldCallApproval:
+      type: object
+      additionalProperties: false
+      required:
+      - calls
+      properties:
+        assistant_name:
+          type: string
+        account:
+          type: string
+        details_unavailable:
+          type: boolean
+          description: True when the items a held delete would remove could not be read. The
+            card still shows the call's arguments and can be approved.
+        details_cut:
+          type: boolean
+          description: True when the card leaves out or shortens part of what the held calls
+            would do, such as recipients, attachments, message text, or an argument. Such
+            a card can only be declined.
+        in_routine:
+          type: boolean
+          description: True when the held calls belong to a routine run.
+        calls:
+          type: array
+          items:
+            $ref: '#/components/schemas/HeldCallView'
+    HeldCallView:
+      type: object
+      additionalProperties: false
+      required:
+      - tool_call_id
+      - action
+      - effect
+      - label
+      properties:
+        tool_call_id:
+          type: string
+        action:
+          type: string
+        effect:
+          type: string
+          enum:
+          - write
+          - destructive
+          description: What the tool does, from its declared marks. A tool whose marks come
+            from a remote server counts as destructive unless it is marked read-only.
+        label:
+          type: string
+        account:
+          type: string
+          description: The account the call runs on, from the resolved connection.
+        recipients:
+          type: array
+          items:
+            type: string
+        subject:
+          type: string
+        body_text:
+          type: string
+          description: What recipients will read, as text. For a message with an HTML part,
+            the HTML part with its tags removed.
+        also_plain_text:
+          type: boolean
+          description: True when the message also has a plain text part that says something
+            different.
+        attachments:
+          type: array
+          items:
+            type: string
+          description: Names of the files the message carries.
+        warnings:
+          type: array
+          description: Plain cautions about the call, such as an address that mixes alphabets.
+          items:
+            type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/HeldItemView'
+        fields:
+          type: array
+          description: The call's other arguments, as plain text, sorted by name. Every argument
+            the layout above does not show appears here.
+          items:
+            $ref: '#/components/schemas/HeldField'
+    HeldField:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - value
+      properties:
+        name:
+          type: string
+        value:
+          type: string
+    HeldItemView:
+      type: object
+      additionalProperties: false
+      properties:
+        from:
+          type: string
+        subject:
+          type: string
     HttpSubscriberConsumer:
       type: object
       additionalProperties: false
@@ -11108,6 +11371,11 @@ components:
           nullable: true
           description: Canonical principal ID of the human or agent that created the interaction;
             null for legacy/system-created rows.
+        on_behalf_of:
+          type: string
+          nullable: true
+          description: Canonical principal ID of the person the asking assistant's turn ran
+            for; null when the interaction was not raised by an assistant on a person's behalf.
         owner:
           $ref: '#/components/schemas/ResourceOwner'
           description: Interactions are team-governed; their explicit targets are the audience
@@ -11132,6 +11400,17 @@ components:
           type: string
           nullable: true
           description: Optional longer responder-facing detail or instructions.
+        asker_name:
+          type: string
+          description: Present only when the caller is a person this interaction asks who
+            cannot use its source conversation. The name of the person the asking assistant
+            works for. Such a caller gets only id, kind, status, title, description, spec,
+            target_user_ids, expires_at, created_at, updated_at, asker_name, reply_audience,
+            and their own responses and lifecycle events.
+        reply_audience:
+          type: string
+          description: Present with asker_name. Who will read the reply, such as "Dan" or
+            "Dan and 3 others".
         subject:
           type: object
           allOf:
@@ -11220,6 +11499,24 @@ components:
           - $ref: '#/components/schemas/Consumer'
           nullable: true
           description: Polymorphic identifier of what is waiting on this interaction's resolution.
+        held_calls:
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/HeldCallApproval'
+          nullable: true
+          readOnly: true
+          description: What an approval for held tool calls covers, built from the exact arguments
+            the approved calls run with. Present only when `consumer.agent_tool.held_call`
+            is true. Every field is plain text.
+        source_conversation:
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/InteractionSourceConversation'
+          nullable: true
+          description: The conversation whose assistant asked this question. A caller who
+            can read that conversation gets it on get and list reads whenever an assistant
+            asked from one. Null for questions no conversation asked. Omitted for a person
+            this interaction asks who cannot use the conversation (see asker_name).
         delivery:
           type: object
           allOf:
@@ -11387,6 +11684,11 @@ components:
             interaction kind and never gated by the spec; the responder may always attach
             reasoning, caveats, or follow-up notes alongside their answers. It is one note
             per response, not per question.
+        held_card_seen:
+          type: boolean
+          description: Send true only from a view that shows the full details of the held
+            tool calls. An approval Mobius opened for held tool calls refuses every answer
+            without it.
     ReviewInteractionRequest:
       type: object
       additionalProperties: false
@@ -11419,15 +11721,18 @@ components:
     AgentMember:
       type: object
       additionalProperties: false
-      description: |-
-        One principal in a restricted or private agent's audience. Membership is pure visibility and carries no role.
-
-        A new member reads the ENTIRE shared layer, including everything promoted before they joined. That is inherent to a shared store; the member list's `added_at` is what makes it legible.
+      description: One person in a group or personal assistant. Being a member is access to
+        the assistant, its chats readable by everyone who uses it, its files, and its shared
+        memory, including what was there before they joined.
       required:
       - principal_id
       - kind
       - added_at
+      - manager
       properties:
+        manager:
+          type: boolean
+          description: Whether this member manages the group assistant.
         principal_id:
           type: string
           description: The human or agent principal in this agent's audience.
@@ -11455,31 +11760,69 @@ components:
       additionalProperties: false
       required:
       - count
+      - can_manage
       properties:
         items:
           type: array
-          description: The current audience. Returned only to callers who may manage the agent;
-            other members receive `count` alone.
+          description: The current members.
           items:
             $ref: '#/components/schemas/AgentMember'
         count:
           type: integer
-          description: How many principals are in this agent's audience.
-    ReplaceAgentMembersRequest:
+          description: How many people are members.
+        can_manage:
+          type: boolean
+          description: 'Whether the caller manages this assistant: an Admin, or a manager
+            of a group assistant whose role can build.'
+    UpdateAgentMemberRequest:
       type: object
       additionalProperties: false
       required:
-      - principal_ids
+      - manager
       properties:
-        principal_ids:
+        manager:
+          type: boolean
+    CopyAgentRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - visibility
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 63
+        visibility:
+          $ref: '#/components/schemas/AgentVisibility'
+        members:
           type: array
-          description: 'The exact audience after this call. A private agent takes exactly
-            one; a restricted agent at least one. An empty list on a restricted or private
-            agent is rejected: an empty audience means nobody, never everyone.'
+          description: The people in a group (`restricted`) copy. The caller is added as its
+            manager.
+          maxItems: 200
           items:
             type: string
-          minItems: 1
+        file_ids:
+          type: array
+          description: Files the assistant made, to copy into the new one's folder in Company
+            files.
           maxItems: 200
+          items:
+            type: string
+    AgentCopy:
+      type: object
+      additionalProperties: false
+      required:
+      - agent
+      - left_out
+      properties:
+        agent:
+          $ref: '#/components/schemas/Agent'
+        left_out:
+          type: array
+          description: What did not come along, and why.
+          items:
+            $ref: '#/components/schemas/AgentCopyLeftOut'
     AddAgentMembersRequest:
       type: object
       additionalProperties: false
@@ -11493,103 +11836,6 @@ components:
           items:
             type: string
           maxItems: 200
-    AgentVisibilityImpact:
-      type: object
-      additionalProperties: false
-      description: What a pending visibility change would do, so a client can confirm it in
-        specific terms rather than as a dropdown edit.
-      required:
-      - agent_id
-      - from
-      - to
-      - widening
-      - shared_entry_count
-      - affected_resources
-      properties:
-        agent_id:
-          type: string
-        from:
-          $ref: '#/components/schemas/AgentVisibility'
-        to:
-          $ref: '#/components/schemas/AgentVisibility'
-        widening:
-          type: boolean
-          description: 'True when the change exposes the shared memory layer to principals
-            who could not read it before. Widening requires `confirm_visibility_change` and
-            has no technical undo: republished knowledge cannot be un-read.'
-        shared_entry_count:
-          type: integer
-          description: How many shared-layer memory entries the change republishes or restricts.
-        dropped_members:
-          type: array
-          description: Member rows a widening change deletes.
-          items:
-            type: string
-        stranded_principals:
-          type: array
-          description: Principals who hold a memory partition or a session on this agent and
-            fall outside the new audience.
-          items:
-            type: string
-        stranded_partitions:
-          type: integer
-        stranded_sessions:
-          type: integer
-        affected_resources:
-          type: array
-          description: Delegated or contained root resources whose effective audience would
-            grow. Every item requires one matching disposition on the update request; omission
-            aborts the change.
-          items:
-            $ref: '#/components/schemas/AgentVisibilityAffectedResource'
-    AgentVisibilityAffectedResource:
-      type: object
-      additionalProperties: false
-      required:
-      - resource_type
-      - resource_id
-      - resource_class
-      - relationship
-      - visibility
-      - allowed_actions
-      properties:
-        resource_type:
-          type: string
-          enum:
-          - artifact
-          - session
-          - skill
-          - table
-        resource_id:
-          type: string
-        name:
-          type: string
-          description: Configuration name. Omitted for conversations and outputs.
-        resource_class:
-          type: string
-          enum:
-          - configuration
-          - conversation
-          - output
-        relationship:
-          type: string
-          enum:
-          - delegation
-          - container
-        visibility:
-          $ref: '#/components/schemas/ResourceVisibility'
-        allowed_actions:
-          type: array
-          description: The decisions accepted for this row. A contained conversation offers
-            only keep_and_widen, because its audience is set when it starts.
-          minItems: 1
-          maxItems: 2
-          items:
-            type: string
-            enum:
-            - revoke
-            - make_private
-            - keep_and_widen
     AgentAudienceResourceDisposition:
       type: object
       additionalProperties: false
@@ -11645,6 +11891,166 @@ components:
           maximum: 245760
           description: UTF-8 byte budget. Omit or send `0` for the selected mode's default.
             Off mode ignores this field.
+    DeletedAgentListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - has_more
+      - total
+      properties:
+        items:
+          type: array
+          description: The list of results for this page.
+          items:
+            $ref: '#/components/schemas/DeletedAgent'
+        has_more:
+          type: boolean
+          description: Whether more deleted agents remain after this page.
+        next_cursor:
+          type: string
+          description: Opaque cursor to pass as `cursor` on the next request. Absent when
+            `has_more` is false.
+        total:
+          type: integer
+          description: How many deleted agents the organization has.
+    DeletedAgent:
+      type: object
+      additionalProperties: false
+      description: A deleted agent, as the deleted list shows it.
+      required:
+      - id
+      - name
+      - description
+      - visibility
+      - deleted_at
+      - details_hidden
+      properties:
+        id:
+          type: string
+          description: The agent ID. Restore keeps it.
+        name:
+          type: string
+          description: The name the agent had when it was deleted. Empty when `details_hidden`
+            is true.
+        description:
+          type: string
+          description: The agent's description. Empty when `details_hidden` is true.
+        details_hidden:
+          type: boolean
+          description: 'True when the caller could not reach this agent while it was live:
+            someone else''s personal agent, or a group agent they were not in. Its name, description,
+            color, owner, deleter, and name availability are withheld, as the live agent list
+            withholds them.'
+        color:
+          type: string
+          description: The agent's avatar color key, if any.
+        visibility:
+          $ref: '#/components/schemas/AgentVisibility'
+        owner_id:
+          type: string
+          description: The person who held a personal agent. Absent for team custody and when
+            `details_hidden` is true.
+        deleted_at:
+          type: string
+          format: date-time
+          description: When the agent was deleted.
+        deleted_by:
+          $ref: '#/components/schemas/DeletedAgentActor'
+        name_available:
+          type: boolean
+          description: False when a live agent now uses this name, so restore needs a new
+            `name`. Absent when `details_hidden` is true.
+        owner_left:
+          type: boolean
+          description: True for a personal agent whose owner is no longer in the organization,
+            for example after offboarding. Restore refuses it with `agent_custodian_gone`.
+    DeletedAgentActor:
+      type: object
+      additionalProperties: false
+      description: Who deleted the agent, from the audit log. Absent when the audit log has
+        no record.
+      required:
+      - principal_id
+      - name
+      properties:
+        principal_id:
+          type: string
+          description: The person who deleted the agent.
+        name:
+          type: string
+          description: Their display name.
+        via_parent_org_id:
+          type: string
+          description: The provider organization they acted through, when they acted in a
+            managed organization.
+    RestoreAgentRequest:
+      type: object
+      additionalProperties: false
+      description: Options for restoring a deleted agent.
+      properties:
+        name:
+          type: string
+          maxLength: 63
+          description: Restore under this name. Required when a live agent now uses the old
+            name.
+    RestoredAgentResult:
+      type: object
+      additionalProperties: false
+      required:
+      - agent_id
+      - details_hidden
+      - not_restored
+      properties:
+        agent_id:
+          type: string
+          description: The restored agent's ID.
+        details_hidden:
+          type: boolean
+          description: 'True when the caller cannot reach the restored agent: someone else''s
+            personal agent, or a group agent they are not in. Then `agent` is absent and `not_restored`
+            is empty; the agent''s custodian or members see it as before.'
+        agent:
+          $ref: '#/components/schemas/Agent'
+        not_restored:
+          type: array
+          description: Each thing the agent had before its delete that did not come back.
+            Empty when `details_hidden` is true.
+          items:
+            $ref: '#/components/schemas/NotRestoredItem'
+    NotRestoredItem:
+      type: object
+      additionalProperties: false
+      description: One thing that did not come back with a restored agent, and why.
+      required:
+      - kind
+      - name
+      - reason
+      properties:
+        kind:
+          type: string
+          enum:
+          - connection
+          - skill
+          - member
+          - credential
+          - routine
+          description: What kind of thing it is. A `routine` came back but stays paused.
+        credential_kind:
+          type: string
+          enum:
+          - api_key
+          - cli_token
+          description: For a `credential` item, whether it was an API key or a CLI token.
+        id:
+          type: string
+          description: Its ID, when known.
+        name:
+          type: string
+          description: Its display name.
+        reason:
+          type: string
+          description: Why it did not come back, written for the person who restored the agent.
     AgentMessagingBindingRequest:
       type: object
       additionalProperties: false
@@ -11952,6 +12358,9 @@ components:
         memory_context:
           $ref: '#/components/schemas/MemoryContextPolicy'
           description: Automatic memory delivery policy. Omit for the bounded index default.
+        tool_approval_mode:
+          $ref: '#/components/schemas/ToolApprovalMode'
+          description: Which tool calls wait for a person's approval. Omit for `destructive`.
         thinking_effort:
           $ref: '#/components/schemas/ThinkingEffort'
           description: Default reasoning-effort level new sessions inherit from this agent.
@@ -11959,20 +12368,20 @@ components:
           type: string
           nullable: true
           maxLength: 256
-          description: Library folder this assistant's files are saved to, for example `assistants/ops`.
-            Omit to take the default derived from the name; send an empty string for the top
-            level of the Library. Inside a routine occurrence the routine's folder wins.
+          deprecated: true
+          description: Ignored. An assistant chooses a folder for each file it saves.
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Initial labels used for filtering, ownership, or automation.
         owner:
           $ref: '#/components/schemas/ResourceOwner'
-          description: Who governs this agent's configuration. Omit to use the creating human
-            for a private agent; choose team deliberately for a restricted or organization
-            agent.
+          deprecated: true
+          description: 'Ignored. Custody follows from `visibility`: a `private` agent is in
+            its one member''s custody, a `restricted` or `organization` agent in the team''s.'
         visibility:
           $ref: '#/components/schemas/AgentVisibility'
-          description: Who this agent is for. Omit for `private` on the employee API.
+          description: 'Who this agent is for: its kind, which cannot change after create.
+            Omit for `private` on the employee API.'
         members:
           type: array
           description: |-
@@ -11997,6 +12406,12 @@ components:
         machine principal created atomically with the agent) is intentionally absent: it is
         immutable. Reassigning identity is delete-and-recreate.'
       properties:
+        expected_updated_at:
+          type: string
+          format: date-time
+          description: The agent's `updated_at` as the caller last read it. When set, the
+            update saves only if the agent is unchanged since then, compared to the microsecond;
+            otherwise it returns 409 with code `agent_changed` and saves nothing.
         name:
           type: string
           description: Free-form human-readable label, 1-63 characters; must be unique within
@@ -12064,6 +12479,9 @@ components:
             time.
         memory_context:
           $ref: '#/components/schemas/UpdateMemoryContextPolicy'
+        tool_approval_mode:
+          $ref: '#/components/schemas/ToolApprovalMode'
+          description: Replacement approval mode.
         thinking_effort:
           $ref: '#/components/schemas/ThinkingEffort'
           description: Replacement default reasoning-effort level. Send `inherit` to clear
@@ -12072,39 +12490,35 @@ components:
           type: string
           nullable: true
           maxLength: 256
-          description: Replacement Library folder. Omit to leave it unchanged; send an empty
-            string to clear it and save to the top level of the Library. Renaming the assistant
-            never changes it.
+          deprecated: true
+          description: Ignored. An assistant chooses a folder for each file it saves.
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Replacement labels; send an empty object to clear all tags.
         visibility:
           $ref: '#/components/schemas/AgentVisibility'
-          description: Replacement audience. Widening (toward `organization`) republishes
-            the agent's shared memory layer to the new audience and requires `confirm_visibility_change`;
-            there is no technical undo, because republished knowledge cannot be un-read. Narrowing
-            that would strand rows requires `stranded_disposition`.
+          deprecated: true
+          description: The agent's kind is set when it is created. The current value is accepted
+            and changes nothing; any other value returns `409`.
         members:
           type: array
-          description: 'Replacement audience for a `restricted` or `private` agent: the exact
-            set after this call. Omit to leave membership unchanged. Ignored when the resulting
-            visibility is `organization`, which deletes the member rows outright — "org-visible
-            with a leftover member list" is not a representable state.'
+          deprecated: true
+          description: 'Replacement members for a `restricted` or `private` agent: the exact
+            set after this call. Omit to leave membership unchanged. An empty set is refused,
+            and a `private` agent''s one member is the person it belongs to. Use the members
+            endpoints instead.'
           items:
             type: string
           maxItems: 200
         confirm_visibility_change:
           type: boolean
           default: false
-          description: Acknowledges that widening republishes the agent's shared memory layer
-            to the new audience and drops the current member list. A widening change without
-            it returns `409` naming both counts.
+          deprecated: true
+          description: Ignored.
         affected_resource_dispositions:
           type: array
-          description: Exactly one decision for every row returned by the visibility impact
-            preview. Delegations may be revoked or explicitly widened; contained rows may
-            be made private or explicitly widened. Extra, duplicate, and omitted rows are
-            refused.
+          deprecated: true
+          description: Ignored.
           items:
             $ref: '#/components/schemas/AgentAudienceResourceDisposition'
         stranded_disposition:
@@ -12112,10 +12526,8 @@ components:
           enum:
           - retain
           - delete
-          description: |-
-            What happens to the memory partitions and sessions of principals who fall outside a narrowed audience.
-
-            `retain` keeps their partitions and sessions, readable only by org admins. `delete` additionally erases their private memory partitions, and only an org admin may choose it. A narrowing change that would strand rows and names neither returns `409`.
+          deprecated: true
+          description: Ignored.
     MemoryKind:
       type: string
       enum:
@@ -12368,561 +12780,6 @@ components:
         pinned:
           type: boolean
           description: Pin to exempt this memory from compaction.
-    ContextIncludeParam:
-      type: string
-      enum:
-      - context
-    SessionTextBlock:
-      type: object
-      additionalProperties: true
-      required:
-      - type
-      - text
-      description: Assistant or caller text.
-      properties:
-        type:
-          type: string
-          enum:
-          - text
-        text:
-          type: string
-          description: The text content.
-    SessionThinkingBlock:
-      type: object
-      additionalProperties: true
-      required:
-      - type
-      - thinking
-      description: An extended-reasoning block produced by a reasoning model.
-      properties:
-        type:
-          type: string
-          enum:
-          - thinking
-        thinking:
-          type: string
-          description: The reasoning text.
-        signature:
-          type: string
-          description: Provider signature for the reasoning block, when present.
-    SessionResolvedAction:
-      type: object
-      additionalProperties: false
-      required:
-      - name
-      - input
-      description: Canonical action resolved by a catalog tool dispatch.
-      properties:
-        name:
-          type: string
-          description: Canonical action name, before provider-safe wire-name mangling.
-        input:
-          type: object
-          additionalProperties: true
-          description: Resolved action arguments. Meta-router command wrappers are removed.
-    SessionToolDisplay:
-      type: object
-      additionalProperties: false
-      required:
-      - label
-      description: Plain-language phrasing for a tool call, recorded when the call is made.
-        Clients show these words instead of the tool name or its arguments.
-      properties:
-        label:
-          type: string
-          description: What the tool does, in sentence case, for example "Export a PDF".
-        running:
-          type: string
-          description: Phrase while the call runs, for example "Exporting a PDF…".
-        done:
-          type: string
-          description: 'Phrase once it succeeds, for example: Exported "Q3 update.pdf".'
-        done_many:
-          type: string
-          description: Phrase for a group of these calls; "{n}" is replaced by the count.
-        subject:
-          type: string
-          description: The one thing the call acted on, such as a file name. Never message
-            bodies.
-        artifact_id:
-          type: string
-          description: The artifact the call created or changed, when there is one.
-        artifact_root_id:
-          type: string
-          description: The first version of the document artifact_id belongs to, when the
-            call made a document version. Revisions of one document share it.
-        session_id:
-          type: string
-          description: The private assistant exchange opened by this call, when there is one.
-            Access is checked when opened.
-        integration:
-          type: string
-          description: The integration's name as people know it, shown before the label, for
-            example "GitHub".
-        integration_key:
-          type: string
-          description: Provider key for the integration icon, for example "github".
-        error:
-          type: string
-          description: One safe line explaining a failure, only for Mobius's own tools. Empty
-            for integration and third party tools, whose error text can quote private content.
-    SessionToolUseBlock:
-      type: object
-      additionalProperties: true
-      required:
-      - type
-      - id
-      - name
-      - input
-      description: A tool call the agent issued.
-      properties:
-        type:
-          type: string
-          enum:
-          - tool_use
-        id:
-          type: string
-          description: Tool-call id; the matching tool_result references it.
-        name:
-          type: string
-          description: Tool name.
-        input:
-          type: object
-          additionalProperties: true
-          description: Tool input arguments.
-        status:
-          type: string
-          description: Known values are pending, running, ok, error, and cancelled; unknown
-            values must be preserved.
-        progress:
-          type: object
-          additionalProperties: true
-          description: Latest in-flight progress snapshot. Absent on final transcript rows.
-        resolved_action:
-          $ref: '#/components/schemas/SessionResolvedAction'
-        display:
-          $ref: '#/components/schemas/SessionToolDisplay'
-    SessionContentBlock:
-      oneOf:
-      - $ref: '#/components/schemas/SessionTextBlock'
-      - $ref: '#/components/schemas/SessionThinkingBlock'
-      - $ref: '#/components/schemas/SessionToolUseBlock'
-      - $ref: '#/components/schemas/SessionToolResultBlock'
-      - $ref: '#/components/schemas/SessionImageBlock'
-      - $ref: '#/components/schemas/SessionDocumentBlock'
-      - $ref: '#/components/schemas/SessionReminderBlock'
-      discriminator:
-        propertyName: type
-        mapping:
-          text: '#/components/schemas/SessionTextBlock'
-          thinking: '#/components/schemas/SessionThinkingBlock'
-          tool_use: '#/components/schemas/SessionToolUseBlock'
-          tool_result: '#/components/schemas/SessionToolResultBlock'
-          image: '#/components/schemas/SessionImageBlock'
-          document: '#/components/schemas/SessionDocumentBlock'
-          reminder: '#/components/schemas/SessionReminderBlock'
-      description: One content block in a session transcript message — the canonical, frozen
-        JSON shape Mobius persists and replays, discriminated by `type`. The variants are
-        `text`, `thinking`, `tool_use`, `tool_result`, `image`, and `document`, plus host-managed
-        `reminder` blocks when caller runtime context is explicitly included. Each variant
-        permits provider-specific extra fields (citations, signatures, cache hints, and the
-        like), and unknown fields are preserved rather than rejected, so the transcript round-trips
-        losslessly across providers.
-    SessionToolResultBlock:
-      type: object
-      additionalProperties: true
-      required:
-      - type
-      - tool_use_id
-      description: The result of a tool call.
-      properties:
-        type:
-          type: string
-          enum:
-          - tool_result
-        tool_use_id:
-          type: string
-          description: The tool_use id this result answers.
-        content:
-          description: Result payload — a string, or an array of typed sub-blocks using the
-            same canonical block shape as a transcript message.
-          oneOf:
-          - type: string
-          - type: array
-            items:
-              $ref: '#/components/schemas/SessionContentBlock'
-        is_error:
-          type: boolean
-          description: True when the tool reported a failure.
-        display:
-          $ref: '#/components/schemas/SessionToolDisplay'
-    SessionImageSource:
-      type: object
-      additionalProperties: true
-      required:
-      - type
-      description: Canonical image source descriptor. Known source types are `base64` (`media_type`
-        plus `data`), `url` (`url`), and Mobius-managed `artifact` (`artifact_id`). Provider-specific
-        extensions are preserved.
-      properties:
-        type:
-          type: string
-          enum:
-          - base64
-          - url
-          - artifact
-        media_type:
-          type: string
-          description: MIME type for base64 content.
-        data:
-          type: string
-          description: Base64 image payload.
-        url:
-          type: string
-          format: uri
-          description: Fetchable image URL for a URL source.
-        artifact_id:
-          type: string
-          description: Mobius artifact id returned by the session attachment endpoint.
-    SessionImageBlock:
-      type: object
-      additionalProperties: true
-      required:
-      - type
-      description: An image block, e.g. multimodal caller input.
-      properties:
-        type:
-          type: string
-          enum:
-          - image
-        source:
-          $ref: '#/components/schemas/SessionImageSource'
-        media_type:
-          type: string
-          description: Server-detected MIME type for an artifact-backed image.
-        title:
-          type: string
-          description: Original filename for an artifact-backed image.
-        size_bytes:
-          type: integer
-          format: int64
-          description: Server-observed byte size for an artifact-backed image.
-    SessionDocumentSource:
-      type: object
-      additionalProperties: true
-      required:
-      - type
-      description: Canonical document source descriptor. Known source types are `base64` (`media_type`
-        plus `data`), `url` (`url`), `text` (`media_type` plus `data`), provider-managed `file`
-        (`file_id`), and Mobius-managed `artifact` (`artifact_id`). Provider-managed file
-        references are not portable across model providers; artifact sources are resolved
-        only after re-checking their session binding.
-      properties:
-        type:
-          type: string
-          enum:
-          - base64
-          - url
-          - text
-          - file
-          - artifact
-          description: Source discriminator; known values are base64, url, text, file, and
-            artifact.
-        media_type:
-          type: string
-          description: MIME type for base64 or text content.
-        data:
-          type: string
-          description: Base64 payload or literal text, depending on source type. Inline payloads
-            are limited to 256 KiB after base64 decoding or as UTF-8 text; larger documents
-            must use an artifact source created by the session attachment endpoint.
-        url:
-          type: string
-          format: uri
-          description: Fetchable document URL for a URL source.
-        file_id:
-          type: string
-          description: Provider-managed file identifier for a file source.
-        artifact_id:
-          type: string
-          description: Mobius artifact id returned by the session attachment endpoint.
-    SessionDocumentBlock:
-      type: object
-      additionalProperties: true
-      required:
-      - type
-      - source
-      description: A canonical document block. Mobius persists this provider-neutral block
-        after translating supported caller dialects such as OpenAI `input_file` and Chat Completions
-        `file` blocks. Base64 data stays in `source.data`; clients must not render or log
-        that field.
-      properties:
-        type:
-          type: string
-          enum:
-          - document
-        source:
-          $ref: '#/components/schemas/SessionDocumentSource'
-        title:
-          type: string
-          description: Human-readable filename or document title, when supplied.
-        media_type:
-          type: string
-          description: Server-detected MIME type for an artifact-backed document.
-        size_bytes:
-          type: integer
-          format: int64
-          description: Server-observed byte size for an artifact-backed document.
-        page_count:
-          type: integer
-          minimum: 1
-          description: Parsed page count for an artifact-backed PDF.
-        context:
-          type: string
-          description: Optional model-facing context for the document.
-        citations:
-          type: object
-          additionalProperties: true
-          description: Provider citation options, when supported.
-    SessionReminderBlock:
-      type: object
-      additionalProperties: true
-      required:
-      - type
-      - name
-      - tier
-      - content
-      description: Host-managed runtime context returned only when the request explicitly
-        includes caller-supplied context.
-      properties:
-        type:
-          type: string
-          enum:
-          - reminder
-        name:
-          type: string
-          description: Model-visible reminder name, including the `app-` namespace.
-        tier:
-          type: string
-          enum:
-          - contextual
-          - operator
-          description: Reminder authority tier.
-        content:
-          type: string
-          description: Reminder content rendered to the model.
-    SessionEventProjectionKind:
-      type: string
-      enum:
-      - generic
-      - repository_change
-      - file_change
-      - email
-      - calendar_event
-      - message
-      - work_item
-      - content_change
-      - business_record
-      - interaction
-      description: 'Stable UI treatment for a projected event. `interaction` is the outcome
-        of a question the agent asked with mobius.interaction.create: answered, dismissed,
-        or expired.'
-    SessionEventProjectionAttribute:
-      type: object
-      additionalProperties: false
-      required:
-      - label
-      - value
-      properties:
-        label:
-          type: string
-          description: Short fact label selected by the server-side formatter.
-        value:
-          type: string
-          description: Plain-text, bounded fact value.
-    SessionEventProjection:
-      type: object
-      additionalProperties: false
-      required:
-      - kind
-      - event_type
-      - title
-      description: Bounded, display-safe projection of the external event associated with
-        a session message. The complete provider payload is deliberately absent.
-      properties:
-        kind:
-          $ref: '#/components/schemas/SessionEventProjectionKind'
-        event_type:
-          type: string
-          description: Concrete event type that started the work.
-        provider:
-          type: string
-          description: Provider identifier when the event came from an integration.
-        title:
-          type: string
-          description: Short human-readable description of what happened.
-        summary:
-          type: string
-          description: Optional provider-specific change summary.
-        excerpt:
-          type: string
-          description: Optional bounded plain-text excerpt from the event, such as a comment
-            or review body.
-        resource_name:
-          type: string
-          description: Human-readable affected resource name, never an internal event or source
-            ID.
-        resource_url:
-          type: string
-          format: uri
-          description: Optional http(s) link to the affected provider resource.
-        occurred_at:
-          type: string
-          format: date-time
-          description: Upstream occurrence time, falling back to receipt time.
-        attributes:
-          type: array
-          maxItems: 4
-          description: Small provider-selected facts; never arbitrary payload fields.
-          items:
-            $ref: '#/components/schemas/SessionEventProjectionAttribute'
-    SessionMessageAuthor:
-      type: object
-      additionalProperties: false
-      description: 'The principal that wrote a message, resolved from the authenticated sender
-        at read time so the transcript can render a name and avatar without a lookup per message.
-        Never accepted on write. A message that arrived through a chat app has an `external`
-        author: the person in that app, named as the app reported them.'
-      required:
-      - id
-      - kind
-      - display_name
-      properties:
-        id:
-          type: string
-          description: Principal id of the author. For an `external` author, a stable id for
-            that person in that chat app account; it is not a principal.
-        kind:
-          type: string
-          enum:
-          - human
-          - agent
-          - service
-          - system
-          - external
-          description: The principal's kind, resolved from the principal record. `external`
-            is a person in a chat app, who is not a Mobius principal.
-        provider:
-          type: string
-          description: The chat app an `external` author wrote from, such as `slack`.
-        display_name:
-          type: string
-          description: Single-line label for the author.
-        avatar_url:
-          type: string
-          description: Avatar image, when the principal has one.
-        color:
-          type: string
-          description: Mantine palette key for the avatar fallback when no image is set.
-    SessionMessage:
-      type: object
-      additionalProperties: false
-      description: One persisted message or compaction entry in a session transcript.
-      required:
-      - id
-      - session_id
-      - agent_id
-      - role
-      - content
-      - entry_type
-      - sequence
-      - created_at
-      properties:
-        id:
-          type: string
-          description: Stable message identifier.
-        session_id:
-          type: string
-          description: Session this message belongs to.
-        agent_id:
-          type: string
-          description: Agent container executing the parent session.
-        role:
-          $ref: '#/components/schemas/SessionMessageRole'
-          description: Role of this message in the transcript.
-        content:
-          type: array
-          description: Ordered canonical content blocks (text, thinking, tool_use, tool_result,
-            image, document).
-          items:
-            $ref: '#/components/schemas/SessionContentBlock'
-        entry_type:
-          $ref: '#/components/schemas/SessionMessageEntryType'
-          description: Whether this row is a normal message or a compaction summary.
-        covers_through_sequence:
-          type: integer
-          description: 'For `compaction` messages, the highest sequence number this summary
-            covers. It is an internal ordering key, not a quantity: use `metadata.conversation_message_count`
-            to say how much history the summary folded away.'
-        sequence:
-          type: integer
-          description: Monotonic per-session sequence number assigned at append time.
-        turn_id:
-          type: string
-          description: AgentTurn that produced this message. Run, step, and channel identity
-            for the message are read from this turn. Absent for compaction summaries and messages
-            not tied to a turn.
-        metadata:
-          type: object
-          additionalProperties: true
-          description: 'Free-form caller metadata for this message. A `compaction` entry instead
-            carries server-owned keys describing the pass that wrote it: `trigger` (a `CompactionTrigger`:
-            what started the pass), `conversation_message_count` (transcript rows folded into
-            the summary, counting only rows a reader sees — the number to show a user), `message_count`
-            (the raw window size, including host-injected context rows), `from_sequence` /
-            `through_sequence` (the window''s sequence bounds), `estimated_tokens`, `strategy`,
-            `summary_model`, and `summary_provider`.'
-        event_projection:
-          $ref: '#/components/schemas/SessionEventProjection'
-          description: Server-owned safe display projection when this message was triggered
-            by an external event.
-        author:
-          $ref: '#/components/schemas/SessionMessageAuthor'
-          description: Who wrote this message, resolved server side from the authenticated
-            sender. Present only on `user` messages written by a principal in this organization;
-            routine inputs and event deliveries carry execution identity instead and remain
-            unattributed.
-        created_at:
-          type: string
-          format: date-time
-          description: Server timestamp when the message was appended.
-    SessionMessageListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      properties:
-        items:
-          type: array
-          description: Messages in this page, ordered by `sequence` ascending.
-          items:
-            $ref: '#/components/schemas/SessionMessage'
-        has_more:
-          type: boolean
-          description: True when more messages exist past this page in the query's scan direction.
-        next_sequence:
-          type: integer
-          format: int64
-          description: Sequence of the last (highest) item — pass back as `after_sequence`
-            to page forward (newer).
-        prev_sequence:
-          type: integer
-          format: int64
-          description: Sequence of the first (lowest) item — pass back as `before_sequence`
-            with `order=desc` to page backward (older). After paginating history, open the
-            stream with `after_sequence=next_sequence` to receive the in-flight turn and everything
-            after it — the stream and the messages API share one `sequence` cursor, so there
-            is no overlap and no gap.
     Skill:
       type: object
       additionalProperties: false
@@ -13244,6 +13101,12 @@ components:
           description: Reasoning-effort override for this session. Send a level to override,
             or `inherit` to clear it and fall back to the agent default. Omit to leave the
             current value unchanged.
+        model_override:
+          type: string
+          description: Model later turns in this session run on. The history is kept and each
+            reply records the model that produced it. Send an empty string to go back to the
+            agent's own model. Omit to leave it unchanged. Worker-routed agents return `400
+            invalid_argument` with `details.argument = model_override`.
     SessionTranscriptMessage:
       type: object
       additionalProperties: false
@@ -13722,8 +13585,8 @@ components:
       - event_type
       - session_id
       - voice_call
-      description: 'Live pulse: a voice call started in the chat. Not replayed on reconnect;
-        read the session''s `active_voice_call` instead.'
+      description: 'Live pulse: a voice call started in the chat. Not replayed on reconnect.
+        A client that missed it learns of a running call when a send returns 409 `voice_call_active`.'
       properties:
         event_type:
           type: string
@@ -13758,7 +13621,8 @@ components:
       - voice_call_id
       - end_reason
       description: 'Live pulse: the chat''s voice call ended, and sends work again. Not replayed
-        on reconnect; read the session''s `active_voice_call` instead.'
+        on reconnect. A client that missed it learns the call ended when a send no longer
+        returns 409 `voice_call_active`.'
       properties:
         event_type:
           type: string
@@ -14080,6 +13944,318 @@ components:
         summary_model:
           type: string
           description: Model that produced the summary.
+    SessionContentBlock:
+      oneOf:
+      - $ref: '#/components/schemas/SessionTextBlock'
+      - $ref: '#/components/schemas/SessionThinkingBlock'
+      - $ref: '#/components/schemas/SessionToolUseBlock'
+      - $ref: '#/components/schemas/SessionToolResultBlock'
+      - $ref: '#/components/schemas/SessionImageBlock'
+      - $ref: '#/components/schemas/SessionDocumentBlock'
+      - $ref: '#/components/schemas/SessionReminderBlock'
+      discriminator:
+        propertyName: type
+        mapping:
+          text: '#/components/schemas/SessionTextBlock'
+          thinking: '#/components/schemas/SessionThinkingBlock'
+          tool_use: '#/components/schemas/SessionToolUseBlock'
+          tool_result: '#/components/schemas/SessionToolResultBlock'
+          image: '#/components/schemas/SessionImageBlock'
+          document: '#/components/schemas/SessionDocumentBlock'
+          reminder: '#/components/schemas/SessionReminderBlock'
+      description: One content block in a session transcript message — the canonical, frozen
+        JSON shape Mobius persists and replays, discriminated by `type`. The variants are
+        `text`, `thinking`, `tool_use`, `tool_result`, `image`, and `document`, plus host-managed
+        `reminder` blocks when caller runtime context is explicitly included. Each variant
+        permits provider-specific extra fields (citations, signatures, cache hints, and the
+        like), and unknown fields are preserved rather than rejected, so the transcript round-trips
+        losslessly across providers.
+    SessionTextBlock:
+      type: object
+      additionalProperties: true
+      required:
+      - type
+      - text
+      description: Assistant or caller text.
+      properties:
+        type:
+          type: string
+          enum:
+          - text
+        text:
+          type: string
+          description: The text content.
+    SessionThinkingBlock:
+      type: object
+      additionalProperties: true
+      required:
+      - type
+      - thinking
+      description: An extended-reasoning block produced by a reasoning model.
+      properties:
+        type:
+          type: string
+          enum:
+          - thinking
+        thinking:
+          type: string
+          description: The reasoning text.
+        signature:
+          type: string
+          description: Provider signature for the reasoning block, when present.
+    SessionToolUseBlock:
+      type: object
+      additionalProperties: true
+      required:
+      - type
+      - id
+      - name
+      - input
+      description: A tool call the agent issued.
+      properties:
+        type:
+          type: string
+          enum:
+          - tool_use
+        id:
+          type: string
+          description: Tool-call id; the matching tool_result references it.
+        name:
+          type: string
+          description: Tool name.
+        input:
+          type: object
+          additionalProperties: true
+          description: Tool input arguments.
+        status:
+          type: string
+          description: Known values are pending, running, ok, error, and cancelled; unknown
+            values must be preserved.
+        progress:
+          type: object
+          additionalProperties: true
+          description: Latest in-flight progress snapshot. Absent on final transcript rows.
+        resolved_action:
+          $ref: '#/components/schemas/SessionResolvedAction'
+        display:
+          $ref: '#/components/schemas/SessionToolDisplay'
+    SessionResolvedAction:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - input
+      description: Canonical action resolved by a catalog tool dispatch.
+      properties:
+        name:
+          type: string
+          description: Canonical action name, before provider-safe wire-name mangling.
+        input:
+          type: object
+          additionalProperties: true
+          description: Resolved action arguments. Meta-router command wrappers are removed.
+    SessionToolDisplay:
+      type: object
+      additionalProperties: false
+      required:
+      - label
+      description: Plain-language phrasing for a tool call, recorded when the call is made.
+        Clients show these words instead of the tool name or its arguments.
+      properties:
+        label:
+          type: string
+          description: What the tool does, in sentence case, for example "Export a PDF".
+        running:
+          type: string
+          description: Phrase while the call runs, for example "Exporting a PDF…".
+        done:
+          type: string
+          description: 'Phrase once it succeeds, for example: Exported "Q3 update.pdf".'
+        done_many:
+          type: string
+          description: Phrase for a group of these calls; "{n}" is replaced by the count.
+        subject:
+          type: string
+          description: The one thing the call acted on, such as a file name. Never message
+            bodies.
+        artifact_id:
+          type: string
+          description: The artifact the call created or changed, when there is one.
+        artifact_root_id:
+          type: string
+          description: The first version of the document artifact_id belongs to, when the
+            call made a document version. Revisions of one document share it.
+        session_id:
+          type: string
+          description: The private assistant exchange opened by this call, when there is one.
+            Access is checked when opened.
+        integration:
+          type: string
+          description: The integration's name as people know it, shown before the label, for
+            example "GitHub".
+        integration_key:
+          type: string
+          description: Provider key for the integration icon, for example "github".
+        error:
+          type: string
+          description: One safe line explaining a failure, only for Mobius's own tools. Empty
+            for integration and third party tools, whose error text can quote private content.
+    SessionToolResultBlock:
+      type: object
+      additionalProperties: true
+      required:
+      - type
+      - tool_use_id
+      description: The result of a tool call.
+      properties:
+        type:
+          type: string
+          enum:
+          - tool_result
+        tool_use_id:
+          type: string
+          description: The tool_use id this result answers.
+        content:
+          description: Result payload — a string, or an array of typed sub-blocks using the
+            same canonical block shape as a transcript message.
+          oneOf:
+          - type: string
+          - type: array
+            items:
+              $ref: '#/components/schemas/SessionContentBlock'
+        is_error:
+          type: boolean
+          description: True when the tool reported a failure.
+        display:
+          $ref: '#/components/schemas/SessionToolDisplay'
+    SessionImageBlock:
+      type: object
+      additionalProperties: true
+      required:
+      - type
+      description: An image block, e.g. multimodal caller input.
+      properties:
+        type:
+          type: string
+          enum:
+          - image
+        source:
+          $ref: '#/components/schemas/SessionImageSource'
+        media_type:
+          type: string
+          description: Server-detected MIME type for an artifact-backed image.
+        title:
+          type: string
+          description: Original filename for an artifact-backed image.
+        size_bytes:
+          type: integer
+          format: int64
+          description: Server-observed byte size for an artifact-backed image.
+    SessionImageSource:
+      type: object
+      additionalProperties: true
+      required:
+      - type
+      description: Canonical image source descriptor. Known source types are `base64` (`media_type`
+        plus `data`), `url` (`url`), and Mobius-managed `artifact` (`artifact_id`). Provider-specific
+        extensions are preserved.
+      properties:
+        type:
+          type: string
+          enum:
+          - base64
+          - url
+          - artifact
+        media_type:
+          type: string
+          description: MIME type for base64 content.
+        data:
+          type: string
+          description: Base64 image payload.
+        url:
+          type: string
+          format: uri
+          description: Fetchable image URL for a URL source.
+        artifact_id:
+          type: string
+          description: Mobius artifact id returned by the session attachment endpoint.
+    SessionDocumentBlock:
+      type: object
+      additionalProperties: true
+      required:
+      - type
+      - source
+      description: A canonical document block. Mobius persists this provider-neutral block
+        after translating supported caller dialects such as OpenAI `input_file` and Chat Completions
+        `file` blocks. Base64 data stays in `source.data`; clients must not render or log
+        that field.
+      properties:
+        type:
+          type: string
+          enum:
+          - document
+        source:
+          $ref: '#/components/schemas/SessionDocumentSource'
+        title:
+          type: string
+          description: Human-readable filename or document title, when supplied.
+        media_type:
+          type: string
+          description: Server-detected MIME type for an artifact-backed document.
+        size_bytes:
+          type: integer
+          format: int64
+          description: Server-observed byte size for an artifact-backed document.
+        page_count:
+          type: integer
+          minimum: 1
+          description: Parsed page count for an artifact-backed PDF.
+        context:
+          type: string
+          description: Optional model-facing context for the document.
+        citations:
+          type: object
+          additionalProperties: true
+          description: Provider citation options, when supported.
+    SessionDocumentSource:
+      type: object
+      additionalProperties: true
+      required:
+      - type
+      description: Canonical document source descriptor. Known source types are `base64` (`media_type`
+        plus `data`), `url` (`url`), `text` (`media_type` plus `data`), provider-managed `file`
+        (`file_id`), and Mobius-managed `artifact` (`artifact_id`). Provider-managed file
+        references are not portable across model providers; artifact sources are resolved
+        only after re-checking their session binding.
+      properties:
+        type:
+          type: string
+          enum:
+          - base64
+          - url
+          - text
+          - file
+          - artifact
+          description: Source discriminator; known values are base64, url, text, file, and
+            artifact.
+        media_type:
+          type: string
+          description: MIME type for base64 or text content.
+        data:
+          type: string
+          description: Base64 payload or literal text, depending on source type. Inline payloads
+            are limited to 256 KiB after base64 decoding or as UTF-8 text; larger documents
+            must use an artifact source created by the session attachment endpoint.
+        url:
+          type: string
+          format: uri
+          description: Fetchable document URL for a URL source.
+        file_id:
+          type: string
+          description: Provider-managed file identifier for a file source.
+        artifact_id:
+          type: string
+          description: Mobius artifact id returned by the session attachment endpoint.
     CreateSessionAttachmentRequest:
       type: object
       required:
@@ -14144,6 +14320,245 @@ components:
           $ref: '#/components/schemas/Artifact'
         content_block:
           $ref: '#/components/schemas/SessionContentBlock'
+    SessionReminderBlock:
+      type: object
+      additionalProperties: true
+      required:
+      - type
+      - name
+      - tier
+      - content
+      description: Host-managed runtime context returned only when the request explicitly
+        includes caller-supplied context.
+      properties:
+        type:
+          type: string
+          enum:
+          - reminder
+        name:
+          type: string
+          description: Model-visible reminder name, including the `app-` namespace.
+        tier:
+          type: string
+          enum:
+          - contextual
+          - operator
+          description: Reminder authority tier.
+        content:
+          type: string
+          description: Reminder content rendered to the model.
+    SessionEventProjectionKind:
+      type: string
+      enum:
+      - generic
+      - repository_change
+      - file_change
+      - email
+      - calendar_event
+      - message
+      - work_item
+      - content_change
+      - business_record
+      - interaction
+      description: 'Stable UI treatment for a projected event. `interaction` is the outcome
+        of a question the agent asked with mobius.interaction.create: answered, dismissed,
+        or expired.'
+    SessionEventProjectionAttribute:
+      type: object
+      additionalProperties: false
+      required:
+      - label
+      - value
+      properties:
+        label:
+          type: string
+          description: Short fact label selected by the server-side formatter.
+        value:
+          type: string
+          description: Plain-text, bounded fact value.
+    SessionEventProjection:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - event_type
+      - title
+      description: Bounded, display-safe projection of the external event associated with
+        a session message. The complete provider payload is deliberately absent.
+      properties:
+        kind:
+          $ref: '#/components/schemas/SessionEventProjectionKind'
+        event_type:
+          type: string
+          description: Concrete event type that started the work.
+        provider:
+          type: string
+          description: Provider identifier when the event came from an integration.
+        title:
+          type: string
+          description: Short human-readable description of what happened.
+        summary:
+          type: string
+          description: Optional provider-specific change summary.
+        excerpt:
+          type: string
+          description: Optional bounded plain-text excerpt from the event, such as a comment
+            or review body.
+        resource_name:
+          type: string
+          description: Human-readable affected resource name, never an internal event or source
+            ID.
+        resource_url:
+          type: string
+          format: uri
+          description: Optional http(s) link to the affected provider resource.
+        occurred_at:
+          type: string
+          format: date-time
+          description: Upstream occurrence time, falling back to receipt time.
+        attributes:
+          type: array
+          maxItems: 4
+          description: Small provider-selected facts; never arbitrary payload fields.
+          items:
+            $ref: '#/components/schemas/SessionEventProjectionAttribute'
+    SessionMessage:
+      type: object
+      additionalProperties: false
+      description: One persisted message or compaction entry in a session transcript.
+      required:
+      - id
+      - session_id
+      - agent_id
+      - role
+      - content
+      - entry_type
+      - sequence
+      - created_at
+      properties:
+        id:
+          type: string
+          description: Stable message identifier.
+        session_id:
+          type: string
+          description: Session this message belongs to.
+        agent_id:
+          type: string
+          description: Agent container executing the parent session.
+        role:
+          $ref: '#/components/schemas/SessionMessageRole'
+          description: Role of this message in the transcript.
+        content:
+          type: array
+          description: Ordered canonical content blocks (text, thinking, tool_use, tool_result,
+            image, document).
+          items:
+            $ref: '#/components/schemas/SessionContentBlock'
+        entry_type:
+          $ref: '#/components/schemas/SessionMessageEntryType'
+          description: Whether this row is a normal message or a compaction summary.
+        covers_through_sequence:
+          type: integer
+          description: 'For `compaction` messages, the highest sequence number this summary
+            covers. It is an internal ordering key, not a quantity: use `metadata.conversation_message_count`
+            to say how much history the summary folded away.'
+        sequence:
+          type: integer
+          description: Monotonic per-session sequence number assigned at append time.
+        turn_id:
+          type: string
+          description: AgentTurn that produced this message. Run, step, and channel identity
+            for the message are read from this turn. Absent for compaction summaries and messages
+            not tied to a turn.
+        metadata:
+          type: object
+          additionalProperties: true
+          description: 'Free-form caller metadata for this message. A `compaction` entry instead
+            carries server-owned keys describing the pass that wrote it: `trigger` (a `CompactionTrigger`:
+            what started the pass), `conversation_message_count` (transcript rows folded into
+            the summary, counting only rows a reader sees — the number to show a user), `message_count`
+            (the raw window size, including host-injected context rows), `from_sequence` /
+            `through_sequence` (the window''s sequence bounds), `estimated_tokens`, `strategy`,
+            `summary_model`, and `summary_provider`.'
+        event_projection:
+          $ref: '#/components/schemas/SessionEventProjection'
+          description: Server-owned safe display projection when this message was triggered
+            by an external event.
+        author:
+          $ref: '#/components/schemas/SessionMessageAuthor'
+          description: Who wrote this message, resolved server side from the authenticated
+            sender. Present only on `user` messages written by a principal in this organization;
+            routine inputs and event deliveries carry execution identity instead and remain
+            unattributed.
+        created_at:
+          type: string
+          format: date-time
+          description: Server timestamp when the message was appended.
+    SessionMessageAuthor:
+      type: object
+      additionalProperties: false
+      description: 'The principal that wrote a message, resolved from the authenticated sender
+        at read time so the transcript can render a name and avatar without a lookup per message.
+        Never accepted on write. A message that arrived through a chat app has an `external`
+        author: the person in that app, named as the app reported them.'
+      required:
+      - id
+      - kind
+      - display_name
+      properties:
+        id:
+          type: string
+          description: Principal id of the author. For an `external` author, a stable id for
+            that person in that chat app account; it is not a principal.
+        kind:
+          type: string
+          enum:
+          - human
+          - agent
+          - service
+          - system
+          - external
+          description: The principal's kind, resolved from the principal record. `external`
+            is a person in a chat app, who is not a Mobius principal.
+        provider:
+          type: string
+          description: The chat app an `external` author wrote from, such as `slack`.
+        display_name:
+          type: string
+          description: Single-line label for the author.
+        avatar_url:
+          type: string
+          description: Avatar image, when the principal has one.
+        color:
+          type: string
+          description: Mantine palette key for the avatar fallback when no image is set.
+    SessionMessageListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          description: Messages in this page, ordered by `sequence` ascending.
+          items:
+            $ref: '#/components/schemas/SessionMessage'
+        has_more:
+          type: boolean
+          description: True when more messages exist past this page in the query's scan direction.
+        next_sequence:
+          type: integer
+          format: int64
+          description: Sequence of the last (highest) item — pass back as `after_sequence`
+            to page forward (newer).
+        prev_sequence:
+          type: integer
+          format: int64
+          description: Sequence of the first (lowest) item — pass back as `before_sequence`
+            with `order=desc` to page backward (older). After paginating history, open the
+            stream with `after_sequence=next_sequence` to receive the in-flight turn and everything
+            after it — the stream and the messages API share one `sequence` cursor, so there
+            is no overlap and no gap.
     AppendSessionMessagesRequest:
       type: object
       additionalProperties: false
@@ -14305,6 +14720,10 @@ components:
           type: object
           additionalProperties: true
           description: Free-form caller metadata stored on a newly created session.
+    ContextIncludeParam:
+      type: string
+      enum:
+      - context
     RuntimeContextItem:
       type: object
       additionalProperties: false
@@ -15180,7 +15599,9 @@ components:
       - team
       description: 'Whose the routine is. `person` pauses with its owner''s offboarding and
         runs on their connections. `team` belongs to the business: it has no `owner_id`, survives
-        its creator''s departure, and must name at least one responsible person.'
+        its creator''s departure, and must name at least one responsible person. A routine
+        installed from a blueprint has none while it waits for setup, and naming one is part
+        of turning it on.'
     RoutineManagedBy:
       type: string
       enum:
@@ -15298,43 +15719,6 @@ components:
       description: What starts this routine's runs. `schedule` fires on the routine's schedule;
         `event` fires when a matching integration event arrives. Derived from whichever of
         `schedule` and `event` the routine carries, never stored.
-    RoutineEventTrigger:
-      type: object
-      additionalProperties: false
-      required:
-      - source_bindings
-      description: Runs the routine when a matching integration event arrives. Each matched
-        event creates a ledger entry for each followed thread. Runs serialize within a thread,
-        with concurrent threads bounded by the routine's concurrency setting; each-event routines
-        serialize per routine. Waiting thread events may be coalesced into the newest entry.
-        A run still waiting six hours later is closed `skipped` with `error_code` `stale`.
-      properties:
-        event_type:
-          type: string
-          x-go-type-skip-optional-pointer: true
-          example: github.issues.opened
-          description: 'The integration event to react to: a concrete type from the event
-            catalog (`github.issues.opened`) or a wildcard on a prefix (`github.issues.*`,
-            `github.*`). The first segment must name a registered integration provider; built-in
-            Mobius events are not accepted here. Required unless `follow_target` names a provider
-            target, which derives the subscription when omitted. The `event`, `routine`, and
-            `custom` follow targets require an explicit event type.'
-        source_bindings:
-          type: array
-          minItems: 1
-          maxItems: 20
-          uniqueItems: true
-          items:
-            $ref: '#/components/schemas/ConnectionBinding'
-          description: Exact connection and grant pairs whose matching events may start this
-            routine. This selection does not authorize provider actions.
-        condition:
-          type: string
-          example: event.repository.full_name == "acme/api"
-          description: Optional expression over the event's `{event, meta}` envelope. The
-            run starts only when it returns true. A condition that cannot be evaluated against
-            an event records a `failed` run with `error_code` `trigger_condition_error` and
-            starts nothing.
     RoutineCreateRequest:
       type: object
       additionalProperties: false
@@ -15400,14 +15784,33 @@ components:
         schedule:
           $ref: '#/components/schemas/RoutineSchedule'
         event:
-          $ref: '#/components/schemas/RoutineEventTrigger'
+          allOf:
+          - $ref: '#/components/schemas/EventTrigger'
+          description: Runs the routine when a matching integration event arrives. Each matched
+            event creates a ledger entry for each followed thread. Runs serialize within a
+            thread, with concurrent threads bounded by the routine's concurrency setting;
+            each-event routines serialize per routine. Waiting thread events may be coalesced
+            into the newest entry. A run still waiting six hours later is closed `skipped`
+            with `error_code` `stale`. `event_type` may be omitted when `follow_target` names
+            a provider target, which derives the subscription; the `event`, `routine`, and
+            `custom` follow targets require an explicit event type.
         output_folder:
           type: string
           nullable: true
           maxLength: 256
-          description: Library folder these files are saved to, for example `routines/weekly-report`.
-            A file name that already contains a folder always wins. Omit to take the default
-            derived from the routine name; send an empty string for the top level of the Library.
+          deprecated: true
+          description: Ignored. An assistant chooses a folder for each file it saves.
+        model_override:
+          type: string
+          maxLength: 200
+          description: Model every run uses instead of the assistant's. Omit to use the assistant's
+            model. Whether the organization may run it is checked when each run starts. Rejected
+            for a worker-routed assistant.
+        thinking_effort:
+          allOf:
+          - $ref: '#/components/schemas/ThinkingEffort'
+          description: Reasoning effort every run uses instead of the assistant's. Omit (or
+            send `inherit`) to use the assistant's.
         per_occurrence_ceiling_milli:
           type: integer
           format: int64
@@ -15481,9 +15884,18 @@ components:
           type: string
           nullable: true
           maxLength: 256
-          description: Replacement Library folder, for example `routines/weekly-report`. Omit
-            to leave it unchanged; send an empty string to clear it and save to the top level
-            of the Library. Renaming never changes it.
+          deprecated: true
+          description: Ignored. An assistant chooses a folder for each file it saves.
+        model_override:
+          type: string
+          maxLength: 200
+          description: Replacement model for every run. Omit to leave it unchanged; send an
+            empty string to return to the assistant's model.
+        thinking_effort:
+          allOf:
+          - $ref: '#/components/schemas/ThinkingEffort'
+          description: Replacement reasoning effort for every run. Omit to leave it unchanged;
+            send `inherit` to return to the assistant's.
         schedule:
           allOf:
           - $ref: '#/components/schemas/RoutineSchedule'
@@ -15491,7 +15903,7 @@ components:
             Rejected together with `event`.
         event:
           allOf:
-          - $ref: '#/components/schemas/RoutineEventTrigger'
+          - $ref: '#/components/schemas/EventTrigger'
           description: Makes this an event routine, dropping any schedule it had. Rejected
             together with `schedule`.
         per_occurrence_ceiling_milli:
@@ -15605,7 +16017,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RoutinePrincipal'
-          description: The people this routine waits on. Non-empty under team custody.
+          description: The people this routine waits on. Non-empty under team custody, except
+            on a routine installed from a blueprint that still waits for setup.
         following:
           type: boolean
           description: Whether the calling principal follows this routine.
@@ -15634,17 +16047,17 @@ components:
           description: Present when `trigger` is `schedule`.
         event:
           allOf:
-          - $ref: '#/components/schemas/RoutineEventTrigger'
+          - $ref: '#/components/schemas/EventTrigger'
           description: Present when `trigger` is `event`.
         timezone:
           type: string
-        output_folder:
+        model_override:
           type: string
-          nullable: true
-          maxLength: 256
-          description: Library folder files produced here are saved to. Empty means the top
-            level of the Library. A file name that already contains a folder is never moved
-            into it.
+          description: Model every run uses. Absent when runs use the assistant's model.
+        thinking_effort:
+          allOf:
+          - $ref: '#/components/schemas/ThinkingEffort'
+          description: Reasoning effort every run uses. Absent when runs use the assistant's.
         status:
           $ref: '#/components/schemas/RoutineStatus'
         pause_reason:
@@ -15810,6 +16223,11 @@ components:
         credits_spent_milli:
           type: integer
           format: int64
+        model:
+          type: string
+          description: The model this run's conversation ran on, whether chosen by the routine,
+            the assistant, or the organization default. Absent for a run that never reached
+            a model.
         unread:
           type: boolean
           description: Whether this run landed after the calling principal last opened its
@@ -15962,8 +16380,8 @@ components:
         output_folder:
           type: string
           maxLength: 256
-          description: Library folder for the routine's files. An empty string means the top
-            level of the Library.
+          deprecated: true
+          description: Ignored. An assistant chooses a folder for each file it saves.
         per_occurrence_ceiling_milli:
           type: integer
           format: int64
@@ -16179,6 +16597,7 @@ components:
       - skill
       - agent
       - table
+      - routine
     BlueprintChangeAction:
       type: string
       description: 'What apply did (or, in preview, would do): `created` a new resource, `updated`
@@ -16263,6 +16682,45 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/BlueprintTableInput'
+        routines:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlueprintRoutineInput'
+    BlueprintRoutineInput:
+      type: object
+      additionalProperties: false
+      description: A desired scheduled team routine. Apply creates it paused with the reason
+        `waiting_for_setup`, with no responsible person and no accounts. It never runs until
+        someone names a responsible person and resumes it. Re-apply updates its name, instructions,
+        schedule, and ceilings, and never its status, people, or accounts.
+      required:
+      - key
+      - name
+      - agent_key
+      - instructions
+      - schedule
+      - per_occurrence_ceiling_milli
+      - daily_ceiling_milli
+      properties:
+        key:
+          type: string
+        name:
+          type: string
+        agent_key:
+          type: string
+          description: Key of an agent in this blueprint. Fixed after the routine is created.
+        instructions:
+          type: string
+        schedule:
+          $ref: '#/components/schemas/RoutineSchedule'
+        per_occurrence_ceiling_milli:
+          type: integer
+          format: int64
+          minimum: 1
+        daily_ceiling_milli:
+          type: integer
+          format: int64
+          minimum: 1
     BlueprintActionInput:
       type: object
       additionalProperties: false
@@ -16559,8 +17017,151 @@ components:
       - object
       - array
       - any
+      - link
+      - lookup
+      - rollup
+      - select
+      - multi_select
       description: 'Column value type: `string`, `number`, `boolean`, `date`, `object`, `array`,
-        or `any`.'
+        or `any`. `link` stores one row of another table and reads as `{id, name}`. `lookup`
+        and `rollup` are computed on read and cannot be written. `select` holds one of the
+        column''s `choices`; `multi_select` holds an array of them.'
+    ColumnLink:
+      type: object
+      additionalProperties: false
+      required:
+      - table
+      description: For a `link` column, the table each cell points at. A cell holds one row.
+      properties:
+        table:
+          type: string
+          description: Target table id. A table name is accepted on write and stored as the
+            id.
+        on_delete:
+          type: string
+          enum:
+          - restrict
+          - set_null
+          default: restrict
+          description: What deleting a target row does. `restrict` refuses while rows link
+            to it; `set_null` clears those cells.
+    ColumnLookup:
+      type: object
+      additionalProperties: false
+      required:
+      - via
+      - field
+      description: For a `lookup` column, a read-only value shown from the linked row.
+      properties:
+        via:
+          type: string
+          description: Link column in this table.
+        field:
+          type: string
+          description: Stored column in the linked table.
+    ColumnRollup:
+      type: object
+      additionalProperties: false
+      required:
+      - from_table
+      - via
+      - fn
+      description: For a `rollup` column, a read-only aggregate over rows in another table
+        that link to this row.
+      properties:
+        from_table:
+          type: string
+          description: Table id whose rows link here. A table name is accepted on write.
+        via:
+          type: string
+          description: Link column in `from_table` that points at this table.
+        fn:
+          type: string
+          enum:
+          - count
+          - sum
+          - avg
+          - min
+          - max
+          description: Aggregate function.
+        field:
+          type: string
+          description: Column in `from_table` to aggregate. Not used by `count`.
+        where:
+          type: object
+          additionalProperties: true
+          description: Optional filter on `from_table` rows, in query filter syntax.
+    ChoiceColor:
+      type: string
+      enum:
+      - blue
+      - green
+      - yellow
+      - orange
+      - red
+      - pink
+      - grape
+      - violet
+      - indigo
+      - cyan
+      - teal
+      - lime
+      - gray
+      description: Chip color from the product palette. A choice saved without one takes the
+        next palette color.
+    ColumnChoice:
+      type: object
+      additionalProperties: false
+      required:
+      - value
+      description: One allowed value of a select column.
+      properties:
+        value:
+          type: string
+          maxLength: 100
+          description: The value as stored and shown.
+        color:
+          $ref: '#/components/schemas/ChoiceColor'
+    ColumnDisplay:
+      type: object
+      additionalProperties: false
+      description: How a column's values read in the table. It never changes stored values.
+      properties:
+        format:
+          type: string
+          enum:
+          - integer
+          - decimal
+          - currency
+          - percent
+          - rating
+          - progress
+          - long_text
+          - url
+          - email
+          - phone
+          - date
+          - datetime
+          - relative
+          description: 'Numbers: `integer`, `decimal`, `currency`, `percent`, `rating` (1-5
+            stars), `progress` (0-100). Strings: `long_text`, `url`, `email`, `phone`. Dates:
+            `date`, `datetime`, `relative`. Rollups and lookups take the number and date formats.'
+        decimals:
+          type: integer
+          minimum: 0
+          maximum: 6
+          description: Decimal places for `decimal`, `currency`, and `percent`.
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          description: ISO 4217 code for `currency`. Defaults to USD.
+        chips:
+          type: string
+          enum:
+          - light
+          - filled
+          description: For select columns, how chips are filled. Defaults to `light`.
     ColumnDef:
       type: object
       additionalProperties: false
@@ -16594,6 +17195,21 @@ components:
           type: boolean
           default: false
           description: Whether authors should avoid using this column in new rows.
+        link:
+          $ref: '#/components/schemas/ColumnLink'
+        lookup:
+          $ref: '#/components/schemas/ColumnLookup'
+        rollup:
+          $ref: '#/components/schemas/ColumnRollup'
+        choices:
+          type: array
+          maxItems: 100
+          description: For a `select` or `multi_select` column, the allowed values in display
+            and sort order.
+          items:
+            $ref: '#/components/schemas/ColumnChoice'
+        display:
+          $ref: '#/components/schemas/ColumnDisplay'
     IndexDef:
       type: object
       additionalProperties: false
@@ -16941,7 +17557,7 @@ components:
           description: Number of compatibility index declarations stored in the table schema.
         search_index_present:
           type: boolean
-          description: Whether the fixed shared full-text search index is present.
+          description: Whether the table-scoped keyword search index is present.
         generated_at:
           type: string
           format: date-time
@@ -17157,8 +17773,10 @@ components:
         query:
           type: string
           minLength: 1
-          description: Search query. Hyphens and other punctuation split terms for keyword
-            matching.
+          description: 'Search query. In keyword and hybrid mode it uses the keyword syntax:
+            words are all required, `"quoted words"` are a phrase, `OR` between two terms
+            accepts either, and `-term` excludes. Punctuation splits words. See the operation
+            description.'
         mode:
           type: string
           enum:
@@ -17166,8 +17784,9 @@ components:
           - semantic
           - hybrid
           default: keyword
-          description: Search mode. `keyword` uses token-prefix matching, `semantic` uses
-            similarity over indexed row text, and `hybrid` combines both.
+          description: Search mode. `keyword` matches words with the keyword syntax, `semantic`
+            uses similarity over indexed row text, and `hybrid` combines both and drops rows
+            that hold an excluded term.
         filter:
           type: object
           additionalProperties: true

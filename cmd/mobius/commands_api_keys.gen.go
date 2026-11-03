@@ -104,24 +104,6 @@ func registerApiKeysCommands(app *cli.App) {
 			return printResponse(ctx, "deleteAPIKey", resp.StatusCode(), resp.Body)
 		})
 
-	apiKeysGrp.Command("get").
-		Description("Get API key").
-		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := api.IDParam(ctx.Arg(0))
-			resp, err := client.GetAPIKeyWithResponse(ctx.Context(), p0)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "getAPIKey", resp.StatusCode(), resp.Body)
-		})
-
 	apiKeysGrp.Command("list").
 		Description("List API keys").
 		Flags(

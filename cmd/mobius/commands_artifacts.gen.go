@@ -157,6 +157,7 @@ func registerArtifactsCommands(app *cli.App) {
 			cli.String("folder", "").Help("Folder to list, as a relative path with no leading or trailing slash. A file's folder is the directory part of its `name`, so…"),
 			cli.Bool("recursive", "").Help("Include files in subfolders of `folder`. With `false`, only files whose folder is exactly `folder` are returned; at the root that means…"),
 			cli.Bool("no-recursive", "").Help("Turn off --recursive, which the server applies by default."),
+			cli.String("agent-id", "").Help("Only files this assistant made, in any folder. An assistant picks a folder for each file, so its files are not in one place."),
 			cli.String("place", "").Help("Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read…"),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
@@ -194,6 +195,10 @@ func registerArtifactsCommands(app *cli.App) {
 			} else if ctx.IsSet("recursive") {
 				v := ctx.Bool("recursive")
 				params.Recursive = &v
+			}
+			if ctx.IsSet("agent-id") {
+				v := ctx.String("agent-id")
+				params.AgentId = &v
 			}
 			if ctx.IsSet("place") {
 				v := api.ListArtifactsParamsPlace(ctx.String("place"))

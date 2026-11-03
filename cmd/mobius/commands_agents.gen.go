@@ -56,6 +56,59 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "addAgentMembers", resp.StatusCode(), resp.Body)
 		})
 
+	agentsGrp.Command("copy-agent").
+		Description("Copy an assistant").
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
+		Flags(
+			cli.Strings("file-ids", "").Help("Files the assistant made, to copy into the new one's folder in Company files."),
+			cli.Strings("members", "").Help("The people in a group (`restricted`) copy. The caller is added as its manager."),
+			cli.String("name", "").Help("[required] name"),
+			cli.String("visibility", "").Help("[required] Who, inside the org that owns this agent, may reach it at all."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.IDParam(ctx.Arg(0))
+			var body api.CopyAgentJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("file-ids") {
+				v := ctx.Strings("file-ids")
+				body.FileIds = &v
+			}
+			if ctx.IsSet("members") {
+				v := ctx.Strings("members")
+				body.Members = &v
+			}
+			if ctx.IsSet("name") {
+				body.Name = ctx.String("name")
+			}
+			if ctx.IsSet("visibility") {
+				body.Visibility = api.AgentVisibility(ctx.String("visibility"))
+			}
+			if body.Name == "" {
+				return fmt.Errorf("--name is required (or supply it via --file)")
+			}
+			if body.Visibility == "" {
+				return fmt.Errorf("--visibility is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.CopyAgentWithResponse(ctx.Context(), p0, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "copyAgent", resp.StatusCode(), resp.Body)
+		})
+
 	agentsGrp.Command("create").
 		Description("Create agent").
 		Flags(
@@ -71,12 +124,13 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("model", "").Help("Model identifier for agents. Any id from `GET /v1/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally…"),
 			cli.String("model-route", "").Help("Default model route used by built-in messaging and by any turn that does not override the route. Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("[required] Unique name for this agent. Free-form human-readable label, 1-63 characters."),
-			cli.String("output-folder", "").Help("Library folder this assistant's files are saved to, for example `assistants/ops`. Omit to take the default derived from the name; send an…"),
+			cli.String("output-folder", "").Help("Ignored. An assistant chooses a folder for each file it saves. Deprecated: this property has been marked as deprecated upstream, but no…"),
 			cli.String("owner", "").Help("The human or team responsible for this resource. Accepts JSON, @file, or @-."),
 			cli.String("system-prompt", "").Help("Custom system prompt for agents. Empty uses the generated default."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on…"),
 			cli.Int("timeout-seconds", "").Help("Per-turn execution timeout in seconds for this agent. Omit or `0` to use the platform default (1800s / 30 minutes); a request's…"),
+			cli.String("tool-approval-mode", "").Help("Which tool calls on a connected account or a remote tool wait for a person's approval. `never` asks before nothing. `destructive` asks…"),
 			cli.String("tool-presentation", "").Help("Controls how selected actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action…"),
 			cli.String("visibility", "").Help("Who, inside the org that owns this agent, may reach it at all."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -171,6 +225,10 @@ func registerAgentsCommands(app *cli.App) {
 				v := int64(ctx.Int("timeout-seconds"))
 				body.TimeoutSeconds = &v
 			}
+			if ctx.IsSet("tool-approval-mode") {
+				v := api.ToolApprovalMode(ctx.String("tool-approval-mode"))
+				body.ToolApprovalMode = &v
+			}
 			if ctx.IsSet("tool-presentation") {
 				v := api.AgentToolPresentation(ctx.String("tool-presentation"))
 				body.ToolPresentation = &v
@@ -236,26 +294,6 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "deleteAgentMemoryEntry", resp.StatusCode(), resp.Body)
-		})
-
-	agentsGrp.Command("delete-messaging-binding").
-		Description("Delete agent messaging binding").
-		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
-		AddArg(&cli.Arg{Name: "binding-id", Description: "Messaging binding identifier.", Required: true}).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := api.IDParam(ctx.Arg(0))
-			p1 := ctx.Arg(1)
-			resp, err := client.DeleteAgentMessagingBindingWithResponse(ctx.Context(), p0, p1)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "deleteAgentMessagingBinding", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("get").
@@ -432,6 +470,35 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "listAgents", resp.StatusCode(), resp.Body)
 		})
 
+	agentsGrp.Command("list-agents").
+		Description("List deleted agents").
+		Flags(
+			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
+			cli.Int("limit", "").Help("Maximum number of items to return"),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			params := &api.ListDeletedAgentsParams{}
+			if ctx.IsSet("cursor") {
+				v := api.CursorParam(ctx.String("cursor"))
+				params.Cursor = &v
+			}
+			if ctx.IsSet("limit") {
+				v := api.LimitParam(ctx.Int("limit"))
+				params.Limit = &v
+			}
+			resp, err := client.ListDeletedAgentsWithResponse(ctx.Context(), params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listDeletedAgents", resp.StatusCode(), resp.Body)
+		})
+
 	agentsGrp.Command("list-members").
 		Description("List agent members").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
@@ -563,70 +630,6 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "listAgentSkillAssignments", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("list-turn-messages").
-		Description("List turn messages").
-		AddArg(&cli.Arg{Name: "turn-id", Description: "Identifier of a turn within a session.", Required: true}).
-		Flags(
-			cli.Int("after-sequence", "").Help("Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this…"),
-			cli.Int("limit", "").Help("Maximum number of items to return"),
-			cli.String("include", "").Help("Set to `context` to include caller-supplied runtime context rows whose model-visible names begin with `app-`. Platform-owned runtime…"),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := api.TurnIdParam(ctx.Arg(0))
-			params := &api.ListTurnMessagesParams{}
-			if ctx.IsSet("after-sequence") {
-				v := api.AfterSequenceParam(int64(ctx.Int("after-sequence")))
-				params.AfterSequence = &v
-			}
-			if ctx.IsSet("limit") {
-				v := api.LimitParam(ctx.Int("limit"))
-				params.Limit = &v
-			}
-			if ctx.IsSet("include") {
-				v := api.ContextIncludeParam(ctx.String("include"))
-				params.Include = &v
-			}
-			resp, err := client.ListTurnMessagesWithResponse(ctx.Context(), p0, params)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "listTurnMessages", resp.StatusCode(), resp.Body)
-		})
-
-	agentsGrp.Command("preview-visibility-change").
-		Description("Preview a visibility change").
-		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
-		Flags(
-			cli.String("visibility", "").Help("[required] The visibility being considered.").Required(),
-			cli.String("members", "").Help("The audience being considered, as a comma-separated list of principal IDs. Omit to evaluate against the current member list."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := api.IDParam(ctx.Arg(0))
-			params := &api.PreviewAgentVisibilityChangeParams{}
-			params.Visibility = api.AgentVisibility(ctx.String("visibility"))
-			if ctx.IsSet("members") {
-				v := ctx.String("members")
-				params.Members = &v
-			}
-			resp, err := client.PreviewAgentVisibilityChangeWithResponse(ctx.Context(), p0, params)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "previewAgentVisibilityChange", resp.StatusCode(), resp.Body)
-		})
-
 	agentsGrp.Command("promote-memory-entry").
 		Description("Promote a memory entry to the shared layer").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
@@ -708,43 +711,6 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "removeAgentMember", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("replace-members").
-		Description("Replace agent members").
-		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
-		Flags(
-			cli.Strings("principal-ids", "").Help("[required] The exact audience after this call. A private agent takes exactly one; a restricted agent at least one. An empty list on a restricted or…"),
-			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
-			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := api.IDParam(ctx.Arg(0))
-			var body api.ReplaceAgentMembersJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
-				return err
-			}
-			if ctx.IsSet("principal-ids") {
-				v := ctx.Strings("principal-ids")
-				body.PrincipalIds = v
-			}
-			if len(body.PrincipalIds) == 0 {
-				return fmt.Errorf("--principal-ids is required (or supply it via --file)")
-			}
-			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
-			}
-			resp, err := client.ReplaceAgentMembersWithResponse(ctx.Context(), p0, body)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "replaceAgentMembers", resp.StatusCode(), resp.Body)
-		})
-
 	agentsGrp.Command("replace-skill-assignments").
 		Description("Replace agent skill assignments").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
@@ -780,6 +746,43 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "replaceAgentSkillAssignments", resp.StatusCode(), resp.Body)
+		})
+
+	agentsGrp.Command("restore-agent").
+		Description("Restore a deleted agent").
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
+		Flags(
+			cli.String("name", "").Help("Restore under this name. Required when a live agent now uses the old name."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.IDParam(ctx.Arg(0))
+			var body api.RestoreAgentJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("name") {
+				v := ctx.String("name")
+				body.Name = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("name") {
+				return fmt.Errorf("at least one flag or --file is required")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.RestoreAgentWithResponse(ctx.Context(), p0, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "restoreAgent", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("revert-memory-promotion").
@@ -981,25 +984,27 @@ func registerAgentsCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("action-selectors", "").Help("Replacement action selection, as a whole. Omit to leave the agent's current selection untouched; send an empty array to select none. Accepts JSON, @file, or @-."),
-			cli.String("affected-resource-dispositions", "").Help("Exactly one decision for every row returned by the visibility impact preview. Delegations may be revoked or explicitly widened; contained… Accepts JSON, @file, or @-."),
+			cli.String("affected-resource-dispositions", "").Help("Ignored. Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set Accepts JSON, @file, or @-."),
 			cli.String("color", "").Help("Replacement display color (Mantine palette key, e.g. `indigo`). Pass empty string to clear and fall back to a hash-derived color."),
 			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
-			cli.Bool("confirm-visibility-change", "").Help("Acknowledges that widening republishes the agent's shared memory layer to the new audience and drops the current member list. A widening…"),
+			cli.Bool("confirm-visibility-change", "").Help("Ignored. Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set"),
 			cli.String("description", "").Help("Replacement description."),
+			cli.String("expected-updated-at", "").Help("The agent's `updated_at` as the caller last read it. When set, the update saves only if the agent is unchanged since then, compared to the… Accepts JSON, @file, or @-."),
 			cli.String("external-ref", "").Help("Assign-once client identity key, unique within the org. Accepted when the agent has no external_ref, or when it repeats the current value…"),
-			cli.Strings("members", "").Help("Replacement audience for a `restricted` or `private` agent: the exact set after this call. Omit to leave membership unchanged. Ignored when…"),
+			cli.Strings("members", "").Help("Replacement members for a `restricted` or `private` agent: the exact set after this call. Omit to leave membership unchanged. An empty set…"),
 			cli.String("memory-context", "").Help("Replacement automatic memory delivery policy. Send an empty object to clear the stored override and restore the bounded index default… Accepts JSON, @file, or @-."),
 			cli.Bool("memory-enabled", "").Help("Replacement runtime memory hard gate. It cannot be overridden at invocation time."),
 			cli.String("model", "").Help("Replacement model identifier for agents (any id from `GET /v1/catalog/models`, including slash-bearing OpenRouter catalog ids, or an…"),
 			cli.String("model-route", "").Help("Default model route used by built-in messaging and by any turn that does not override the route. Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("Free-form human-readable label, 1-63 characters; must be unique within the org."),
-			cli.String("output-folder", "").Help("Replacement Library folder. Omit to leave it unchanged; send an empty string to clear it and save to the top level of the Library. Renaming…"),
+			cli.String("output-folder", "").Help("Ignored. An assistant chooses a folder for each file it saves. Deprecated: this property has been marked as deprecated upstream, but no…"),
 			cli.String("status", "").Help("Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent."),
-			cli.String("stranded-disposition", "").Help("What happens to the memory partitions and sessions of principals who fall outside a narrowed audience."),
+			cli.String("stranded-disposition", "").Help("Ignored. Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set"),
 			cli.String("system-prompt", "").Help("Replacement system prompt for agents."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on…"),
 			cli.Int("timeout-seconds", "").Help("Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (1800s / 30 minutes); a request's…"),
+			cli.String("tool-approval-mode", "").Help("Which tool calls on a connected account or a remote tool wait for a person's approval. `never` asks before nothing. `destructive` asks…"),
 			cli.String("tool-presentation", "").Help("Controls how selected actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action…"),
 			cli.String("visibility", "").Help("Who, inside the org that owns this agent, may reach it at all."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -1043,6 +1048,11 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.IsSet("description") {
 				v := ctx.String("description")
 				body.Description = &v
+			}
+			if ctx.IsSet("expected-updated-at") {
+				if err := decodeFlagJSON(ctx, "expected-updated-at", ctx.String("expected-updated-at"), &body.ExpectedUpdatedAt); err != nil {
+					return err
+				}
 			}
 			if ctx.IsSet("external-ref") {
 				v := ctx.String("external-ref")
@@ -1104,6 +1114,10 @@ func registerAgentsCommands(app *cli.App) {
 				v := int64(ctx.Int("timeout-seconds"))
 				body.TimeoutSeconds = &v
 			}
+			if ctx.IsSet("tool-approval-mode") {
+				v := api.ToolApprovalMode(ctx.String("tool-approval-mode"))
+				body.ToolApprovalMode = &v
+			}
 			if ctx.IsSet("tool-presentation") {
 				v := api.AgentToolPresentation(ctx.String("tool-presentation"))
 				body.ToolPresentation = &v
@@ -1112,17 +1126,52 @@ func registerAgentsCommands(app *cli.App) {
 				v := api.AgentVisibility(ctx.String("visibility"))
 				body.Visibility = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("action-selectors") && !ctx.IsSet("affected-resource-dispositions") && !ctx.IsSet("color") && !ctx.IsSet("compaction-policy") && !ctx.IsSet("confirm-visibility-change") && !ctx.IsSet("description") && !ctx.IsSet("external-ref") && !ctx.IsSet("members") && !ctx.IsSet("memory-context") && !ctx.IsSet("memory-enabled") && !ctx.IsSet("model") && !ctx.IsSet("model-route") && !ctx.IsSet("name") && !ctx.IsSet("output-folder") && !ctx.IsSet("status") && !ctx.IsSet("stranded-disposition") && !ctx.IsSet("system-prompt") && !ctx.IsSet("tag") && !ctx.IsSet("thinking-effort") && !ctx.IsSet("timeout-seconds") && !ctx.IsSet("tool-presentation") && !ctx.IsSet("visibility") {
+			if ctx.String("file") == "" && !ctx.IsSet("action-selectors") && !ctx.IsSet("affected-resource-dispositions") && !ctx.IsSet("color") && !ctx.IsSet("compaction-policy") && !ctx.IsSet("confirm-visibility-change") && !ctx.IsSet("description") && !ctx.IsSet("expected-updated-at") && !ctx.IsSet("external-ref") && !ctx.IsSet("members") && !ctx.IsSet("memory-context") && !ctx.IsSet("memory-enabled") && !ctx.IsSet("model") && !ctx.IsSet("model-route") && !ctx.IsSet("name") && !ctx.IsSet("output-folder") && !ctx.IsSet("status") && !ctx.IsSet("stranded-disposition") && !ctx.IsSet("system-prompt") && !ctx.IsSet("tag") && !ctx.IsSet("thinking-effort") && !ctx.IsSet("timeout-seconds") && !ctx.IsSet("tool-approval-mode") && !ctx.IsSet("tool-presentation") && !ctx.IsSet("visibility") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body, "action_selectors", "affected_resource_dispositions", "compaction_policy", "memory_context", "model_route", "tags")
+				return printDryRun(ctx, body, "action_selectors", "affected_resource_dispositions", "compaction_policy", "expected_updated_at", "memory_context", "model_route", "tags")
 			}
 			resp, err := client.UpdateAgentWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
 			return printResponse(ctx, "updateAgent", resp.StatusCode(), resp.Body)
+		})
+
+	agentsGrp.Command("update-member").
+		Description("Update whether a member is a manager").
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "principal-id", Description: "The member to change.", Required: true}).
+		Flags(
+			cli.Bool("manager", "").Help("[required] manager"),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.IDParam(ctx.Arg(0))
+			p1 := ctx.Arg(1)
+			var body api.UpdateAgentMemberJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("manager") {
+				body.Manager = ctx.Bool("manager")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.UpdateAgentMemberWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "updateAgentMember", resp.StatusCode(), resp.Body)
 		})
 
 }

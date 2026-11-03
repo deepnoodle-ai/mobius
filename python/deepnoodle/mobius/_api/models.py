@@ -27,7 +27,7 @@ class Error(BaseModel):
     )
     code: str = Field(
         ...,
-        description="Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. When the request-wide rate limiter refuses a call, `rate_limit_exceeded` carries `scope` (`key`, `org`, or `browser`), `window`, `limit`, and `retry_after_seconds` in `details`; an endpoint's own cap returns the same code without them. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`; a send or nudge while a voice call is in progress in the chat uses `voice_call_active`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family.",
+        description="Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. A request that matches no API route returns 404 with `route_not_found`, distinct from the `not_found` an operation returns for a missing resource. When the request-wide rate limiter refuses a call, `rate_limit_exceeded` carries `scope` (`key`, `org`, or `browser`), `window`, `limit`, and `retry_after_seconds` in `details`; an endpoint's own cap returns the same code without them. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`; a send or nudge while a voice call is in progress in the chat uses `voice_call_active`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family.",
     )
     message: str = Field(..., description='Human-readable error message')
     details: dict[str, Any] | None = Field(
@@ -253,13 +253,6 @@ class ResourceOwnershipState(BaseModel):
     posture: ResourcePosture
 
 
-class RoutineStatus(StrEnum):
-    active = 'active'
-    paused = 'paused'
-    completed = 'completed'
-    cancelled = 'cancelled'
-
-
 class AgentStatus(StrEnum):
     """
     Administrative status. Inactive agents cannot claim new jobs. Deleted agents are excluded from normal reads.
@@ -421,6 +414,16 @@ class MemoryContextPolicy(BaseModel):
     )
 
 
+class ToolApprovalMode(StrEnum):
+    """
+    Which tool calls on a connected account or a remote tool wait for a person's approval. `never` asks before nothing. `destructive` asks before a call that cannot be undone, such as sending an email, deleting, or posting publicly. `writes` asks before any call that is not read-only. Tools inside Mobius (memory, Library, tables, the workspace) never ask. One approval covers that tool for the rest of the message, or the routine run.
+    """
+
+    never = 'never'
+    destructive = 'destructive'
+    writes = 'writes'
+
+
 class ThinkingEffort(StrEnum):
     """
     Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session, or the provider's own default when nothing sets a level.
@@ -523,14 +526,10 @@ class Agent(BaseModel):
         None,
         description='Automatic memory delivery policy. Absent means the bounded index default.',
     )
+    tool_approval_mode: ToolApprovalMode
     thinking_effort: ThinkingEffort | None = Field(
         None,
         description='Default reasoning-effort level. New sessions inherit it, above the provider default and below an explicit per-session override. Absent when the agent has no default.',
-    )
-    output_folder: str | None = Field(
-        None,
-        description="Library folder this assistant's files are saved to outside a routine occurrence, where the routine's folder wins. Empty means the top level of the Library. A file name that already contains a folder is never moved into it.",
-        max_length=256,
     )
     status: AgentStatus = Field(
         ..., description='Current agent status: `active` or `inactive`.'
@@ -542,6 +541,10 @@ class Agent(BaseModel):
     member_count: int | None = Field(
         None,
         description="How many principals are in this agent's audience. Zero for an `organization` agent, which carries no member rows.",
+    )
+    can_edit: bool = Field(
+        ...,
+        description="Whether the caller may change this assistant's setup: exactly what `PATCH /v1/agents/{resource_id}` would allow. False on internal administration listings.",
     )
     email_address: str | None = Field(
         None,
@@ -851,6 +854,13 @@ class SessionMessageEntryType(StrEnum):
 
     message = 'message'
     compaction = 'compaction'
+
+
+class RoutineStatus(StrEnum):
+    active = 'active'
+    paused = 'paused'
+    completed = 'completed'
+    cancelled = 'cancelled'
 
 
 class APIKey(BaseModel):
@@ -1693,6 +1703,14 @@ class ModelOption(BaseModel):
         ...,
         description="Model id assigned to an agent's `model` field. Some catalog ids, such as OpenRouter slugs, include `/`.",
     )
+    enabled: bool = Field(
+        ...,
+        description='False when the organization has turned this model or its provider off, or its billing plan does not include the model. Assistants cannot run on a model that is not enabled.',
+    )
+    plan_excluded: bool | None = Field(
+        None,
+        description="True when the organization's billing plan does not include this model, whatever the organization's own model settings say. A plan-excluded model is never enabled.",
+    )
     provider: str = Field(
         ..., description='Canonical provider id this model belongs to.'
     )
@@ -2174,6 +2192,31 @@ class ConnectionBinding(BaseModel):
     grant_id: str
 
 
+class EventTrigger(BaseModel):
+    """
+    Starts a routine's or a workflow's run when a matching integration event arrives from one of the watched accounts.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    event_type: str | None = Field(
+        None,
+        description='The integration event to react to: a concrete type from the event catalog (`github.issues.opened`) or a wildcard on a prefix (`github.issues.*`, `github.*`). The first segment must name a registered integration provider; built-in Mobius events are not accepted here.',
+        examples=['github.issues.opened'],
+    )
+    source_bindings: list[ConnectionBinding] = Field(
+        ...,
+        description='Exact connection and grant pairs whose matching events may start a run, between 1 and 20 for an integration event. This selection does not authorize provider actions.',
+        max_length=20,
+    )
+    condition: str | None = Field(
+        None,
+        description="Optional expression over the event's `{event, meta}` envelope. The run starts only when it returns true. A condition that cannot be evaluated against an event records a `failed` run with `error_code` `trigger_condition_error` and starts nothing.",
+        examples=['event.repository.full_name == "acme/api"'],
+    )
+
+
 class ConnectionExecutionMode(StrEnum):
     authenticated_human = 'authenticated_human'
     controller_background = 'controller_background'
@@ -2472,6 +2515,14 @@ class BillingUsageEvent(BaseModel):
     model_class: str = Field(
         ...,
         description='Model class that produced the usage. Empty string when not applicable.',
+    )
+    org_llm_key_id: str | None = Field(
+        None,
+        description='Organization model provider credit key that paid for this model call. Absent when the call ran on the connected key, Mobius credits, or anything else.',
+    )
+    org_llm_key_label: str | None = Field(
+        None,
+        description='Label of the credit key in `org_llm_key_id`, as it is now (or as last recorded if the key was deleted). Absent with `org_llm_key_id`.',
     )
     metadata: dict[str, Any]
     occurred_at: AwareDatetime
@@ -2833,6 +2884,35 @@ class PutOrgContextRequest(BaseModel):
     )
 
 
+class Kind8(StrEnum):
+    skill = 'skill'
+    connection = 'connection'
+    file = 'file'
+
+
+class Reason1(StrEnum):
+    """
+    `audience`: the skill is private to fewer people than the copy is for; its custodian can share it. `needs_admin`: only an Admin grants a company account. `failed`: the copy or grant failed.
+    """
+
+    audience = 'audience'
+    needs_admin = 'needs_admin'
+    failed = 'failed'
+
+
+class AgentCopyLeftOut(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Kind8
+    id: str
+    name: str = Field(..., description='Empty for a file.')
+    reason: Reason1 = Field(
+        ...,
+        description='`audience`: the skill is private to fewer people than the copy is for; its custodian can share it. `needs_admin`: only an Admin grants a company account. `failed`: the copy or grant failed.',
+    )
+
+
 class InteractionMode(StrEnum):
     """
     Declarative UI/input primitive for collecting the response. This is a portable rendering contract, not executable code. Values are `confirm`, `select`, `multi_select`, and `input`.
@@ -3079,7 +3159,7 @@ class InteractionResponder(BaseModel):
     user_id: str = Field(..., description='Responder user ID.')
 
 
-class Kind8(StrEnum):
+class Kind9(StrEnum):
     external_url = 'external_url'
     mobius_entity = 'mobius_entity'
 
@@ -3092,7 +3172,7 @@ class InteractionReference(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind8
+    kind: Kind9
     url: AnyUrl | None = Field(
         None, description='Required when kind is `external_url`.'
     )
@@ -3108,7 +3188,7 @@ class InteractionReference(BaseModel):
     label: str | None = Field(None, description='User-facing label for display.')
 
 
-class Kind9(StrEnum):
+class Kind10(StrEnum):
     inbox_only = 'inbox_only'
     email = 'email'
 
@@ -3120,10 +3200,28 @@ class EmailDelivery(BaseModel):
     to: list[EmailStr] = Field(..., min_length=1)
 
 
-class Kind10(StrEnum):
+class Kind11(StrEnum):
     agent_tool = 'agent_tool'
     http_subscriber = 'http_subscriber'
     none = 'none'
+    mcp_server_approval = 'mcp_server_approval'
+
+
+class InteractionSourceConversation(BaseModel):
+    """
+    A conversation the caller can open, named for display.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    session_id: str
+    title: str = Field(
+        ..., description="The conversation's title; empty when it has none yet."
+    )
+    agent_id: str | None = Field(
+        None, description='The assistant the conversation is with.'
+    )
 
 
 class AgentToolConsumer(BaseModel):
@@ -3136,6 +3234,35 @@ class AgentToolConsumer(BaseModel):
         None,
         description='Session whose turn raised this interaction, when session-scoped.',
     )
+    held_call: bool | None = Field(
+        None,
+        description="True when Mobius opened this approval for tool calls it held because the assistant's approval mode asks before them, rather than a question the assistant asked. Its outcome resumes the held calls.",
+    )
+
+
+class Effect(StrEnum):
+    """
+    What the tool does, from its declared marks. A tool whose marks come from a remote server counts as destructive unless it is marked read-only.
+    """
+
+    write = 'write'
+    destructive = 'destructive'
+
+
+class HeldField(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str
+    value: str
+
+
+class HeldItemView(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    from_: str | None = Field(None, alias='from')
+    subject: str | None = None
 
 
 class HttpSubscriberConsumer(BaseModel):
@@ -3148,7 +3275,7 @@ class HttpSubscriberConsumer(BaseModel):
     )
 
 
-class Kind11(StrEnum):
+class Kind12(StrEnum):
     http_subscriber = 'http_subscriber'
     none = 'none'
 
@@ -3335,6 +3462,10 @@ class RespondToInteractionRequest(BaseModel):
         None,
         description='Optional free-text comment accompanying the action. Available on every interaction kind and never gated by the spec; the responder may always attach reasoning, caveats, or follow-up notes alongside their answers. It is one note per response, not per question.',
     )
+    held_card_seen: bool | None = Field(
+        None,
+        description='Send true only from a view that shows the full details of the held tool calls. An approval Mobius opened for held tool calls refuses every answer without it.',
+    )
 
 
 class Action3(StrEnum):
@@ -3377,7 +3508,7 @@ class CancelInteractionRequest(BaseModel):
     )
 
 
-class Kind12(StrEnum):
+class Kind13(StrEnum):
     """
     Principal kind, so a picker can distinguish a person from a coordinator agent.
     """
@@ -3390,18 +3521,19 @@ class Kind12(StrEnum):
 
 class AgentMember(BaseModel):
     """
-    One principal in a restricted or private agent's audience. Membership is pure visibility and carries no role.
-
-    A new member reads the ENTIRE shared layer, including everything promoted before they joined. That is inherent to a shared store; the member list's `added_at` is what makes it legible.
+    One person in a group or personal assistant. Being a member is access to the assistant, its chats readable by everyone who uses it, its files, and its shared memory, including what was there before they joined.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
+    manager: bool = Field(
+        ..., description='Whether this member manages the group assistant.'
+    )
     principal_id: str = Field(
         ..., description="The human or agent principal in this agent's audience."
     )
-    kind: Kind12 = Field(
+    kind: Kind13 = Field(
         ...,
         description='Principal kind, so a picker can distinguish a person from a coordinator agent.',
     )
@@ -3420,24 +3552,46 @@ class AgentMemberListResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    items: list[AgentMember] | None = Field(
-        None,
-        description='The current audience. Returned only to callers who may manage the agent; other members receive `count` alone.',
-    )
-    count: int = Field(
-        ..., description="How many principals are in this agent's audience."
+    items: list[AgentMember] | None = Field(None, description='The current members.')
+    count: int = Field(..., description='How many people are members.')
+    can_manage: bool = Field(
+        ...,
+        description='Whether the caller manages this assistant: an Admin, or a manager of a group assistant whose role can build.',
     )
 
 
-class ReplaceAgentMembersRequest(BaseModel):
+class UpdateAgentMemberRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    principal_ids: list[str] = Field(
-        ...,
-        description='The exact audience after this call. A private agent takes exactly one; a restricted agent at least one. An empty list on a restricted or private agent is rejected: an empty audience means nobody, never everyone.',
+    manager: bool
+
+
+class CopyAgentRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(..., max_length=63, min_length=1)
+    visibility: AgentVisibility
+    members: list[str] | None = Field(
+        None,
+        description='The people in a group (`restricted`) copy. The caller is added as its manager.',
         max_length=200,
-        min_length=1,
+    )
+    file_ids: list[str] | None = Field(
+        None,
+        description="Files the assistant made, to copy into the new one's folder in Company files.",
+        max_length=200,
+    )
+
+
+class AgentCopy(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    agent: Agent
+    left_out: list[AgentCopyLeftOut] = Field(
+        ..., description='What did not come along, and why.'
     )
 
 
@@ -3457,43 +3611,6 @@ class ResourceType(StrEnum):
     session = 'session'
     skill = 'skill'
     table = 'table'
-
-
-class ResourceClass(StrEnum):
-    configuration = 'configuration'
-    conversation = 'conversation'
-    output = 'output'
-
-
-class Relationship(StrEnum):
-    delegation = 'delegation'
-    container = 'container'
-
-
-class AllowedAction(StrEnum):
-    revoke = 'revoke'
-    make_private = 'make_private'
-    keep_and_widen = 'keep_and_widen'
-
-
-class AgentVisibilityAffectedResource(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    resource_type: ResourceType
-    resource_id: str
-    name: str | None = Field(
-        None, description='Configuration name. Omitted for conversations and outputs.'
-    )
-    resource_class: ResourceClass
-    relationship: Relationship
-    visibility: ResourceVisibility
-    allowed_actions: list[AllowedAction] = Field(
-        ...,
-        description='The decisions accepted for this row. A contained conversation offers only keep_and_widen, because its audience is set when it starts.',
-        max_length=2,
-        min_length=1,
-    )
 
 
 class Action4(StrEnum):
@@ -3540,6 +3657,82 @@ class UpdateMemoryContextPolicy(BaseModel):
         description="UTF-8 byte budget. Omit or send `0` for the selected mode's default. Off mode ignores this field.",
         ge=0,
         le=245760,
+    )
+
+
+class DeletedAgentActor(BaseModel):
+    """
+    Who deleted the agent, from the audit log. Absent when the audit log has no record.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    principal_id: str = Field(..., description='The person who deleted the agent.')
+    name: str = Field(..., description='Their display name.')
+    via_parent_org_id: str | None = Field(
+        None,
+        description='The provider organization they acted through, when they acted in a managed organization.',
+    )
+
+
+class RestoreAgentRequest(BaseModel):
+    """
+    Options for restoring a deleted agent.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str | None = Field(
+        None,
+        description='Restore under this name. Required when a live agent now uses the old name.',
+        max_length=63,
+    )
+
+
+class Kind14(StrEnum):
+    """
+    What kind of thing it is. A `routine` came back but stays paused.
+    """
+
+    connection = 'connection'
+    skill = 'skill'
+    member = 'member'
+    credential = 'credential'
+    routine = 'routine'
+
+
+class CredentialKind(StrEnum):
+    """
+    For a `credential` item, whether it was an API key or a CLI token.
+    """
+
+    api_key = 'api_key'
+    cli_token = 'cli_token'
+
+
+class NotRestoredItem(BaseModel):
+    """
+    One thing that did not come back with a restored agent, and why.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Kind14 = Field(
+        ...,
+        description='What kind of thing it is. A `routine` came back but stays paused.',
+    )
+    credential_kind: CredentialKind | None = Field(
+        None,
+        description='For a `credential` item, whether it was an API key or a CLI token.',
+    )
+    id: str | None = Field(None, description='Its ID, when known.')
+    name: str = Field(..., description='Its display name.')
+    reason: str = Field(
+        ...,
+        description='Why it did not come back, written for the person who restored the agent.',
     )
 
 
@@ -3730,13 +3923,18 @@ class CreateAgentRequest(BaseModel):
         None,
         description='Automatic memory delivery policy. Omit for the bounded index default.',
     )
+    tool_approval_mode: ToolApprovalMode | None = Field(
+        None,
+        description="Which tool calls wait for a person's approval. Omit for `destructive`.",
+    )
     thinking_effort: ThinkingEffort | None = Field(
         None,
         description='Default reasoning-effort level new sessions inherit from this agent.',
     )
     output_folder: str | None = Field(
         None,
-        description="Library folder this assistant's files are saved to, for example `assistants/ops`. Omit to take the default derived from the name; send an empty string for the top level of the Library. Inside a routine occurrence the routine's folder wins.",
+        deprecated=True,
+        description='Ignored. An assistant chooses a folder for each file it saves.',
         max_length=256,
     )
     tags: TagMap | None = Field(
@@ -3744,11 +3942,12 @@ class CreateAgentRequest(BaseModel):
     )
     owner: ResourceOwner | None = Field(
         None,
-        description="Who governs this agent's configuration. Omit to use the creating human for a private agent; choose team deliberately for a restricted or organization agent.",
+        deprecated=True,
+        description="Ignored. Custody follows from `visibility`: a `private` agent is in its one member's custody, a `restricted` or `organization` agent in the team's.",
     )
     visibility: AgentVisibility | None = Field(
         None,
-        description='Who this agent is for. Omit for `private` on the employee API.',
+        description='Who this agent is for: its kind, which cannot change after create. Omit for `private` on the employee API.',
     )
     members: list[str] | None = Field(
         None,
@@ -3768,9 +3967,7 @@ class Status3(StrEnum):
 
 class StrandedDisposition(StrEnum):
     """
-    What happens to the memory partitions and sessions of principals who fall outside a narrowed audience.
-
-    `retain` keeps their partitions and sessions, readable only by org admins. `delete` additionally erases their private memory partitions, and only an org admin may choose it. A narrowing change that would strand rows and names neither returns `409`.
+    Ignored.
     """
 
     retain = 'retain'
@@ -3784,6 +3981,10 @@ class UpdateAgentRequest(BaseModel):
 
     model_config = ConfigDict(
         extra='forbid',
+    )
+    expected_updated_at: AwareDatetime | None = Field(
+        None,
+        description="The agent's `updated_at` as the caller last read it. When set, the update saves only if the agent is unchanged since then, compared to the microsecond; otherwise it returns 409 with code `agent_changed` and saves nothing.",
     )
     name: str | None = Field(
         None,
@@ -3842,13 +4043,17 @@ class UpdateAgentRequest(BaseModel):
         description='Replacement runtime memory hard gate. It cannot be overridden at invocation time.',
     )
     memory_context: UpdateMemoryContextPolicy | None = None
+    tool_approval_mode: ToolApprovalMode | None = Field(
+        None, description='Replacement approval mode.'
+    )
     thinking_effort: ThinkingEffort | None = Field(
         None,
         description='Replacement default reasoning-effort level. Send `inherit` to clear the default and leave the provider default in place.',
     )
     output_folder: str | None = Field(
         None,
-        description='Replacement Library folder. Omit to leave it unchanged; send an empty string to clear it and save to the top level of the Library. Renaming the assistant never changes it.',
+        deprecated=True,
+        description='Ignored. An assistant chooses a folder for each file it saves.',
         max_length=256,
     )
     tags: TagMap | None = Field(
@@ -3856,26 +4061,23 @@ class UpdateAgentRequest(BaseModel):
     )
     visibility: AgentVisibility | None = Field(
         None,
-        description="Replacement audience. Widening (toward `organization`) republishes the agent's shared memory layer to the new audience and requires `confirm_visibility_change`; there is no technical undo, because republished knowledge cannot be un-read. Narrowing that would strand rows requires `stranded_disposition`.",
+        deprecated=True,
+        description="The agent's kind is set when it is created. The current value is accepted and changes nothing; any other value returns `409`.",
     )
     members: list[str] | None = Field(
         None,
-        description='Replacement audience for a `restricted` or `private` agent: the exact set after this call. Omit to leave membership unchanged. Ignored when the resulting visibility is `organization`, which deletes the member rows outright — "org-visible with a leftover member list" is not a representable state.',
+        deprecated=True,
+        description="Replacement members for a `restricted` or `private` agent: the exact set after this call. Omit to leave membership unchanged. An empty set is refused, and a `private` agent's one member is the person it belongs to. Use the members endpoints instead.",
         max_length=200,
     )
     confirm_visibility_change: bool = Field(
-        False,
-        description="Acknowledges that widening republishes the agent's shared memory layer to the new audience and drops the current member list. A widening change without it returns `409` naming both counts.",
+        False, deprecated=True, description='Ignored.'
     )
     affected_resource_dispositions: list[AgentAudienceResourceDisposition] | None = (
-        Field(
-            None,
-            description='Exactly one decision for every row returned by the visibility impact preview. Delegations may be revoked or explicitly widened; contained rows may be made private or explicitly widened. Extra, duplicate, and omitted rows are refused.',
-        )
+        Field(None, deprecated=True, description='Ignored.')
     )
     stranded_disposition: StrandedDisposition | None = Field(
-        None,
-        description='What happens to the memory partitions and sessions of principals who fall outside a narrowed audience.\n\n`retain` keeps their partitions and sessions, readable only by org admins. `delete` additionally erases their private memory partitions, and only an org admin may choose it. A narrowing change that would strand rows and names neither returns `409`.',
+        None, deprecated=True, description='Ignored.'
     )
 
 
@@ -4087,416 +4289,6 @@ class SaveAgentMemoryEntryRequest(BaseModel):
     )
 
 
-class ContextIncludeParam(StrEnum):
-    context = 'context'
-
-
-class Type19(StrEnum):
-    text = 'text'
-
-
-class SessionTextBlock(BaseModel):
-    """
-    Assistant or caller text.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    type: Literal['text']
-    text: str = Field(..., description='The text content.')
-
-
-class Type20(StrEnum):
-    thinking = 'thinking'
-
-
-class SessionThinkingBlock(BaseModel):
-    """
-    An extended-reasoning block produced by a reasoning model.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    type: Literal['thinking']
-    thinking: str = Field(..., description='The reasoning text.')
-    signature: str | None = Field(
-        None, description='Provider signature for the reasoning block, when present.'
-    )
-
-
-class SessionResolvedAction(BaseModel):
-    """
-    Canonical action resolved by a catalog tool dispatch.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str = Field(
-        ...,
-        description='Canonical action name, before provider-safe wire-name mangling.',
-    )
-    input: dict[str, Any] = Field(
-        ...,
-        description='Resolved action arguments. Meta-router command wrappers are removed.',
-    )
-
-
-class SessionToolDisplay(BaseModel):
-    """
-    Plain-language phrasing for a tool call, recorded when the call is made. Clients show these words instead of the tool name or its arguments.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    label: str = Field(
-        ...,
-        description='What the tool does, in sentence case, for example "Export a PDF".',
-    )
-    running: str | None = Field(
-        None, description='Phrase while the call runs, for example "Exporting a PDF…".'
-    )
-    done: str | None = Field(
-        None,
-        description='Phrase once it succeeds, for example: Exported "Q3 update.pdf".',
-    )
-    done_many: str | None = Field(
-        None,
-        description='Phrase for a group of these calls; "{n}" is replaced by the count.',
-    )
-    subject: str | None = Field(
-        None,
-        description='The one thing the call acted on, such as a file name. Never message bodies.',
-    )
-    artifact_id: str | None = Field(
-        None, description='The artifact the call created or changed, when there is one.'
-    )
-    artifact_root_id: str | None = Field(
-        None,
-        description='The first version of the document artifact_id belongs to, when the call made a document version. Revisions of one document share it.',
-    )
-    session_id: str | None = Field(
-        None,
-        description='The private assistant exchange opened by this call, when there is one. Access is checked when opened.',
-    )
-    integration: str | None = Field(
-        None,
-        description='The integration\'s name as people know it, shown before the label, for example "GitHub".',
-    )
-    integration_key: str | None = Field(
-        None, description='Provider key for the integration icon, for example "github".'
-    )
-    error: str | None = Field(
-        None,
-        description="One safe line explaining a failure, only for Mobius's own tools. Empty for integration and third party tools, whose error text can quote private content.",
-    )
-
-
-class Type21(StrEnum):
-    tool_use = 'tool_use'
-
-
-class SessionToolUseBlock(BaseModel):
-    """
-    A tool call the agent issued.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    type: Literal['tool_use']
-    id: str = Field(
-        ..., description='Tool-call id; the matching tool_result references it.'
-    )
-    name: str = Field(..., description='Tool name.')
-    input: dict[str, Any] = Field(..., description='Tool input arguments.')
-    status: str | None = Field(
-        None,
-        description='Known values are pending, running, ok, error, and cancelled; unknown values must be preserved.',
-    )
-    progress: dict[str, Any] | None = Field(
-        None,
-        description='Latest in-flight progress snapshot. Absent on final transcript rows.',
-    )
-    resolved_action: SessionResolvedAction | None = None
-    display: SessionToolDisplay | None = None
-
-
-class Type22(StrEnum):
-    tool_result = 'tool_result'
-
-
-class Type23(StrEnum):
-    base64 = 'base64'
-    url = 'url'
-    artifact = 'artifact'
-
-
-class SessionImageSource(BaseModel):
-    """
-    Canonical image source descriptor. Known source types are `base64` (`media_type` plus `data`), `url` (`url`), and Mobius-managed `artifact` (`artifact_id`). Provider-specific extensions are preserved.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    type: Type23
-    media_type: str | None = Field(None, description='MIME type for base64 content.')
-    data: str | None = Field(None, description='Base64 image payload.')
-    url: AnyUrl | None = Field(
-        None, description='Fetchable image URL for a URL source.'
-    )
-    artifact_id: str | None = Field(
-        None,
-        description='Mobius artifact id returned by the session attachment endpoint.',
-    )
-
-
-class Type24(StrEnum):
-    image = 'image'
-
-
-class SessionImageBlock(BaseModel):
-    """
-    An image block, e.g. multimodal caller input.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    type: Literal['image']
-    source: SessionImageSource | None = None
-    media_type: str | None = Field(
-        None, description='Server-detected MIME type for an artifact-backed image.'
-    )
-    title: str | None = Field(
-        None, description='Original filename for an artifact-backed image.'
-    )
-    size_bytes: int | None = Field(
-        None, description='Server-observed byte size for an artifact-backed image.'
-    )
-
-
-class Type25(StrEnum):
-    """
-    Source discriminator; known values are base64, url, text, file, and artifact.
-    """
-
-    base64 = 'base64'
-    url = 'url'
-    text = 'text'
-    file = 'file'
-    artifact = 'artifact'
-
-
-class SessionDocumentSource(BaseModel):
-    """
-    Canonical document source descriptor. Known source types are `base64` (`media_type` plus `data`), `url` (`url`), `text` (`media_type` plus `data`), provider-managed `file` (`file_id`), and Mobius-managed `artifact` (`artifact_id`). Provider-managed file references are not portable across model providers; artifact sources are resolved only after re-checking their session binding.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    type: Type25 = Field(
-        ...,
-        description='Source discriminator; known values are base64, url, text, file, and artifact.',
-    )
-    media_type: str | None = Field(
-        None, description='MIME type for base64 or text content.'
-    )
-    data: str | None = Field(
-        None,
-        description='Base64 payload or literal text, depending on source type. Inline payloads are limited to 256 KiB after base64 decoding or as UTF-8 text; larger documents must use an artifact source created by the session attachment endpoint.',
-    )
-    url: AnyUrl | None = Field(
-        None, description='Fetchable document URL for a URL source.'
-    )
-    file_id: str | None = Field(
-        None, description='Provider-managed file identifier for a file source.'
-    )
-    artifact_id: str | None = Field(
-        None,
-        description='Mobius artifact id returned by the session attachment endpoint.',
-    )
-
-
-class Type26(StrEnum):
-    document = 'document'
-
-
-class SessionDocumentBlock(BaseModel):
-    """
-    A canonical document block. Mobius persists this provider-neutral block after translating supported caller dialects such as OpenAI `input_file` and Chat Completions `file` blocks. Base64 data stays in `source.data`; clients must not render or log that field.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    type: Literal['document']
-    source: SessionDocumentSource
-    title: str | None = Field(
-        None, description='Human-readable filename or document title, when supplied.'
-    )
-    media_type: str | None = Field(
-        None, description='Server-detected MIME type for an artifact-backed document.'
-    )
-    size_bytes: int | None = Field(
-        None, description='Server-observed byte size for an artifact-backed document.'
-    )
-    page_count: int | None = Field(
-        None, description='Parsed page count for an artifact-backed PDF.', ge=1
-    )
-    context: str | None = Field(
-        None, description='Optional model-facing context for the document.'
-    )
-    citations: dict[str, Any] | None = Field(
-        None, description='Provider citation options, when supported.'
-    )
-
-
-class Type27(StrEnum):
-    reminder = 'reminder'
-
-
-class Tier(StrEnum):
-    """
-    Reminder authority tier.
-    """
-
-    contextual = 'contextual'
-    operator = 'operator'
-
-
-class SessionReminderBlock(BaseModel):
-    """
-    Host-managed runtime context returned only when the request explicitly includes caller-supplied context.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    type: Literal['reminder']
-    name: str = Field(
-        ..., description='Model-visible reminder name, including the `app-` namespace.'
-    )
-    tier: Tier = Field(..., description='Reminder authority tier.')
-    content: str = Field(..., description='Reminder content rendered to the model.')
-
-
-class SessionEventProjectionKind(StrEnum):
-    """
-    Stable UI treatment for a projected event. `interaction` is the outcome of a question the agent asked with mobius.interaction.create: answered, dismissed, or expired.
-    """
-
-    generic = 'generic'
-    repository_change = 'repository_change'
-    file_change = 'file_change'
-    email = 'email'
-    calendar_event = 'calendar_event'
-    message = 'message'
-    work_item = 'work_item'
-    content_change = 'content_change'
-    business_record = 'business_record'
-    interaction = 'interaction'
-
-
-class SessionEventProjectionAttribute(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    label: str = Field(
-        ..., description='Short fact label selected by the server-side formatter.'
-    )
-    value: str = Field(..., description='Plain-text, bounded fact value.')
-
-
-class SessionEventProjection(BaseModel):
-    """
-    Bounded, display-safe projection of the external event associated with a session message. The complete provider payload is deliberately absent.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    kind: SessionEventProjectionKind
-    event_type: str = Field(
-        ..., description='Concrete event type that started the work.'
-    )
-    provider: str | None = Field(
-        None, description='Provider identifier when the event came from an integration.'
-    )
-    title: str = Field(
-        ..., description='Short human-readable description of what happened.'
-    )
-    summary: str | None = Field(
-        None, description='Optional provider-specific change summary.'
-    )
-    excerpt: str | None = Field(
-        None,
-        description='Optional bounded plain-text excerpt from the event, such as a comment or review body.',
-    )
-    resource_name: str | None = Field(
-        None,
-        description='Human-readable affected resource name, never an internal event or source ID.',
-    )
-    resource_url: AnyUrl | None = Field(
-        None, description='Optional http(s) link to the affected provider resource.'
-    )
-    occurred_at: AwareDatetime | None = Field(
-        None, description='Upstream occurrence time, falling back to receipt time.'
-    )
-    attributes: list[SessionEventProjectionAttribute] | None = Field(
-        None,
-        description='Small provider-selected facts; never arbitrary payload fields.',
-        max_length=4,
-    )
-
-
-class Kind13(StrEnum):
-    """
-    The principal's kind, resolved from the principal record. `external` is a person in a chat app, who is not a Mobius principal.
-    """
-
-    human = 'human'
-    agent = 'agent'
-    service = 'service'
-    system = 'system'
-    external = 'external'
-
-
-class SessionMessageAuthor(BaseModel):
-    """
-    The principal that wrote a message, resolved from the authenticated sender at read time so the transcript can render a name and avatar without a lookup per message. Never accepted on write. A message that arrived through a chat app has an `external` author: the person in that app, named as the app reported them.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(
-        ...,
-        description='Principal id of the author. For an `external` author, a stable id for that person in that chat app account; it is not a principal.',
-    )
-    kind: Kind13 = Field(
-        ...,
-        description="The principal's kind, resolved from the principal record. `external` is a person in a chat app, who is not a Mobius principal.",
-    )
-    provider: str | None = Field(
-        None,
-        description='The chat app an `external` author wrote from, such as `slack`.',
-    )
-    display_name: str = Field(..., description='Single-line label for the author.')
-    avatar_url: str | None = Field(
-        None, description='Avatar image, when the principal has one.'
-    )
-    color: str | None = Field(
-        None,
-        description='Mantine palette key for the avatar fallback when no image is set.',
-    )
-
-
 class Source3(StrEnum):
     """
     Ownership and mutability of the Skill. `system` is built-in and `custom` is user-managed.
@@ -4651,6 +4443,10 @@ class UpdateSessionRequest(BaseModel):
         None,
         description='Reasoning-effort override for this session. Send a level to override, or `inherit` to clear it and fall back to the agent default. Omit to leave the current value unchanged.',
     )
+    model_override: str | None = Field(
+        None,
+        description="Model later turns in this session run on. The history is kept and each reply records the model that produced it. Send an empty string to go back to the agent's own model. Omit to leave it unchanged. Worker-routed agents return `400 invalid_argument` with `details.argument = model_override`.",
+    )
 
 
 class EventType1(StrEnum):
@@ -4663,22 +4459,6 @@ class EventType2(StrEnum):
 
 class EventType3(StrEnum):
     message_block_patch = 'message.block.patch'
-
-
-class MessageBlockPatchFrame(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    event_type: Literal['message.block.patch']
-    session_id: str
-    message_id: str
-    content_index: int = Field(..., ge=0)
-    status: str | None = Field(
-        None, description='Known values are pending, running, ok, error, and cancelled.'
-    )
-    progress: dict[str, Any] | None = None
-    resolved_action: SessionResolvedAction | None = None
-    display: SessionToolDisplay | None = None
 
 
 class EventType4(StrEnum):
@@ -4768,7 +4548,7 @@ class EventType10(StrEnum):
     stream_end = 'stream.end'
 
 
-class Reason1(StrEnum):
+class Reason2(StrEnum):
     idle = 'idle'
     rotate = 'rotate'
     access_ended = 'access_ended'
@@ -4784,7 +4564,7 @@ class StreamEndFrame(BaseModel):
     )
     event_type: Literal['stream.end']
     session_id: str
-    reason: Reason1
+    reason: Reason2
 
 
 class EventType11(StrEnum):
@@ -4810,7 +4590,7 @@ class EventType12(StrEnum):
 
 class VoiceCallEndedFrame(BaseModel):
     """
-    Live pulse: the chat's voice call ended, and sends work again. Not replayed on reconnect; read the session's `active_voice_call` instead.
+    Live pulse: the chat's voice call ended, and sends work again. Not replayed on reconnect. A client that missed it learns the call ended when a send no longer returns 409 `voice_call_active`.
     """
 
     model_config = ConfigDict(
@@ -4864,7 +4644,7 @@ class ToolCallPayload(BaseModel):
     )
 
 
-class Kind14(StrEnum):
+class Kind15(StrEnum):
     interaction = 'interaction'
 
 
@@ -4872,7 +4652,7 @@ class SessionTranscriptWait(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind14
+    kind: Kind15
     interaction_id: str
     tool_call_id: str
     expires_at: AwareDatetime | None = None
@@ -4969,6 +4749,195 @@ class CompactionFailedPayload(BaseModel):
     )
 
 
+class Type19(StrEnum):
+    text = 'text'
+
+
+class SessionTextBlock(BaseModel):
+    """
+    Assistant or caller text.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    type: Literal['text']
+    text: str = Field(..., description='The text content.')
+
+
+class Type20(StrEnum):
+    thinking = 'thinking'
+
+
+class SessionThinkingBlock(BaseModel):
+    """
+    An extended-reasoning block produced by a reasoning model.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    type: Literal['thinking']
+    thinking: str = Field(..., description='The reasoning text.')
+    signature: str | None = Field(
+        None, description='Provider signature for the reasoning block, when present.'
+    )
+
+
+class Type21(StrEnum):
+    tool_use = 'tool_use'
+
+
+class SessionResolvedAction(BaseModel):
+    """
+    Canonical action resolved by a catalog tool dispatch.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ...,
+        description='Canonical action name, before provider-safe wire-name mangling.',
+    )
+    input: dict[str, Any] = Field(
+        ...,
+        description='Resolved action arguments. Meta-router command wrappers are removed.',
+    )
+
+
+class SessionToolDisplay(BaseModel):
+    """
+    Plain-language phrasing for a tool call, recorded when the call is made. Clients show these words instead of the tool name or its arguments.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    label: str = Field(
+        ...,
+        description='What the tool does, in sentence case, for example "Export a PDF".',
+    )
+    running: str | None = Field(
+        None, description='Phrase while the call runs, for example "Exporting a PDF…".'
+    )
+    done: str | None = Field(
+        None,
+        description='Phrase once it succeeds, for example: Exported "Q3 update.pdf".',
+    )
+    done_many: str | None = Field(
+        None,
+        description='Phrase for a group of these calls; "{n}" is replaced by the count.',
+    )
+    subject: str | None = Field(
+        None,
+        description='The one thing the call acted on, such as a file name. Never message bodies.',
+    )
+    artifact_id: str | None = Field(
+        None, description='The artifact the call created or changed, when there is one.'
+    )
+    artifact_root_id: str | None = Field(
+        None,
+        description='The first version of the document artifact_id belongs to, when the call made a document version. Revisions of one document share it.',
+    )
+    session_id: str | None = Field(
+        None,
+        description='The private assistant exchange opened by this call, when there is one. Access is checked when opened.',
+    )
+    integration: str | None = Field(
+        None,
+        description='The integration\'s name as people know it, shown before the label, for example "GitHub".',
+    )
+    integration_key: str | None = Field(
+        None, description='Provider key for the integration icon, for example "github".'
+    )
+    error: str | None = Field(
+        None,
+        description="One safe line explaining a failure, only for Mobius's own tools. Empty for integration and third party tools, whose error text can quote private content.",
+    )
+
+
+class Type22(StrEnum):
+    tool_result = 'tool_result'
+
+
+class Type23(StrEnum):
+    image = 'image'
+
+
+class Type24(StrEnum):
+    base64 = 'base64'
+    url = 'url'
+    artifact = 'artifact'
+
+
+class SessionImageSource(BaseModel):
+    """
+    Canonical image source descriptor. Known source types are `base64` (`media_type` plus `data`), `url` (`url`), and Mobius-managed `artifact` (`artifact_id`). Provider-specific extensions are preserved.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    type: Type24
+    media_type: str | None = Field(None, description='MIME type for base64 content.')
+    data: str | None = Field(None, description='Base64 image payload.')
+    url: AnyUrl | None = Field(
+        None, description='Fetchable image URL for a URL source.'
+    )
+    artifact_id: str | None = Field(
+        None,
+        description='Mobius artifact id returned by the session attachment endpoint.',
+    )
+
+
+class Type25(StrEnum):
+    document = 'document'
+
+
+class Type26(StrEnum):
+    """
+    Source discriminator; known values are base64, url, text, file, and artifact.
+    """
+
+    base64 = 'base64'
+    url = 'url'
+    text = 'text'
+    file = 'file'
+    artifact = 'artifact'
+
+
+class SessionDocumentSource(BaseModel):
+    """
+    Canonical document source descriptor. Known source types are `base64` (`media_type` plus `data`), `url` (`url`), `text` (`media_type` plus `data`), provider-managed `file` (`file_id`), and Mobius-managed `artifact` (`artifact_id`). Provider-managed file references are not portable across model providers; artifact sources are resolved only after re-checking their session binding.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    type: Type26 = Field(
+        ...,
+        description='Source discriminator; known values are base64, url, text, file, and artifact.',
+    )
+    media_type: str | None = Field(
+        None, description='MIME type for base64 or text content.'
+    )
+    data: str | None = Field(
+        None,
+        description='Base64 payload or literal text, depending on source type. Inline payloads are limited to 256 KiB after base64 decoding or as UTF-8 text; larger documents must use an artifact source created by the session attachment endpoint.',
+    )
+    url: AnyUrl | None = Field(
+        None, description='Fetchable document URL for a URL source.'
+    )
+    file_id: str | None = Field(
+        None, description='Provider-managed file identifier for a file source.'
+    )
+    artifact_id: str | None = Field(
+        None,
+        description='Mobius artifact id returned by the session attachment endpoint.',
+    )
+
+
 class CreateSessionAttachmentRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -5009,6 +4978,146 @@ class CreateSessionArtifactReferenceRequest(BaseModel):
     artifact_id: str = Field(
         ...,
         description='Identifier of an existing library artifact the caller can read.',
+    )
+
+
+class Type27(StrEnum):
+    reminder = 'reminder'
+
+
+class Tier(StrEnum):
+    """
+    Reminder authority tier.
+    """
+
+    contextual = 'contextual'
+    operator = 'operator'
+
+
+class SessionReminderBlock(BaseModel):
+    """
+    Host-managed runtime context returned only when the request explicitly includes caller-supplied context.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    type: Literal['reminder']
+    name: str = Field(
+        ..., description='Model-visible reminder name, including the `app-` namespace.'
+    )
+    tier: Tier = Field(..., description='Reminder authority tier.')
+    content: str = Field(..., description='Reminder content rendered to the model.')
+
+
+class SessionEventProjectionKind(StrEnum):
+    """
+    Stable UI treatment for a projected event. `interaction` is the outcome of a question the agent asked with mobius.interaction.create: answered, dismissed, or expired.
+    """
+
+    generic = 'generic'
+    repository_change = 'repository_change'
+    file_change = 'file_change'
+    email = 'email'
+    calendar_event = 'calendar_event'
+    message = 'message'
+    work_item = 'work_item'
+    content_change = 'content_change'
+    business_record = 'business_record'
+    interaction = 'interaction'
+
+
+class SessionEventProjectionAttribute(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    label: str = Field(
+        ..., description='Short fact label selected by the server-side formatter.'
+    )
+    value: str = Field(..., description='Plain-text, bounded fact value.')
+
+
+class SessionEventProjection(BaseModel):
+    """
+    Bounded, display-safe projection of the external event associated with a session message. The complete provider payload is deliberately absent.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: SessionEventProjectionKind
+    event_type: str = Field(
+        ..., description='Concrete event type that started the work.'
+    )
+    provider: str | None = Field(
+        None, description='Provider identifier when the event came from an integration.'
+    )
+    title: str = Field(
+        ..., description='Short human-readable description of what happened.'
+    )
+    summary: str | None = Field(
+        None, description='Optional provider-specific change summary.'
+    )
+    excerpt: str | None = Field(
+        None,
+        description='Optional bounded plain-text excerpt from the event, such as a comment or review body.',
+    )
+    resource_name: str | None = Field(
+        None,
+        description='Human-readable affected resource name, never an internal event or source ID.',
+    )
+    resource_url: AnyUrl | None = Field(
+        None, description='Optional http(s) link to the affected provider resource.'
+    )
+    occurred_at: AwareDatetime | None = Field(
+        None, description='Upstream occurrence time, falling back to receipt time.'
+    )
+    attributes: list[SessionEventProjectionAttribute] | None = Field(
+        None,
+        description='Small provider-selected facts; never arbitrary payload fields.',
+        max_length=4,
+    )
+
+
+class Kind16(StrEnum):
+    """
+    The principal's kind, resolved from the principal record. `external` is a person in a chat app, who is not a Mobius principal.
+    """
+
+    human = 'human'
+    agent = 'agent'
+    service = 'service'
+    system = 'system'
+    external = 'external'
+
+
+class SessionMessageAuthor(BaseModel):
+    """
+    The principal that wrote a message, resolved from the authenticated sender at read time so the transcript can render a name and avatar without a lookup per message. Never accepted on write. A message that arrived through a chat app has an `external` author: the person in that app, named as the app reported them.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(
+        ...,
+        description='Principal id of the author. For an `external` author, a stable id for that person in that chat app account; it is not a principal.',
+    )
+    kind: Kind16 = Field(
+        ...,
+        description="The principal's kind, resolved from the principal record. `external` is a person in a chat app, who is not a Mobius principal.",
+    )
+    provider: str | None = Field(
+        None,
+        description='The chat app an `external` author wrote from, such as `slack`.',
+    )
+    display_name: str = Field(..., description='Single-line label for the author.')
+    avatar_url: str | None = Field(
+        None, description='Avatar image, when the principal has one.'
+    )
+    color: str | None = Field(
+        None,
+        description='Mantine palette key for the avatar fallback when no image is set.',
     )
 
 
@@ -5110,6 +5219,10 @@ class InvokeSessionSpec(BaseModel):
     metadata: dict[str, Any] | None = Field(
         None, description='Free-form caller metadata stored on a newly created session.'
     )
+
+
+class ContextIncludeParam(StrEnum):
+    context = 'context'
 
 
 class RuntimeContextItem(BaseModel):
@@ -5685,7 +5798,7 @@ class RoutineKind(StrEnum):
 
 class RoutineOwnerKind(StrEnum):
     """
-    Whose the routine is. `person` pauses with its owner's offboarding and runs on their connections. `team` belongs to the business: it has no `owner_id`, survives its creator's departure, and must name at least one responsible person.
+    Whose the routine is. `person` pauses with its owner's offboarding and runs on their connections. `team` belongs to the business: it has no `owner_id`, survives its creator's departure, and must name at least one responsible person. A routine installed from a blueprint has none while it waits for setup, and naming one is part of turning it on.
     """
 
     person = 'person'
@@ -5720,7 +5833,7 @@ class RoutineFollowLevel(StrEnum):
     failures_only = 'failures_only'
 
 
-class Kind15(StrEnum):
+class Kind17(StrEnum):
     """
     The principal's kind, resolved from the principal record.
     """
@@ -5738,7 +5851,7 @@ class RoutinePrincipal(BaseModel):
     principal_id: str
     relationship: RoutineRelationship
     level: RoutineFollowLevel | None = None
-    kind: Kind15 = Field(
+    kind: Kind17 = Field(
         ..., description="The principal's kind, resolved from the principal record."
     )
     display_name: str | None = None
@@ -5790,32 +5903,6 @@ class RoutineTrigger(StrEnum):
 
     schedule = 'schedule'
     event = 'event'
-
-
-class RoutineEventTrigger(BaseModel):
-    """
-    Runs the routine when a matching integration event arrives. Each matched event creates a ledger entry for each followed thread. Runs serialize within a thread, with concurrent threads bounded by the routine's concurrency setting; each-event routines serialize per routine. Waiting thread events may be coalesced into the newest entry. A run still waiting six hours later is closed `skipped` with `error_code` `stale`.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    event_type: str | None = Field(
-        None,
-        description='The integration event to react to: a concrete type from the event catalog (`github.issues.opened`) or a wildcard on a prefix (`github.issues.*`, `github.*`). The first segment must name a registered integration provider; built-in Mobius events are not accepted here. Required unless `follow_target` names a provider target, which derives the subscription when omitted. The `event`, `routine`, and `custom` follow targets require an explicit event type.',
-        examples=['github.issues.opened'],
-    )
-    source_bindings: list[ConnectionBinding] = Field(
-        ...,
-        description='Exact connection and grant pairs whose matching events may start this routine. This selection does not authorize provider actions.',
-        max_length=20,
-        min_length=1,
-    )
-    condition: str | None = Field(
-        None,
-        description="Optional expression over the event's `{event, meta}` envelope. The run starts only when it returns true. A condition that cannot be evaluated against an event records a `failed` run with `error_code` `trigger_condition_error` and starts nothing.",
-        examples=['event.repository.full_name == "acme/api"'],
-    )
 
 
 class AvailableAction(StrEnum):
@@ -6082,6 +6169,7 @@ class BlueprintResourceType(StrEnum):
     skill = 'skill'
     agent = 'agent'
     table = 'table'
+    routine = 'routine'
 
 
 class BlueprintChangeAction(StrEnum):
@@ -6105,6 +6193,26 @@ class BlueprintRef(BaseModel):
     )
     namespace: str | None = None
     key: str
+
+
+class BlueprintRoutineInput(BaseModel):
+    """
+    A desired scheduled team routine. Apply creates it paused with the reason `waiting_for_setup`, with no responsible person and no accounts. It never runs until someone names a responsible person and resumes it. Re-apply updates its name, instructions, schedule, and ceilings, and never its status, people, or accounts.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    key: str
+    name: str
+    agent_key: str = Field(
+        ...,
+        description='Key of an agent in this blueprint. Fixed after the routine is created.',
+    )
+    instructions: str
+    schedule: RoutineSchedule
+    per_occurrence_ceiling_milli: int = Field(..., ge=1)
+    daily_ceiling_milli: int = Field(..., ge=1)
 
 
 class Type28(StrEnum):
@@ -6235,7 +6343,7 @@ class BlueprintDeleteResult(BaseModel):
 
 class ColumnType(StrEnum):
     """
-    Column value type: `string`, `number`, `boolean`, `date`, `object`, `array`, or `any`.
+    Column value type: `string`, `number`, `boolean`, `date`, `object`, `array`, or `any`. `link` stores one row of another table and reads as `{id, name}`. `lookup` and `rollup` are computed on read and cannot be written. `select` holds one of the column's `choices`; `multi_select` holds an array of them.
     """
 
     string = 'string'
@@ -6245,6 +6353,180 @@ class ColumnType(StrEnum):
     object = 'object'
     array = 'array'
     any = 'any'
+    link = 'link'
+    lookup = 'lookup'
+    rollup = 'rollup'
+    select = 'select'
+    multi_select = 'multi_select'
+
+
+class OnDelete(StrEnum):
+    """
+    What deleting a target row does. `restrict` refuses while rows link to it; `set_null` clears those cells.
+    """
+
+    restrict = 'restrict'
+    set_null = 'set_null'
+
+
+class ColumnLink(BaseModel):
+    """
+    For a `link` column, the table each cell points at. A cell holds one row.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    table: str = Field(
+        ...,
+        description='Target table id. A table name is accepted on write and stored as the id.',
+    )
+    on_delete: OnDelete = Field(
+        'restrict',
+        description='What deleting a target row does. `restrict` refuses while rows link to it; `set_null` clears those cells.',
+    )
+
+
+class ColumnLookup(BaseModel):
+    """
+    For a `lookup` column, a read-only value shown from the linked row.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    via: str = Field(..., description='Link column in this table.')
+    field: str = Field(..., description='Stored column in the linked table.')
+
+
+class Fn(StrEnum):
+    """
+    Aggregate function.
+    """
+
+    count = 'count'
+    sum = 'sum'
+    avg = 'avg'
+    min = 'min'
+    max = 'max'
+
+
+class ColumnRollup(BaseModel):
+    """
+    For a `rollup` column, a read-only aggregate over rows in another table that link to this row.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    from_table: str = Field(
+        ...,
+        description='Table id whose rows link here. A table name is accepted on write.',
+    )
+    via: str = Field(
+        ..., description='Link column in `from_table` that points at this table.'
+    )
+    fn: Fn = Field(..., description='Aggregate function.')
+    field: str | None = Field(
+        None, description='Column in `from_table` to aggregate. Not used by `count`.'
+    )
+    where: dict[str, Any] | None = Field(
+        None,
+        description='Optional filter on `from_table` rows, in query filter syntax.',
+    )
+
+
+class ChoiceColor(StrEnum):
+    """
+    Chip color from the product palette. A choice saved without one takes the next palette color.
+    """
+
+    blue = 'blue'
+    green = 'green'
+    yellow = 'yellow'
+    orange = 'orange'
+    red = 'red'
+    pink = 'pink'
+    grape = 'grape'
+    violet = 'violet'
+    indigo = 'indigo'
+    cyan = 'cyan'
+    teal = 'teal'
+    lime = 'lime'
+    gray = 'gray'
+
+
+class ColumnChoice(BaseModel):
+    """
+    One allowed value of a select column.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    value: str = Field(
+        ..., description='The value as stored and shown.', max_length=100
+    )
+    color: ChoiceColor | None = None
+
+
+class Format(StrEnum):
+    """
+    Numbers: `integer`, `decimal`, `currency`, `percent`, `rating` (1-5 stars), `progress` (0-100). Strings: `long_text`, `url`, `email`, `phone`. Dates: `date`, `datetime`, `relative`. Rollups and lookups take the number and date formats.
+    """
+
+    integer = 'integer'
+    decimal = 'decimal'
+    currency = 'currency'
+    percent = 'percent'
+    rating = 'rating'
+    progress = 'progress'
+    long_text = 'long_text'
+    url = 'url'
+    email = 'email'
+    phone = 'phone'
+    date = 'date'
+    datetime = 'datetime'
+    relative = 'relative'
+
+
+class Chips(StrEnum):
+    """
+    For select columns, how chips are filled. Defaults to `light`.
+    """
+
+    light = 'light'
+    filled = 'filled'
+
+
+class ColumnDisplay(BaseModel):
+    """
+    How a column's values read in the table. It never changes stored values.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    format: Format | None = Field(
+        None,
+        description='Numbers: `integer`, `decimal`, `currency`, `percent`, `rating` (1-5 stars), `progress` (0-100). Strings: `long_text`, `url`, `email`, `phone`. Dates: `date`, `datetime`, `relative`. Rollups and lookups take the number and date formats.',
+    )
+    decimals: int | None = Field(
+        None,
+        description='Decimal places for `decimal`, `currency`, and `percent`.',
+        ge=0,
+        le=6,
+    )
+    currency: str | None = Field(
+        None,
+        description='ISO 4217 code for `currency`. Defaults to USD.',
+        max_length=3,
+        min_length=3,
+    )
+    chips: Chips | None = Field(
+        None,
+        description='For select columns, how chips are filled. Defaults to `light`.',
+    )
 
 
 class ColumnDef(BaseModel):
@@ -6277,6 +6559,15 @@ class ColumnDef(BaseModel):
     deprecated: bool = Field(
         False, description='Whether authors should avoid using this column in new rows.'
     )
+    link: ColumnLink | None = None
+    lookup: ColumnLookup | None = None
+    rollup: ColumnRollup | None = None
+    choices: list[ColumnChoice] | None = Field(
+        None,
+        description='For a `select` or `multi_select` column, the allowed values in display and sort order.',
+        max_length=100,
+    )
+    display: ColumnDisplay | None = None
 
 
 class IndexDef(BaseModel):
@@ -6534,7 +6825,7 @@ class TableStats(BaseModel):
         description='Number of compatibility index declarations stored in the table schema.',
     )
     search_index_present: bool = Field(
-        ..., description='Whether the fixed shared full-text search index is present.'
+        ..., description='Whether the table-scoped keyword search index is present.'
     )
     generated_at: AwareDatetime = Field(
         ..., description='Time this statistics snapshot was generated.'
@@ -6704,7 +6995,7 @@ class TableRowQueryListResponse(BaseModel):
 
 class Mode4(StrEnum):
     """
-    Search mode. `keyword` uses token-prefix matching, `semantic` uses similarity over indexed row text, and `hybrid` combines both.
+    Search mode. `keyword` matches words with the keyword syntax, `semantic` uses similarity over indexed row text, and `hybrid` combines both and drops rows that hold an excluded term.
     """
 
     keyword = 'keyword'
@@ -6718,12 +7009,12 @@ class SearchRowsRequest(BaseModel):
     )
     query: str = Field(
         ...,
-        description='Search query. Hyphens and other punctuation split terms for keyword matching.',
+        description='Search query. In keyword and hybrid mode it uses the keyword syntax: words are all required, `"quoted words"` are a phrase, `OR` between two terms accepts either, and `-term` excludes. Punctuation splits words. See the operation description.',
         min_length=1,
     )
     mode: Mode4 = Field(
         'keyword',
-        description='Search mode. `keyword` uses token-prefix matching, `semantic` uses similarity over indexed row text, and `hybrid` combines both.',
+        description='Search mode. `keyword` matches words with the keyword syntax, `semantic` uses similarity over indexed row text, and `hybrid` combines both and drops rows that hold an excluded term.',
     )
     filter: dict[str, Any] | None = Field(
         None,
@@ -7040,6 +7331,10 @@ class ActionCatalogEntry(BaseModel):
     description: str | None = Field(
         None, description='Markdown description of what the action does.'
     )
+    exact_only: bool | None = Field(
+        None,
+        description='True when only an exact selector naming this action reaches it. Group, provider, and wildcard selectors never include it, so a person turns it on by name.',
+    )
     endpoint_kind: EndpointKind = Field(
         ...,
         description='Backing kind. "builtin" for Mobius platform actions implemented in Go (no DB row), "http" for org-owned or integration HTTP endpoints, and "worker" for org-owned custom actions dispatched to connected workers.',
@@ -7166,6 +7461,9 @@ class ModelProviderGroup(BaseModel):
     provider: str = Field(
         ...,
         description='Canonical provider id (`anthropic`, `openai`, `openrouter`, `gemini`, `xai`).',
+    )
+    enabled: bool = Field(
+        ..., description='False when the organization has turned this provider off.'
     )
     display_name: str = Field(..., description='Human-readable provider label.')
     source: Source1 = Field(
@@ -7372,7 +7670,7 @@ class DeliveryChannel(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind9
+    kind: Kind10
     email: EmailDelivery | None = Field(
         None,
         description='Email delivery payload when `kind=email`; null for inbox-only delivery.',
@@ -7387,7 +7685,7 @@ class Consumer(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind10
+    kind: Kind11
     agent_tool: AgentToolConsumer | None = Field(
         None,
         description='Agent tool continuation target when `kind=agent_tool`; null for other consumer kinds.',
@@ -7395,6 +7693,44 @@ class Consumer(BaseModel):
     http_subscriber: HttpSubscriberConsumer | None = Field(
         None,
         description='HTTP callback target when `kind=http_subscriber`; null for other consumer kinds.',
+    )
+
+
+class HeldCallView(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    tool_call_id: str
+    action: str
+    effect: Effect = Field(
+        ...,
+        description='What the tool does, from its declared marks. A tool whose marks come from a remote server counts as destructive unless it is marked read-only.',
+    )
+    label: str
+    account: str | None = Field(
+        None, description='The account the call runs on, from the resolved connection.'
+    )
+    recipients: list[str] | None = None
+    subject: str | None = None
+    body_text: str | None = Field(
+        None,
+        description='What recipients will read, as text. For a message with an HTML part, the HTML part with its tags removed.',
+    )
+    also_plain_text: bool | None = Field(
+        None,
+        description='True when the message also has a plain text part that says something different.',
+    )
+    attachments: list[str] | None = Field(
+        None, description='Names of the files the message carries.'
+    )
+    warnings: list[str] | None = Field(
+        None,
+        description='Plain cautions about the call, such as an address that mixes alphabets.',
+    )
+    items: list[HeldItemView] | None = None
+    fields: list[HeldField] | None = Field(
+        None,
+        description="The call's other arguments, as plain text, sorted by name. Every argument the layout above does not show appears here.",
     )
 
 
@@ -7406,41 +7742,61 @@ class ConsumerInput(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind11
+    kind: Kind12
     http_subscriber: HttpSubscriberConsumerInput | None = None
 
 
-class AgentVisibilityImpact(BaseModel):
+class DeletedAgent(BaseModel):
     """
-    What a pending visibility change would do, so a client can confirm it in specific terms rather than as a dropdown edit.
+    A deleted agent, as the deleted list shows it.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    agent_id: str
-    from_: AgentVisibility = Field(..., alias='from')
-    to: AgentVisibility
-    widening: bool = Field(
+    id: str = Field(..., description='The agent ID. Restore keeps it.')
+    name: str = Field(
         ...,
-        description='True when the change exposes the shared memory layer to principals who could not read it before. Widening requires `confirm_visibility_change` and has no technical undo: republished knowledge cannot be un-read.',
+        description='The name the agent had when it was deleted. Empty when `details_hidden` is true.',
     )
-    shared_entry_count: int = Field(
+    description: str = Field(
+        ..., description="The agent's description. Empty when `details_hidden` is true."
+    )
+    details_hidden: bool = Field(
         ...,
-        description='How many shared-layer memory entries the change republishes or restricts.',
+        description="True when the caller could not reach this agent while it was live: someone else's personal agent, or a group agent they were not in. Its name, description, color, owner, deleter, and name availability are withheld, as the live agent list withholds them.",
     )
-    dropped_members: list[str] | None = Field(
-        None, description='Member rows a widening change deletes.'
-    )
-    stranded_principals: list[str] | None = Field(
+    color: str | None = Field(None, description="The agent's avatar color key, if any.")
+    visibility: AgentVisibility
+    owner_id: str | None = Field(
         None,
-        description='Principals who hold a memory partition or a session on this agent and fall outside the new audience.',
+        description='The person who held a personal agent. Absent for team custody and when `details_hidden` is true.',
     )
-    stranded_partitions: int | None = None
-    stranded_sessions: int | None = None
-    affected_resources: list[AgentVisibilityAffectedResource] = Field(
+    deleted_at: AwareDatetime = Field(..., description='When the agent was deleted.')
+    deleted_by: DeletedAgentActor | None = None
+    name_available: bool | None = Field(
+        None,
+        description='False when a live agent now uses this name, so restore needs a new `name`. Absent when `details_hidden` is true.',
+    )
+    owner_left: bool | None = Field(
+        None,
+        description='True for a personal agent whose owner is no longer in the organization, for example after offboarding. Restore refuses it with `agent_custodian_gone`.',
+    )
+
+
+class RestoredAgentResult(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    agent_id: str = Field(..., description="The restored agent's ID.")
+    details_hidden: bool = Field(
         ...,
-        description='Delegated or contained root resources whose effective audience would grow. Every item requires one matching disposition on the update request; omission aborts the change.',
+        description="True when the caller cannot reach the restored agent: someone else's personal agent, or a group agent they are not in. Then `agent` is absent and `not_restored` is empty; the agent's custodian or members see it as before.",
+    )
+    agent: Agent | None = None
+    not_restored: list[NotRestoredItem] = Field(
+        ...,
+        description='Each thing the agent had before its delete that did not come back. Empty when `details_hidden` is true.',
     )
 
 
@@ -7640,13 +7996,29 @@ class SessionTranscriptTurn(BaseModel):
     )
 
 
+class MessageBlockPatchFrame(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    event_type: Literal['message.block.patch']
+    session_id: str
+    message_id: str
+    content_index: int = Field(..., ge=0)
+    status: str | None = Field(
+        None, description='Known values are pending, running, ok, error, and cancelled.'
+    )
+    progress: dict[str, Any] | None = None
+    resolved_action: SessionResolvedAction | None = None
+    display: SessionToolDisplay | None = None
+
+
 class TurnUpsertFrame(SessionTranscriptTurn):
     event_type: Literal['turn.upsert']
 
 
 class VoiceCallStartedFrame(BaseModel):
     """
-    Live pulse: a voice call started in the chat. Not replayed on reconnect; read the session's `active_voice_call` instead.
+    Live pulse: a voice call started in the chat. Not replayed on reconnect. A client that missed it learns of a running call when a send returns 409 `voice_call_active`.
     """
 
     model_config = ConfigDict(
@@ -7678,6 +8050,83 @@ class NudgeEventPayload(BaseModel):
     turn_id: str
     delivery: SessionNudgeDelivery
     status: SessionNudgeStatus
+
+
+class SessionToolUseBlock(BaseModel):
+    """
+    A tool call the agent issued.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    type: Literal['tool_use']
+    id: str = Field(
+        ..., description='Tool-call id; the matching tool_result references it.'
+    )
+    name: str = Field(..., description='Tool name.')
+    input: dict[str, Any] = Field(..., description='Tool input arguments.')
+    status: str | None = Field(
+        None,
+        description='Known values are pending, running, ok, error, and cancelled; unknown values must be preserved.',
+    )
+    progress: dict[str, Any] | None = Field(
+        None,
+        description='Latest in-flight progress snapshot. Absent on final transcript rows.',
+    )
+    resolved_action: SessionResolvedAction | None = None
+    display: SessionToolDisplay | None = None
+
+
+class SessionImageBlock(BaseModel):
+    """
+    An image block, e.g. multimodal caller input.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    type: Literal['image']
+    source: SessionImageSource | None = None
+    media_type: str | None = Field(
+        None, description='Server-detected MIME type for an artifact-backed image.'
+    )
+    title: str | None = Field(
+        None, description='Original filename for an artifact-backed image.'
+    )
+    size_bytes: int | None = Field(
+        None, description='Server-observed byte size for an artifact-backed image.'
+    )
+
+
+class SessionDocumentBlock(BaseModel):
+    """
+    A canonical document block. Mobius persists this provider-neutral block after translating supported caller dialects such as OpenAI `input_file` and Chat Completions `file` blocks. Base64 data stays in `source.data`; clients must not render or log that field.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    type: Literal['document']
+    source: SessionDocumentSource
+    title: str | None = Field(
+        None, description='Human-readable filename or document title, when supplied.'
+    )
+    media_type: str | None = Field(
+        None, description='Server-detected MIME type for an artifact-backed document.'
+    )
+    size_bytes: int | None = Field(
+        None, description='Server-observed byte size for an artifact-backed document.'
+    )
+    page_count: int | None = Field(
+        None, description='Parsed page count for an artifact-backed PDF.', ge=1
+    )
+    context: str | None = Field(
+        None, description='Optional model-facing context for the document.'
+    )
+    citations: dict[str, Any] | None = Field(
+        None, description='Provider citation options, when supported.'
+    )
 
 
 class AppendSessionMessagesRequest(BaseModel):
@@ -7803,11 +8252,24 @@ class RoutineCreateRequest(BaseModel):
     instructions: str
     kind: RoutineKind | None = None
     schedule: RoutineSchedule | None = None
-    event: RoutineEventTrigger | None = None
+    event: EventTrigger | None = Field(
+        None,
+        description="Runs the routine when a matching integration event arrives. Each matched event creates a ledger entry for each followed thread. Runs serialize within a thread, with concurrent threads bounded by the routine's concurrency setting; each-event routines serialize per routine. Waiting thread events may be coalesced into the newest entry. A run still waiting six hours later is closed `skipped` with `error_code` `stale`. `event_type` may be omitted when `follow_target` names a provider target, which derives the subscription; the `event`, `routine`, and `custom` follow targets require an explicit event type.",
+    )
     output_folder: str | None = Field(
         None,
-        description='Library folder these files are saved to, for example `routines/weekly-report`. A file name that already contains a folder always wins. Omit to take the default derived from the routine name; send an empty string for the top level of the Library.',
+        deprecated=True,
+        description='Ignored. An assistant chooses a folder for each file it saves.',
         max_length=256,
+    )
+    model_override: str | None = Field(
+        None,
+        description="Model every run uses instead of the assistant's. Omit to use the assistant's model. Whether the organization may run it is checked when each run starts. Rejected for a worker-routed assistant.",
+        max_length=200,
+    )
+    thinking_effort: ThinkingEffort | None = Field(
+        None,
+        description="Reasoning effort every run uses instead of the assistant's. Omit (or send `inherit`) to use the assistant's.",
     )
     per_occurrence_ceiling_milli: int = Field(..., ge=1)
     daily_ceiling_milli: int = Field(..., ge=1)
@@ -7864,14 +8326,24 @@ class RoutineUpdateRequest(BaseModel):
     instructions: str | None = None
     output_folder: str | None = Field(
         None,
-        description='Replacement Library folder, for example `routines/weekly-report`. Omit to leave it unchanged; send an empty string to clear it and save to the top level of the Library. Renaming never changes it.',
+        deprecated=True,
+        description='Ignored. An assistant chooses a folder for each file it saves.',
         max_length=256,
+    )
+    model_override: str | None = Field(
+        None,
+        description="Replacement model for every run. Omit to leave it unchanged; send an empty string to return to the assistant's model.",
+        max_length=200,
+    )
+    thinking_effort: ThinkingEffort | None = Field(
+        None,
+        description="Replacement reasoning effort for every run. Omit to leave it unchanged; send `inherit` to return to the assistant's.",
     )
     schedule: RoutineSchedule | None = Field(
         None,
         description='Makes this a scheduled routine, dropping any event trigger it had. Rejected together with `event`.',
     )
-    event: RoutineEventTrigger | None = Field(
+    event: EventTrigger | None = Field(
         None,
         description='Makes this an event routine, dropping any schedule it had. Rejected together with `schedule`.',
     )
@@ -7943,7 +8415,7 @@ class Routine(BaseModel):
     managed_by: RoutineManagedBy
     responsible: list[RoutinePrincipal] | None = Field(
         None,
-        description='The people this routine waits on. Non-empty under team custody.',
+        description='The people this routine waits on. Non-empty under team custody, except on a routine installed from a blueprint that still waits for setup.',
     )
     following: bool = Field(
         ..., description='Whether the calling principal follows this routine.'
@@ -7965,14 +8437,17 @@ class Routine(BaseModel):
     schedule: RoutineSchedule | None = Field(
         None, description='Present when `trigger` is `schedule`.'
     )
-    event: RoutineEventTrigger | None = Field(
+    event: EventTrigger | None = Field(
         None, description='Present when `trigger` is `event`.'
     )
     timezone: str
-    output_folder: str | None = Field(
+    model_override: str | None = Field(
         None,
-        description='Library folder files produced here are saved to. Empty means the top level of the Library. A file name that already contains a folder is never moved into it.',
-        max_length=256,
+        description="Model every run uses. Absent when runs use the assistant's model.",
+    )
+    thinking_effort: ThinkingEffort | None = Field(
+        None,
+        description="Reasoning effort every run uses. Absent when runs use the assistant's.",
     )
     status: RoutineStatus
     pause_reason: str | None = None
@@ -8073,6 +8548,10 @@ class RoutineOccurrence(BaseModel):
     error_message: str | None = None
     turn_id: str | None = None
     credits_spent_milli: int
+    model: str | None = Field(
+        None,
+        description="The model this run's conversation ran on, whether chosen by the routine, the assistant, or the organization default. Absent for a run that never reached a model.",
+    )
     unread: bool | None = Field(
         None,
         description='Whether this run landed after the calling principal last opened its session. Computed per caller from their session read marks, never stored, and always false on a routine they do not follow.',
@@ -8109,7 +8588,8 @@ class RoutineProposalApproval(BaseModel):
     schedule: RoutineSchedule | None = None
     output_folder: str | None = Field(
         None,
-        description="Library folder for the routine's files. An empty string means the top level of the Library.",
+        deprecated=True,
+        description='Ignored. An assistant chooses a folder for each file it saves.',
         max_length=256,
     )
     per_occurrence_ceiling_milli: int | None = Field(None, ge=1)
@@ -8283,11 +8763,11 @@ class ModelCatalogResponse(BaseModel):
     )
     default_model: str = Field(
         ...,
-        description='Model id assigned when an agent specifies no model. With `capability=voice`, the voice model a call uses when it names none.',
+        description="Model id an agent that specifies no model runs on: the organization's default model when it set one and it is enabled, else the platform default. With `capability=voice`, the voice model a call uses when it names none.",
     )
     items: list[ModelProviderGroup] = Field(
         ...,
-        description='Available providers in display order. Providers with no configured credentials are omitted.',
+        description='Available providers in display order, including providers the organization turned off (`enabled: false`). Providers with no configured credentials are omitted.',
     )
     reason: Reason | None = Field(
         None,
@@ -8317,6 +8797,26 @@ class Delivery(BaseModel):
     channels: list[DeliveryChannel] = Field(..., min_length=1)
 
 
+class HeldCallApproval(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    assistant_name: str | None = None
+    account: str | None = None
+    details_unavailable: bool | None = Field(
+        None,
+        description="True when the items a held delete would remove could not be read. The card still shows the call's arguments and can be approved.",
+    )
+    details_cut: bool | None = Field(
+        None,
+        description='True when the card leaves out or shortens part of what the held calls would do, such as recipients, attachments, message text, or an argument. Such a card can only be declined.',
+    )
+    in_routine: bool | None = Field(
+        None, description='True when the held calls belong to a routine run.'
+    )
+    calls: list[HeldCallView]
+
+
 class Interaction(BaseModel):
     """
     Human or agent interaction request and its current response state.
@@ -8329,6 +8829,10 @@ class Interaction(BaseModel):
     created_by: str | None = Field(
         None,
         description='Canonical principal ID of the human or agent that created the interaction; null for legacy/system-created rows.',
+    )
+    on_behalf_of: str | None = Field(
+        None,
+        description="Canonical principal ID of the person the asking assistant's turn ran for; null when the interaction was not raised by an assistant on a person's behalf.",
     )
     owner: ResourceOwner = Field(
         ...,
@@ -8346,6 +8850,14 @@ class Interaction(BaseModel):
     )
     description: str | None = Field(
         None, description='Optional longer responder-facing detail or instructions.'
+    )
+    asker_name: str | None = Field(
+        None,
+        description='Present only when the caller is a person this interaction asks who cannot use its source conversation. The name of the person the asking assistant works for. Such a caller gets only id, kind, status, title, description, spec, target_user_ids, expires_at, created_at, updated_at, asker_name, reply_audience, and their own responses and lifecycle events.',
+    )
+    reply_audience: str | None = Field(
+        None,
+        description='Present with asker_name. Who will read the reply, such as "Dan" or "Dan and 3 others".',
     )
     subject: InteractionReference | None = Field(
         None,
@@ -8404,6 +8916,14 @@ class Interaction(BaseModel):
     consumer: Consumer | None = Field(
         None,
         description="Polymorphic identifier of what is waiting on this interaction's resolution.",
+    )
+    held_calls: HeldCallApproval | None = Field(
+        None,
+        description='What an approval for held tool calls covers, built from the exact arguments the approved calls run with. Present only when `consumer.agent_tool.held_call` is true. Every field is plain text.',
+    )
+    source_conversation: InteractionSourceConversation | None = Field(
+        None,
+        description='The conversation whose assistant asked this question. A caller who can read that conversation gets it on get and list reads whenever an assistant asked from one. Null for questions no conversation asked. Omitted for a person this interaction asks who cannot use the conversation (see asker_name).',
     )
     delivery: Delivery | None = Field(
         None,
@@ -8517,6 +9037,23 @@ class CreateInteractionRequest(BaseModel):
     )
 
 
+class DeletedAgentListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[DeletedAgent] = Field(
+        ..., description='The list of results for this page.'
+    )
+    has_more: bool = Field(
+        ..., description='Whether more deleted agents remain after this page.'
+    )
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    )
+    total: int = Field(..., description='How many deleted agents the organization has.')
+
+
 class InteractionUpsertFrame(Interaction):
     event_type: Literal['interaction.upsert']
 
@@ -8533,6 +9070,7 @@ class BlueprintResources(BaseModel):
     skills: list[BlueprintSkillInput] | None = None
     agents: list[BlueprintAgentInput] | None = None
     tables: list[BlueprintTableInput] | None = None
+    routines: list[BlueprintRoutineInput] | None = None
 
 
 class ApplyBlueprintRequest(BaseModel):
@@ -8560,99 +9098,6 @@ class ApplyBlueprintRequest(BaseModel):
     )
     mode: BlueprintApplyMode | None = None
     resources: BlueprintResources
-
-
-class SessionToolResultBlock(BaseModel):
-    """
-    The result of a tool call.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    type: Literal['tool_result']
-    tool_use_id: str = Field(..., description='The tool_use id this result answers.')
-    content: str | list[SessionContentBlock] | None = Field(
-        None,
-        description='Result payload — a string, or an array of typed sub-blocks using the same canonical block shape as a transcript message.',
-    )
-    is_error: bool | None = Field(
-        None, description='True when the tool reported a failure.'
-    )
-    display: SessionToolDisplay | None = None
-
-
-class SessionMessage(BaseModel):
-    """
-    One persisted message or compaction entry in a session transcript.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Stable message identifier.')
-    session_id: str = Field(..., description='Session this message belongs to.')
-    agent_id: str = Field(
-        ..., description='Agent container executing the parent session.'
-    )
-    role: SessionMessageRole = Field(
-        ..., description='Role of this message in the transcript.'
-    )
-    content: list[SessionContentBlock] = Field(
-        ...,
-        description='Ordered canonical content blocks (text, thinking, tool_use, tool_result, image, document).',
-    )
-    entry_type: SessionMessageEntryType = Field(
-        ..., description='Whether this row is a normal message or a compaction summary.'
-    )
-    covers_through_sequence: int | None = Field(
-        None,
-        description='For `compaction` messages, the highest sequence number this summary covers. It is an internal ordering key, not a quantity: use `metadata.conversation_message_count` to say how much history the summary folded away.',
-    )
-    sequence: int = Field(
-        ...,
-        description='Monotonic per-session sequence number assigned at append time.',
-    )
-    turn_id: str | None = Field(
-        None,
-        description='AgentTurn that produced this message. Run, step, and channel identity for the message are read from this turn. Absent for compaction summaries and messages not tied to a turn.',
-    )
-    metadata: dict[str, Any] | None = Field(
-        None,
-        description="Free-form caller metadata for this message. A `compaction` entry instead carries server-owned keys describing the pass that wrote it: `trigger` (a `CompactionTrigger`: what started the pass), `conversation_message_count` (transcript rows folded into the summary, counting only rows a reader sees — the number to show a user), `message_count` (the raw window size, including host-injected context rows), `from_sequence` / `through_sequence` (the window's sequence bounds), `estimated_tokens`, `strategy`, `summary_model`, and `summary_provider`.",
-    )
-    event_projection: SessionEventProjection | None = Field(
-        None,
-        description='Server-owned safe display projection when this message was triggered by an external event.',
-    )
-    author: SessionMessageAuthor | None = Field(
-        None,
-        description='Who wrote this message, resolved server side from the authenticated sender. Present only on `user` messages written by a principal in this organization; routine inputs and event deliveries carry execution identity instead and remain unattributed.',
-    )
-    created_at: AwareDatetime = Field(
-        ..., description='Server timestamp when the message was appended.'
-    )
-
-
-class SessionMessageListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[SessionMessage] = Field(
-        ..., description='Messages in this page, ordered by `sequence` ascending.'
-    )
-    has_more: bool | None = Field(
-        None,
-        description="True when more messages exist past this page in the query's scan direction.",
-    )
-    next_sequence: int | None = Field(
-        None,
-        description='Sequence of the last (highest) item — pass back as `after_sequence` to page forward (newer).',
-    )
-    prev_sequence: int | None = Field(
-        None,
-        description='Sequence of the first (lowest) item — pass back as `before_sequence` with `order=desc` to page backward (older). After paginating history, open the stream with `after_sequence=next_sequence` to receive the in-flight turn and everything after it — the stream and the messages API share one `sequence` cursor, so there is no overlap and no gap.',
-    )
 
 
 class SessionTranscriptMessage(BaseModel):
@@ -8868,12 +9313,105 @@ class CompactionCreatedPayload(BaseModel):
     )
 
 
+class SessionToolResultBlock(BaseModel):
+    """
+    The result of a tool call.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    type: Literal['tool_result']
+    tool_use_id: str = Field(..., description='The tool_use id this result answers.')
+    content: str | list[SessionContentBlock] | None = Field(
+        None,
+        description='Result payload — a string, or an array of typed sub-blocks using the same canonical block shape as a transcript message.',
+    )
+    is_error: bool | None = Field(
+        None, description='True when the tool reported a failure.'
+    )
+    display: SessionToolDisplay | None = None
+
+
 class SessionAttachmentResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
     artifact: Artifact
     content_block: SessionContentBlock
+
+
+class SessionMessage(BaseModel):
+    """
+    One persisted message or compaction entry in a session transcript.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Stable message identifier.')
+    session_id: str = Field(..., description='Session this message belongs to.')
+    agent_id: str = Field(
+        ..., description='Agent container executing the parent session.'
+    )
+    role: SessionMessageRole = Field(
+        ..., description='Role of this message in the transcript.'
+    )
+    content: list[SessionContentBlock] = Field(
+        ...,
+        description='Ordered canonical content blocks (text, thinking, tool_use, tool_result, image, document).',
+    )
+    entry_type: SessionMessageEntryType = Field(
+        ..., description='Whether this row is a normal message or a compaction summary.'
+    )
+    covers_through_sequence: int | None = Field(
+        None,
+        description='For `compaction` messages, the highest sequence number this summary covers. It is an internal ordering key, not a quantity: use `metadata.conversation_message_count` to say how much history the summary folded away.',
+    )
+    sequence: int = Field(
+        ...,
+        description='Monotonic per-session sequence number assigned at append time.',
+    )
+    turn_id: str | None = Field(
+        None,
+        description='AgentTurn that produced this message. Run, step, and channel identity for the message are read from this turn. Absent for compaction summaries and messages not tied to a turn.',
+    )
+    metadata: dict[str, Any] | None = Field(
+        None,
+        description="Free-form caller metadata for this message. A `compaction` entry instead carries server-owned keys describing the pass that wrote it: `trigger` (a `CompactionTrigger`: what started the pass), `conversation_message_count` (transcript rows folded into the summary, counting only rows a reader sees — the number to show a user), `message_count` (the raw window size, including host-injected context rows), `from_sequence` / `through_sequence` (the window's sequence bounds), `estimated_tokens`, `strategy`, `summary_model`, and `summary_provider`.",
+    )
+    event_projection: SessionEventProjection | None = Field(
+        None,
+        description='Server-owned safe display projection when this message was triggered by an external event.',
+    )
+    author: SessionMessageAuthor | None = Field(
+        None,
+        description='Who wrote this message, resolved server side from the authenticated sender. Present only on `user` messages written by a principal in this organization; routine inputs and event deliveries carry execution identity instead and remain unattributed.',
+    )
+    created_at: AwareDatetime = Field(
+        ..., description='Server timestamp when the message was appended.'
+    )
+
+
+class SessionMessageListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[SessionMessage] = Field(
+        ..., description='Messages in this page, ordered by `sequence` ascending.'
+    )
+    has_more: bool | None = Field(
+        None,
+        description="True when more messages exist past this page in the query's scan direction.",
+    )
+    next_sequence: int | None = Field(
+        None,
+        description='Sequence of the last (highest) item — pass back as `after_sequence` to page forward (newer).',
+    )
+    prev_sequence: int | None = Field(
+        None,
+        description='Sequence of the first (lowest) item — pass back as `before_sequence` with `order=desc` to page backward (older). After paginating history, open the stream with `after_sequence=next_sequence` to receive the in-flight turn and everything after it — the stream and the messages API share one `sequence` cursor, so there is no overlap and no gap.',
+    )
 
 
 class TurnAck(BaseModel):
@@ -8901,32 +9439,6 @@ class TurnAck(BaseModel):
     deduped: bool | None = Field(
         None,
         description='True when a repeated idempotency key returned an existing turn without restarting it.',
-    )
-
-
-class SessionContentBlock(
-    RootModel[
-        SessionTextBlock
-        | SessionThinkingBlock
-        | SessionToolUseBlock
-        | SessionToolResultBlock
-        | SessionImageBlock
-        | SessionDocumentBlock
-        | SessionReminderBlock
-    ]
-):
-    root: (
-        SessionTextBlock
-        | SessionThinkingBlock
-        | SessionToolUseBlock
-        | SessionToolResultBlock
-        | SessionImageBlock
-        | SessionDocumentBlock
-        | SessionReminderBlock
-    ) = Field(
-        ...,
-        description='One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, `image`, and `document`, plus host-managed `reminder` blocks when caller runtime context is explicitly included. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers.',
-        discriminator='type',
     )
 
 
@@ -8979,6 +9491,32 @@ class SessionStreamFrame(
     )
 
 
+class SessionContentBlock(
+    RootModel[
+        SessionTextBlock
+        | SessionThinkingBlock
+        | SessionToolUseBlock
+        | SessionToolResultBlock
+        | SessionImageBlock
+        | SessionDocumentBlock
+        | SessionReminderBlock
+    ]
+):
+    root: (
+        SessionTextBlock
+        | SessionThinkingBlock
+        | SessionToolUseBlock
+        | SessionToolResultBlock
+        | SessionImageBlock
+        | SessionDocumentBlock
+        | SessionReminderBlock
+    ) = Field(
+        ...,
+        description='One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, `image`, and `document`, plus host-managed `reminder` blocks when caller runtime context is explicitly included. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers.',
+        discriminator='type',
+    )
+
+
 class SessionTranscriptFrame(
     RootModel[
         MessageUpsertFrame
@@ -9007,8 +9545,6 @@ class SessionTranscriptFrame(
     ) = Field(..., discriminator='event_type')
 
 
-SessionToolResultBlock.model_rebuild()
-SessionMessage.model_rebuild()
 SessionTranscriptMessage.model_rebuild()
 MessageBlockFrame.model_rebuild()
 SessionMessagePreviewFrame.model_rebuild()
@@ -9016,5 +9552,7 @@ SessionUserMessagePayload.model_rebuild()
 AgentMessagePayload.model_rebuild()
 ToolResultPayload.model_rebuild()
 CompactionCreatedPayload.model_rebuild()
+SessionToolResultBlock.model_rebuild()
 SessionAttachmentResponse.model_rebuild()
+SessionMessage.model_rebuild()
 MessageUpsertFrame.model_rebuild()

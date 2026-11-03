@@ -78,30 +78,6 @@ func TestGeneratedCommandRejectsUnknownRequestFileField(t *testing.T) {
 	assert.Contains(t, result.Err.Error(), `unknown field "memory_context_typo"`)
 }
 
-func TestGeneratedPreviewVisibilityRequiresAndSendsVisibility(t *testing.T) {
-	missing := newApp().Test(t, cli.TestArgs(
-		"agents", "preview-visibility-change", "agent_test",
-		"--api-key", "mbx_test",
-	))
-	assert.False(t, missing.Success())
-	assert.Contains(t, missing.Err.Error(), "visibility")
-
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/v1/agents/agent_test/visibility-impact", r.URL.Path)
-		assert.Equal(t, "restricted", r.URL.Query().Get("visibility"))
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{}`))
-	}))
-	defer srv.Close()
-
-	result := newApp().Test(t, cli.TestArgs(
-		"agents", "preview-visibility-change", "agent_test",
-		"--visibility", "restricted",
-		"--api-url", srv.URL, "--api-key", "mbx_test", "--output", "json",
-	))
-	assert.True(t, result.Success(), "preview failed: %v\nstderr: %s", result.Err, result.Stderr)
-}
-
 func TestGeneratedSkillInstructionsReadTextFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "instructions.md")
 	instructions := "Check the diff and leave concise findings.\n"
@@ -142,15 +118,4 @@ func TestGeneratedSkillInstructionsHelpDocumentsLeadingAtEscape(t *testing.T) {
 	result := newApp().Test(t, cli.TestArgs("skills", "create", "--help"))
 	assert.True(t, result.Success(), "skills create help failed: %v\nstderr: %s", result.Err, result.Stderr)
 	assert.Contains(t, result.Stdout, "Use @@ to escape a literal leading @")
-}
-
-func TestPreviewAgentVisibilityChangeRequiresVisibility(t *testing.T) {
-	result := newApp().Test(t, cli.TestArgs(
-		"agents", "preview-visibility-change", "agent_test",
-		"--api-key", "mbx_test",
-	))
-
-	assert.False(t, result.Success())
-	assert.Error(t, result.Err)
-	assert.Contains(t, result.Err.Error(), "missing required flag: --visibility")
 }

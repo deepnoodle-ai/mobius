@@ -377,6 +377,48 @@ func (e AgentAudienceResourceDispositionResourceType) Valid() bool {
 	}
 }
 
+// Defines values for AgentCopyLeftOutKind.
+const (
+	AgentCopyLeftOutKindConnection AgentCopyLeftOutKind = "connection"
+	AgentCopyLeftOutKindFile       AgentCopyLeftOutKind = "file"
+	AgentCopyLeftOutKindSkill      AgentCopyLeftOutKind = "skill"
+)
+
+// Valid indicates whether the value is a known member of the AgentCopyLeftOutKind enum.
+func (e AgentCopyLeftOutKind) Valid() bool {
+	switch e {
+	case AgentCopyLeftOutKindConnection:
+		return true
+	case AgentCopyLeftOutKindFile:
+		return true
+	case AgentCopyLeftOutKindSkill:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AgentCopyLeftOutReason.
+const (
+	AgentCopyLeftOutReasonAudience   AgentCopyLeftOutReason = "audience"
+	AgentCopyLeftOutReasonFailed     AgentCopyLeftOutReason = "failed"
+	AgentCopyLeftOutReasonNeedsAdmin AgentCopyLeftOutReason = "needs_admin"
+)
+
+// Valid indicates whether the value is a known member of the AgentCopyLeftOutReason enum.
+func (e AgentCopyLeftOutReason) Valid() bool {
+	switch e {
+	case AgentCopyLeftOutReasonAudience:
+		return true
+	case AgentCopyLeftOutReasonFailed:
+		return true
+	case AgentCopyLeftOutReasonNeedsAdmin:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AgentMemberKind.
 const (
 	AgentMemberKindAgent   AgentMemberKind = "agent"
@@ -683,90 +725,6 @@ func (e AgentVisibility) Valid() bool {
 	}
 }
 
-// Defines values for AgentVisibilityAffectedResourceAllowedActions.
-const (
-	AgentVisibilityAffectedResourceAllowedActionsKeepAndWiden AgentVisibilityAffectedResourceAllowedActions = "keep_and_widen"
-	AgentVisibilityAffectedResourceAllowedActionsMakePrivate  AgentVisibilityAffectedResourceAllowedActions = "make_private"
-	AgentVisibilityAffectedResourceAllowedActionsRevoke       AgentVisibilityAffectedResourceAllowedActions = "revoke"
-)
-
-// Valid indicates whether the value is a known member of the AgentVisibilityAffectedResourceAllowedActions enum.
-func (e AgentVisibilityAffectedResourceAllowedActions) Valid() bool {
-	switch e {
-	case AgentVisibilityAffectedResourceAllowedActionsKeepAndWiden:
-		return true
-	case AgentVisibilityAffectedResourceAllowedActionsMakePrivate:
-		return true
-	case AgentVisibilityAffectedResourceAllowedActionsRevoke:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for AgentVisibilityAffectedResourceRelationship.
-const (
-	AgentVisibilityAffectedResourceRelationshipContainer  AgentVisibilityAffectedResourceRelationship = "container"
-	AgentVisibilityAffectedResourceRelationshipDelegation AgentVisibilityAffectedResourceRelationship = "delegation"
-)
-
-// Valid indicates whether the value is a known member of the AgentVisibilityAffectedResourceRelationship enum.
-func (e AgentVisibilityAffectedResourceRelationship) Valid() bool {
-	switch e {
-	case AgentVisibilityAffectedResourceRelationshipContainer:
-		return true
-	case AgentVisibilityAffectedResourceRelationshipDelegation:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for AgentVisibilityAffectedResourceResourceClass.
-const (
-	AgentVisibilityAffectedResourceResourceClassConfiguration AgentVisibilityAffectedResourceResourceClass = "configuration"
-	AgentVisibilityAffectedResourceResourceClassConversation  AgentVisibilityAffectedResourceResourceClass = "conversation"
-	AgentVisibilityAffectedResourceResourceClassOutput        AgentVisibilityAffectedResourceResourceClass = "output"
-)
-
-// Valid indicates whether the value is a known member of the AgentVisibilityAffectedResourceResourceClass enum.
-func (e AgentVisibilityAffectedResourceResourceClass) Valid() bool {
-	switch e {
-	case AgentVisibilityAffectedResourceResourceClassConfiguration:
-		return true
-	case AgentVisibilityAffectedResourceResourceClassConversation:
-		return true
-	case AgentVisibilityAffectedResourceResourceClassOutput:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for AgentVisibilityAffectedResourceResourceType.
-const (
-	AgentVisibilityAffectedResourceResourceTypeArtifact AgentVisibilityAffectedResourceResourceType = "artifact"
-	AgentVisibilityAffectedResourceResourceTypeSession  AgentVisibilityAffectedResourceResourceType = "session"
-	AgentVisibilityAffectedResourceResourceTypeSkill    AgentVisibilityAffectedResourceResourceType = "skill"
-	AgentVisibilityAffectedResourceResourceTypeTable    AgentVisibilityAffectedResourceResourceType = "table"
-)
-
-// Valid indicates whether the value is a known member of the AgentVisibilityAffectedResourceResourceType enum.
-func (e AgentVisibilityAffectedResourceResourceType) Valid() bool {
-	switch e {
-	case AgentVisibilityAffectedResourceResourceTypeArtifact:
-		return true
-	case AgentVisibilityAffectedResourceResourceTypeSession:
-		return true
-	case AgentVisibilityAffectedResourceResourceTypeSkill:
-		return true
-	case AgentVisibilityAffectedResourceResourceTypeTable:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for ArtifactConversionSummaryState.
 const (
 	ArtifactConversionSummaryStateConverting ArtifactConversionSummaryState = "converting"
@@ -898,10 +856,11 @@ func (e BlueprintDeleteResultStatus) Valid() bool {
 
 // Defines values for BlueprintResourceType.
 const (
-	BlueprintResourceTypeAction BlueprintResourceType = "action"
-	BlueprintResourceTypeAgent  BlueprintResourceType = "agent"
-	BlueprintResourceTypeSkill  BlueprintResourceType = "skill"
-	BlueprintResourceTypeTable  BlueprintResourceType = "table"
+	BlueprintResourceTypeAction  BlueprintResourceType = "action"
+	BlueprintResourceTypeAgent   BlueprintResourceType = "agent"
+	BlueprintResourceTypeRoutine BlueprintResourceType = "routine"
+	BlueprintResourceTypeSkill   BlueprintResourceType = "skill"
+	BlueprintResourceTypeTable   BlueprintResourceType = "table"
 )
 
 // Valid indicates whether the value is a known member of the BlueprintResourceType enum.
@@ -910,6 +869,8 @@ func (e BlueprintResourceType) Valid() bool {
 	case BlueprintResourceTypeAction:
 		return true
 	case BlueprintResourceTypeAgent:
+		return true
+	case BlueprintResourceTypeRoutine:
 		return true
 	case BlueprintResourceTypeSkill:
 		return true
@@ -971,15 +932,185 @@ func (e CapabilityReadinessReason) Valid() bool {
 	}
 }
 
+// Defines values for ChoiceColor.
+const (
+	ChoiceColorBlue   ChoiceColor = "blue"
+	ChoiceColorCyan   ChoiceColor = "cyan"
+	ChoiceColorGrape  ChoiceColor = "grape"
+	ChoiceColorGray   ChoiceColor = "gray"
+	ChoiceColorGreen  ChoiceColor = "green"
+	ChoiceColorIndigo ChoiceColor = "indigo"
+	ChoiceColorLime   ChoiceColor = "lime"
+	ChoiceColorOrange ChoiceColor = "orange"
+	ChoiceColorPink   ChoiceColor = "pink"
+	ChoiceColorRed    ChoiceColor = "red"
+	ChoiceColorTeal   ChoiceColor = "teal"
+	ChoiceColorViolet ChoiceColor = "violet"
+	ChoiceColorYellow ChoiceColor = "yellow"
+)
+
+// Valid indicates whether the value is a known member of the ChoiceColor enum.
+func (e ChoiceColor) Valid() bool {
+	switch e {
+	case ChoiceColorBlue:
+		return true
+	case ChoiceColorCyan:
+		return true
+	case ChoiceColorGrape:
+		return true
+	case ChoiceColorGray:
+		return true
+	case ChoiceColorGreen:
+		return true
+	case ChoiceColorIndigo:
+		return true
+	case ChoiceColorLime:
+		return true
+	case ChoiceColorOrange:
+		return true
+	case ChoiceColorPink:
+		return true
+	case ChoiceColorRed:
+		return true
+	case ChoiceColorTeal:
+		return true
+	case ChoiceColorViolet:
+		return true
+	case ChoiceColorYellow:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ColumnDisplayChips.
+const (
+	ColumnDisplayChipsFilled ColumnDisplayChips = "filled"
+	ColumnDisplayChipsLight  ColumnDisplayChips = "light"
+)
+
+// Valid indicates whether the value is a known member of the ColumnDisplayChips enum.
+func (e ColumnDisplayChips) Valid() bool {
+	switch e {
+	case ColumnDisplayChipsFilled:
+		return true
+	case ColumnDisplayChipsLight:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ColumnDisplayFormat.
+const (
+	ColumnDisplayFormatCurrency ColumnDisplayFormat = "currency"
+	ColumnDisplayFormatDate     ColumnDisplayFormat = "date"
+	ColumnDisplayFormatDatetime ColumnDisplayFormat = "datetime"
+	ColumnDisplayFormatDecimal  ColumnDisplayFormat = "decimal"
+	ColumnDisplayFormatEmail    ColumnDisplayFormat = "email"
+	ColumnDisplayFormatInteger  ColumnDisplayFormat = "integer"
+	ColumnDisplayFormatLongText ColumnDisplayFormat = "long_text"
+	ColumnDisplayFormatPercent  ColumnDisplayFormat = "percent"
+	ColumnDisplayFormatPhone    ColumnDisplayFormat = "phone"
+	ColumnDisplayFormatProgress ColumnDisplayFormat = "progress"
+	ColumnDisplayFormatRating   ColumnDisplayFormat = "rating"
+	ColumnDisplayFormatRelative ColumnDisplayFormat = "relative"
+	ColumnDisplayFormatUrl      ColumnDisplayFormat = "url"
+)
+
+// Valid indicates whether the value is a known member of the ColumnDisplayFormat enum.
+func (e ColumnDisplayFormat) Valid() bool {
+	switch e {
+	case ColumnDisplayFormatCurrency:
+		return true
+	case ColumnDisplayFormatDate:
+		return true
+	case ColumnDisplayFormatDatetime:
+		return true
+	case ColumnDisplayFormatDecimal:
+		return true
+	case ColumnDisplayFormatEmail:
+		return true
+	case ColumnDisplayFormatInteger:
+		return true
+	case ColumnDisplayFormatLongText:
+		return true
+	case ColumnDisplayFormatPercent:
+		return true
+	case ColumnDisplayFormatPhone:
+		return true
+	case ColumnDisplayFormatProgress:
+		return true
+	case ColumnDisplayFormatRating:
+		return true
+	case ColumnDisplayFormatRelative:
+		return true
+	case ColumnDisplayFormatUrl:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ColumnLinkOnDelete.
+const (
+	ColumnLinkOnDeleteRestrict ColumnLinkOnDelete = "restrict"
+	ColumnLinkOnDeleteSetNull  ColumnLinkOnDelete = "set_null"
+)
+
+// Valid indicates whether the value is a known member of the ColumnLinkOnDelete enum.
+func (e ColumnLinkOnDelete) Valid() bool {
+	switch e {
+	case ColumnLinkOnDeleteRestrict:
+		return true
+	case ColumnLinkOnDeleteSetNull:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ColumnRollupFn.
+const (
+	ColumnRollupFnAvg   ColumnRollupFn = "avg"
+	ColumnRollupFnCount ColumnRollupFn = "count"
+	ColumnRollupFnMax   ColumnRollupFn = "max"
+	ColumnRollupFnMin   ColumnRollupFn = "min"
+	ColumnRollupFnSum   ColumnRollupFn = "sum"
+)
+
+// Valid indicates whether the value is a known member of the ColumnRollupFn enum.
+func (e ColumnRollupFn) Valid() bool {
+	switch e {
+	case ColumnRollupFnAvg:
+		return true
+	case ColumnRollupFnCount:
+		return true
+	case ColumnRollupFnMax:
+		return true
+	case ColumnRollupFnMin:
+		return true
+	case ColumnRollupFnSum:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ColumnType.
 const (
-	ColumnTypeAny     ColumnType = "any"
-	ColumnTypeArray   ColumnType = "array"
-	ColumnTypeBoolean ColumnType = "boolean"
-	ColumnTypeDate    ColumnType = "date"
-	ColumnTypeNumber  ColumnType = "number"
-	ColumnTypeObject  ColumnType = "object"
-	ColumnTypeString  ColumnType = "string"
+	ColumnTypeAny         ColumnType = "any"
+	ColumnTypeArray       ColumnType = "array"
+	ColumnTypeBoolean     ColumnType = "boolean"
+	ColumnTypeDate        ColumnType = "date"
+	ColumnTypeLink        ColumnType = "link"
+	ColumnTypeLookup      ColumnType = "lookup"
+	ColumnTypeMultiSelect ColumnType = "multi_select"
+	ColumnTypeNumber      ColumnType = "number"
+	ColumnTypeObject      ColumnType = "object"
+	ColumnTypeRollup      ColumnType = "rollup"
+	ColumnTypeSelect      ColumnType = "select"
+	ColumnTypeString      ColumnType = "string"
 )
 
 // Valid indicates whether the value is a known member of the ColumnType enum.
@@ -993,9 +1124,19 @@ func (e ColumnType) Valid() bool {
 		return true
 	case ColumnTypeDate:
 		return true
+	case ColumnTypeLink:
+		return true
+	case ColumnTypeLookup:
+		return true
+	case ColumnTypeMultiSelect:
+		return true
 	case ColumnTypeNumber:
 		return true
 	case ColumnTypeObject:
+		return true
+	case ColumnTypeRollup:
+		return true
+	case ColumnTypeSelect:
 		return true
 	case ColumnTypeString:
 		return true
@@ -1105,9 +1246,10 @@ func (e ConnectionExecutionMode) Valid() bool {
 
 // Defines values for ConsumerKind.
 const (
-	ConsumerKindAgentTool      ConsumerKind = "agent_tool"
-	ConsumerKindHttpSubscriber ConsumerKind = "http_subscriber"
-	ConsumerKindNone           ConsumerKind = "none"
+	ConsumerKindAgentTool         ConsumerKind = "agent_tool"
+	ConsumerKindHttpSubscriber    ConsumerKind = "http_subscriber"
+	ConsumerKindMcpServerApproval ConsumerKind = "mcp_server_approval"
+	ConsumerKindNone              ConsumerKind = "none"
 )
 
 // Valid indicates whether the value is a known member of the ConsumerKind enum.
@@ -1116,6 +1258,8 @@ func (e ConsumerKind) Valid() bool {
 	case ConsumerKindAgentTool:
 		return true
 	case ConsumerKindHttpSubscriber:
+		return true
+	case ConsumerKindMcpServerApproval:
 		return true
 	case ConsumerKindNone:
 		return true
@@ -1283,6 +1427,24 @@ const (
 func (e GenerationDeltaFrameEventType) Valid() bool {
 	switch e {
 	case GenerationDeltaFrameEventTypeGenerationDelta:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HeldCallViewEffect.
+const (
+	HeldCallViewEffectDestructive HeldCallViewEffect = "destructive"
+	HeldCallViewEffectWrite       HeldCallViewEffect = "write"
+)
+
+// Valid indicates whether the value is a known member of the HeldCallViewEffect enum.
+func (e HeldCallViewEffect) Valid() bool {
+	switch e {
+	case HeldCallViewEffectDestructive:
+		return true
+	case HeldCallViewEffectWrite:
 		return true
 	default:
 		return false
@@ -1736,6 +1898,51 @@ func (e ModelProviderGroupSource) Valid() bool {
 	case ModelProviderGroupSourceByok:
 		return true
 	case ModelProviderGroupSourcePlatform:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NotRestoredItemCredentialKind.
+const (
+	NotRestoredItemCredentialKindApiKey   NotRestoredItemCredentialKind = "api_key"
+	NotRestoredItemCredentialKindCliToken NotRestoredItemCredentialKind = "cli_token"
+)
+
+// Valid indicates whether the value is a known member of the NotRestoredItemCredentialKind enum.
+func (e NotRestoredItemCredentialKind) Valid() bool {
+	switch e {
+	case NotRestoredItemCredentialKindApiKey:
+		return true
+	case NotRestoredItemCredentialKindCliToken:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NotRestoredItemKind.
+const (
+	NotRestoredItemKindConnection NotRestoredItemKind = "connection"
+	NotRestoredItemKindCredential NotRestoredItemKind = "credential"
+	NotRestoredItemKindMember     NotRestoredItemKind = "member"
+	NotRestoredItemKindRoutine    NotRestoredItemKind = "routine"
+	NotRestoredItemKindSkill      NotRestoredItemKind = "skill"
+)
+
+// Valid indicates whether the value is a known member of the NotRestoredItemKind enum.
+func (e NotRestoredItemKind) Valid() bool {
+	switch e {
+	case NotRestoredItemKindConnection:
+		return true
+	case NotRestoredItemKindCredential:
+		return true
+	case NotRestoredItemKindMember:
+		return true
+	case NotRestoredItemKindRoutine:
+		return true
+	case NotRestoredItemKindSkill:
 		return true
 	default:
 		return false
@@ -3107,6 +3314,27 @@ func (e ThinkingEffort) Valid() bool {
 	}
 }
 
+// Defines values for ToolApprovalMode.
+const (
+	ToolApprovalModeDestructive ToolApprovalMode = "destructive"
+	ToolApprovalModeNever       ToolApprovalMode = "never"
+	ToolApprovalModeWrites      ToolApprovalMode = "writes"
+)
+
+// Valid indicates whether the value is a known member of the ToolApprovalMode enum.
+func (e ToolApprovalMode) Valid() bool {
+	switch e {
+	case ToolApprovalModeDestructive:
+		return true
+	case ToolApprovalModeNever:
+		return true
+	case ToolApprovalModeWrites:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TurnUpsertFrameEventType.
 const (
 	TurnUpsertFrameEventTypeTurnUpsert TurnUpsertFrameEventType = "turn.upsert"
@@ -4037,6 +4265,9 @@ type ActionCatalogEntry struct {
 	// EndpointUrl Endpoint URL (populated for endpoint_kind: http actions only).
 	EndpointUrl *string `json:"endpoint_url,omitempty"`
 
+	// ExactOnly True when only an exact selector naming this action reaches it. Group, provider, and wildcard selectors never include it, so a person turns it on by name.
+	ExactOnly *bool `json:"exact_only,omitempty"`
+
 	// Execution Execution-location metadata surfaced to action pickers.
 	Execution *ActionExecutionMetadata `json:"execution,omitempty"`
 
@@ -4328,6 +4559,9 @@ type Agent struct {
 	// ActionSelectors The agent's action selection: the action selectors it may call, expanded against the live action catalog at each build.
 	ActionSelectors *[]ActionSelector `json:"action_selectors,omitempty"`
 
+	// CanEdit Whether the caller may change this assistant's setup: exactly what `PATCH /v1/agents/{resource_id}` would allow. False on internal administration listings.
+	CanEdit bool `json:"can_edit"`
+
 	// Color Display color for this agent in UI surfaces. One of the Mantine color palette keys (e.g. `indigo`, `teal`, `grape`); empty string falls back to a hash-derived color.
 	Color *string `json:"color,omitempty"`
 
@@ -4370,9 +4604,6 @@ type Agent struct {
 	// Name Mutable unique name within the org. Free-form human-readable label; use `id` for stable references and job targeting.
 	Name string `json:"name"`
 
-	// OutputFolder Library folder this assistant's files are saved to outside a routine occurrence, where the routine's folder wins. Empty means the top level of the Library. A file name that already contains a folder is never moved into it.
-	OutputFolder *string `json:"output_folder,omitempty"`
-
 	// Owner The human or team responsible for this resource.
 	Owner ResourceOwner `json:"owner"`
 
@@ -4396,6 +4627,9 @@ type Agent struct {
 
 	// TimeoutSeconds Execution timeout, in seconds, for a single turn of this agent. `0` (or omitted) uses the platform default (1800s / 30 minutes). A request's `operation.timeout_seconds` overrides this for that turn.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
+
+	// ToolApprovalMode Which tool calls on a connected account or a remote tool wait for a person's approval. `never` asks before nothing. `destructive` asks before a call that cannot be undone, such as sending an email, deleting, or posting publicly. `writes` asks before any call that is not read-only. Tools inside Mobius (memory, Library, tables, the workspace) never ask. One approval covers that tool for the rest of the message, or the routine run.
+	ToolApprovalMode ToolApprovalMode `json:"tool_approval_mode"`
 
 	// ToolPresentation Controls how selected actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
 	//
@@ -4433,6 +4667,33 @@ type AgentAudienceResourceDispositionAction string
 // AgentAudienceResourceDispositionResourceType defines model for AgentAudienceResourceDisposition.ResourceType.
 type AgentAudienceResourceDispositionResourceType string
 
+// AgentCopy defines model for AgentCopy.
+type AgentCopy struct {
+	// Agent AI actor identity. An agent IS a principal (its permissions are role assignments on that principal) with instructions, configuration, and session presence.
+	Agent Agent `json:"agent"`
+
+	// LeftOut What did not come along, and why.
+	LeftOut []AgentCopyLeftOut `json:"left_out"`
+}
+
+// AgentCopyLeftOut defines model for AgentCopyLeftOut.
+type AgentCopyLeftOut struct {
+	Id   string               `json:"id"`
+	Kind AgentCopyLeftOutKind `json:"kind"`
+
+	// Name Empty for a file.
+	Name string `json:"name"`
+
+	// Reason `audience`: the skill is private to fewer people than the copy is for; its custodian can share it. `needs_admin`: only an Admin grants a company account. `failed`: the copy or grant failed.
+	Reason AgentCopyLeftOutReason `json:"reason"`
+}
+
+// AgentCopyLeftOutKind defines model for AgentCopyLeftOut.Kind.
+type AgentCopyLeftOutKind string
+
+// AgentCopyLeftOutReason `audience`: the skill is private to fewer people than the copy is for; its custodian can share it. `needs_admin`: only an Admin grants a company account. `failed`: the copy or grant failed.
+type AgentCopyLeftOutReason string
+
 // AgentListResponse defines model for AgentListResponse.
 type AgentListResponse struct {
 	// HasMore Whether more matching agents remain after this page.
@@ -4463,9 +4724,7 @@ type AgentManifestWarning struct {
 	Tool *string `json:"tool,omitempty"`
 }
 
-// AgentMember One principal in a restricted or private agent's audience. Membership is pure visibility and carries no role.
-//
-// A new member reads the ENTIRE shared layer, including everything promoted before they joined. That is inherent to a shared store; the member list's `added_at` is what makes it legible.
+// AgentMember One person in a group or personal assistant. Being a member is access to the assistant, its chats readable by everyone who uses it, its files, and its shared memory, including what was there before they joined.
 type AgentMember struct {
 	// AddedAt When this principal was added to the audience.
 	AddedAt time.Time `json:"added_at"`
@@ -4479,6 +4738,9 @@ type AgentMember struct {
 	// Kind Principal kind, so a picker can distinguish a person from a coordinator agent.
 	Kind AgentMemberKind `json:"kind"`
 
+	// Manager Whether this member manages the group assistant.
+	Manager bool `json:"manager"`
+
 	// PrincipalId The human or agent principal in this agent's audience.
 	PrincipalId string `json:"principal_id"`
 }
@@ -4488,10 +4750,13 @@ type AgentMemberKind string
 
 // AgentMemberListResponse defines model for AgentMemberListResponse.
 type AgentMemberListResponse struct {
-	// Count How many principals are in this agent's audience.
+	// CanManage Whether the caller manages this assistant: an Admin, or a manager of a group assistant whose role can build.
+	CanManage bool `json:"can_manage"`
+
+	// Count How many people are members.
 	Count int `json:"count"`
 
-	// Items The current audience. Returned only to callers who may manage the agent; other members receive `count` alone.
+	// Items The current members.
 	Items *[]AgentMember `json:"items,omitempty"`
 }
 
@@ -4765,6 +5030,8 @@ type AgentStatus string
 
 // AgentToolConsumer defines model for AgentToolConsumer.
 type AgentToolConsumer struct {
+	// HeldCall True when Mobius opened this approval for tool calls it held because the assistant's approval mode asks before them, rather than a question the assistant asked. Its outcome resumes the held calls.
+	HeldCall     *bool  `json:"held_call,omitempty"`
 	InvocationId string `json:"invocation_id"`
 
 	// SessionId Session whose turn raised this interaction, when session-scoped.
@@ -4935,77 +5202,6 @@ type AgentTurnUsage struct {
 //
 // Because agent memory is keyed by `(org, agent, user, key)` and every read is scoped to one agent, narrowing who can reach an agent narrows its shared memory layer by construction. Group memory needs no separate store.
 type AgentVisibility string
-
-// AgentVisibilityAffectedResource defines model for AgentVisibilityAffectedResource.
-type AgentVisibilityAffectedResource struct {
-	// AllowedActions The decisions accepted for this row. A contained conversation offers only keep_and_widen, because its audience is set when it starts.
-	AllowedActions []AgentVisibilityAffectedResourceAllowedActions `json:"allowed_actions"`
-
-	// Name Configuration name. Omitted for conversations and outputs.
-	Name          *string                                      `json:"name,omitempty"`
-	Relationship  AgentVisibilityAffectedResourceRelationship  `json:"relationship"`
-	ResourceClass AgentVisibilityAffectedResourceResourceClass `json:"resource_class"`
-	ResourceId    string                                       `json:"resource_id"`
-	ResourceType  AgentVisibilityAffectedResourceResourceType  `json:"resource_type"`
-
-	// Visibility Who the custodian chose to share the resource with.
-	Visibility ResourceVisibility `json:"visibility"`
-}
-
-// AgentVisibilityAffectedResourceAllowedActions defines model for AgentVisibilityAffectedResource.AllowedActions.
-type AgentVisibilityAffectedResourceAllowedActions string
-
-// AgentVisibilityAffectedResourceRelationship defines model for AgentVisibilityAffectedResource.Relationship.
-type AgentVisibilityAffectedResourceRelationship string
-
-// AgentVisibilityAffectedResourceResourceClass defines model for AgentVisibilityAffectedResource.ResourceClass.
-type AgentVisibilityAffectedResourceResourceClass string
-
-// AgentVisibilityAffectedResourceResourceType defines model for AgentVisibilityAffectedResource.ResourceType.
-type AgentVisibilityAffectedResourceResourceType string
-
-// AgentVisibilityImpact What a pending visibility change would do, so a client can confirm it in specific terms rather than as a dropdown edit.
-type AgentVisibilityImpact struct {
-	// AffectedResources Delegated or contained root resources whose effective audience would grow. Every item requires one matching disposition on the update request; omission aborts the change.
-	AffectedResources []AgentVisibilityAffectedResource `json:"affected_resources"`
-	AgentId           string                            `json:"agent_id"`
-
-	// DroppedMembers Member rows a widening change deletes.
-	DroppedMembers *[]string `json:"dropped_members,omitempty"`
-
-	// From Who, inside the org that owns this agent, may reach it at all.
-	//
-	// `organization` is reachable by any org member. `restricted` is reachable only by the agent's listed members. `private` is reachable only by its single member.
-	//
-	// Agent create requests default to `private` when this field is omitted.
-	//
-	// Visibility is not a permission: what a member may DO with an agent stays governed by their org role. A principal outside an agent's audience gets `404` from every path — list, read, session, invoke, memory — so an agent's existence never leaks through a status code.
-	//
-	// Because agent memory is keyed by `(org, agent, user, key)` and every read is scoped to one agent, narrowing who can reach an agent narrows its shared memory layer by construction. Group memory needs no separate store.
-	From AgentVisibility `json:"from"`
-
-	// SharedEntryCount How many shared-layer memory entries the change republishes or restricts.
-	SharedEntryCount   int  `json:"shared_entry_count"`
-	StrandedPartitions *int `json:"stranded_partitions,omitempty"`
-
-	// StrandedPrincipals Principals who hold a memory partition or a session on this agent and fall outside the new audience.
-	StrandedPrincipals *[]string `json:"stranded_principals,omitempty"`
-	StrandedSessions   *int      `json:"stranded_sessions,omitempty"`
-
-	// To Who, inside the org that owns this agent, may reach it at all.
-	//
-	// `organization` is reachable by any org member. `restricted` is reachable only by the agent's listed members. `private` is reachable only by its single member.
-	//
-	// Agent create requests default to `private` when this field is omitted.
-	//
-	// Visibility is not a permission: what a member may DO with an agent stays governed by their org role. A principal outside an agent's audience gets `404` from every path — list, read, session, invoke, memory — so an agent's existence never leaks through a status code.
-	//
-	// Because agent memory is keyed by `(org, agent, user, key)` and every read is scoped to one agent, narrowing who can reach an agent narrows its shared memory layer by construction. Group memory needs no separate store.
-	To AgentVisibility `json:"to"`
-
-	// Widening True when the change exposes the shared memory layer to principals who could not read it before. Widening requires `confirm_visibility_change` and has no technical undo: republished knowledge cannot be un-read.
-	Widening bool `json:"widening"`
-}
 
 // AppendSessionMessage Message payload to append to an existing durable session.
 type AppendSessionMessage struct {
@@ -5358,9 +5554,15 @@ type BillingUsageEvent struct {
 	Model string `json:"model"`
 
 	// ModelClass Model class that produced the usage. Empty string when not applicable.
-	ModelClass  string    `json:"model_class"`
-	OccurredAt  time.Time `json:"occurred_at"`
-	PeriodStart time.Time `json:"period_start"`
+	ModelClass string    `json:"model_class"`
+	OccurredAt time.Time `json:"occurred_at"`
+
+	// OrgLlmKeyId Organization model provider credit key that paid for this model call. Absent when the call ran on the connected key, Mobius credits, or anything else.
+	OrgLlmKeyId *string `json:"org_llm_key_id,omitempty"`
+
+	// OrgLlmKeyLabel Label of the credit key in `org_llm_key_id`, as it is now (or as last recorded if the key was deleted). Absent with `org_llm_key_id`.
+	OrgLlmKeyLabel *string   `json:"org_llm_key_label,omitempty"`
+	PeriodStart    time.Time `json:"period_start"`
 
 	// Provider Model provider that produced the usage. Empty string when not applicable.
 	Provider    string    `json:"provider"`
@@ -5556,10 +5758,25 @@ type BlueprintResourceType string
 
 // BlueprintResources The desired resources grouped by type. All groups are optional.
 type BlueprintResources struct {
-	Actions *[]BlueprintActionInput `json:"actions,omitempty"`
-	Agents  *[]BlueprintAgentInput  `json:"agents,omitempty"`
-	Skills  *[]BlueprintSkillInput  `json:"skills,omitempty"`
-	Tables  *[]BlueprintTableInput  `json:"tables,omitempty"`
+	Actions  *[]BlueprintActionInput  `json:"actions,omitempty"`
+	Agents   *[]BlueprintAgentInput   `json:"agents,omitempty"`
+	Routines *[]BlueprintRoutineInput `json:"routines,omitempty"`
+	Skills   *[]BlueprintSkillInput   `json:"skills,omitempty"`
+	Tables   *[]BlueprintTableInput   `json:"tables,omitempty"`
+}
+
+// BlueprintRoutineInput A desired scheduled team routine. Apply creates it paused with the reason `waiting_for_setup`, with no responsible person and no accounts. It never runs until someone names a responsible person and resumes it. Re-apply updates its name, instructions, schedule, and ceilings, and never its status, people, or accounts.
+type BlueprintRoutineInput struct {
+	// AgentKey Key of an agent in this blueprint. Fixed after the routine is created.
+	AgentKey                  string `json:"agent_key"`
+	DailyCeilingMilli         int64  `json:"daily_ceiling_milli"`
+	Instructions              string `json:"instructions"`
+	Key                       string `json:"key"`
+	Name                      string `json:"name"`
+	PerOccurrenceCeilingMilli int64  `json:"per_occurrence_ceiling_milli"`
+
+	// Schedule Exactly one of at, interval, or cron is required.
+	Schedule RoutineSchedule `json:"schedule"`
 }
 
 // BlueprintSkillInput A desired skill.
@@ -5639,8 +5856,23 @@ type ChannelContext struct {
 	WorkspaceId *string `json:"workspace_id,omitempty"`
 }
 
+// ChoiceColor Chip color from the product palette. A choice saved without one takes the next palette color.
+type ChoiceColor string
+
+// ColumnChoice One allowed value of a select column.
+type ColumnChoice struct {
+	// Color Chip color from the product palette. A choice saved without one takes the next palette color.
+	Color *ChoiceColor `json:"color,omitempty"`
+
+	// Value The value as stored and shown.
+	Value string `json:"value"`
+}
+
 // ColumnDef One typed column in a table schema.
 type ColumnDef struct {
+	// Choices For a `select` or `multi_select` column, the allowed values in display and sort order.
+	Choices *[]ColumnChoice `json:"choices,omitempty"`
+
 	// Default Default value applied when column is absent on insert
 	Default interface{} `json:"default,omitempty"`
 
@@ -5650,9 +5882,18 @@ type ColumnDef struct {
 	// Description Human-readable explanation of the column's purpose.
 	Description *string `json:"description,omitempty"`
 
+	// Display How a column's values read in the table. It never changes stored values.
+	Display *ColumnDisplay `json:"display,omitempty"`
+
 	// Indexed Compatibility hint retained for older schemas. It does not create a physical database index.
 	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	Indexed *bool `json:"indexed,omitempty"`
+
+	// Link For a `link` column, the table each cell points at. A cell holds one row.
+	Link *ColumnLink `json:"link,omitempty"`
+
+	// Lookup For a `lookup` column, a read-only value shown from the linked row.
+	Lookup *ColumnLookup `json:"lookup,omitempty"`
 
 	// Name Column name used as the key inside row `data`.
 	Name string `json:"name"`
@@ -5660,11 +5901,77 @@ type ColumnDef struct {
 	// Required Whether inserts must include a non-null value for this column.
 	Required *bool `json:"required,omitempty"`
 
-	// Type Column value type: `string`, `number`, `boolean`, `date`, `object`, `array`, or `any`.
+	// Rollup For a `rollup` column, a read-only aggregate over rows in another table that link to this row.
+	Rollup *ColumnRollup `json:"rollup,omitempty"`
+
+	// Type Column value type: `string`, `number`, `boolean`, `date`, `object`, `array`, or `any`. `link` stores one row of another table and reads as `{id, name}`. `lookup` and `rollup` are computed on read and cannot be written. `select` holds one of the column's `choices`; `multi_select` holds an array of them.
 	Type ColumnType `json:"type"`
 }
 
-// ColumnType Column value type: `string`, `number`, `boolean`, `date`, `object`, `array`, or `any`.
+// ColumnDisplay How a column's values read in the table. It never changes stored values.
+type ColumnDisplay struct {
+	// Chips For select columns, how chips are filled. Defaults to `light`.
+	Chips *ColumnDisplayChips `json:"chips,omitempty"`
+
+	// Currency ISO 4217 code for `currency`. Defaults to USD.
+	Currency *string `json:"currency,omitempty"`
+
+	// Decimals Decimal places for `decimal`, `currency`, and `percent`.
+	Decimals *int `json:"decimals,omitempty"`
+
+	// Format Numbers: `integer`, `decimal`, `currency`, `percent`, `rating` (1-5 stars), `progress` (0-100). Strings: `long_text`, `url`, `email`, `phone`. Dates: `date`, `datetime`, `relative`. Rollups and lookups take the number and date formats.
+	Format *ColumnDisplayFormat `json:"format,omitempty"`
+}
+
+// ColumnDisplayChips For select columns, how chips are filled. Defaults to `light`.
+type ColumnDisplayChips string
+
+// ColumnDisplayFormat Numbers: `integer`, `decimal`, `currency`, `percent`, `rating` (1-5 stars), `progress` (0-100). Strings: `long_text`, `url`, `email`, `phone`. Dates: `date`, `datetime`, `relative`. Rollups and lookups take the number and date formats.
+type ColumnDisplayFormat string
+
+// ColumnLink For a `link` column, the table each cell points at. A cell holds one row.
+type ColumnLink struct {
+	// OnDelete What deleting a target row does. `restrict` refuses while rows link to it; `set_null` clears those cells.
+	OnDelete *ColumnLinkOnDelete `json:"on_delete,omitempty"`
+
+	// Table Target table id. A table name is accepted on write and stored as the id.
+	Table string `json:"table"`
+}
+
+// ColumnLinkOnDelete What deleting a target row does. `restrict` refuses while rows link to it; `set_null` clears those cells.
+type ColumnLinkOnDelete string
+
+// ColumnLookup For a `lookup` column, a read-only value shown from the linked row.
+type ColumnLookup struct {
+	// Field Stored column in the linked table.
+	Field string `json:"field"`
+
+	// Via Link column in this table.
+	Via string `json:"via"`
+}
+
+// ColumnRollup For a `rollup` column, a read-only aggregate over rows in another table that link to this row.
+type ColumnRollup struct {
+	// Field Column in `from_table` to aggregate. Not used by `count`.
+	Field *string `json:"field,omitempty"`
+
+	// Fn Aggregate function.
+	Fn ColumnRollupFn `json:"fn"`
+
+	// FromTable Table id whose rows link here. A table name is accepted on write.
+	FromTable string `json:"from_table"`
+
+	// Via Link column in `from_table` that points at this table.
+	Via string `json:"via"`
+
+	// Where Optional filter on `from_table` rows, in query filter syntax.
+	Where *map[string]interface{} `json:"where,omitempty"`
+}
+
+// ColumnRollupFn Aggregate function.
+type ColumnRollupFn string
+
+// ColumnType Column value type: `string`, `number`, `boolean`, `date`, `object`, `array`, or `any`. `link` stores one row of another table and reads as `{id, name}`. `lookup` and `rollup` are computed on read and cannot be written. `select` holds one of the column's `choices`; `multi_select` holds an array of them.
 type ColumnType string
 
 // CompactionCreatedPayload Payload of a `compaction.created` event, emitted when the session transcript is summarized. The event is non-terminal: it never closes the session stream, so a live consumer observes a compaction landing inline.
@@ -5870,6 +6177,27 @@ type ConsumerInputKind string
 // ContextIncludeParam defines model for ContextIncludeParam.
 type ContextIncludeParam string
 
+// CopyAgentRequest defines model for CopyAgentRequest.
+type CopyAgentRequest struct {
+	// FileIds Files the assistant made, to copy into the new one's folder in Company files.
+	FileIds *[]string `json:"file_ids,omitempty"`
+
+	// Members The people in a group (`restricted`) copy. The caller is added as its manager.
+	Members *[]string `json:"members,omitempty"`
+	Name    string    `json:"name"`
+
+	// Visibility Who, inside the org that owns this agent, may reach it at all.
+	//
+	// `organization` is reachable by any org member. `restricted` is reachable only by the agent's listed members. `private` is reachable only by its single member.
+	//
+	// Agent create requests default to `private` when this field is omitted.
+	//
+	// Visibility is not a permission: what a member may DO with an agent stays governed by their org role. A principal outside an agent's audience gets `404` from every path — list, read, session, invoke, memory — so an agent's existence never leaks through a status code.
+	//
+	// Because agent memory is keyed by `(org, agent, user, key)` and every read is scoped to one agent, narrowing who can reach an agent narrows its shared memory layer by construction. Group memory needs no separate store.
+	Visibility AgentVisibility `json:"visibility"`
+}
+
 // CreateAPIKeyRequest Request shape for creating an organization API key. Pass `principal_id` to bind the key to an existing machine principal — the key authenticates as that principal, and permissions are managed by assigning roles to the principal rather than to the key. Omit `principal_id` to bind the key to the permanent organization principal; the chosen system `role` is stored as the credential scope.
 type CreateAPIKeyRequest struct {
 	// AllowUnassignedPrincipal Allow minting a key for a principal with no role assignments. The resulting key cannot access org resources until a role is assigned. Omit this for normal onboarding so a missing assignment fails with `principal_has_no_roles`. Only applicable when `principal_id` is set.
@@ -5976,7 +6304,8 @@ type CreateAgentRequest struct {
 	// Name Unique name for this agent. Free-form human-readable label, 1-63 characters.
 	Name string `json:"name"`
 
-	// OutputFolder Library folder this assistant's files are saved to, for example `assistants/ops`. Omit to take the default derived from the name; send an empty string for the top level of the Library. Inside a routine occurrence the routine's folder wins.
+	// OutputFolder Ignored. An assistant chooses a folder for each file it saves.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	OutputFolder *string `json:"output_folder,omitempty"`
 
 	// Owner The human or team responsible for this resource.
@@ -5993,6 +6322,9 @@ type CreateAgentRequest struct {
 
 	// TimeoutSeconds Per-turn execution timeout in seconds for this agent. Omit or `0` to use the platform default (1800s / 30 minutes); a request's `operation.timeout_seconds` overrides it for that turn.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
+
+	// ToolApprovalMode Which tool calls on a connected account or a remote tool wait for a person's approval. `never` asks before nothing. `destructive` asks before a call that cannot be undone, such as sending an email, deleting, or posting publicly. `writes` asks before any call that is not read-only. Tools inside Mobius (memory, Library, tables, the workspace) never ask. One approval covers that tool for the rest of the message, or the routine run.
+	ToolApprovalMode *ToolApprovalMode `json:"tool_approval_mode,omitempty"`
 
 	// ToolPresentation Controls how selected actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
 	//
@@ -6274,6 +6606,77 @@ type CreateTableRequest struct {
 	Visibility *ResourceVisibility `json:"visibility,omitempty"`
 }
 
+// DeletedAgent A deleted agent, as the deleted list shows it.
+type DeletedAgent struct {
+	// Color The agent's avatar color key, if any.
+	Color *string `json:"color,omitempty"`
+
+	// DeletedAt When the agent was deleted.
+	DeletedAt time.Time `json:"deleted_at"`
+
+	// DeletedBy Who deleted the agent, from the audit log. Absent when the audit log has no record.
+	DeletedBy *DeletedAgentActor `json:"deleted_by,omitempty"`
+
+	// Description The agent's description. Empty when `details_hidden` is true.
+	Description string `json:"description"`
+
+	// DetailsHidden True when the caller could not reach this agent while it was live: someone else's personal agent, or a group agent they were not in. Its name, description, color, owner, deleter, and name availability are withheld, as the live agent list withholds them.
+	DetailsHidden bool `json:"details_hidden"`
+
+	// Id The agent ID. Restore keeps it.
+	Id string `json:"id"`
+
+	// Name The name the agent had when it was deleted. Empty when `details_hidden` is true.
+	Name string `json:"name"`
+
+	// NameAvailable False when a live agent now uses this name, so restore needs a new `name`. Absent when `details_hidden` is true.
+	NameAvailable *bool `json:"name_available,omitempty"`
+
+	// OwnerId The person who held a personal agent. Absent for team custody and when `details_hidden` is true.
+	OwnerId *string `json:"owner_id,omitempty"`
+
+	// OwnerLeft True for a personal agent whose owner is no longer in the organization, for example after offboarding. Restore refuses it with `agent_custodian_gone`.
+	OwnerLeft *bool `json:"owner_left,omitempty"`
+
+	// Visibility Who, inside the org that owns this agent, may reach it at all.
+	//
+	// `organization` is reachable by any org member. `restricted` is reachable only by the agent's listed members. `private` is reachable only by its single member.
+	//
+	// Agent create requests default to `private` when this field is omitted.
+	//
+	// Visibility is not a permission: what a member may DO with an agent stays governed by their org role. A principal outside an agent's audience gets `404` from every path — list, read, session, invoke, memory — so an agent's existence never leaks through a status code.
+	//
+	// Because agent memory is keyed by `(org, agent, user, key)` and every read is scoped to one agent, narrowing who can reach an agent narrows its shared memory layer by construction. Group memory needs no separate store.
+	Visibility AgentVisibility `json:"visibility"`
+}
+
+// DeletedAgentActor Who deleted the agent, from the audit log. Absent when the audit log has no record.
+type DeletedAgentActor struct {
+	// Name Their display name.
+	Name string `json:"name"`
+
+	// PrincipalId The person who deleted the agent.
+	PrincipalId string `json:"principal_id"`
+
+	// ViaParentOrgId The provider organization they acted through, when they acted in a managed organization.
+	ViaParentOrgId *string `json:"via_parent_org_id,omitempty"`
+}
+
+// DeletedAgentListResponse defines model for DeletedAgentListResponse.
+type DeletedAgentListResponse struct {
+	// HasMore Whether more deleted agents remain after this page.
+	HasMore bool `json:"has_more"`
+
+	// Items The list of results for this page.
+	Items []DeletedAgent `json:"items"`
+
+	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
+	NextCursor *string `json:"next_cursor,omitempty"`
+
+	// Total How many deleted agents the organization has.
+	Total int `json:"total"`
+}
+
 // Delivery Optional per-interaction delivery override. When absent, each participant is notified via the app inbox only.
 type Delivery struct {
 	Channels []DeliveryChannel `json:"channels"`
@@ -6298,7 +6701,7 @@ type EmailDelivery struct {
 type ErrorResponse struct {
 	// Error Error detail.
 	Error struct {
-		// Code Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. When the request-wide rate limiter refuses a call, `rate_limit_exceeded` carries `scope` (`key`, `org`, or `browser`), `window`, `limit`, and `retry_after_seconds` in `details`; an endpoint's own cap returns the same code without them. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`; a send or nudge while a voice call is in progress in the chat uses `voice_call_active`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family.
+		// Code Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. A request that matches no API route returns 404 with `route_not_found`, distinct from the `not_found` an operation returns for a missing resource. When the request-wide rate limiter refuses a call, `rate_limit_exceeded` carries `scope` (`key`, `org`, or `browser`), `window`, `limit`, and `retry_after_seconds` in `details`; an endpoint's own cap returns the same code without them. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`; a send or nudge while a voice call is in progress in the chat uses `voice_call_active`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family.
 		Code string `json:"code"`
 
 		// Details Optional structured details specific to a `code`. Endpoints that set this document the per-code shape inline. Absent for codes whose `code` + `message` are sufficient.
@@ -6375,6 +6778,18 @@ type EventCatalogSource struct {
 // EventCatalogSourceKind `integration` for provider event sources; `capability` for built-in Mobius platform event sources.
 type EventCatalogSourceKind string
 
+// EventTrigger Starts a routine's or a workflow's run when a matching integration event arrives from one of the watched accounts.
+type EventTrigger struct {
+	// Condition Optional expression over the event's `{event, meta}` envelope. The run starts only when it returns true. A condition that cannot be evaluated against an event records a `failed` run with `error_code` `trigger_condition_error` and starts nothing.
+	Condition *string `json:"condition,omitempty"`
+
+	// EventType The integration event to react to: a concrete type from the event catalog (`github.issues.opened`) or a wildcard on a prefix (`github.issues.*`, `github.*`). The first segment must name a registered integration provider; built-in Mobius events are not accepted here.
+	EventType string `json:"event_type,omitempty"`
+
+	// SourceBindings Exact connection and grant pairs whose matching events may start a run, between 1 and 20 for an integration event. This selection does not authorize provider actions.
+	SourceBindings []ConnectionBinding `json:"source_bindings"`
+}
+
 // GenerationDeltaFrame Live-only token preview frame that can appear on session SSE streams. It is not persisted, does not carry an SSE `id:`, and cannot be replayed with `after_sequence` or `Last-Event-ID`.
 type GenerationDeltaFrame struct {
 	// Delta Token preview payload. Normal answer text arrives as `{ "text": "..." }`; summarized reasoning/thinking arrives as `{ "type": "thinking", "thinking": "..." }`.
@@ -6402,6 +6817,67 @@ type GenerationDeltaFrame struct {
 
 // GenerationDeltaFrameEventType defines model for GenerationDeltaFrame.EventType.
 type GenerationDeltaFrameEventType string
+
+// HeldCallApproval defines model for HeldCallApproval.
+type HeldCallApproval struct {
+	Account       *string        `json:"account,omitempty"`
+	AssistantName *string        `json:"assistant_name,omitempty"`
+	Calls         []HeldCallView `json:"calls"`
+
+	// DetailsCut True when the card leaves out or shortens part of what the held calls would do, such as recipients, attachments, message text, or an argument. Such a card can only be declined.
+	DetailsCut *bool `json:"details_cut,omitempty"`
+
+	// DetailsUnavailable True when the items a held delete would remove could not be read. The card still shows the call's arguments and can be approved.
+	DetailsUnavailable *bool `json:"details_unavailable,omitempty"`
+
+	// InRoutine True when the held calls belong to a routine run.
+	InRoutine *bool `json:"in_routine,omitempty"`
+}
+
+// HeldCallView defines model for HeldCallView.
+type HeldCallView struct {
+	// Account The account the call runs on, from the resolved connection.
+	Account *string `json:"account,omitempty"`
+	Action  string  `json:"action"`
+
+	// AlsoPlainText True when the message also has a plain text part that says something different.
+	AlsoPlainText *bool `json:"also_plain_text,omitempty"`
+
+	// Attachments Names of the files the message carries.
+	Attachments *[]string `json:"attachments,omitempty"`
+
+	// BodyText What recipients will read, as text. For a message with an HTML part, the HTML part with its tags removed.
+	BodyText *string `json:"body_text,omitempty"`
+
+	// Effect What the tool does, from its declared marks. A tool whose marks come from a remote server counts as destructive unless it is marked read-only.
+	Effect HeldCallViewEffect `json:"effect"`
+
+	// Fields The call's other arguments, as plain text, sorted by name. Every argument the layout above does not show appears here.
+	Fields     *[]HeldField    `json:"fields,omitempty"`
+	Items      *[]HeldItemView `json:"items,omitempty"`
+	Label      string          `json:"label"`
+	Recipients *[]string       `json:"recipients,omitempty"`
+	Subject    *string         `json:"subject,omitempty"`
+	ToolCallId string          `json:"tool_call_id"`
+
+	// Warnings Plain cautions about the call, such as an address that mixes alphabets.
+	Warnings *[]string `json:"warnings,omitempty"`
+}
+
+// HeldCallViewEffect What the tool does, from its declared marks. A tool whose marks come from a remote server counts as destructive unless it is marked read-only.
+type HeldCallViewEffect string
+
+// HeldField defines model for HeldField.
+type HeldField struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+// HeldItemView defines model for HeldItemView.
+type HeldItemView struct {
+	From    *string `json:"from,omitempty"`
+	Subject *string `json:"subject,omitempty"`
+}
 
 // HttpSubscriberConsumer defines model for HttpSubscriberConsumer.
 type HttpSubscriberConsumer struct {
@@ -6531,6 +7007,9 @@ type IntegrationTeamManagement struct {
 
 // Interaction Human or agent interaction request and its current response state.
 type Interaction struct {
+	// AskerName Present only when the caller is a person this interaction asks who cannot use its source conversation. The name of the person the asking assistant works for. Such a caller gets only id, kind, status, title, description, spec, target_user_ids, expires_at, created_at, updated_at, asker_name, reply_audience, and their own responses and lifecycle events.
+	AskerName *string `json:"asker_name,omitempty"`
+
 	// CancelReason Reason recorded when the interaction was cancelled.
 	CancelReason *string `json:"cancel_reason,omitempty"`
 
@@ -6561,6 +7040,9 @@ type Interaction struct {
 	// ExpiresAt Timestamp when this interaction expires if not responded to.
 	ExpiresAt *time.Time `json:"expires_at,omitempty"`
 
+	// HeldCalls What an approval for held tool calls covers, built from the exact arguments the approved calls run with. Present only when `consumer.agent_tool.held_call` is true. Every field is plain text.
+	HeldCalls *HeldCallApproval `json:"held_calls,omitempty"`
+
 	// Id Unique identifier for this interaction.
 	Id string `json:"id"`
 
@@ -6581,6 +7063,9 @@ type Interaction struct {
 	// Lifecycle Append-only status history, oldest first. Rendered as the detail view's timeline.
 	Lifecycle *[]InteractionLifecycleEvent `json:"lifecycle,omitempty"`
 
+	// OnBehalfOf Canonical principal ID of the person the asking assistant's turn ran for; null when the interaction was not raised by an assistant on a person's behalf.
+	OnBehalfOf *string `json:"on_behalf_of,omitempty"`
+
 	// Outcome Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
 	Outcome *InteractionValue `json:"outcome,omitempty"`
 
@@ -6595,6 +7080,9 @@ type Interaction struct {
 
 	// References Supporting links and related entities.
 	References *[]InteractionReference `json:"references,omitempty"`
+
+	// ReplyAudience Present with asker_name. Who will read the reply, such as "Dan" or "Dan and 3 others".
+	ReplyAudience *string `json:"reply_audience,omitempty"`
 
 	// RequireAll When true, all target users must respond before completion.
 	RequireAll *bool `json:"require_all,omitempty"`
@@ -6622,6 +7110,9 @@ type Interaction struct {
 
 	// Reviewer Principal whose accept or send-back was recorded last; null until a review decision is made. Distinct from `responder`, which names whoever submitted the work.
 	Reviewer *InteractionResponder `json:"reviewer,omitempty"`
+
+	// SourceConversation The conversation whose assistant asked this question. A caller who can read that conversation gets it on get and list reads whenever an assistant asked from one. Null for questions no conversation asked. Omitted for a person this interaction asks who cannot use the conversation (see asker_name).
+	SourceConversation *InteractionSourceConversation `json:"source_conversation,omitempty"`
 
 	// Spec The set of questions one responder answers atomically. Group related questions into a single interaction rather than opening several: each interaction is a separate item in someone's inbox and a separate interruption.
 	//
@@ -6885,6 +7376,16 @@ type InteractionResponseResponseKind string
 // InteractionResponseState Lifecycle state for this response row.
 type InteractionResponseState string
 
+// InteractionSourceConversation A conversation the caller can open, named for display.
+type InteractionSourceConversation struct {
+	// AgentId The assistant the conversation is with.
+	AgentId   *string `json:"agent_id,omitempty"`
+	SessionId string  `json:"session_id"`
+
+	// Title The conversation's title; empty when it has none yet.
+	Title string `json:"title"`
+}
+
 // InteractionSpec The set of questions one responder answers atomically. Group related questions into a single interaction rather than opening several: each interaction is a separate item in someone's inbox and a separate interruption.
 //
 // Protocol kind is decoupled from input shape: each kind declares which question modes are *allowed*, not which is *implied*.
@@ -6914,6 +7415,9 @@ type InteractionStatus string
 
 // InteractionUpsertFrame defines model for InteractionUpsertFrame.
 type InteractionUpsertFrame struct {
+	// AskerName Present only when the caller is a person this interaction asks who cannot use its source conversation. The name of the person the asking assistant works for. Such a caller gets only id, kind, status, title, description, spec, target_user_ids, expires_at, created_at, updated_at, asker_name, reply_audience, and their own responses and lifecycle events.
+	AskerName *string `json:"asker_name,omitempty"`
+
 	// CancelReason Reason recorded when the interaction was cancelled.
 	CancelReason *string `json:"cancel_reason,omitempty"`
 
@@ -6945,6 +7449,9 @@ type InteractionUpsertFrame struct {
 	// ExpiresAt Timestamp when this interaction expires if not responded to.
 	ExpiresAt *time.Time `json:"expires_at,omitempty"`
 
+	// HeldCalls What an approval for held tool calls covers, built from the exact arguments the approved calls run with. Present only when `consumer.agent_tool.held_call` is true. Every field is plain text.
+	HeldCalls *HeldCallApproval `json:"held_calls,omitempty"`
+
 	// Id Unique identifier for this interaction.
 	Id string `json:"id"`
 
@@ -6965,6 +7472,9 @@ type InteractionUpsertFrame struct {
 	// Lifecycle Append-only status history, oldest first. Rendered as the detail view's timeline.
 	Lifecycle *[]InteractionLifecycleEvent `json:"lifecycle,omitempty"`
 
+	// OnBehalfOf Canonical principal ID of the person the asking assistant's turn ran for; null when the interaction was not raised by an assistant on a person's behalf.
+	OnBehalfOf *string `json:"on_behalf_of,omitempty"`
+
 	// Outcome Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
 	Outcome *InteractionValue `json:"outcome,omitempty"`
 
@@ -6979,6 +7489,9 @@ type InteractionUpsertFrame struct {
 
 	// References Supporting links and related entities.
 	References *[]InteractionReference `json:"references,omitempty"`
+
+	// ReplyAudience Present with asker_name. Who will read the reply, such as "Dan" or "Dan and 3 others".
+	ReplyAudience *string `json:"reply_audience,omitempty"`
 
 	// RequireAll When true, all target users must respond before completion.
 	RequireAll *bool `json:"require_all,omitempty"`
@@ -7006,6 +7519,9 @@ type InteractionUpsertFrame struct {
 
 	// Reviewer Principal whose accept or send-back was recorded last; null until a review decision is made. Distinct from `responder`, which names whoever submitted the work.
 	Reviewer *InteractionResponder `json:"reviewer,omitempty"`
+
+	// SourceConversation The conversation whose assistant asked this question. A caller who can read that conversation gets it on get and list reads whenever an assistant asked from one. Null for questions no conversation asked. Omitted for a person this interaction asks who cannot use the conversation (see asker_name).
+	SourceConversation *InteractionSourceConversation `json:"source_conversation,omitempty"`
 
 	// Spec The set of questions one responder answers atomically. Group related questions into a single interaction rather than opening several: each interaction is a separate item in someone's inbox and a separate interruption.
 	//
@@ -7287,10 +7803,10 @@ type ModelCapability string
 
 // ModelCatalogResponse Models a platform agent can be assigned in this org, grouped by available provider.
 type ModelCatalogResponse struct {
-	// DefaultModel Model id assigned when an agent specifies no model. With `capability=voice`, the voice model a call uses when it names none.
+	// DefaultModel Model id an agent that specifies no model runs on: the organization's default model when it set one and it is enabled, else the platform default. With `capability=voice`, the voice model a call uses when it names none.
 	DefaultModel string `json:"default_model"`
 
-	// Items Available providers in display order. Providers with no configured credentials are omitted.
+	// Items Available providers in display order, including providers the organization turned off (`enabled: false`). Providers with no configured credentials are omitted.
 	Items []ModelProviderGroup `json:"items"`
 
 	// Reason Present when `items` is empty because the request was denied rather than because no catalog exists. `platform_funding_denied` means Mobius-managed provider credentials are gated by billing or plan state; `credentials_unavailable` means no usable provider credentials were available.
@@ -7308,11 +7824,17 @@ type ModelOption struct {
 	// Description Short guidance about when to use this model.
 	Description *string `json:"description,omitempty"`
 
+	// Enabled False when the organization has turned this model or its provider off, or its billing plan does not include the model. Assistants cannot run on a model that is not enabled.
+	Enabled bool `json:"enabled"`
+
 	// Id Model id assigned to an agent's `model` field. Some catalog ids, such as OpenRouter slugs, include `/`.
 	Id string `json:"id"`
 
 	// Label Human-readable model label for UI.
 	Label string `json:"label"`
+
+	// PlanExcluded True when the organization's billing plan does not include this model, whatever the organization's own model settings say. A plan-excluded model is never enabled.
+	PlanExcluded *bool `json:"plan_excluded,omitempty"`
 
 	// Provider Canonical provider id this model belongs to.
 	Provider string `json:"provider"`
@@ -7326,6 +7848,9 @@ type ModelProviderGroup struct {
 	// DisplayName Human-readable provider label.
 	DisplayName string `json:"display_name"`
 
+	// Enabled False when the organization has turned this provider off.
+	Enabled bool `json:"enabled"`
+
 	// Models Models offered by this provider in display order.
 	Models []ModelOption `json:"models"`
 
@@ -7338,6 +7863,30 @@ type ModelProviderGroup struct {
 
 // ModelProviderGroupSource Where credentials come from — an org integration (`byok`) or a platform-managed key (`platform`).
 type ModelProviderGroupSource string
+
+// NotRestoredItem One thing that did not come back with a restored agent, and why.
+type NotRestoredItem struct {
+	// CredentialKind For a `credential` item, whether it was an API key or a CLI token.
+	CredentialKind *NotRestoredItemCredentialKind `json:"credential_kind,omitempty"`
+
+	// Id Its ID, when known.
+	Id *string `json:"id,omitempty"`
+
+	// Kind What kind of thing it is. A `routine` came back but stays paused.
+	Kind NotRestoredItemKind `json:"kind"`
+
+	// Name Its display name.
+	Name string `json:"name"`
+
+	// Reason Why it did not come back, written for the person who restored the agent.
+	Reason string `json:"reason"`
+}
+
+// NotRestoredItemCredentialKind For a `credential` item, whether it was an API key or a CLI token.
+type NotRestoredItemCredentialKind string
+
+// NotRestoredItemKind What kind of thing it is. A `routine` came back but stays paused.
+type NotRestoredItemKind string
 
 // NudgeEventPayload Live reconciliation hint emitted for `nudge.queued`, `nudge.delivered`, and `nudge.cancelled`. Re-read the queue resource after receiving it; this pulse is not durable replay state.
 type NudgeEventPayload struct {
@@ -7555,12 +8104,6 @@ type QueryRowsRequest struct {
 // QueryRowsRequestSortOrder Sort direction for this field: `asc` or `desc`.
 type QueryRowsRequestSortOrder string
 
-// ReplaceAgentMembersRequest defines model for ReplaceAgentMembersRequest.
-type ReplaceAgentMembersRequest struct {
-	// PrincipalIds The exact audience after this call. A private agent takes exactly one; a restricted agent at least one. An empty list on a restricted or private agent is rejected: an empty audience means nobody, never everyone.
-	PrincipalIds []string `json:"principal_ids"`
-}
-
 // ReplaceSkillsRequest defines model for ReplaceSkillsRequest.
 type ReplaceSkillsRequest struct {
 	// SkillIds Full replace-set of skill IDs to assign to the agent, in desired order.
@@ -7666,10 +8209,34 @@ type RespondToInteractionRequest struct {
 
 	// Comment Optional free-text comment accompanying the action. Available on every interaction kind and never gated by the spec; the responder may always attach reasoning, caveats, or follow-up notes alongside their answers. It is one note per response, not per question.
 	Comment *string `json:"comment,omitempty"`
+
+	// HeldCardSeen Send true only from a view that shows the full details of the held tool calls. An approval Mobius opened for held tool calls refuses every answer without it.
+	HeldCardSeen *bool `json:"held_card_seen,omitempty"`
 }
 
 // RespondToInteractionRequestAction Operation to perform through the canonical response endpoint. `submit` answers the interaction.
 type RespondToInteractionRequestAction string
+
+// RestoreAgentRequest Options for restoring a deleted agent.
+type RestoreAgentRequest struct {
+	// Name Restore under this name. Required when a live agent now uses the old name.
+	Name *string `json:"name,omitempty"`
+}
+
+// RestoredAgentResult defines model for RestoredAgentResult.
+type RestoredAgentResult struct {
+	// Agent AI actor identity. An agent IS a principal (its permissions are role assignments on that principal) with instructions, configuration, and session presence.
+	Agent *Agent `json:"agent,omitempty"`
+
+	// AgentId The restored agent's ID.
+	AgentId string `json:"agent_id"`
+
+	// DetailsHidden True when the caller cannot reach the restored agent: someone else's personal agent, or a group agent they are not in. Then `agent` is absent and `not_restored` is empty; the agent's custodian or members see it as before.
+	DetailsHidden bool `json:"details_hidden"`
+
+	// NotRestored Each thing the agent had before its delete that did not come back. Empty when `details_hidden` is true.
+	NotRestored []NotRestoredItem `json:"not_restored"`
+}
 
 // ReviewInteractionRequest Acceptance decision on submitted work.
 type ReviewInteractionRequest struct {
@@ -7787,7 +8354,7 @@ type Routine struct {
 	DailyCeilingMilli  int64               `json:"daily_ceiling_milli"`
 
 	// Event Present when `trigger` is `event`.
-	Event *RoutineEventTrigger `json:"event,omitempty"`
+	Event *EventTrigger `json:"event,omitempty"`
 
 	// FollowKey Immutable expr over event and meta; required only with custom. Must yield a non-empty string of at most 2048 bytes.
 	FollowKey *string `json:"follow_key,omitempty"`
@@ -7816,8 +8383,11 @@ type Routine struct {
 	ManagedBy RoutineManagedBy `json:"managed_by"`
 
 	// MaxTurnsPerThread Turn allowance per thread. Only a human can raise it.
-	MaxTurnsPerThread *int   `json:"max_turns_per_thread,omitempty"`
-	Name              string `json:"name"`
+	MaxTurnsPerThread *int `json:"max_turns_per_thread,omitempty"`
+
+	// ModelOverride Model every run uses. Absent when runs use the assistant's model.
+	ModelOverride *string `json:"model_override,omitempty"`
+	Name          string  `json:"name"`
 
 	// NextFireAt Absent on an event routine, which has no next fire to predict.
 	NextFireAt *time.Time `json:"next_fire_at,omitempty"`
@@ -7826,13 +8396,10 @@ type Routine struct {
 	// OriginSessionId The conversation the routine was proposed in, kept as provenance and nothing more. Each occurrence runs in its own session, so this is absent for a form-created routine and for one whose conversation has since been deleted. Archiving it does not stop the routine.
 	OriginSessionId *string `json:"origin_session_id,omitempty"`
 
-	// OutputFolder Library folder files produced here are saved to. Empty means the top level of the Library. A file name that already contains a folder is never moved into it.
-	OutputFolder *string `json:"output_folder,omitempty"`
-
 	// OwnerId The custodian. Absent under team custody, which has no owner.
 	OwnerId *string `json:"owner_id,omitempty"`
 
-	// OwnerKind Whose the routine is. `person` pauses with its owner's offboarding and runs on their connections. `team` belongs to the business: it has no `owner_id`, survives its creator's departure, and must name at least one responsible person.
+	// OwnerKind Whose the routine is. `person` pauses with its owner's offboarding and runs on their connections. `team` belongs to the business: it has no `owner_id`, survives its creator's departure, and must name at least one responsible person. A routine installed from a blueprint has none while it waits for setup, and naming one is part of turning it on.
 	OwnerKind                 RoutineOwnerKind `json:"owner_kind"`
 	PauseReason               *string          `json:"pause_reason,omitempty"`
 	PerOccurrenceCeilingMilli int64            `json:"per_occurrence_ceiling_milli"`
@@ -7840,13 +8407,16 @@ type Routine struct {
 	// Posture Employee-facing effective ownership and audience posture for the current caller.
 	Posture *ResourcePosture `json:"posture,omitempty"`
 
-	// Responsible The people this routine waits on. Non-empty under team custody.
+	// Responsible The people this routine waits on. Non-empty under team custody, except on a routine installed from a blueprint that still waits for setup.
 	Responsible *[]RoutinePrincipal `json:"responsible,omitempty"`
 
 	// Schedule Present when `trigger` is `schedule`.
 	Schedule *RoutineSchedule `json:"schedule,omitempty"`
 	Status   RoutineStatus    `json:"status"`
-	Timezone string           `json:"timezone"`
+
+	// ThinkingEffort Reasoning effort every run uses. Absent when runs use the assistant's.
+	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
+	Timezone       string          `json:"timezone"`
 
 	// Trigger What starts this routine's runs. `schedule` fires on the routine's schedule; `event` fires when a matching integration event arrives. Derived from whichever of `schedule` and `event` the routine carries, never stored.
 	Trigger RoutineTrigger `json:"trigger"`
@@ -7916,8 +8486,8 @@ type RoutineCreateRequest struct {
 	ConnectionBindings *ConnectionBindings `json:"connection_bindings,omitempty"`
 	DailyCeilingMilli  int64               `json:"daily_ceiling_milli"`
 
-	// Event Runs the routine when a matching integration event arrives. Each matched event creates a ledger entry for each followed thread. Runs serialize within a thread, with concurrent threads bounded by the routine's concurrency setting; each-event routines serialize per routine. Waiting thread events may be coalesced into the newest entry. A run still waiting six hours later is closed `skipped` with `error_code` `stale`.
-	Event *RoutineEventTrigger `json:"event,omitempty"`
+	// Event Runs the routine when a matching integration event arrives. Each matched event creates a ledger entry for each followed thread. Runs serialize within a thread, with concurrent threads bounded by the routine's concurrency setting; each-event routines serialize per routine. Waiting thread events may be coalesced into the newest entry. A run still waiting six hours later is closed `skipped` with `error_code` `stale`. `event_type` may be omitted when `follow_target` names a provider target, which derives the subscription; the `event`, `routine`, and `custom` follow targets require an explicit event type.
+	Event *EventTrigger `json:"event,omitempty"`
 
 	// FollowKey Immutable expr over event and meta; required only with custom. Must yield a non-empty string of at most 2048 bytes.
 	FollowKey *string `json:"follow_key,omitempty"`
@@ -7939,10 +8509,14 @@ type RoutineCreateRequest struct {
 	ManagedBy *RoutineManagedBy `json:"managed_by,omitempty"`
 
 	// MaxTurnsPerThread Turn allowance per thread. Only a human can raise it.
-	MaxTurnsPerThread *int    `json:"max_turns_per_thread,omitempty"`
-	Name              *string `json:"name,omitempty"`
+	MaxTurnsPerThread *int `json:"max_turns_per_thread,omitempty"`
 
-	// OutputFolder Library folder these files are saved to, for example `routines/weekly-report`. A file name that already contains a folder always wins. Omit to take the default derived from the routine name; send an empty string for the top level of the Library.
+	// ModelOverride Model every run uses instead of the assistant's. Omit to use the assistant's model. Whether the organization may run it is checked when each run starts. Rejected for a worker-routed assistant.
+	ModelOverride *string `json:"model_override,omitempty"`
+	Name          *string `json:"name,omitempty"`
+
+	// OutputFolder Ignored. An assistant chooses a folder for each file it saves.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	OutputFolder *string `json:"output_folder,omitempty"`
 
 	// OwnerKind Defaults to `person`. `team` requires organization administration.
@@ -7957,18 +8531,9 @@ type RoutineCreateRequest struct {
 
 	// SessionId Optional conversation this routine was proposed in, kept as provenance. Occurrences run in their own sessions, so this never affects where results are delivered. Omitted for a routine created from the form.
 	SessionId *string `json:"session_id,omitempty"`
-}
 
-// RoutineEventTrigger Runs the routine when a matching integration event arrives. Each matched event creates a ledger entry for each followed thread. Runs serialize within a thread, with concurrent threads bounded by the routine's concurrency setting; each-event routines serialize per routine. Waiting thread events may be coalesced into the newest entry. A run still waiting six hours later is closed `skipped` with `error_code` `stale`.
-type RoutineEventTrigger struct {
-	// Condition Optional expression over the event's `{event, meta}` envelope. The run starts only when it returns true. A condition that cannot be evaluated against an event records a `failed` run with `error_code` `trigger_condition_error` and starts nothing.
-	Condition *string `json:"condition,omitempty"`
-
-	// EventType The integration event to react to: a concrete type from the event catalog (`github.issues.opened`) or a wildcard on a prefix (`github.issues.*`, `github.*`). The first segment must name a registered integration provider; built-in Mobius events are not accepted here. Required unless `follow_target` names a provider target, which derives the subscription when omitted. The `event`, `routine`, and `custom` follow targets require an explicit event type.
-	EventType string `json:"event_type,omitempty"`
-
-	// SourceBindings Exact connection and grant pairs whose matching events may start this routine. This selection does not authorize provider actions.
-	SourceBindings []ConnectionBinding `json:"source_bindings"`
+	// ThinkingEffort Reasoning effort every run uses instead of the assistant's. Omit (or send `inherit`) to use the assistant's.
+	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
 }
 
 // RoutineFollowLevel Narrows what a follower is notified about. Ignored on the other relationships, which are always notified.
@@ -8031,6 +8596,9 @@ type RoutineOccurrence struct {
 	IntakeAt             time.Time `json:"intake_at"`
 	LatenessMilliseconds int64     `json:"lateness_milliseconds"`
 
+	// Model The model this run's conversation ran on, whether chosen by the routine, the assistant, or the organization default. Absent for a run that never reached a model.
+	Model *string `json:"model,omitempty"`
+
 	// NextAttemptAt When a pending run that already ran once will be tried again. Absent otherwise.
 	NextAttemptAt *time.Time `json:"next_attempt_at,omitempty"`
 
@@ -8084,7 +8652,7 @@ type RoutineOccurrenceList struct {
 	NextCursor *string             `json:"next_cursor,omitempty"`
 }
 
-// RoutineOwnerKind Whose the routine is. `person` pauses with its owner's offboarding and runs on their connections. `team` belongs to the business: it has no `owner_id`, survives its creator's departure, and must name at least one responsible person.
+// RoutineOwnerKind Whose the routine is. `person` pauses with its owner's offboarding and runs on their connections. `team` belongs to the business: it has no `owner_id`, survives its creator's departure, and must name at least one responsible person. A routine installed from a blueprint has none while it waits for setup, and naming one is part of turning it on.
 type RoutineOwnerKind string
 
 // RoutinePrincipal defines model for RoutinePrincipal.
@@ -8148,7 +8716,8 @@ type RoutineProposalApproval struct {
 	Instructions         *string   `json:"instructions,omitempty"`
 	Name                 *string   `json:"name,omitempty"`
 
-	// OutputFolder Library folder for the routine's files. An empty string means the top level of the Library.
+	// OutputFolder Ignored. An assistant chooses a folder for each file it saves.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	OutputFolder              *string `json:"output_folder,omitempty"`
 	PerOccurrenceCeilingMilli *int64  `json:"per_occurrence_ceiling_milli,omitempty"`
 
@@ -8222,7 +8791,7 @@ type RoutineUpdateRequest struct {
 	DailyCeilingMilli *int64 `json:"daily_ceiling_milli,omitempty"`
 
 	// Event Makes this an event routine, dropping any schedule it had. Rejected together with `schedule`.
-	Event *RoutineEventTrigger `json:"event,omitempty"`
+	Event *EventTrigger `json:"event,omitempty"`
 
 	// FollowKey Immutable custom follow expression. May be omitted or echo the current value; changing it is rejected. Create a new routine to use a different expression.
 	FollowKey *string `json:"follow_key,omitempty"`
@@ -8238,10 +8807,14 @@ type RoutineUpdateRequest struct {
 	ManagedBy *RoutineManagedBy `json:"managed_by,omitempty"`
 
 	// MaxTurnsPerThread Turn allowance per thread. Only a human can raise it.
-	MaxTurnsPerThread *int    `json:"max_turns_per_thread,omitempty"`
-	Name              *string `json:"name,omitempty"`
+	MaxTurnsPerThread *int `json:"max_turns_per_thread,omitempty"`
 
-	// OutputFolder Replacement Library folder, for example `routines/weekly-report`. Omit to leave it unchanged; send an empty string to clear it and save to the top level of the Library. Renaming never changes it.
+	// ModelOverride Replacement model for every run. Omit to leave it unchanged; send an empty string to return to the assistant's model.
+	ModelOverride *string `json:"model_override,omitempty"`
+	Name          *string `json:"name,omitempty"`
+
+	// OutputFolder Ignored. An assistant chooses a folder for each file it saves.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	OutputFolder *string `json:"output_folder,omitempty"`
 
 	// PerOccurrenceCeilingMilli A person may move this either way. An agent may only lower it, so no agent widens the budget it runs under; raising it as an agent receives 403.
@@ -8249,6 +8822,9 @@ type RoutineUpdateRequest struct {
 
 	// Schedule Makes this a scheduled routine, dropping any event trigger it had. Rejected together with `event`.
 	Schedule *RoutineSchedule `json:"schedule,omitempty"`
+
+	// ThinkingEffort Replacement reasoning effort for every run. Omit to leave it unchanged; send `inherit` to return to the assistant's.
+	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
 }
 
 // RuntimeContext Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on first use, material change, or after compaction removes its prior value from the active model window. Omitting a name leaves its last value standing; send an explicit value such as `none` to clear application state. Names must be unique within the request. Content is limited to 8,192 UTF-8 bytes per item and 16,384 bytes total.
@@ -8300,14 +8876,14 @@ type SearchRowsRequest struct {
 	// Limit Maximum number of rows to return (1–100, default 20).
 	Limit *int `json:"limit,omitempty"`
 
-	// Mode Search mode. `keyword` uses token-prefix matching, `semantic` uses similarity over indexed row text, and `hybrid` combines both.
+	// Mode Search mode. `keyword` matches words with the keyword syntax, `semantic` uses similarity over indexed row text, and `hybrid` combines both and drops rows that hold an excluded term.
 	Mode *SearchRowsRequestMode `json:"mode,omitempty"`
 
-	// Query Search query. Hyphens and other punctuation split terms for keyword matching.
+	// Query Search query. In keyword and hybrid mode it uses the keyword syntax: words are all required, `"quoted words"` are a phrase, `OR` between two terms accepts either, and `-term` excludes. Punctuation splits words. See the operation description.
 	Query string `json:"query"`
 }
 
-// SearchRowsRequestMode Search mode. `keyword` uses token-prefix matching, `semantic` uses similarity over indexed row text, and `hybrid` combines both.
+// SearchRowsRequestMode Search mode. `keyword` matches words with the keyword syntax, `semantic` uses similarity over indexed row text, and `hybrid` combines both and drops rows that hold an excluded term.
 type SearchRowsRequestMode string
 
 // Session Durable conversation transcript owned by an agent.
@@ -9639,7 +10215,7 @@ type TableStats struct {
 	// RowCount Approximate number of rows in the table.
 	RowCount int64 `json:"row_count"`
 
-	// SearchIndexPresent Whether the fixed shared full-text search index is present.
+	// SearchIndexPresent Whether the table-scoped keyword search index is present.
 	SearchIndexPresent bool `json:"search_index_present"`
 
 	// TableId Table these statistics describe.
@@ -9651,6 +10227,9 @@ type TagMap map[string]string
 
 // ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session, or the provider's own default when nothing sets a level.
 type ThinkingEffort string
+
+// ToolApprovalMode Which tool calls on a connected account or a remote tool wait for a person's approval. `never` asks before nothing. `destructive` asks before a call that cannot be undone, such as sending an email, deleting, or posting publicly. `writes` asks before any call that is not read-only. Tools inside Mobius (memory, Library, tables, the workspace) never ask. One approval covers that tool for the rest of the message, or the routine run.
+type ToolApprovalMode string
 
 // ToolCallPayload Payload of a live-only `tool.call` frame — an in-flight preview that a tool was invoked during the active turn. Never persisted and carries no sequence: the durable record of the call is the `tool_use` content block of the assistant message, delivered as an `agent.message` event when the turn commits.
 type ToolCallPayload struct {
@@ -9807,12 +10386,18 @@ type UpdateActionRequest struct {
 	Title *string `json:"title,omitempty"`
 }
 
+// UpdateAgentMemberRequest defines model for UpdateAgentMemberRequest.
+type UpdateAgentMemberRequest struct {
+	Manager bool `json:"manager"`
+}
+
 // UpdateAgentRequest Mutable agent fields. The agent's backing identity (`principal_id`, the machine principal created atomically with the agent) is intentionally absent: it is immutable. Reassigning identity is delete-and-recreate.
 type UpdateAgentRequest struct {
 	// ActionSelectors Replacement action selection, as a whole. Omit to leave the agent's current selection untouched; send an empty array to select none.
 	ActionSelectors *[]ActionSelector `json:"action_selectors,omitempty"`
 
-	// AffectedResourceDispositions Exactly one decision for every row returned by the visibility impact preview. Delegations may be revoked or explicitly widened; contained rows may be made private or explicitly widened. Extra, duplicate, and omitted rows are refused.
+	// AffectedResourceDispositions Ignored.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	AffectedResourceDispositions *[]AgentAudienceResourceDisposition `json:"affected_resource_dispositions,omitempty"`
 
 	// Color Replacement display color (Mantine palette key, e.g. `indigo`). Pass empty string to clear and fall back to a hash-derived color.
@@ -9821,16 +10406,21 @@ type UpdateAgentRequest struct {
 	// CompactionPolicy Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values.
 	CompactionPolicy *SessionCompactionPolicy `json:"compaction_policy,omitempty"`
 
-	// ConfirmVisibilityChange Acknowledges that widening republishes the agent's shared memory layer to the new audience and drops the current member list. A widening change without it returns `409` naming both counts.
+	// ConfirmVisibilityChange Ignored.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	ConfirmVisibilityChange *bool `json:"confirm_visibility_change,omitempty"`
 
 	// Description Replacement description.
 	Description *string `json:"description,omitempty"`
 
+	// ExpectedUpdatedAt The agent's `updated_at` as the caller last read it. When set, the update saves only if the agent is unchanged since then, compared to the microsecond; otherwise it returns 409 with code `agent_changed` and saves nothing.
+	ExpectedUpdatedAt *time.Time `json:"expected_updated_at,omitempty"`
+
 	// ExternalRef Assign-once client identity key, unique within the org. Accepted when the agent has no external_ref, or when it repeats the current value idempotently. Changing an already-set value returns 409.
 	ExternalRef *string `json:"external_ref,omitempty"`
 
-	// Members Replacement audience for a `restricted` or `private` agent: the exact set after this call. Omit to leave membership unchanged. Ignored when the resulting visibility is `organization`, which deletes the member rows outright — "org-visible with a leftover member list" is not a representable state.
+	// Members Replacement members for a `restricted` or `private` agent: the exact set after this call. Omit to leave membership unchanged. An empty set is refused, and a `private` agent's one member is the person it belongs to. Use the members endpoints instead.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	Members *[]string `json:"members,omitempty"`
 
 	// MemoryContext Replacement automatic memory delivery policy. Send an empty object to clear the stored override and restore the bounded index default. Otherwise `mode` is required (`index`, `full`, or `off`) and `max_bytes` is optional.
@@ -9848,15 +10438,15 @@ type UpdateAgentRequest struct {
 	// Name Free-form human-readable label, 1-63 characters; must be unique within the org.
 	Name *string `json:"name,omitempty"`
 
-	// OutputFolder Replacement Library folder. Omit to leave it unchanged; send an empty string to clear it and save to the top level of the Library. Renaming the assistant never changes it.
+	// OutputFolder Ignored. An assistant chooses a folder for each file it saves.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	OutputFolder *string `json:"output_folder,omitempty"`
 
 	// Status Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent.
 	Status *UpdateAgentRequestStatus `json:"status,omitempty"`
 
-	// StrandedDisposition What happens to the memory partitions and sessions of principals who fall outside a narrowed audience.
-	//
-	// `retain` keeps their partitions and sessions, readable only by org admins. `delete` additionally erases their private memory partitions, and only an org admin may choose it. A narrowing change that would strand rows and names neither returns `409`.
+	// StrandedDisposition Ignored.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	StrandedDisposition *UpdateAgentRequestStrandedDisposition `json:"stranded_disposition,omitempty"`
 
 	// SystemPrompt Replacement system prompt for agents.
@@ -9870,6 +10460,9 @@ type UpdateAgentRequest struct {
 
 	// TimeoutSeconds Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (1800s / 30 minutes); a request's `operation.timeout_seconds` overrides it for that turn.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
+
+	// ToolApprovalMode Which tool calls on a connected account or a remote tool wait for a person's approval. `never` asks before nothing. `destructive` asks before a call that cannot be undone, such as sending an email, deleting, or posting publicly. `writes` asks before any call that is not read-only. Tools inside Mobius (memory, Library, tables, the workspace) never ask. One approval covers that tool for the rest of the message, or the routine run.
+	ToolApprovalMode *ToolApprovalMode `json:"tool_approval_mode,omitempty"`
 
 	// ToolPresentation Controls how selected actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers.
 	//
@@ -9891,9 +10484,7 @@ type UpdateAgentRequest struct {
 // UpdateAgentRequestStatus Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent.
 type UpdateAgentRequestStatus string
 
-// UpdateAgentRequestStrandedDisposition What happens to the memory partitions and sessions of principals who fall outside a narrowed audience.
-//
-// `retain` keeps their partitions and sessions, readable only by org admins. `delete` additionally erases their private memory partitions, and only an org admin may choose it. A narrowing change that would strand rows and names neither returns `409`.
+// UpdateAgentRequestStrandedDisposition Ignored.
 type UpdateAgentRequestStrandedDisposition string
 
 // UpdateArtifactRequest defines model for UpdateArtifactRequest.
@@ -9958,6 +10549,9 @@ type UpdateSessionRequest struct {
 	// CompactionPolicy Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values.
 	CompactionPolicy *SessionCompactionPolicy `json:"compaction_policy,omitempty"`
 
+	// ModelOverride Model later turns in this session run on. The history is kept and each reply records the model that produced it. Send an empty string to go back to the agent's own model. Omit to leave it unchanged. Worker-routed agents return `400 invalid_argument` with `details.argument = model_override`.
+	ModelOverride *string `json:"model_override,omitempty"`
+
 	// Status Durable conversation session status: `active`, `archived`, or `deleted`.
 	Status *SessionStatus `json:"status,omitempty"`
 
@@ -9998,7 +10592,7 @@ type UpsertRowResult struct {
 	Row TableRow `json:"row"`
 }
 
-// VoiceCallEndedFrame Live pulse: the chat's voice call ended, and sends work again. Not replayed on reconnect; read the session's `active_voice_call` instead.
+// VoiceCallEndedFrame Live pulse: the chat's voice call ended, and sends work again. Not replayed on reconnect. A client that missed it learns the call ended when a send no longer returns 409 `voice_call_active`.
 type VoiceCallEndedFrame struct {
 	// EndReason Why the call ended. Known values are hangup, time_limit, funding, provider_error, client_gone, server_shutdown, disabled, and lost.
 	EndReason   string                       `json:"end_reason"`
@@ -10018,7 +10612,7 @@ type VoiceCallFrameCall struct {
 	StartedAt   time.Time `json:"started_at"`
 }
 
-// VoiceCallStartedFrame Live pulse: a voice call started in the chat. Not replayed on reconnect; read the session's `active_voice_call` instead.
+// VoiceCallStartedFrame Live pulse: a voice call started in the chat. Not replayed on reconnect. A client that missed it learns of a running call when a send returns 409 `voice_call_active`.
 type VoiceCallStartedFrame struct {
 	EventType VoiceCallStartedFrameEventType `json:"event_type"`
 	SessionId string                         `json:"session_id"`
@@ -10582,6 +11176,15 @@ type ListAgentsParams struct {
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// ListDeletedAgentsParams defines parameters for ListDeletedAgents.
+type ListDeletedAgentsParams struct {
+	// Cursor Cursor for pagination (opaque string from previous response)
+	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // ListAgentConnectionDefaultsParams defines parameters for ListAgentConnectionDefaults.
 type ListAgentConnectionDefaultsParams struct {
 	Context       ConnectionDefaultContext `form:"context" json:"context"`
@@ -10636,15 +11239,6 @@ type GetAgentToolsParams struct {
 	AllowedActions *string `form:"allowed_actions,omitempty" json:"allowed_actions,omitempty"`
 }
 
-// PreviewAgentVisibilityChangeParams defines parameters for PreviewAgentVisibilityChange.
-type PreviewAgentVisibilityChangeParams struct {
-	// Visibility The visibility being considered.
-	Visibility AgentVisibility `form:"visibility" json:"visibility"`
-
-	// Members The audience being considered, as a comma-separated list of principal IDs. Omit to evaluate against the current member list.
-	Members *string `form:"members,omitempty" json:"members,omitempty"`
-}
-
 // ListAPIKeysParams defines parameters for ListAPIKeys.
 type ListAPIKeysParams struct {
 	// Limit Maximum number of items to return
@@ -10682,6 +11276,9 @@ type ListArtifactsParams struct {
 
 	// Recursive Include files in subfolders of `folder`. With `false`, only files whose folder is exactly `folder` are returned; at the root that means files whose name carries no folder at all.
 	Recursive *bool `form:"recursive,omitempty" json:"recursive,omitempty"`
+
+	// AgentId Only files this assistant made, in any folder. An assistant picks a folder for each file, so its files are not in one place.
+	AgentId *string `form:"agent_id,omitempty" json:"agent_id,omitempty"`
 
 	// Place Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read. `personal` is the caller's own files, which only the caller can read. Omit it to list every section the caller can read.
 	Place *ListArtifactsParamsPlace `form:"place,omitempty" json:"place,omitempty"`
@@ -10813,6 +11410,12 @@ type ListInteractionsParams struct {
 
 	// Inbox When true, returns only interactions visible to the authenticated user.
 	Inbox *bool `form:"inbox,omitempty" json:"inbox,omitempty"`
+
+	// RespondedByMe When true, returns only interactions the authenticated user submitted a response to, newest answer first (ordered and paged by the caller's latest response time). Cannot be combined with inbox=true; sent together, the request fails with 400.
+	RespondedByMe *bool `form:"responded_by_me,omitempty" json:"responded_by_me,omitempty"`
+
+	// RespondedSince Keeps only interactions the user responded to at or after this time. Requires responded_by_me=true; sent without it, the request fails with 400.
+	RespondedSince *time.Time `form:"responded_since,omitempty" json:"responded_since,omitempty"`
 
 	// Cursor Cursor for pagination (opaque string from previous response)
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
@@ -11120,18 +11723,6 @@ type ListTablesParams struct {
 	Name *TableNameQueryParam `form:"name,omitempty" json:"name,omitempty"`
 }
 
-// ListTurnMessagesParams defines parameters for ListTurnMessages.
-type ListTurnMessagesParams struct {
-	// AfterSequence Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this value. Pass the `next_sequence` from the previous response to fetch the next page.
-	AfterSequence *AfterSequenceParam `form:"after_sequence,omitempty" json:"after_sequence,omitempty"`
-
-	// Limit Maximum number of items to return
-	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
-
-	// Include Set to `context` to include caller-supplied runtime context rows whose model-visible names begin with `app-`. Platform-owned runtime context remains hidden.
-	Include *ContextIncludeParam `form:"include,omitempty" json:"include,omitempty"`
-}
-
 // CreateActionJSONRequestBody defines body for CreateAction for application/json ContentType.
 type CreateActionJSONRequestBody = CreateActionRequest
 
@@ -11153,11 +11744,14 @@ type SetAgentConnectionDefaultJSONRequestBody = SetConnectionDefaultRequest
 // UpdateAgentJSONRequestBody defines body for UpdateAgent for application/json ContentType.
 type UpdateAgentJSONRequestBody = UpdateAgentRequest
 
+// CopyAgentJSONRequestBody defines body for CopyAgent for application/json ContentType.
+type CopyAgentJSONRequestBody = CopyAgentRequest
+
 // AddAgentMembersJSONRequestBody defines body for AddAgentMembers for application/json ContentType.
 type AddAgentMembersJSONRequestBody = AddAgentMembersRequest
 
-// ReplaceAgentMembersJSONRequestBody defines body for ReplaceAgentMembers for application/json ContentType.
-type ReplaceAgentMembersJSONRequestBody = ReplaceAgentMembersRequest
+// UpdateAgentMemberJSONRequestBody defines body for UpdateAgentMember for application/json ContentType.
+type UpdateAgentMemberJSONRequestBody = UpdateAgentMemberRequest
 
 // SaveAgentMemoryEntryJSONRequestBody defines body for SaveAgentMemoryEntry for application/json ContentType.
 type SaveAgentMemoryEntryJSONRequestBody = SaveAgentMemoryEntryRequest
@@ -11167,6 +11761,9 @@ type PromoteAgentMemoryEntryJSONRequestBody = PromoteAgentMemoryEntryRequest
 
 // SaveAgentMessagingBindingJSONRequestBody defines body for SaveAgentMessagingBinding for application/json ContentType.
 type SaveAgentMessagingBindingJSONRequestBody = AgentMessagingBindingRequest
+
+// RestoreAgentJSONRequestBody defines body for RestoreAgent for application/json ContentType.
+type RestoreAgentJSONRequestBody = RestoreAgentRequest
 
 // ReplaceAgentSkillAssignmentsJSONRequestBody defines body for ReplaceAgentSkillAssignments for application/json ContentType.
 type ReplaceAgentSkillAssignmentsJSONRequestBody = ReplaceSkillsRequest
@@ -16620,6 +17217,9 @@ type ClientInterface interface {
 
 	CreateAgent(ctx context.Context, body CreateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListDeletedAgents request
+	ListDeletedAgents(ctx context.Context, params *ListDeletedAgentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// InvokeAgentWithBody request with any body
 	InvokeAgentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -16650,6 +17250,11 @@ type ClientInterface interface {
 
 	UpdateAgent(ctx context.Context, resourceId IDParam, body UpdateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// CopyAgentWithBody request with any body
+	CopyAgentWithBody(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CopyAgent(ctx context.Context, resourceId IDParam, body CopyAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ProvisionAgentInbox request
 	ProvisionAgentInbox(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -16661,13 +17266,13 @@ type ClientInterface interface {
 
 	AddAgentMembers(ctx context.Context, resourceId IDParam, body AddAgentMembersJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ReplaceAgentMembersWithBody request with any body
-	ReplaceAgentMembersWithBody(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	ReplaceAgentMembers(ctx context.Context, resourceId IDParam, body ReplaceAgentMembersJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// RemoveAgentMember request
 	RemoveAgentMember(ctx context.Context, resourceId IDParam, principalId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateAgentMemberWithBody request with any body
+	UpdateAgentMemberWithBody(ctx context.Context, resourceId IDParam, principalId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateAgentMember(ctx context.Context, resourceId IDParam, principalId string, body UpdateAgentMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetAgentMemory request
 	GetAgentMemory(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -16702,8 +17307,10 @@ type ClientInterface interface {
 
 	SaveAgentMessagingBinding(ctx context.Context, resourceId IDParam, body SaveAgentMessagingBindingJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteAgentMessagingBinding request
-	DeleteAgentMessagingBinding(ctx context.Context, resourceId IDParam, bindingId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// RestoreAgentWithBody request with any body
+	RestoreAgentWithBody(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RestoreAgent(ctx context.Context, resourceId IDParam, body RestoreAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListAgentSkillAssignments request
 	ListAgentSkillAssignments(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -16716,9 +17323,6 @@ type ClientInterface interface {
 	// GetAgentTools request
 	GetAgentTools(ctx context.Context, resourceId IDParam, params *GetAgentToolsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PreviewAgentVisibilityChange request
-	PreviewAgentVisibilityChange(ctx context.Context, resourceId IDParam, params *PreviewAgentVisibilityChangeParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ListAPIKeys request
 	ListAPIKeys(ctx context.Context, params *ListAPIKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -16729,9 +17333,6 @@ type ClientInterface interface {
 
 	// DeleteAPIKey request
 	DeleteAPIKey(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetAPIKey request
-	GetAPIKey(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListArtifactFolders request
 	ListArtifactFolders(ctx context.Context, params *ListArtifactFoldersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -17219,9 +17820,6 @@ type ClientInterface interface {
 
 	UpsertTableRow(ctx context.Context, tableId TableIDParam, body UpsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListTurnMessages request
-	ListTurnMessages(ctx context.Context, turnId TurnIdParam, params *ListTurnMessagesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// OpenWorkerSocket request
 	OpenWorkerSocket(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
@@ -17382,6 +17980,18 @@ func (c *Client) CreateAgent(ctx context.Context, body CreateAgentJSONRequestBod
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListDeletedAgents(ctx context.Context, params *ListDeletedAgentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListDeletedAgentsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) InvokeAgentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewInvokeAgentRequestWithBody(c.Server, contentType, body)
 	if err != nil {
@@ -17514,6 +18124,30 @@ func (c *Client) UpdateAgent(ctx context.Context, resourceId IDParam, body Updat
 	return c.Client.Do(req)
 }
 
+func (c *Client) CopyAgentWithBody(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCopyAgentRequestWithBody(c.Server, resourceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CopyAgent(ctx context.Context, resourceId IDParam, body CopyAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCopyAgentRequest(c.Server, resourceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ProvisionAgentInbox(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProvisionAgentInboxRequest(c.Server, resourceId)
 	if err != nil {
@@ -17562,32 +18196,32 @@ func (c *Client) AddAgentMembers(ctx context.Context, resourceId IDParam, body A
 	return c.Client.Do(req)
 }
 
-func (c *Client) ReplaceAgentMembersWithBody(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewReplaceAgentMembersRequestWithBody(c.Server, resourceId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ReplaceAgentMembers(ctx context.Context, resourceId IDParam, body ReplaceAgentMembersJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewReplaceAgentMembersRequest(c.Server, resourceId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) RemoveAgentMember(ctx context.Context, resourceId IDParam, principalId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRemoveAgentMemberRequest(c.Server, resourceId, principalId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateAgentMemberWithBody(ctx context.Context, resourceId IDParam, principalId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateAgentMemberRequestWithBody(c.Server, resourceId, principalId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateAgentMember(ctx context.Context, resourceId IDParam, principalId string, body UpdateAgentMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateAgentMemberRequest(c.Server, resourceId, principalId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -17742,8 +18376,20 @@ func (c *Client) SaveAgentMessagingBinding(ctx context.Context, resourceId IDPar
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeleteAgentMessagingBinding(ctx context.Context, resourceId IDParam, bindingId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteAgentMessagingBindingRequest(c.Server, resourceId, bindingId)
+func (c *Client) RestoreAgentWithBody(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRestoreAgentRequestWithBody(c.Server, resourceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RestoreAgent(ctx context.Context, resourceId IDParam, body RestoreAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRestoreAgentRequest(c.Server, resourceId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -17802,18 +18448,6 @@ func (c *Client) GetAgentTools(ctx context.Context, resourceId IDParam, params *
 	return c.Client.Do(req)
 }
 
-func (c *Client) PreviewAgentVisibilityChange(ctx context.Context, resourceId IDParam, params *PreviewAgentVisibilityChangeParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPreviewAgentVisibilityChangeRequest(c.Server, resourceId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) ListAPIKeys(ctx context.Context, params *ListAPIKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListAPIKeysRequest(c.Server, params)
 	if err != nil {
@@ -17852,18 +18486,6 @@ func (c *Client) CreateAPIKey(ctx context.Context, body CreateAPIKeyJSONRequestB
 
 func (c *Client) DeleteAPIKey(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewDeleteAPIKeyRequest(c.Server, resourceId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetAPIKey(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetAPIKeyRequest(c.Server, resourceId)
 	if err != nil {
 		return nil, err
 	}
@@ -19986,18 +20608,6 @@ func (c *Client) UpsertTableRow(ctx context.Context, tableId TableIDParam, body 
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListTurnMessages(ctx context.Context, turnId TurnIdParam, params *ListTurnMessagesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListTurnMessagesRequest(c.Server, turnId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) OpenWorkerSocket(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewOpenWorkerSocketRequest(c.Server)
 	if err != nil {
@@ -20622,6 +21232,72 @@ func NewCreateAgentRequestWithBody(server string, contentType string, body io.Re
 	return req, nil
 }
 
+// NewListDeletedAgentsRequest generates requests for ListDeletedAgents
+func NewListDeletedAgentsRequest(server string, params *ListDeletedAgentsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/agents/deleted")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewInvokeAgentRequest calls the generic InvokeAgent builder with application/json body
 func NewInvokeAgentRequest(server string, body InvokeAgentJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -21002,6 +21678,53 @@ func NewUpdateAgentRequestWithBody(server string, resourceId IDParam, contentTyp
 	return req, nil
 }
 
+// NewCopyAgentRequest calls the generic CopyAgent builder with application/json body
+func NewCopyAgentRequest(server string, resourceId IDParam, body CopyAgentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCopyAgentRequestWithBody(server, resourceId, "application/json", bodyReader)
+}
+
+// NewCopyAgentRequestWithBody generates requests for CopyAgent with any type of body
+func NewCopyAgentRequestWithBody(server string, resourceId IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/agents/%s/copy", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewProvisionAgentInboxRequest generates requests for ProvisionAgentInbox
 func NewProvisionAgentInboxRequest(server string, resourceId IDParam) (*http.Request, error) {
 	var err error
@@ -21117,53 +21840,6 @@ func NewAddAgentMembersRequestWithBody(server string, resourceId IDParam, conten
 	return req, nil
 }
 
-// NewReplaceAgentMembersRequest calls the generic ReplaceAgentMembers builder with application/json body
-func NewReplaceAgentMembersRequest(server string, resourceId IDParam, body ReplaceAgentMembersJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewReplaceAgentMembersRequestWithBody(server, resourceId, "application/json", bodyReader)
-}
-
-// NewReplaceAgentMembersRequestWithBody generates requests for ReplaceAgentMembers with any type of body
-func NewReplaceAgentMembersRequestWithBody(server string, resourceId IDParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/agents/%s/members", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
 // NewRemoveAgentMemberRequest generates requests for RemoveAgentMember
 func NewRemoveAgentMemberRequest(server string, resourceId IDParam, principalId string) (*http.Request, error) {
 	var err error
@@ -21201,6 +21877,60 @@ func NewRemoveAgentMemberRequest(server string, resourceId IDParam, principalId 
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewUpdateAgentMemberRequest calls the generic UpdateAgentMember builder with application/json body
+func NewUpdateAgentMemberRequest(server string, resourceId IDParam, principalId string, body UpdateAgentMemberJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateAgentMemberRequestWithBody(server, resourceId, principalId, "application/json", bodyReader)
+}
+
+// NewUpdateAgentMemberRequestWithBody generates requests for UpdateAgentMember with any type of body
+func NewUpdateAgentMemberRequestWithBody(server string, resourceId IDParam, principalId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "principal_id", principalId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/agents/%s/members/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -21719,8 +22449,19 @@ func NewSaveAgentMessagingBindingRequestWithBody(server string, resourceId IDPar
 	return req, nil
 }
 
-// NewDeleteAgentMessagingBindingRequest generates requests for DeleteAgentMessagingBinding
-func NewDeleteAgentMessagingBindingRequest(server string, resourceId IDParam, bindingId string) (*http.Request, error) {
+// NewRestoreAgentRequest calls the generic RestoreAgent builder with application/json body
+func NewRestoreAgentRequest(server string, resourceId IDParam, body RestoreAgentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRestoreAgentRequestWithBody(server, resourceId, "application/json", bodyReader)
+}
+
+// NewRestoreAgentRequestWithBody generates requests for RestoreAgent with any type of body
+func NewRestoreAgentRequestWithBody(server string, resourceId IDParam, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -21730,19 +22471,12 @@ func NewDeleteAgentMessagingBindingRequest(server string, resourceId IDParam, bi
 		return nil, err
 	}
 
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "binding_id", bindingId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
 	serverURL, err := url.Parse(server)
 	if err != nil {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/agents/%s/messaging-bindings/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v1/agents/%s/restore", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -21752,10 +22486,12 @@ func NewDeleteAgentMessagingBindingRequest(server string, resourceId IDParam, bi
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -21914,75 +22650,6 @@ func NewGetAgentToolsRequest(server string, resourceId IDParam, params *GetAgent
 	return req, nil
 }
 
-// NewPreviewAgentVisibilityChangeRequest generates requests for PreviewAgentVisibilityChange
-func NewPreviewAgentVisibilityChangeRequest(server string, resourceId IDParam, params *PreviewAgentVisibilityChangeParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/agents/%s/visibility-impact", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "visibility", params.Visibility, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-			return nil, err
-		} else {
-			for _, qp := range strings.Split(queryFrag, "&") {
-				rawQueryFragments = append(rawQueryFragments, qp)
-			}
-		}
-
-		if params.Members != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "members", *params.Members, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
 // NewListAPIKeysRequest generates requests for ListAPIKeys
 func NewListAPIKeysRequest(server string, params *ListAPIKeysParams) (*http.Request, error) {
 	var err error
@@ -22116,40 +22783,6 @@ func NewDeleteAPIKeyRequest(server string, resourceId IDParam) (*http.Request, e
 	}
 
 	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetAPIKeyRequest generates requests for GetAPIKey
-func NewGetAPIKeyRequest(server string, resourceId IDParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/api-keys/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -22376,6 +23009,18 @@ func NewListArtifactsRequest(server string, params *ListArtifactsParams) (*http.
 		if params.Recursive != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "recursive", *params.Recursive, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.AgentId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "agent_id", *params.AgentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -23738,6 +24383,30 @@ func NewListInteractionsRequest(server string, params *ListInteractionsParams) (
 		if params.Inbox != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "inbox", *params.Inbox, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.RespondedByMe != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "responded_by_me", *params.RespondedByMe, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.RespondedSince != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "responded_since", *params.RespondedSince, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -29009,91 +29678,6 @@ func NewUpsertTableRowRequestWithBody(server string, tableId TableIDParam, conte
 	return req, nil
 }
 
-// NewListTurnMessagesRequest generates requests for ListTurnMessages
-func NewListTurnMessagesRequest(server string, turnId TurnIdParam, params *ListTurnMessagesParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "turn_id", turnId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/turns/%s/messages", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.AfterSequence != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "after_sequence", *params.AfterSequence, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Limit != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Include != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "include", *params.Include, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
 // NewOpenWorkerSocketRequest generates requests for OpenWorkerSocket
 func NewOpenWorkerSocketRequest(server string) (*http.Request, error) {
 	var err error
@@ -29199,6 +29783,9 @@ type ClientWithResponsesInterface interface {
 
 	CreateAgentWithResponse(ctx context.Context, body CreateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAgentResponse, error)
 
+	// ListDeletedAgentsWithResponse request
+	ListDeletedAgentsWithResponse(ctx context.Context, params *ListDeletedAgentsParams, reqEditors ...RequestEditorFn) (*ListDeletedAgentsResponse, error)
+
 	// InvokeAgentWithBodyWithResponse request with any body
 	InvokeAgentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InvokeAgentResponse, error)
 
@@ -29229,6 +29816,11 @@ type ClientWithResponsesInterface interface {
 
 	UpdateAgentWithResponse(ctx context.Context, resourceId IDParam, body UpdateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateAgentResponse, error)
 
+	// CopyAgentWithBodyWithResponse request with any body
+	CopyAgentWithBodyWithResponse(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CopyAgentResponse, error)
+
+	CopyAgentWithResponse(ctx context.Context, resourceId IDParam, body CopyAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*CopyAgentResponse, error)
+
 	// ProvisionAgentInboxWithResponse request
 	ProvisionAgentInboxWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*ProvisionAgentInboxResponse, error)
 
@@ -29240,13 +29832,13 @@ type ClientWithResponsesInterface interface {
 
 	AddAgentMembersWithResponse(ctx context.Context, resourceId IDParam, body AddAgentMembersJSONRequestBody, reqEditors ...RequestEditorFn) (*AddAgentMembersResponse, error)
 
-	// ReplaceAgentMembersWithBodyWithResponse request with any body
-	ReplaceAgentMembersWithBodyWithResponse(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceAgentMembersResponse, error)
-
-	ReplaceAgentMembersWithResponse(ctx context.Context, resourceId IDParam, body ReplaceAgentMembersJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceAgentMembersResponse, error)
-
 	// RemoveAgentMemberWithResponse request
 	RemoveAgentMemberWithResponse(ctx context.Context, resourceId IDParam, principalId string, reqEditors ...RequestEditorFn) (*RemoveAgentMemberResponse, error)
+
+	// UpdateAgentMemberWithBodyWithResponse request with any body
+	UpdateAgentMemberWithBodyWithResponse(ctx context.Context, resourceId IDParam, principalId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateAgentMemberResponse, error)
+
+	UpdateAgentMemberWithResponse(ctx context.Context, resourceId IDParam, principalId string, body UpdateAgentMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateAgentMemberResponse, error)
 
 	// GetAgentMemoryWithResponse request
 	GetAgentMemoryWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*GetAgentMemoryResponse, error)
@@ -29281,8 +29873,10 @@ type ClientWithResponsesInterface interface {
 
 	SaveAgentMessagingBindingWithResponse(ctx context.Context, resourceId IDParam, body SaveAgentMessagingBindingJSONRequestBody, reqEditors ...RequestEditorFn) (*SaveAgentMessagingBindingResponse, error)
 
-	// DeleteAgentMessagingBindingWithResponse request
-	DeleteAgentMessagingBindingWithResponse(ctx context.Context, resourceId IDParam, bindingId string, reqEditors ...RequestEditorFn) (*DeleteAgentMessagingBindingResponse, error)
+	// RestoreAgentWithBodyWithResponse request with any body
+	RestoreAgentWithBodyWithResponse(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RestoreAgentResponse, error)
+
+	RestoreAgentWithResponse(ctx context.Context, resourceId IDParam, body RestoreAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*RestoreAgentResponse, error)
 
 	// ListAgentSkillAssignmentsWithResponse request
 	ListAgentSkillAssignmentsWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*ListAgentSkillAssignmentsResponse, error)
@@ -29295,9 +29889,6 @@ type ClientWithResponsesInterface interface {
 	// GetAgentToolsWithResponse request
 	GetAgentToolsWithResponse(ctx context.Context, resourceId IDParam, params *GetAgentToolsParams, reqEditors ...RequestEditorFn) (*GetAgentToolsResponse, error)
 
-	// PreviewAgentVisibilityChangeWithResponse request
-	PreviewAgentVisibilityChangeWithResponse(ctx context.Context, resourceId IDParam, params *PreviewAgentVisibilityChangeParams, reqEditors ...RequestEditorFn) (*PreviewAgentVisibilityChangeResponse, error)
-
 	// ListAPIKeysWithResponse request
 	ListAPIKeysWithResponse(ctx context.Context, params *ListAPIKeysParams, reqEditors ...RequestEditorFn) (*ListAPIKeysResponse, error)
 
@@ -29308,9 +29899,6 @@ type ClientWithResponsesInterface interface {
 
 	// DeleteAPIKeyWithResponse request
 	DeleteAPIKeyWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*DeleteAPIKeyResponse, error)
-
-	// GetAPIKeyWithResponse request
-	GetAPIKeyWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*GetAPIKeyResponse, error)
 
 	// ListArtifactFoldersWithResponse request
 	ListArtifactFoldersWithResponse(ctx context.Context, params *ListArtifactFoldersParams, reqEditors ...RequestEditorFn) (*ListArtifactFoldersResponse, error)
@@ -29798,9 +30386,6 @@ type ClientWithResponsesInterface interface {
 
 	UpsertTableRowWithResponse(ctx context.Context, tableId TableIDParam, body UpsertTableRowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertTableRowResponse, error)
 
-	// ListTurnMessagesWithResponse request
-	ListTurnMessagesWithResponse(ctx context.Context, turnId TurnIdParam, params *ListTurnMessagesParams, reqEditors ...RequestEditorFn) (*ListTurnMessagesResponse, error)
-
 	// OpenWorkerSocketWithResponse request
 	OpenWorkerSocketWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*OpenWorkerSocketResponse, error)
 }
@@ -30114,6 +30699,39 @@ func (r CreateAgentResponse) ContentType() string {
 	return ""
 }
 
+type ListDeletedAgentsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *DeletedAgentListResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ListDeletedAgentsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListDeletedAgentsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListDeletedAgentsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type InvokeAgentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -30380,6 +30998,41 @@ func (r UpdateAgentResponse) ContentType() string {
 	return ""
 }
 
+type CopyAgentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *AgentCopy
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r CopyAgentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CopyAgentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CopyAgentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ProvisionAgentInboxResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -30482,46 +31135,13 @@ func (r AddAgentMembersResponse) ContentType() string {
 	return ""
 }
 
-type ReplaceAgentMembersResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *AgentMemberListResponse
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r ReplaceAgentMembersResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ReplaceAgentMembersResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ReplaceAgentMembersResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 type RemoveAgentMemberResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *Unauthorized
 	JSON403      *Forbidden
 	JSON404      *NotFound
+	JSON409      *Conflict
 }
 
 // Status returns HTTPResponse.Status
@@ -30542,6 +31162,40 @@ func (r RemoveAgentMemberResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r RemoveAgentMemberResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateAgentMemberResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AgentMemberListResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateAgentMemberResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateAgentMemberResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateAgentMemberResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -30855,17 +31509,19 @@ func (r SaveAgentMessagingBindingResponse) ContentType() string {
 	return ""
 }
 
-type DeleteAgentMessagingBindingResponse struct {
+type RestoreAgentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *RestoredAgentResult
+	JSON400      *BadRequest
 	JSON401      *Unauthorized
 	JSON403      *Forbidden
 	JSON404      *NotFound
-	JSON429      *TooManyRequests
+	JSON409      *Conflict
 }
 
 // Status returns HTTPResponse.Status
-func (r DeleteAgentMessagingBindingResponse) Status() string {
+func (r RestoreAgentResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -30873,7 +31529,7 @@ func (r DeleteAgentMessagingBindingResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r DeleteAgentMessagingBindingResponse) StatusCode() int {
+func (r RestoreAgentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -30881,7 +31537,7 @@ func (r DeleteAgentMessagingBindingResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DeleteAgentMessagingBindingResponse) ContentType() string {
+func (r RestoreAgentResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -30990,40 +31646,6 @@ func (r GetAgentToolsResponse) ContentType() string {
 	return ""
 }
 
-type PreviewAgentVisibilityChangeResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *AgentVisibilityImpact
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r PreviewAgentVisibilityChangeResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r PreviewAgentVisibilityChangeResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r PreviewAgentVisibilityChangeResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 type ListAPIKeysResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -31121,40 +31743,6 @@ func (r DeleteAPIKeyResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r DeleteAPIKeyResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetAPIKeyResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *APIKey
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r GetAPIKeyResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetAPIKeyResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetAPIKeyResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -35669,39 +36257,6 @@ func (r UpsertTableRowResponse) ContentType() string {
 	return ""
 }
 
-type ListTurnMessagesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *SessionMessageListResponse
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r ListTurnMessagesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListTurnMessagesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListTurnMessagesResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 type OpenWorkerSocketResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -35848,6 +36403,15 @@ func (c *ClientWithResponses) CreateAgentWithResponse(ctx context.Context, body 
 	return ParseCreateAgentResponse(rsp)
 }
 
+// ListDeletedAgentsWithResponse request returning *ListDeletedAgentsResponse
+func (c *ClientWithResponses) ListDeletedAgentsWithResponse(ctx context.Context, params *ListDeletedAgentsParams, reqEditors ...RequestEditorFn) (*ListDeletedAgentsResponse, error) {
+	rsp, err := c.ListDeletedAgents(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListDeletedAgentsResponse(rsp)
+}
+
 // InvokeAgentWithBodyWithResponse request with arbitrary body returning *InvokeAgentResponse
 func (c *ClientWithResponses) InvokeAgentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InvokeAgentResponse, error) {
 	rsp, err := c.InvokeAgentWithBody(ctx, contentType, body, reqEditors...)
@@ -35944,6 +36508,23 @@ func (c *ClientWithResponses) UpdateAgentWithResponse(ctx context.Context, resou
 	return ParseUpdateAgentResponse(rsp)
 }
 
+// CopyAgentWithBodyWithResponse request with arbitrary body returning *CopyAgentResponse
+func (c *ClientWithResponses) CopyAgentWithBodyWithResponse(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CopyAgentResponse, error) {
+	rsp, err := c.CopyAgentWithBody(ctx, resourceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCopyAgentResponse(rsp)
+}
+
+func (c *ClientWithResponses) CopyAgentWithResponse(ctx context.Context, resourceId IDParam, body CopyAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*CopyAgentResponse, error) {
+	rsp, err := c.CopyAgent(ctx, resourceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCopyAgentResponse(rsp)
+}
+
 // ProvisionAgentInboxWithResponse request returning *ProvisionAgentInboxResponse
 func (c *ClientWithResponses) ProvisionAgentInboxWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*ProvisionAgentInboxResponse, error) {
 	rsp, err := c.ProvisionAgentInbox(ctx, resourceId, reqEditors...)
@@ -35979,23 +36560,6 @@ func (c *ClientWithResponses) AddAgentMembersWithResponse(ctx context.Context, r
 	return ParseAddAgentMembersResponse(rsp)
 }
 
-// ReplaceAgentMembersWithBodyWithResponse request with arbitrary body returning *ReplaceAgentMembersResponse
-func (c *ClientWithResponses) ReplaceAgentMembersWithBodyWithResponse(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceAgentMembersResponse, error) {
-	rsp, err := c.ReplaceAgentMembersWithBody(ctx, resourceId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseReplaceAgentMembersResponse(rsp)
-}
-
-func (c *ClientWithResponses) ReplaceAgentMembersWithResponse(ctx context.Context, resourceId IDParam, body ReplaceAgentMembersJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceAgentMembersResponse, error) {
-	rsp, err := c.ReplaceAgentMembers(ctx, resourceId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseReplaceAgentMembersResponse(rsp)
-}
-
 // RemoveAgentMemberWithResponse request returning *RemoveAgentMemberResponse
 func (c *ClientWithResponses) RemoveAgentMemberWithResponse(ctx context.Context, resourceId IDParam, principalId string, reqEditors ...RequestEditorFn) (*RemoveAgentMemberResponse, error) {
 	rsp, err := c.RemoveAgentMember(ctx, resourceId, principalId, reqEditors...)
@@ -36003,6 +36567,23 @@ func (c *ClientWithResponses) RemoveAgentMemberWithResponse(ctx context.Context,
 		return nil, err
 	}
 	return ParseRemoveAgentMemberResponse(rsp)
+}
+
+// UpdateAgentMemberWithBodyWithResponse request with arbitrary body returning *UpdateAgentMemberResponse
+func (c *ClientWithResponses) UpdateAgentMemberWithBodyWithResponse(ctx context.Context, resourceId IDParam, principalId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateAgentMemberResponse, error) {
+	rsp, err := c.UpdateAgentMemberWithBody(ctx, resourceId, principalId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateAgentMemberResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateAgentMemberWithResponse(ctx context.Context, resourceId IDParam, principalId string, body UpdateAgentMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateAgentMemberResponse, error) {
+	rsp, err := c.UpdateAgentMember(ctx, resourceId, principalId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateAgentMemberResponse(rsp)
 }
 
 // GetAgentMemoryWithResponse request returning *GetAgentMemoryResponse
@@ -36110,13 +36691,21 @@ func (c *ClientWithResponses) SaveAgentMessagingBindingWithResponse(ctx context.
 	return ParseSaveAgentMessagingBindingResponse(rsp)
 }
 
-// DeleteAgentMessagingBindingWithResponse request returning *DeleteAgentMessagingBindingResponse
-func (c *ClientWithResponses) DeleteAgentMessagingBindingWithResponse(ctx context.Context, resourceId IDParam, bindingId string, reqEditors ...RequestEditorFn) (*DeleteAgentMessagingBindingResponse, error) {
-	rsp, err := c.DeleteAgentMessagingBinding(ctx, resourceId, bindingId, reqEditors...)
+// RestoreAgentWithBodyWithResponse request with arbitrary body returning *RestoreAgentResponse
+func (c *ClientWithResponses) RestoreAgentWithBodyWithResponse(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RestoreAgentResponse, error) {
+	rsp, err := c.RestoreAgentWithBody(ctx, resourceId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDeleteAgentMessagingBindingResponse(rsp)
+	return ParseRestoreAgentResponse(rsp)
+}
+
+func (c *ClientWithResponses) RestoreAgentWithResponse(ctx context.Context, resourceId IDParam, body RestoreAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*RestoreAgentResponse, error) {
+	rsp, err := c.RestoreAgent(ctx, resourceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRestoreAgentResponse(rsp)
 }
 
 // ListAgentSkillAssignmentsWithResponse request returning *ListAgentSkillAssignmentsResponse
@@ -36154,15 +36743,6 @@ func (c *ClientWithResponses) GetAgentToolsWithResponse(ctx context.Context, res
 	return ParseGetAgentToolsResponse(rsp)
 }
 
-// PreviewAgentVisibilityChangeWithResponse request returning *PreviewAgentVisibilityChangeResponse
-func (c *ClientWithResponses) PreviewAgentVisibilityChangeWithResponse(ctx context.Context, resourceId IDParam, params *PreviewAgentVisibilityChangeParams, reqEditors ...RequestEditorFn) (*PreviewAgentVisibilityChangeResponse, error) {
-	rsp, err := c.PreviewAgentVisibilityChange(ctx, resourceId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePreviewAgentVisibilityChangeResponse(rsp)
-}
-
 // ListAPIKeysWithResponse request returning *ListAPIKeysResponse
 func (c *ClientWithResponses) ListAPIKeysWithResponse(ctx context.Context, params *ListAPIKeysParams, reqEditors ...RequestEditorFn) (*ListAPIKeysResponse, error) {
 	rsp, err := c.ListAPIKeys(ctx, params, reqEditors...)
@@ -36196,15 +36776,6 @@ func (c *ClientWithResponses) DeleteAPIKeyWithResponse(ctx context.Context, reso
 		return nil, err
 	}
 	return ParseDeleteAPIKeyResponse(rsp)
-}
-
-// GetAPIKeyWithResponse request returning *GetAPIKeyResponse
-func (c *ClientWithResponses) GetAPIKeyWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*GetAPIKeyResponse, error) {
-	rsp, err := c.GetAPIKey(ctx, resourceId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetAPIKeyResponse(rsp)
 }
 
 // ListArtifactFoldersWithResponse request returning *ListArtifactFoldersResponse
@@ -37749,15 +38320,6 @@ func (c *ClientWithResponses) UpsertTableRowWithResponse(ctx context.Context, ta
 	return ParseUpsertTableRowResponse(rsp)
 }
 
-// ListTurnMessagesWithResponse request returning *ListTurnMessagesResponse
-func (c *ClientWithResponses) ListTurnMessagesWithResponse(ctx context.Context, turnId TurnIdParam, params *ListTurnMessagesParams, reqEditors ...RequestEditorFn) (*ListTurnMessagesResponse, error) {
-	rsp, err := c.ListTurnMessages(ctx, turnId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListTurnMessagesResponse(rsp)
-}
-
 // OpenWorkerSocketWithResponse request returning *OpenWorkerSocketResponse
 func (c *ClientWithResponses) OpenWorkerSocketWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*OpenWorkerSocketResponse, error) {
 	rsp, err := c.OpenWorkerSocket(ctx, reqEditors...)
@@ -38274,6 +38836,53 @@ func ParseCreateAgentResponse(rsp *http.Response) (*CreateAgentResponse, error) 
 	return response, nil
 }
 
+// ParseListDeletedAgentsResponse parses an HTTP response from a ListDeletedAgentsWithResponse call
+func ParseListDeletedAgentsResponse(rsp *http.Response) (*ListDeletedAgentsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListDeletedAgentsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest DeletedAgentListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseInvokeAgentResponse parses an HTTP response from a InvokeAgentWithResponse call
 func ParseInvokeAgentResponse(rsp *http.Response) (*InvokeAgentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -38664,6 +39273,67 @@ func ParseUpdateAgentResponse(rsp *http.Response) (*UpdateAgentResponse, error) 
 	return response, nil
 }
 
+// ParseCopyAgentResponse parses an HTTP response from a CopyAgentWithResponse call
+func ParseCopyAgentResponse(rsp *http.Response) (*CopyAgentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CopyAgentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest AgentCopy
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseProvisionAgentInboxResponse parses an HTTP response from a ProvisionAgentInboxWithResponse call
 func ParseProvisionAgentInboxResponse(rsp *http.Response) (*ProvisionAgentInboxResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -38826,34 +39496,20 @@ func ParseAddAgentMembersResponse(rsp *http.Response) (*AddAgentMembersResponse,
 	return response, nil
 }
 
-// ParseReplaceAgentMembersResponse parses an HTTP response from a ReplaceAgentMembersWithResponse call
-func ParseReplaceAgentMembersResponse(rsp *http.Response) (*ReplaceAgentMembersResponse, error) {
+// ParseRemoveAgentMemberResponse parses an HTTP response from a RemoveAgentMemberWithResponse call
+func ParseRemoveAgentMemberResponse(rsp *http.Response) (*RemoveAgentMemberResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ReplaceAgentMembersResponse{
+	response := &RemoveAgentMemberResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest AgentMemberListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -38875,25 +39531,46 @@ func ParseReplaceAgentMembersResponse(rsp *http.Response) (*ReplaceAgentMembersR
 		}
 		response.JSON404 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
 	}
 
 	return response, nil
 }
 
-// ParseRemoveAgentMemberResponse parses an HTTP response from a RemoveAgentMemberWithResponse call
-func ParseRemoveAgentMemberResponse(rsp *http.Response) (*RemoveAgentMemberResponse, error) {
+// ParseUpdateAgentMemberResponse parses an HTTP response from a UpdateAgentMemberWithResponse call
+func ParseUpdateAgentMemberResponse(rsp *http.Response) (*UpdateAgentMemberResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &RemoveAgentMemberResponse{
+	response := &UpdateAgentMemberResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AgentMemberListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -39413,20 +40090,34 @@ func ParseSaveAgentMessagingBindingResponse(rsp *http.Response) (*SaveAgentMessa
 	return response, nil
 }
 
-// ParseDeleteAgentMessagingBindingResponse parses an HTTP response from a DeleteAgentMessagingBindingWithResponse call
-func ParseDeleteAgentMessagingBindingResponse(rsp *http.Response) (*DeleteAgentMessagingBindingResponse, error) {
+// ParseRestoreAgentResponse parses an HTTP response from a RestoreAgentWithResponse call
+func ParseRestoreAgentResponse(rsp *http.Response) (*RestoreAgentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &DeleteAgentMessagingBindingResponse{
+	response := &RestoreAgentResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RestoredAgentResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -39448,12 +40139,12 @@ func ParseDeleteAgentMessagingBindingResponse(rsp *http.Response) (*DeleteAgentM
 		}
 		response.JSON404 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest TooManyRequests
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON429 = &dest
+		response.JSON409 = &dest
 
 	}
 
@@ -39584,60 +40275,6 @@ func ParseGetAgentToolsResponse(rsp *http.Response) (*GetAgentToolsResponse, err
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest AgentToolManifest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParsePreviewAgentVisibilityChangeResponse parses an HTTP response from a PreviewAgentVisibilityChangeWithResponse call
-func ParsePreviewAgentVisibilityChangeResponse(rsp *http.Response) (*PreviewAgentVisibilityChangeResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &PreviewAgentVisibilityChangeResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest AgentVisibilityImpact
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -39839,60 +40476,6 @@ func ParseDeleteAPIKeyResponse(rsp *http.Response) (*DeleteAPIKeyResponse, error
 			return nil, err
 		}
 		response.JSON429 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetAPIKeyResponse parses an HTTP response from a GetAPIKeyWithResponse call
-func ParseGetAPIKeyResponse(rsp *http.Response) (*GetAPIKeyResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetAPIKeyResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest APIKey
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
 
 	}
 
@@ -46793,53 +47376,6 @@ func ParseUpsertTableRowResponse(rsp *http.Response) (*UpsertTableRowResponse, e
 			return nil, err
 		}
 		response.JSON429 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListTurnMessagesResponse parses an HTTP response from a ListTurnMessagesWithResponse call
-func ParseListTurnMessagesResponse(rsp *http.Response) (*ListTurnMessagesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListTurnMessagesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest SessionMessageListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
 
 	}
 

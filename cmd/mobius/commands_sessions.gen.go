@@ -1085,6 +1085,7 @@ func registerSessionsCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Flags(
 			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
+			cli.String("model-override", "").Help("Model later turns in this session run on. The history is kept and each reply records the model that produced it. Send an empty string to go…"),
 			cli.String("status", "").Help("Durable conversation session status: `active`, `archived`, or `deleted`."),
 			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on…"),
 			cli.String("title", "").Help("Human-readable session title."),
@@ -1108,6 +1109,10 @@ func registerSessionsCommands(app *cli.App) {
 					return err
 				}
 			}
+			if ctx.IsSet("model-override") {
+				v := ctx.String("model-override")
+				body.ModelOverride = &v
+			}
 			if ctx.IsSet("status") {
 				v := api.SessionStatus(ctx.String("status"))
 				body.Status = &v
@@ -1120,7 +1125,7 @@ func registerSessionsCommands(app *cli.App) {
 				v := ctx.String("title")
 				body.Title = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("compaction-policy") && !ctx.IsSet("status") && !ctx.IsSet("thinking-effort") && !ctx.IsSet("title") {
+			if ctx.String("file") == "" && !ctx.IsSet("compaction-policy") && !ctx.IsSet("model-override") && !ctx.IsSet("status") && !ctx.IsSet("thinking-effort") && !ctx.IsSet("title") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

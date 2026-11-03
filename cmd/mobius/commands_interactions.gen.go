@@ -217,6 +217,8 @@ func registerInteractionsCommands(app *cli.App) {
 			cli.String("session-id", "").Help("Filter to interactions raised by an agent tool call (`consumer.kind=agent_tool`) whose invocation is a turn of the given chat session. Lets…"),
 			cli.String("target-user-id", "").Help("Filter by resolved target user ID."),
 			cli.Bool("inbox", "").Help("When true, returns only interactions visible to the authenticated user."),
+			cli.Bool("responded-by-me", "").Help("When true, returns only interactions the authenticated user submitted a response to, newest answer first (ordered and paged by the caller's…"),
+			cli.String("responded-since", "").Help("Keeps only interactions the user responded to at or after this time. Requires responded_by_me=true; sent without it, the request fails with… Accepts an RFC3339 timestamp (for example: 2026-07-22T12:00:00Z)."),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
@@ -248,6 +250,17 @@ func registerInteractionsCommands(app *cli.App) {
 				v := ctx.Bool("inbox")
 				params.Inbox = &v
 			}
+			if ctx.IsSet("responded-by-me") {
+				v := ctx.Bool("responded-by-me")
+				params.RespondedByMe = &v
+			}
+			if ctx.IsSet("responded-since") {
+				v, err := parseTimeFlag("responded-since", ctx.String("responded-since"))
+				if err != nil {
+					return err
+				}
+				params.RespondedSince = &v
+			}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))
 				params.Cursor = &v
@@ -270,6 +283,7 @@ func registerInteractionsCommands(app *cli.App) {
 			cli.String("action", "").Help("Operation to perform through the canonical response endpoint. `submit` answers the interaction."),
 			cli.String("answers", "").Help("[required] The responder's complete answer set. Required for `submit`. Every required question must be answered; there is no partial submit. Accepts JSON, @file, or @-."),
 			cli.String("comment", "").Help("Optional free-text comment accompanying the action. Available on every interaction kind and never gated by the spec; the responder may…"),
+			cli.Bool("held-card-seen", "").Help("Send true only from a view that shows the full details of the held tool calls. An approval Mobius opened for held tool calls refuses every…"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -297,6 +311,10 @@ func registerInteractionsCommands(app *cli.App) {
 			if ctx.IsSet("comment") {
 				v := ctx.String("comment")
 				body.Comment = &v
+			}
+			if ctx.IsSet("held-card-seen") {
+				v := ctx.Bool("held-card-seen")
+				body.HeldCardSeen = &v
 			}
 			if ctx.String("file") == "" && !ctx.IsSet("answers") {
 				return fmt.Errorf("--answers is required (or supply it via --file)")
