@@ -158,11 +158,10 @@ type GitDiffInput struct {
 }
 
 type ArtifactPublishInput struct {
-	SourceArtifactID string            `json:"source_artifact_id,omitempty"`
-	Path             string            `json:"path"`
-	Name             string            `json:"name,omitempty"`
-	Mime             string            `json:"mime,omitempty"`
-	Tags             map[string]string `json:"tags,omitempty"`
+	Path string            `json:"path"`
+	Name string            `json:"name,omitempty"`
+	Mime string            `json:"mime,omitempty"`
+	Tags map[string]string `json:"tags,omitempty"`
 }
 
 type ArtifactDownloadInput struct {
@@ -195,11 +194,9 @@ func NewEnvironmentBashAction() mobius.Action {
 		cmd := exec.CommandContext(runCtx, "bash", "-lc", in.Command)
 		configureProcessGroup(cmd)
 		cmd.Dir = dir
-		// The full worker environment — including MOBIUS_API_KEY — is
-		// intentionally visible to sandboxed commands: the environment is
-		// single-tenant and agent scripts routinely call the mobius CLI. See
-		// SECURITY.md; logs.tail redacts credential-shaped tokens on the way
-		// back out.
+		// Commands inherit the worker's environment. `mobius worker` removes
+		// its own MOBIUS_API_KEY at startup, so the key is not in it. See
+		// SECURITY.md.
 		cmd.Env = os.Environ()
 		for key, value := range in.Env {
 			cmd.Env = append(cmd.Env, key+"="+value)
@@ -468,17 +465,11 @@ func NewEnvironmentGitCloneAction() mobius.Action {
 		if err != nil {
 			return decorateGitCloneResult(ctx, result, in, dest, target, remoteURL, false), err
 		}
-		// Wire a persistent, broker-backed credential helper so ordinary git
-		// commands run later from the environment (fetch/pull/push via bash)
-		// authenticate without a token ever touching disk. Best-effort: the
-		// clone already succeeded, so a config failure is surfaced in the result
-		// but does not fail the step.
-		if ec, ok := ctx.(environmentContext); ok {
-			if cfgErr := configureEnvironmentGitCredentials(ctx, ec.EnvironmentID()); cfgErr != nil {
-				if m, ok := result.(map[string]any); ok {
-					m["git_credential_helper_error"] = cfgErr.Error()
-				}
-			}
+		// Attribute commits made later in the environment to the Mobius bot.
+		// The credential helper those commands use is configured by the
+		// worker at startup (ConfigureEnvironmentGitCredentials).
+		if _, ok := ctx.(environmentContext); ok {
+			setEnvironmentGitIdentity(ctx)
 		}
 		return decorateGitCloneResult(ctx, result, in, dest, target, remoteURL, true), nil
 	})
@@ -792,32 +783,27 @@ const (
 	environmentGitUserEmail = "noreply@mobiusops.ai"
 )
 
-// configureEnvironmentGitCredentials writes the global git config that lets
+// ConfigureEnvironmentGitCredentials writes the global git config that lets
 // arbitrary git commands in the environment authenticate through the Mobius
-// credential broker. The config holds no secret — only the environment id and
-// the path to this binary — because the helper brokers a fresh token on each
-// call. Uses the absolute path to the running worker binary so git can find the
-// helper regardless of PATH.
-func configureEnvironmentGitCredentials(ctx context.Context, environmentID string) error {
-	if strings.TrimSpace(environmentID) == "" {
-		return fmt.Errorf("environment id is required to configure git credentials")
-	}
+// credential broker. `mobius worker` calls it at startup in a managed
+// environment, next to the credential socket it serves, so the config always
+// names the running binary even after a runtime upgrade. The config holds no
+// secret, only the path to this binary. The helper asks the running worker for
+// a fresh token over the worker's local socket (see `mobius
+// git-credential-helper`), so it needs no API key. Uses the absolute path to
+// the running worker binary so git can find the helper regardless of PATH.
+func ConfigureEnvironmentGitCredentials(ctx context.Context) error {
 	bin, err := os.Executable()
 	if err != nil || strings.TrimSpace(bin) == "" {
 		bin = "mobius"
 	}
-	helper := "!" + shellQuoteSingle(bin) + " git-credential-helper --environment " + shellQuoteSingle(environmentID)
+	helper := "!" + shellQuoteSingle(bin) + " git-credential-helper"
 	// credential.useHttpPath makes git pass the repository path to the helper so
 	// it can broker a token scoped to that exact repository.
 	if err := runGitConfigGlobal(ctx, "credential.useHttpPath", "true"); err != nil {
 		return err
 	}
-	if err := runGitConfigGlobal(ctx, "credential.helper", helper); err != nil {
-		return err
-	}
-	setEnvironmentGitIdentity(ctx, "user.name", environmentGitUserName)
-	setEnvironmentGitIdentity(ctx, "user.email", environmentGitUserEmail)
-	return nil
+	return runGitConfigGlobal(ctx, "credential.helper", helper)
 }
 
 func runGitConfigGlobal(ctx context.Context, key, value string) error {
@@ -828,7 +814,7 @@ func runGitConfigGlobal(ctx context.Context, key, value string) error {
 	return nil
 }
 
-// setEnvironmentGitIdentity force-sets a global git identity value in a
+// setEnvironmentGitIdentity force-sets the global git identity in a
 // Mobius-managed environment so agent commits are attributable to the Mobius
 // bot. Forcing the GLOBAL identity is deliberate and safe: git resolves the
 // commit identity from higher-precedence sources first, so a repo-local
@@ -840,8 +826,9 @@ func runGitConfigGlobal(ctx context.Context, key, value string) error {
 // and so never applied the Mobius identity, misattributing commits to Sprite.
 // Best-effort: an identity write failure is ignored — the clone already
 // succeeded and git simply falls back to whatever identity it can resolve.
-func setEnvironmentGitIdentity(ctx context.Context, key, value string) {
-	_ = runGitConfigGlobal(ctx, key, value)
+func setEnvironmentGitIdentity(ctx context.Context) {
+	_ = runGitConfigGlobal(ctx, "user.name", environmentGitUserName)
+	_ = runGitConfigGlobal(ctx, "user.email", environmentGitUserEmail)
 }
 
 // shellQuoteSingle single-quotes s for safe embedding in the `!`-prefixed shell
@@ -921,29 +908,20 @@ func NewEnvironmentArtifactPublishAction() mobius.Action {
 		if !ok || ec.MobiusClient() == nil {
 			return nil, fmt.Errorf("mobius client is not available in worker context")
 		}
+		// The worker key may create artifacts only on a job lease, which ties
+		// the file to the job's run and step.
+		leaseToken := ""
 		if lc, ok := ctx.(environmentLeaseContext); ok {
-			if leaseToken := strings.TrimSpace(lc.LeaseToken()); leaseToken != "" {
-				ref, err := ec.MobiusClient().CreateArtifactRefFromFileWithLease(ctx, path, in.Name, in.Mime, leaseToken, in.Tags)
-				if err != nil {
-					return nil, err
-				}
-				return ref, nil
-			}
+			leaseToken = strings.TrimSpace(lc.LeaseToken())
 		}
-		// Without a lease the API cannot attach run/step lineage; fall back to
-		// an org-authorized private upload with the tags kept as metadata.
-		opts := mobius.CreateArtifactOptions{Path: path, Name: in.Name, Mime: in.Mime, PreviousArtifactID: in.SourceArtifactID}
-		if len(in.Tags) > 0 {
-			opts.Metadata = make(map[string]any, len(in.Tags))
-			for k, v := range in.Tags {
-				opts.Metadata[k] = v
-			}
+		if leaseToken == "" {
+			return nil, fmt.Errorf("environment.artifact.publish needs an active job lease")
 		}
-		artifact, err := ec.MobiusClient().CreateArtifact(ctx, opts)
+		ref, err := ec.MobiusClient().CreateArtifactRefFromFileWithLease(ctx, path, in.Name, in.Mime, leaseToken, in.Tags)
 		if err != nil {
 			return nil, err
 		}
-		return artifact, nil
+		return ref, nil
 	})
 }
 

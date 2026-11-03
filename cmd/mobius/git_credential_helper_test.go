@@ -49,11 +49,13 @@ type fakeBroker struct {
 	calledRepo  string
 	calledOp    string
 	calledLease string
+	calledEnv   string
 	cred        *mobius.EnvironmentGitCredential
 	err         error
 }
 
-func (f *fakeBroker) CreateEnvironmentGitCredential(_ context.Context, _ string, req mobius.EnvironmentGitCredentialRequest) (*mobius.EnvironmentGitCredential, error) {
+func (f *fakeBroker) CreateEnvironmentGitCredential(_ context.Context, environmentID string, req mobius.EnvironmentGitCredentialRequest) (*mobius.EnvironmentGitCredential, error) {
+	f.calledEnv = environmentID
 	f.calledRepo = req.RepoFullName
 	f.calledOp = req.Operation
 	f.calledLease = req.LeaseToken
@@ -61,7 +63,6 @@ func (f *fakeBroker) CreateEnvironmentGitCredential(_ context.Context, _ string,
 }
 
 func TestRunGitCredentialHelperBrokersAndWrites(t *testing.T) {
-	t.Setenv("MOBIUS_JOB_LEASE_TOKEN", "lease_active")
 	expiry := time.Unix(1_900_000_000, 0).UTC()
 	broker := &fakeBroker{cred: &mobius.EnvironmentGitCredential{
 		Username:  "x-access-token",
@@ -69,7 +70,7 @@ func TestRunGitCredentialHelperBrokersAndWrites(t *testing.T) {
 		ExpiresAt: expiry,
 	}}
 	var out strings.Builder
-	err := runGitCredentialHelper(context.Background(), &out, broker, "env_123", gitCredentialRequest{Host: "github.com", Path: "owner/repo.git"})
+	err := runGitCredentialHelper(context.Background(), &out, broker, "env_123", gitCredentialRequest{Host: "github.com", Path: "owner/repo.git", LeaseToken: "lease_active"})
 	assert.NoError(t, err)
 	// The helper always requests push; the broker decides read vs write.
 	assert.Equal(t, "owner/repo", broker.calledRepo)
@@ -93,7 +94,7 @@ func TestRunGitCredentialHelperIgnoresNonGitHub(t *testing.T) {
 
 func TestGitCredentialHelperCommandIsRegisteredAndHidden(t *testing.T) {
 	// store/erase are silent no-ops; exercise the command end-to-end for erase.
-	result := newApp().Test(t, cli.TestArgs("git-credential-helper", "erase", "--api-key", "mbx_test", "--environment", "env_123"))
+	result := newApp().Test(t, cli.TestArgs("git-credential-helper", "erase", "--environment", "env_123"))
 	if !result.Success() {
 		t.Fatalf("git-credential-helper erase failed: %v\nstderr:\n%s", result.Err, result.Stderr)
 	}

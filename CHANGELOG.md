@@ -10,12 +10,28 @@ the minor version.
 
 ## [Unreleased]
 
+### Security
+
+- `mobius worker` removes `MOBIUS_API_KEY` from its environment at startup, and
+  on Linux marks itself non-dumpable so children cannot read the key from
+  `/proc/<pid>/environ`. Commands a job starts (`environment.bash`, coding
+  agents, git and its hooks) no longer see the worker's key.
+- `mobius git-credential-helper` needs no API key: it asks the worker for a
+  token over a private Unix socket (`MOBIUS_GIT_CREDENTIAL_SOCKET`). The worker
+  writes the helper's git config at startup; `environment.git.clone` now sets
+  only the commit identity. See SECURITY.md.
+
 ### Changed
 
 - Removed five operations the platform deleted: `GetAPIKey`, `ListTurnMessages`,
   `PreviewAgentVisibilityChange`, `ReplaceAgentMembers`, and
   `DeleteAgentMessagingBinding` (Go, plus Python and TypeScript types), and the
   matching CLI commands. See [#243](https://github.com/deepnoodle-ai/mobius/pull/243).
+- Breaking: job scripts that call the `mobius` CLI with the worker's key stop
+  working. The key is for the worker alone.
+- Breaking: `environment.artifact.publish` requires an active job lease and no
+  longer falls back to an org upload without one. Its retired
+  `source_artifact_id` input is removed.
 
 ## [0.5.1] - 2026-10-28
 

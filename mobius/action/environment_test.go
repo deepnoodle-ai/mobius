@@ -73,6 +73,36 @@ func TestEnvironmentArtifactDownloadSendsJobLease(t *testing.T) {
 	}
 }
 
+// Publishing needs the job lease. The worker key alone cannot create
+// artifacts, so there is no lease-free upload to fall back to.
+func TestEnvironmentArtifactPublishRequiresJobLease(t *testing.T) {
+	workspace := realPath(t, t.TempDir())
+	t.Setenv("MOBIUS_RUNTIME_WORKSPACE", workspace)
+	writeFile(t, workspace, "report.txt", "hello")
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Errorf("unexpected request %s %s", r.Method, r.URL.Path)
+		w.WriteHeader(http.StatusForbidden)
+	}))
+	t.Cleanup(srv.Close)
+	client, err := mobius.NewClient(mobius.WithBaseURL(srv.URL), mobius.WithAPIKey("mbx_worker"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := testClientActionContext{testActionContext{Context: context.Background()}, client}
+	_, err = NewEnvironmentArtifactPublishAction().Execute(ctx, map[string]any{"path": "report.txt"})
+	if err == nil || !strings.Contains(err.Error(), "job lease") {
+		t.Fatalf("publish without a lease: err = %v, want a job lease error", err)
+	}
+}
+
+type testClientActionContext struct {
+	testActionContext
+	client *mobius.Client
+}
+
+func (c testClientActionContext) EnvironmentID() string        { return "env_test" }
+func (c testClientActionContext) MobiusClient() *mobius.Client { return c.client }
+
 func (testActionContext) Logger() *slog.Logger                               { return slog.Default() }
 func (testActionContext) RunID() string                                      { return "run_test" }
 func (testActionContext) JobID() string                                      { return "job_test" }
@@ -665,8 +695,14 @@ func TestConfigureEnvironmentGitIdentityForcesBotIdentity(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := configureEnvironmentGitCredentials(ctx, "env_test"); err != nil {
-		t.Fatalf("configureEnvironmentGitCredentials: %v", err)
+	setEnvironmentGitIdentity(ctx)
+
+	// The credential helper names the running binary and nothing secret.
+	if err := ConfigureEnvironmentGitCredentials(ctx); err != nil {
+		t.Fatalf("ConfigureEnvironmentGitCredentials: %v", err)
+	}
+	if got := gitGlobalConfig(t, "credential.helper"); !strings.HasSuffix(got, "' git-credential-helper") {
+		t.Fatalf("global credential.helper = %q, want the running binary's git-credential-helper", got)
 	}
 
 	// The base image default must be overridden by the Mobius bot identity.
@@ -692,7 +728,7 @@ func TestConfigureEnvironmentGitIdentityForcesBotIdentity(t *testing.T) {
 	}
 }
 
-// After a clone installs the global credential helper, a brokered fetch must
+// With the worker's global credential helper installed, a brokered fetch must
 // authenticate through its own askpass alone. The helper runs without the job
 // lease, so letting git call it printed a 403 into every follow-up fetch.
 func TestRunGitWithCredentialSkipsGlobalCredentialHelper(t *testing.T) {
