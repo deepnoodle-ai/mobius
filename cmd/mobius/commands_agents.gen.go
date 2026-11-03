@@ -112,26 +112,26 @@ func registerAgentsCommands(app *cli.App) {
 	agentsGrp.Command("create").
 		Description("Create agent").
 		Flags(
-			cli.String("action-selectors", "").Help("The agent's action selection. Omit to select every Mobius action and every Firecrawl action. Send an empty list for an agent with no… Accepts JSON, @file, or @-."),
+			cli.String("action-selectors", "").Help("The agent's action selection. Omit to select every Mobius action and every Firecrawl action. Send an empty list for an agent with no selected catalog actions. Accepts JSON, @file, or @-."),
 			cli.String("color", "").Help("Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a hash-derived color."),
-			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
+			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values. Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Optional human-readable description."),
-			cli.String("external-ref", "").Help("Client-owned durable identity key. Unique within the org when present. Treat this as assign-once: create requests may set it; update…"),
-			cli.String("if-exists", "").Help("Create-or-adopt behavior when a request's `external_ref` matches an existing resource. `error` (the default) rejects the request with 409…"),
+			cli.String("external-ref", "").Help("Client-owned durable identity key. Unique within the org when present. Treat this as assign-once: create requests may set it; update requests may set it only while the agent has no existing external_ref, or repeat the current value idempotently. Required when `if_exists` is…"),
+			cli.String("if-exists", "").Help("Create-or-adopt behavior when a request's `external_ref` matches an existing resource. `error` (the default) rejects the request with 409. `adopt` returns the existing resource unchanged instead — mutable fields in the request are ignored, since no write happens — and…"),
 			cli.Strings("members", "").Help("The audience for a `restricted` or `private` agent, written in the same transaction as the agent row."),
-			cli.String("memory-context", "").Help("Automatic memory delivery policy. The JSON object requires `mode` (`index`, `full`, or `off`) and optionally accepts `max_bytes`, for… Accepts JSON, @file, or @-."),
+			cli.String("memory-context", "").Help("Automatic memory delivery policy. The JSON object requires `mode` (`index`, `full`, or `off`) and optionally accepts `max_bytes`, for example `{\"mode\":\"full\",\"max_bytes\":131072}`. Accepts JSON, @file, or @-."),
 			cli.Bool("memory-enabled", "").Help("Hard gate for runtime memory. When false, memory tools and automatic memory context are absent. Defaults to true."),
-			cli.String("model", "").Help("Model identifier for agents. Any id from `GET /v1/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally…"),
+			cli.String("model", "").Help("Model identifier for agents. Any id from `GET /v1/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default."),
 			cli.String("model-route", "").Help("Default model route used by built-in messaging and by any turn that does not override the route. Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("[required] Unique name for this agent. Free-form human-readable label, 1-63 characters."),
-			cli.String("output-folder", "").Help("Ignored. An assistant chooses a folder for each file it saves. Deprecated: this property has been marked as deprecated upstream, but no…"),
+			cli.String("output-folder", "").Help("Ignored. An assistant chooses a folder for each file it saves. Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set"),
 			cli.String("owner", "").Help("The human or team responsible for this resource. Accepts JSON, @file, or @-."),
 			cli.String("system-prompt", "").Help("Custom system prompt for agents. Empty uses the generated default."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
-			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on…"),
-			cli.Int("timeout-seconds", "").Help("Per-turn execution timeout in seconds for this agent. Omit or `0` to use the platform default (1800s / 30 minutes); a request's…"),
-			cli.String("tool-approval-mode", "").Help("Which tool calls on a connected account or a remote tool wait for a person's approval. `never` asks before nothing. `destructive` asks…"),
-			cli.String("tool-presentation", "").Help("Controls how selected actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action…"),
+			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the…"),
+			cli.Int("timeout-seconds", "").Help("Per-turn execution timeout in seconds for this agent. Omit or `0` to use the platform default (1800s / 30 minutes); a request's `operation.timeout_seconds` overrides it for that turn."),
+			cli.String("tool-approval-mode", "").Help("Which tool calls on a connected account or a remote tool wait for a person's approval. `never` asks before nothing. `destructive` asks before a call that cannot be undone, such as sending an email, deleting, or posting publicly. `writes` asks before any call that is not…"),
+			cli.String("tool-presentation", "").Help("Controls how selected actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers."),
 			cli.String("visibility", "").Help("Who, inside the org that owns this agent, may reach it at all."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -271,7 +271,7 @@ func registerAgentsCommands(app *cli.App) {
 	agentsGrp.Command("delete-memory-entry").
 		Description("Delete a memory entry").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
-		AddArg(&cli.Arg{Name: "memory-key", Description: "The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably…", Required: true}).
+		AddArg(&cli.Arg{Name: "memory-key", Description: "The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably addressable.", Required: true}).
 		Flags(
 			cli.String("user-id", "").Help("User principal ID for a private memory partition. It must identify a current human member of this organization. Omit for shared memory."),
 		).
@@ -336,8 +336,8 @@ func registerAgentsCommands(app *cli.App) {
 		Description("Get agent tools").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
-			cli.String("skill-name", "").Help("Optional assigned skill name to simulate as invoked, so the response shows the tool scope a turn would run under once that skill is loaded…"),
-			cli.String("allowed-actions", "").Help("Optional comma-separated canonical action names, wildcard selectors, or group references to apply as a per-invocation filter against the…"),
+			cli.String("skill-name", "").Help("Optional assigned skill name to simulate as invoked, so the response shows the tool scope a turn would run under once that skill is loaded. Omitted means no skill action constraint is applied; the resolved set still reflects the other filters on this request (`allowed_actions`)."),
+			cli.String("allowed-actions", "").Help("Optional comma-separated canonical action names, wildcard selectors, or group references to apply as a per-invocation filter against the resolved tool set."),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -366,11 +366,11 @@ func registerAgentsCommands(app *cli.App) {
 	agentsGrp.Command("invoke").
 		Description("Invoke an agent").
 		Flags(
-			cli.String("agent-ref", "").Help("[required] Reference to an agent in this org. Supply exactly one of `id` (the agent identifier) or `name` (the org-unique agent name). A… Accepts JSON, @file, or @-."),
-			cli.String("channel-context", "").Help("Optional messaging provider/channel routing context (Slack, Telegram, …). Persisted on the started turn's input-message metadata under a… Accepts JSON, @file, or @-."),
+			cli.String("agent-ref", "").Help("[required] Reference to an agent in this org. Supply exactly one of `id` (the agent identifier) or `name` (the org-unique agent name). A blueprint-binding reference form is reserved for a later release and is not resolvable yet. Accepts JSON, @file, or @-."),
+			cli.String("channel-context", "").Help("Optional messaging provider/channel routing context (Slack, Telegram, …). Persisted on the started turn's input-message metadata under a `channel_context` key so chat history and support views can trace a turn back to the provider thread it came from. Accepts JSON, @file, or @-."),
 			cli.String("input", "").Help("[required] The caller input message that starts the agent turn. Accepts JSON, @file, or @-."),
-			cli.String("operation", "").Help("Operational policy for this newly admitted turn only. It is not saved on the session. Its timeout takes precedence over the agent default… Accepts JSON, @file, or @-."),
-			cli.String("session", "").Help("How to resolve or create the session this invocation runs in. Mirrors the create-session policy: `mode` + `session_key` resolve a durable… Accepts JSON, @file, or @-."),
+			cli.String("operation", "").Help("Operational policy for this newly admitted turn only. It is not saved on the session. Its timeout takes precedence over the agent default and must be at least one second. Accepts JSON, @file, or @-."),
+			cli.String("session", "").Help("How to resolve or create the session this invocation runs in. Mirrors the create-session policy: `mode` + `session_key` resolve a durable conversation for the agent, and the remaining fields seed a session that does not already exist (they are ignored when an existing session is… Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -521,7 +521,7 @@ func registerAgentsCommands(app *cli.App) {
 		Description("List agent memory changes").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
-			cli.String("after", "").Help("Opaque cursor returned as `next_cursor` by the previous response. Omit on the first request to read retained changes oldest-first. When no…"),
+			cli.String("after", "").Help("Opaque cursor returned as `next_cursor` by the previous response. Omit on the first request to read retained changes oldest-first. When no retained changes exist, the empty response still returns a stable bootstrap cursor that observes future mutations."),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
 		Use(requireAuth()).
@@ -553,7 +553,7 @@ func registerAgentsCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("query", "").Help("Optional search over entry keys, kinds, summaries, and content. Omit to list."),
-			cli.String("search-mode", "").Help("Search ranking mode for a non-blank `query`. Omit for backwards-compatible keyword search. Semantic and hybrid search can return `503…"),
+			cli.String("search-mode", "").Help("Search ranking mode for a non-blank `query`. Omit for backwards-compatible keyword search. Semantic and hybrid search can return `503 memory_semantic_search_unavailable` when the embedding or search-index service is unavailable; callers may retry or fall back to `keyword`."),
 			cli.String("kind", "").Help("Optional filter to a single memory kind."),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
@@ -633,9 +633,9 @@ func registerAgentsCommands(app *cli.App) {
 	agentsGrp.Command("promote-memory-entry").
 		Description("Promote a memory entry to the shared layer").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
-		AddArg(&cli.Arg{Name: "memory-key", Description: "The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably…", Required: true}).
+		AddArg(&cli.Arg{Name: "memory-key", Description: "The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably addressable.", Required: true}).
 		Flags(
-			cli.Bool("replace", "").Help("Allow overwriting a shared entry that already holds this key. Without it a collision is a `409`, so a promotion never silently rewrites…"),
+			cli.Bool("replace", "").Help("Allow overwriting a shared entry that already holds this key. Without it a collision is a `409`, so a promotion never silently rewrites what the group already knows."),
 			cli.String("user-id", "").Help("[required] The private partition the entry is copied out of. Required: promotion always has an owner, and the shared layer is not a source."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -785,7 +785,7 @@ func registerAgentsCommands(app *cli.App) {
 	agentsGrp.Command("revert-memory-promotion").
 		Description("Reverse a promotion").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
-		AddArg(&cli.Arg{Name: "memory-key", Description: "The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably…", Required: true}).
+		AddArg(&cli.Arg{Name: "memory-key", Description: "The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably addressable.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -805,11 +805,11 @@ func registerAgentsCommands(app *cli.App) {
 	agentsGrp.Command("save-memory-entry").
 		Description("Save memory entry").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
-		AddArg(&cli.Arg{Name: "memory-key", Description: "The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably…", Required: true}).
+		AddArg(&cli.Arg{Name: "memory-key", Description: "The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably addressable.", Required: true}).
 		Flags(
 			cli.String("content", "").Help("[required] The content to remember."),
 			cli.Int("importance", "").Help("Optional importance from 0 to 100; higher is kept longer during compaction."),
-			cli.String("kind", "").Help("Classifies a memory entry. Kinds carry different retention and compaction semantics: facts and preferences are durable, episodes are the…"),
+			cli.String("kind", "").Help("Classifies a memory entry. Kinds carry different retention and compaction semantics: facts and preferences are durable, episodes are the primary input to compaction, and a summary is the compacted product of other entries."),
 			cli.String("metadata", "").Help("Optional structured metadata to store alongside the memory. Accepts JSON, @file, or @-."),
 			cli.Bool("pinned", "").Help("Pin to exempt this memory from compaction."),
 			cli.String("summary", "").Help("Optional short one-line summary (≤140 chars) shown in the memory index."),
@@ -875,19 +875,19 @@ func registerAgentsCommands(app *cli.App) {
 		Description("Save agent messaging binding").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
-			cli.Bool("all-messages", "").Help("Respond to every message in bound channels, not just mentions. Must be false for microsoft_teams, where the agent answers in channels and…"),
+			cli.Bool("all-messages", "").Help("Respond to every message in bound channels, not just mentions. Must be false for microsoft_teams, where the agent answers in channels and group chats only when a person @mentions it."),
 			cli.Strings("channels", "").Help("Channel and group IDs the binding is scoped to (empty means all). Direct messages ignore this list."),
-			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
+			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values. Accepts JSON, @file, or @-."),
 			cli.String("dm-policy", "").Help("Direct-message access policy: `open`, `allowlist`, or `disabled`."),
 			cli.Bool("dms", "").Help("Respond to direct messages."),
 			cli.Bool("enabled", "").Help("Whether the binding is active and the agent responds on this provider."),
 			cli.String("integration-id", "").Help("[required] ID of the connected integration that backs this binding."),
 			cli.Bool("mentions", "").Help("Respond when the agent is @-mentioned."),
 			cli.String("model-route", "").Help("Default model route used by built-in messaging and by any turn that does not override the route. Accepts JSON, @file, or @-."),
-			cli.String("provider", "").Help("[required] Provider supported by built-in agent messaging: `slack`, `telegram`, `linear` (Linear agent sessions), or `microsoft_teams` (Microsoft…"),
+			cli.String("provider", "").Help("[required] Provider supported by built-in agent messaging: `slack`, `telegram`, `linear` (Linear agent sessions), or `microsoft_teams` (Microsoft Teams chats in one linked tenant). A binding's provider must equal its integration's provider."),
 			cli.Bool("replace-existing", "").Help("When enabling this binding, disable any other active agent binding for the same provider account."),
 			cli.String("reply-mode", "").Help("Reply mode for built-in messaging; currently `auto`."),
-			cli.Strings("sender-allow", "").Help("Sender IDs allowed to trigger the agent (empty means no allowlist). An enabled `telegram` binding requires at least one numeric Telegram…"),
+			cli.Strings("sender-allow", "").Help("Sender IDs allowed to trigger the agent (empty means no allowlist). An enabled `telegram` binding requires at least one numeric Telegram user ID and refuses `*`."),
 			cli.Bool("show-progress-updates", "").Help("Ignored. Progress is no longer a per-binding choice; every answered message shows progress where the chat app can."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -983,26 +983,26 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("action-selectors", "").Help("Replacement action selection, as a whole. Omit to leave the agent's current selection untouched; send an empty array to select none. Accepts JSON, @file, or @-."),
 			cli.String("affected-resource-dispositions", "").Help("Ignored. Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set Accepts JSON, @file, or @-."),
 			cli.String("color", "").Help("Replacement display color (Mantine palette key, e.g. `indigo`). Pass empty string to clear and fall back to a hash-derived color."),
-			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
+			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values. Accepts JSON, @file, or @-."),
 			cli.Bool("confirm-visibility-change", "").Help("Ignored. Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set"),
 			cli.String("description", "").Help("Replacement description."),
-			cli.String("expected-updated-at", "").Help("The agent's `updated_at` as the caller last read it. When set, the update saves only if the agent is unchanged since then, compared to the… Accepts JSON, @file, or @-."),
-			cli.String("external-ref", "").Help("Assign-once client identity key, unique within the org. Accepted when the agent has no external_ref, or when it repeats the current value…"),
-			cli.Strings("members", "").Help("Replacement members for a `restricted` or `private` agent: the exact set after this call. Omit to leave membership unchanged. An empty set…"),
-			cli.String("memory-context", "").Help("Replacement automatic memory delivery policy. Send an empty object to clear the stored override and restore the bounded index default… Accepts JSON, @file, or @-."),
+			cli.String("expected-updated-at", "").Help("The agent's `updated_at` as the caller last read it. When set, the update saves only if the agent is unchanged since then, compared to the microsecond; otherwise it returns 409 with code `agent_changed` and saves nothing. Accepts JSON, @file, or @-."),
+			cli.String("external-ref", "").Help("Assign-once client identity key, unique within the org. Accepted when the agent has no external_ref, or when it repeats the current value idempotently. Changing an already-set value returns 409."),
+			cli.Strings("members", "").Help("Replacement members for a `restricted` or `private` agent: the exact set after this call. Omit to leave membership unchanged. An empty set is refused, and a `private` agent's one member is the person it belongs to. Use the members endpoints instead. Deprecated: this property has…"),
+			cli.String("memory-context", "").Help("Replacement automatic memory delivery policy. Send an empty object to clear the stored override and restore the bounded index default. Otherwise `mode` is required (`index`, `full`, or `off`) and `max_bytes` is optional. Accepts JSON, @file, or @-."),
 			cli.Bool("memory-enabled", "").Help("Replacement runtime memory hard gate. It cannot be overridden at invocation time."),
-			cli.String("model", "").Help("Replacement model identifier for agents (any id from `GET /v1/catalog/models`, including slash-bearing OpenRouter catalog ids, or an…"),
+			cli.String("model", "").Help("Replacement model identifier for agents (any id from `GET /v1/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id)."),
 			cli.String("model-route", "").Help("Default model route used by built-in messaging and by any turn that does not override the route. Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("Free-form human-readable label, 1-63 characters; must be unique within the org."),
-			cli.String("output-folder", "").Help("Ignored. An assistant chooses a folder for each file it saves. Deprecated: this property has been marked as deprecated upstream, but no…"),
+			cli.String("output-folder", "").Help("Ignored. An assistant chooses a folder for each file it saves. Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set"),
 			cli.String("status", "").Help("Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent."),
 			cli.String("stranded-disposition", "").Help("Ignored. Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set"),
 			cli.String("system-prompt", "").Help("Replacement system prompt for agents."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
-			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on…"),
-			cli.Int("timeout-seconds", "").Help("Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (1800s / 30 minutes); a request's…"),
-			cli.String("tool-approval-mode", "").Help("Which tool calls on a connected account or a remote tool wait for a person's approval. `never` asks before nothing. `destructive` asks…"),
-			cli.String("tool-presentation", "").Help("Controls how selected actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action…"),
+			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the…"),
+			cli.Int("timeout-seconds", "").Help("Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (1800s / 30 minutes); a request's `operation.timeout_seconds` overrides it for that turn."),
+			cli.String("tool-approval-mode", "").Help("Which tool calls on a connected account or a remote tool wait for a person's approval. `never` asks before nothing. `destructive` asks before a call that cannot be undone, such as sending an email, deleting, or posting publicly. `writes` asks before any call that is not…"),
+			cli.String("tool-presentation", "").Help("Controls how selected actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers."),
 			cli.String("visibility", "").Help("Who, inside the org that owns this agent, may reach it at all."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),

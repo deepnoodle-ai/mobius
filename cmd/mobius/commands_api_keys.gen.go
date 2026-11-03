@@ -22,11 +22,11 @@ func registerApiKeysCommands(app *cli.App) {
 	apiKeysGrp.Command("create").
 		Description("Create API key").
 		Flags(
-			cli.Bool("allow-unassigned-principal", "").Help("Allow minting a key for a principal with no role assignments. The resulting key cannot access org resources until a role is assigned. Omit…"),
+			cli.Bool("allow-unassigned-principal", "").Help("Allow minting a key for a principal with no role assignments. The resulting key cannot access org resources until a role is assigned. Omit this for normal onboarding so a missing assignment fails with `principal_has_no_roles`. Only applicable when `principal_id` is set."),
 			cli.String("expires-at", "").Help("Optional hard expiry. Omit for a non-expiring key. Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("[required] Human-readable label, unique within the organization."),
 			cli.String("principal-id", "").Help("Principal this key authenticates as. Omit to use the permanent organization principal with the requested role as a mandatory scope."),
-			cli.String("role", "").Help("Mandatory scope role when `principal_id` is omitted. The permanent organization principal holds Owner, and this credential scope can only…"),
+			cli.String("role", "").Help("Mandatory scope role when `principal_id` is omitted. The permanent organization principal holds Owner, and this credential scope can only narrow it. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers organization administration…"),
 			cli.String("scope-role-id", "").Help("Optional role whose permissions cap this key below its principal's full grants. Only applicable when `principal_id` is set."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),

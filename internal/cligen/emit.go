@@ -379,7 +379,7 @@ func summarizeHelp(s string) string {
 		s = s[:idx]
 	}
 	s = strings.Join(strings.Fields(s), " ")
-	const maxHelpLen = 140
+	const maxHelpLen = 280
 	if len(s) <= maxHelpLen {
 		return s
 	}

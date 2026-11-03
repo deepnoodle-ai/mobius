@@ -26,7 +26,7 @@ func registerBlueprintsCommands(app *cli.App) {
 			cli.String("blueprint-version", "").Help("Optional blueprint version recorded as provenance."),
 			cli.String("mode", "").Help("`apply` performs the change; `preview` validates and returns a plan without mutating resources."),
 			cli.String("namespace", "").Help("Optional namespace that forms part of the blueprint identity."),
-			cli.Bool("protect-resources", "").Help("When set, controls whether ordinary update and delete operations may change resources managed by this blueprint. Blueprint Apply and…"),
+			cli.Bool("protect-resources", "").Help("When set, controls whether ordinary update and delete operations may change resources managed by this blueprint. Blueprint Apply and blueprint deletion remain allowed. Omit to preserve protection on existing bindings; new bindings default to unprotected."),
 			cli.String("resources", "").Help("[required] The desired resources grouped by type. All groups are optional. Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -85,7 +85,7 @@ func registerBlueprintsCommands(app *cli.App) {
 		Args("blueprint-key").
 		Flags(
 			cli.String("namespace", "").Help("Blueprint namespace. Omit for an unnamespaced blueprint."),
-			cli.Bool("delete-retained", "").Help("Also delete adopted resources and legacy bindings whose ownership is unknown. Defaults to false. Use only after inspecting the blueprint…"),
+			cli.Bool("delete-retained", "").Help("Also delete adopted resources and legacy bindings whose ownership is unknown. Defaults to false. Use only after inspecting the blueprint bindings because these resources may contain customer-authored data."),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {

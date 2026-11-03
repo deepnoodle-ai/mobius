@@ -24,7 +24,7 @@ func registerRolesCommands(app *cli.App) {
 		Flags(
 			cli.String("description", "").Help("Optional human-readable description of what this role grants."),
 			cli.String("name", "").Help("[required] Unique name within the org."),
-			cli.Strings("permissions", "").Help("[required] Permission strings to include. Source allowed values from `GET /v1/permissions`; legacy IDs or values not present in that catalog are…"),
+			cli.Strings("permissions", "").Help("[required] Permission strings to include. Source allowed values from `GET /v1/permissions`; legacy IDs or values not present in that catalog are rejected."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -234,7 +234,7 @@ func registerRolesCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("description", "").Help("Replacement description."),
-			cli.Strings("permissions", "").Help("Replaces the existing permissions array entirely. Source allowed values from `GET /v1/permissions`; legacy IDs or values not present in…"),
+			cli.Strings("permissions", "").Help("Replaces the existing permissions array entirely. Source allowed values from `GET /v1/permissions`; legacy IDs or values not present in that catalog are rejected."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
