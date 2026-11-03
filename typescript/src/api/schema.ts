@@ -6333,7 +6333,7 @@ export interface components {
             event_type: "voice_call.ended";
             session_id: string;
             voice_call_id: string;
-            /** @description Why the call ended. Known values are hangup, time_limit, funding, provider_error, client_gone, server_shutdown, disabled, and lost. */
+            /** @description Why the call ended. Known values are hangup, time_limit, funding, provider_error, client_gone, server_shutdown, disabled, server_error, lost, and access_revoked. */
             end_reason: string;
             /** Format: date-time */
             ended_at?: string;

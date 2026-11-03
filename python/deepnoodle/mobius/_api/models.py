@@ -4601,7 +4601,7 @@ class VoiceCallEndedFrame(BaseModel):
     voice_call_id: str
     end_reason: str = Field(
         ...,
-        description='Why the call ended. Known values are hangup, time_limit, funding, provider_error, client_gone, server_shutdown, disabled, and lost.',
+        description='Why the call ended. Known values are hangup, time_limit, funding, provider_error, client_gone, server_shutdown, disabled, server_error, lost, and access_revoked.',
     )
     ended_at: AwareDatetime | None = None
 

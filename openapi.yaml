@@ -13635,7 +13635,7 @@ components:
         end_reason:
           type: string
           description: Why the call ended. Known values are hangup, time_limit, funding, provider_error,
-            client_gone, server_shutdown, disabled, and lost.
+            client_gone, server_shutdown, disabled, server_error, lost, and access_revoked.
         ended_at:
           type: string
           format: date-time

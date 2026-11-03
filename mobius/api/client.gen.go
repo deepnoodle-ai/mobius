@@ -10594,7 +10594,7 @@ type UpsertRowResult struct {
 
 // VoiceCallEndedFrame Live pulse: the chat's voice call ended, and sends work again. Not replayed on reconnect. A client that missed it learns the call ended when a send no longer returns 409 `voice_call_active`.
 type VoiceCallEndedFrame struct {
-	// EndReason Why the call ended. Known values are hangup, time_limit, funding, provider_error, client_gone, server_shutdown, disabled, and lost.
+	// EndReason Why the call ended. Known values are hangup, time_limit, funding, provider_error, client_gone, server_shutdown, disabled, server_error, lost, and access_revoked.
 	EndReason   string                       `json:"end_reason"`
 	EndedAt     *time.Time                   `json:"ended_at,omitempty"`
 	EventType   VoiceCallEndedFrameEventType `json:"event_type"`
