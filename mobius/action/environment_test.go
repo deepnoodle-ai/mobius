@@ -735,7 +735,11 @@ func TestRunGitWithCredentialSkipsGlobalCredentialHelper(t *testing.T) {
 	repo := realPath(t, t.TempDir())
 	runGit(t, repo, "init", "-q")
 
-	out, err := runGitWithCredential(actx, "o/r", "fetch", repo, []string{"fetch", srv.URL + "/o/r.git"})
+	origin := gitHubOrigin
+	gitHubOrigin = srv.URL
+	t.Cleanup(func() { gitHubOrigin = origin })
+
+	out, err := runGitWithCredential(actx, "o/r", "fetch", repo, []string{"fetch", gitHubRemoteURL("o/r")})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -436,6 +436,9 @@ func NewEnvironmentGitCloneAction() mobius.Action {
 		if strings.TrimSpace(in.RepoFullName) == "" {
 			return nil, fmt.Errorf("repo_full_name is required")
 		}
+		if err := validateGitCloneInput(in); err != nil {
+			return nil, err
+		}
 		dest := in.Dest
 		if dest == "" {
 			dest = strings.TrimSuffix(filepath.Base(in.RepoFullName), ".git")
@@ -459,7 +462,7 @@ func NewEnvironmentGitCloneAction() mobius.Action {
 			if in.Branch != "" {
 				args = append(args, "--branch", in.Branch)
 			}
-			args = append(args, remoteURL, target)
+			args = append(args, "--", remoteURL, target)
 			result, err = cloneWithRetry(ctx, in.RepoFullName, target, args)
 		}
 		if err != nil {
@@ -481,8 +484,32 @@ func NewEnvironmentGitCloneAction() mobius.Action {
 	})
 }
 
+// validateGitCloneInput refuses a clone whose repository is not a plain
+// GitHub owner/name, or whose branch, commit, or fetch ref git would read as
+// an option. Commit and branch also reach `git checkout`, where `--` cannot
+// separate them, so the option check is the guard there.
+func validateGitCloneInput(in GitCloneInput) error {
+	if err := validateRepoFullName(in.RepoFullName); err != nil {
+		return err
+	}
+	for field, value := range map[string]string{
+		"branch":    in.Branch,
+		"commit":    in.Commit,
+		"fetch_ref": in.FetchRef,
+	} {
+		if err := refuseGitOption(field, value); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// gitHubOrigin is the only origin that brokered git credentials go to. Tests
+// point it at a local server.
+var gitHubOrigin = "https://github.com"
+
 func gitHubRemoteURL(repoFullName string) string {
-	return "https://github.com/" + repoFullName + ".git"
+	return gitHubOrigin + "/" + repoFullName + ".git"
 }
 
 func decorateGitCloneResult(ctx context.Context, result any, in GitCloneInput, dir, path, remoteURL string, includeGitState bool) map[string]any {
@@ -546,7 +573,7 @@ func cloneWithRetry(ctx mobius.Context, repoFullName, target string, args []stri
 // transient credential 404 still recovers), and each attempt rebuilds from a
 // clean directory.
 func prepareImmutableCheckout(ctx mobius.Context, in GitCloneInput, target string) (any, error) {
-	url := "https://github.com/" + in.RepoFullName + ".git"
+	url := gitHubRemoteURL(in.RepoFullName)
 	fetchTarget := strings.TrimSpace(in.FetchRef)
 	if fetchTarget == "" {
 		fetchTarget = strings.TrimSpace(in.Commit)
@@ -576,7 +603,7 @@ func prepareImmutableCheckout(ctx mobius.Context, in GitCloneInput, target strin
 		if in.Depth > 0 {
 			fetchArgs = append(fetchArgs, "--depth", fmt.Sprint(in.Depth))
 		}
-		fetchArgs = append(fetchArgs, "origin", fetchTarget)
+		fetchArgs = append(fetchArgs, "--", "origin", fetchTarget)
 		result, err := runGitWithCredential(ctx, in.RepoFullName, "fetch", target, fetchArgs)
 		if err != nil {
 			return result, err
@@ -837,7 +864,13 @@ func NewEnvironmentGitFetchAction() mobius.Action {
 		if remote == "" {
 			remote = "origin"
 		}
-		return runGitWithCredential(ctx, repo, "fetch", dir, []string{"fetch", remote, "--prune"})
+		if err := validateRepoFullName(repo); err != nil {
+			return nil, err
+		}
+		if err := checkFetchRemote(ctx, dir, remote, repo); err != nil {
+			return nil, err
+		}
+		return runGitWithCredential(ctx, repo, "fetch", dir, []string{"fetch", "--prune", "--", remote})
 	})
 }
 
@@ -1156,7 +1189,58 @@ func gitIsShallowRepository(ctx context.Context, dir string) (bool, error) {
 	return strings.TrimSpace(string(out)) == "true", nil
 }
 
+// githubRepoFullNamePattern is the owner/name shape GitHub allows. A name that
+// matches it cannot add a host, a port, a path, a query, or an option to the
+// remote URL built from it.
+var githubRepoFullNamePattern = regexp.MustCompile(`^[A-Za-z0-9_.][A-Za-z0-9_.-]*/[A-Za-z0-9_.-]+$`)
+
+// validateRepoFullName refuses a repository name that is not a plain GitHub
+// owner/name. Every remote this file builds is https://github.com/<name>.git,
+// so this check is what keeps a brokered token on GitHub.
+func validateRepoFullName(repo string) error {
+	owner, name, _ := strings.Cut(repo, "/")
+	if !githubRepoFullNamePattern.MatchString(repo) ||
+		owner == "." || owner == ".." ||
+		name == "." || name == ".." {
+		return fmt.Errorf("repo_full_name %q must be a GitHub owner/name", repo)
+	}
+	return nil
+}
+
+// refuseGitOption refuses a caller value that git would read as an option,
+// such as --upload-pack=<command>.
+func refuseGitOption(field, value string) error {
+	if strings.HasPrefix(strings.TrimSpace(value), "-") {
+		return fmt.Errorf("%s %q must not start with '-'", field, value)
+	}
+	return nil
+}
+
+// checkFetchRemote allows a fetch only from a named remote of dir whose URL is
+// the repository's GitHub URL. The fetch carries a token minted for repo, so
+// a remote that names any other host or repository would receive it.
+func checkFetchRemote(ctx context.Context, dir, remote, repo string) error {
+	if err := refuseGitOption("remote", remote); err != nil {
+		return err
+	}
+	cmd := exec.CommandContext(ctx, "git", "remote", "get-url", remote)
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("remote %q is not a configured remote of %s", remote, dir)
+	}
+	url := strings.TrimSpace(string(out))
+	want := gitHubRemoteURL(repo)
+	if !strings.EqualFold(url, want) && !strings.EqualFold(url, strings.TrimSuffix(want, ".git")) {
+		return fmt.Errorf("remote %q points at %s; environment.git.fetch fetches only from %s", remote, url, want)
+	}
+	return nil
+}
+
 func runGitWithCredential(ctx mobius.Context, repoFullName, operation, dir string, args []string) (any, error) {
+	if err := validateRepoFullName(repoFullName); err != nil {
+		return nil, err
+	}
 	ec, ok := ctx.(environmentContext)
 	if !ok || ec.MobiusClient() == nil || ec.EnvironmentID() == "" {
 		return nil, fmt.Errorf("environment credential broker is not available")
@@ -1172,7 +1256,7 @@ func runGitWithCredential(ctx mobius.Context, repoFullName, operation, dir strin
 	if err != nil {
 		return nil, err
 	}
-	askpass, err := writeGitAskpass(cred.Username, cred.Token)
+	askpass, err := writeGitAskpass()
 	if err != nil {
 		return nil, err
 	}
@@ -1187,12 +1271,8 @@ func runGitWithCredential(ctx mobius.Context, repoFullName, operation, dir strin
 	if dir != "" {
 		cmd.Dir = dir
 	}
-	cmd.Env = append(os.Environ(),
-		"GIT_TERMINAL_PROMPT=0",
-		"GIT_ASKPASS="+askpass,
-		"MOBIUS_GIT_USERNAME="+cred.Username,
-		"MOBIUS_GIT_TOKEN="+cred.Token,
-	)
+	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0", "GIT_ASKPASS="+askpass)
+	cmd.Env = append(cmd.Env, gitAskpassEnv(cred.Username, cred.Token, repoFullName)...)
 	limit := resolveOutputMaxBytes(0, gitCloneFetchCommandOutputMaxBytes)
 	out, err := runCommand(cmd,
 		newHeadTailTruncator(limit, "stdout", gitRemoteOutputHint),
@@ -1204,13 +1284,47 @@ func runGitWithCredential(ctx mobius.Context, repoFullName, operation, dir strin
 	return out, err
 }
 
-func writeGitAskpass(username, token string) (string, error) {
+// gitAskpassScript answers git's credential prompts only for gitHubOrigin and
+// only for the repository the token was minted for. Git builds each prompt
+// as "<what> for '<scheme>://[user@]host[/path]': ", with the path present
+// when credential.useHttpPath is set. Quoted expansions in a case pattern
+// match literally, so a prompt from any other host, path, or user gets no
+// answer and the script exits non-zero.
+const gitAskpassScript = `#!/bin/sh
+s="$MOBIUS_GIT_SCHEME"
+h="$MOBIUS_GIT_HOST"
+u="$MOBIUS_GIT_USERNAME"
+r="$MOBIUS_GIT_REPO"
+case "$1" in
+"Username for '$s://$h': "|"Username for '$s://$h/$r.git': "|"Username for '$s://$h/$r': ")
+  printf '%s\n' "$u" ;;
+"Password for '$s://$u@$h': "|"Password for '$s://$u@$h/$r.git': "|"Password for '$s://$u@$h/$r': ")
+  printf '%s\n' "$MOBIUS_GIT_TOKEN" ;;
+*)
+  exit 1 ;;
+esac
+`
+
+// gitAskpassEnv is the environment gitAskpassScript reads. The token stays out
+// of the script file so nothing secret is written to disk.
+func gitAskpassEnv(username, token, repoFullName string) []string {
+	scheme, host, _ := strings.Cut(gitHubOrigin, "://")
+	return []string{
+		"MOBIUS_GIT_SCHEME=" + scheme,
+		"MOBIUS_GIT_HOST=" + host,
+		"MOBIUS_GIT_USERNAME=" + username,
+		"MOBIUS_GIT_TOKEN=" + token,
+		"MOBIUS_GIT_REPO=" + repoFullName,
+	}
+}
+
+func writeGitAskpass() (string, error) {
 	dir, err := os.MkdirTemp("", "mobius-git-*")
 	if err != nil {
 		return "", err
 	}
 	path := filepath.Join(dir, "askpass.sh")
-	script := "#!/bin/sh\ncase \"$1\" in\n*Username*) printf '%s\\n' \"$MOBIUS_GIT_USERNAME\" ;;\n*) printf '%s\\n' \"$MOBIUS_GIT_TOKEN\" ;;\nesac\n"
+	script := gitAskpassScript
 	if err := os.WriteFile(path, []byte(script), 0o700); err != nil {
 		_ = os.RemoveAll(dir)
 		return "", err
