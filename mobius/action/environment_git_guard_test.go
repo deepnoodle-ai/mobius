@@ -2,11 +2,15 @@ package action
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/deepnoodle-ai/mobius/mobius"
 )
 
 func TestValidateRepoFullNameRefusesURLShapes(t *testing.T) {
@@ -88,7 +92,7 @@ func runAskpass(t *testing.T, script, prompt string, env []string) (string, erro
 	return strings.TrimSpace(string(out)), err
 }
 
-func TestGitAskpassAnswersOnlyGitHubForTheRepo(t *testing.T) {
+func TestGitAskpassAnswersOnlyGitHub(t *testing.T) {
 	script, err := writeGitAskpass()
 	if err != nil {
 		t.Fatal(err)
@@ -119,5 +123,55 @@ func TestGitAskpassAnswersOnlyGitHubForTheRepo(t *testing.T) {
 		if err == nil || got != "" {
 			t.Errorf("askpass(%q) = %q, %v; want refusal", prompt, got, err)
 		}
+	}
+}
+
+// The clone action must refuse a hostile branch or repository before any git
+// process runs. A working credential broker is present, so only the input
+// check stops the fake git on PATH from running.
+func TestGitCloneActionRefusesUnsafeInputBeforeRunningGit(t *testing.T) {
+	bin := t.TempDir()
+	marker := filepath.Join(bin, "git-ran")
+	script := "#!/bin/sh\ntouch '" + marker + "'\nexit 0\n"
+	if err := os.WriteFile(filepath.Join(bin, "git"), []byte(script), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+"/usr/bin:/bin")
+	t.Setenv("MOBIUS_RUNTIME_WORKSPACE", realPath(t, t.TempDir()))
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"username":"x-access-token","token":"tok"}`))
+	}))
+	t.Cleanup(srv.Close)
+	client, err := mobius.NewClient(mobius.WithBaseURL(srv.URL), mobius.WithAPIKey("mbx_worker"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	leased := testLeasedActionContext{testActionContext{Context: context.Background()}}
+	ctx := testClientLeasedActionContext{leased, client}
+
+	// The same setup runs git for safe input, so the test can see a run.
+	if _, err := NewEnvironmentGitCloneAction().Execute(ctx, map[string]any{"repo_full_name": "acme/widgets"}); err != nil {
+		t.Fatalf("safe clone: %v", err)
+	}
+	if _, err := os.Stat(marker); err != nil {
+		t.Fatal("fake git did not run for safe input")
+	}
+	if err := os.Remove(marker); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, in := range []map[string]any{
+		{"repo_full_name": "acme/widgets", "branch": "--upload-pack=touch /tmp/pwned"},
+		{"repo_full_name": "acme/widgets", "commit": "--upload-pack=x"},
+		{"repo_full_name": "acme/widgets", "fetch_ref": "-x"},
+		{"repo_full_name": "attacker.example:443/x/y"},
+		{"repo_full_name": "../x"},
+	} {
+		if _, err := NewEnvironmentGitCloneAction().Execute(ctx, in); err == nil {
+			t.Errorf("clone %v succeeded, want error", in)
+		}
+	}
+	if _, err := os.Stat(marker); err == nil {
+		t.Fatal("git ran for refused clone input")
 	}
 }

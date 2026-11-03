@@ -1231,7 +1231,9 @@ func checkFetchRemote(ctx context.Context, dir, remote, repo string) error {
 	}
 	url := strings.TrimSpace(string(out))
 	want := gitHubRemoteURL(repo)
-	if !strings.EqualFold(url, want) && !strings.EqualFold(url, strings.TrimSuffix(want, ".git")) {
+	// Exact match: the askpass script compares git's prompt literally, so a
+	// remote that differs only in case would pass here and then fail auth.
+	if url != want && url != strings.TrimSuffix(want, ".git") {
 		return fmt.Errorf("remote %q points at %s; environment.git.fetch fetches only from %s", remote, url, want)
 	}
 	return nil
@@ -1284,10 +1286,12 @@ func runGitWithCredential(ctx mobius.Context, repoFullName, operation, dir strin
 	return out, err
 }
 
-// gitAskpassScript answers git's credential prompts only for gitHubOrigin and
-// only for the repository the token was minted for. Git builds each prompt
-// as "<what> for '<scheme>://[user@]host[/path]': ", with the path present
-// when credential.useHttpPath is set. Quoted expansions in a case pattern
+// gitAskpassScript answers git's credential prompts only for gitHubOrigin.
+// Git builds each prompt as "<what> for '<scheme>://[user@]host[/path]': ".
+// By default the prompt names only the host, so any github.com prompt is
+// answered; the broker already scopes the token to the one repository. When
+// credential.useHttpPath is set the prompt carries the path, and only the
+// minted repository's path is answered. Quoted expansions in a case pattern
 // match literally, so a prompt from any other host, path, or user gets no
 // answer and the script exits non-zero.
 const gitAskpassScript = `#!/bin/sh
