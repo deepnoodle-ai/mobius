@@ -10,6 +10,13 @@ the minor version.
 
 ## [Unreleased]
 
+### Changed
+
+- Removed five operations the platform deleted: `GetAPIKey`, `ListTurnMessages`,
+  `PreviewAgentVisibilityChange`, `ReplaceAgentMembers`, and
+  `DeleteAgentMessagingBinding` (Go, plus Python and TypeScript types), and the
+  matching CLI commands. See [#243](https://github.com/deepnoodle-ai/mobius/pull/243).
+
 ## [0.5.1] - 2026-10-28
 
 ### Added
