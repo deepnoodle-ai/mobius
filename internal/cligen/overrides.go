@@ -11,11 +11,16 @@ package main
 //     operationId, e.g. `listSkills` -> `list`, `getSkill` -> `get`).
 //   - Description overrides the short help string (default: the OpenAPI
 //     operation summary).
+//   - AllowEmptyBody lets the command send an empty body when every body
+//     field is optional. By default such a command requires at least one
+//     flag or --file, so that a bare `update` does not silently no-op. Set it
+//     when the empty body is a real request.
 type Override struct {
-	Skip        bool
-	Group       string
-	Command     string
-	Description string
+	Skip           bool
+	Group          string
+	Command        string
+	Description    string
+	AllowEmptyBody bool
 }
 
 // overrides is the generator's override table, keyed by operationId.
@@ -48,6 +53,11 @@ var overrides = map[string]Override{
 	"promoteAgentMemoryEntry":      {Command: "promote-memory-entry"},
 	"revertAgentMemoryPromotion":   {Command: "revert-memory-promotion"},
 	"replaceAgentSkillAssignments": {Command: "replace-skill-assignments"},
+	// Lists deleted agents. The default `list-agents` reads as the live list
+	// next to `agents list`.
+	"listDeletedAgents": {Command: "list-deleted"},
+	// `name` is optional: a bare restore keeps the old name.
+	"restoreAgent": {AllowEmptyBody: true},
 	// Tagged `sessions` in the spec because it returns a turn transcript, but
 	// the path is /v1/agents/invoke and users look for it next to the other
 	// agent commands.

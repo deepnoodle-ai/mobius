@@ -63,6 +63,9 @@ type BodyArg struct {
 	TypeName string      // e.g. "CreateChannelJSONRequestBody"
 	Fields   []BodyField // per-field flags extracted from the underlying request struct
 	Required bool        // mirrors requestBody.required; false ⇒ a bodyless call is valid
+	// AllowEmpty skips the "at least one flag or --file" guard for a body
+	// whose fields are all optional but whose empty form is a real request.
+	AllowEmpty bool
 }
 
 // BodyField is one field of a JSON request body, surfaced as a CLI flag.
@@ -133,6 +136,7 @@ func buildPlan(client *ClientInfo, spec map[string]*SpecOp, overrides map[string
 		}
 		if pc.Body != nil {
 			pc.Body.Required = op.BodyRequired
+			pc.Body.AllowEmpty = ov.AllowEmptyBody
 		}
 		if pc.QueryBlock != nil && op != nil {
 			for i := range pc.QueryBlock.Fields {
@@ -1078,7 +1082,7 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 				break
 			}
 		}
-		if !hasRequired && c.Body.Required {
+		if !hasRequired && c.Body.Required && !c.Body.AllowEmpty {
 			conds := []string{`ctx.String("file") == ""`}
 			for _, f := range c.Body.Fields {
 				if f.Kind == "skip" || isReservedFlag(f.FlagName) {

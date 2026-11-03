@@ -470,7 +470,7 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "listAgents", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("list-agents").
+	agentsGrp.Command("list-deleted").
 		Description("List deleted agents").
 		Flags(
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
@@ -771,9 +771,6 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.IsSet("name") {
 				v := ctx.String("name")
 				body.Name = &v
-			}
-			if ctx.String("file") == "" && !ctx.IsSet("name") {
-				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)

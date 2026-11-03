@@ -156,3 +156,14 @@ func TestGeneratedRequiredBoolRejectsOmittedValue(t *testing.T) {
 		})
 	}
 }
+
+// restoreAgent's body is all optional and a bare restore keeps the old name,
+// so the command must send an empty body instead of demanding a flag.
+func TestGeneratedRestoreAgentAllowsBareRestore(t *testing.T) {
+	result := newApp().Test(t, cli.TestArgs(
+		"agents", "restore-agent", "agent_test",
+		"--dry-run", "--api-key", "mbx_test",
+	))
+	assert.True(t, result.Success(), "bare restore failed: %v\nstderr: %s", result.Err, result.Stderr)
+	assert.Contains(t, result.Stdout, "{}")
+}
