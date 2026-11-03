@@ -163,11 +163,15 @@ func registerBlueprintsCommands(app *cli.App) {
 				params.Namespace = &v
 			}
 			var body api.SetBlueprintProtectionJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
+			fileKeys, err := readJSONBodyKeys(ctx, &body)
+			if err != nil {
 				return err
 			}
 			if ctx.IsSet("protected") {
 				body.Protected = ctx.Bool("protected")
+			}
+			if !ctx.IsSet("protected") && !fileKeys["protected"] {
+				return fmt.Errorf("--protected is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)

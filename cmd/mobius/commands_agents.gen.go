@@ -1158,11 +1158,15 @@ func registerAgentsCommands(app *cli.App) {
 			p0 := api.IDParam(ctx.Arg(0))
 			p1 := ctx.Arg(1)
 			var body api.UpdateAgentMemberJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
+			fileKeys, err := readJSONBodyKeys(ctx, &body)
+			if err != nil {
 				return err
 			}
 			if ctx.IsSet("manager") {
 				body.Manager = ctx.Bool("manager")
+			}
+			if !ctx.IsSet("manager") && !fileKeys["manager"] {
+				return fmt.Errorf("--manager is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)

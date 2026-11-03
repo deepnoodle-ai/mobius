@@ -119,3 +119,40 @@ func TestGeneratedSkillInstructionsHelpDocumentsLeadingAtEscape(t *testing.T) {
 	assert.True(t, result.Success(), "skills create help failed: %v\nstderr: %s", result.Err, result.Stderr)
 	assert.Contains(t, result.Stdout, "Use @@ to escape a literal leading @")
 }
+
+// A required bool has no "missing" zero value, so the command must reject an
+// omitted value instead of sending false (which would demote a manager).
+func TestGeneratedRequiredBoolRejectsOmittedValue(t *testing.T) {
+	dir := t.TempDir()
+	withManager := filepath.Join(dir, "with.json")
+	assert.NoError(t, os.WriteFile(withManager, []byte(`{"manager": false}`), 0o644))
+	withoutManager := filepath.Join(dir, "without.json")
+	assert.NoError(t, os.WriteFile(withoutManager, []byte(`{}`), 0o644))
+
+	for _, tc := range []struct {
+		name  string
+		flags []string
+		ok    bool
+	}{
+		{name: "omitted"},
+		{name: "file omits field", flags: []string{"--file", withoutManager}},
+		{name: "explicit false flag", flags: []string{"--manager=false"}, ok: true},
+		{name: "file sets false", flags: []string{"--file", withManager}, ok: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			args := []string{
+				"agents", "update-member", "agent_test", "principal_test",
+				"--dry-run", "--api-key", "mbx_test",
+			}
+			result := newApp().Test(t, cli.TestArgs(append(args, tc.flags...)...))
+			if tc.ok {
+				assert.True(t, result.Success(), "update-member failed: %v\nstderr: %s", result.Err, result.Stderr)
+				assert.Contains(t, result.Stdout, `"manager": false`)
+				return
+			}
+			assert.False(t, result.Success())
+			assert.Error(t, result.Err)
+			assert.Contains(t, result.Err.Error(), "--manager is required")
+		})
+	}
+}

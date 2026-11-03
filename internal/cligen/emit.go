@@ -71,6 +71,7 @@ type BodyArg struct {
 type BodyField struct {
 	GoField     string // struct field name (e.g. "Name")
 	FlagName    string // kebab-case CLI flag name (e.g. "name")
+	JSONName    string // wire name (e.g. "display_name"); keys --file presence checks
 	Description string // help text
 	ElemType    string // unwrapped element type (e.g. "string", or a named alias)
 	Kind        string // "string", "int", "int64", "bool", "strings", "skip"
@@ -236,6 +237,7 @@ func resolveBodyField(f FieldInfo, client *ClientInfo) BodyField {
 	bf := BodyField{
 		GoField:     f.GoName,
 		FlagName:    toKebab(firstNonEmpty(f.JSONTag, f.GoName)),
+		JSONName:    firstNonEmpty(f.JSONTag, f.GoName),
 		Description: f.Doc,
 	}
 	elem := f.Type
@@ -382,6 +384,17 @@ func summarizeHelp(s string) string {
 		cut = maxHelpLen - 1
 	}
 	return strings.TrimRight(s[:cut], " ,;:.") + "…"
+}
+
+// hasRequiredBool reports whether a body has a required bool field that is
+// settable by flag. Such commands decode --file with readJSONBodyKeys.
+func hasRequiredBool(body *BodyArg) bool {
+	for _, f := range body.Fields {
+		if f.Kind == "bool" && f.Required && !isReservedFlag(f.FlagName) {
+			return true
+		}
+	}
+	return false
 }
 
 // isReservedFlag reports whether a body-field flag name would collide with a
@@ -933,7 +946,15 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 	// Body decoding.
 	if c.Body != nil {
 		fmt.Fprintf(b, "\t\t\tvar body api.%s\n", c.Body.TypeName)
-		fmt.Fprintf(b, "\t\t\tif err := readJSONBody(ctx, &body); err != nil { return err }\n")
+		// A required bool has no zero value that means "missing": false is a
+		// real answer. Record which keys --file supplied so the required-field
+		// check below can tell "omitted" from "false".
+		if hasRequiredBool(c.Body) {
+			fmt.Fprintf(b, "\t\t\tfileKeys, err := readJSONBodyKeys(ctx, &body)\n")
+			fmt.Fprintf(b, "\t\t\tif err != nil { return err }\n")
+		} else {
+			fmt.Fprintf(b, "\t\t\tif err := readJSONBody(ctx, &body); err != nil { return err }\n")
+		}
 		// Per-field flag overrides. Flags beat file contents.
 		for _, f := range c.Body.Fields {
 			if isReservedFlag(f.FlagName) {
@@ -1032,6 +1053,8 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 				zeroExpr = fmt.Sprintf("body.%s == 0", f.GoField)
 			case "strings":
 				zeroExpr = fmt.Sprintf("len(body.%s) == 0", f.GoField)
+			case "bool":
+				zeroExpr = fmt.Sprintf("!ctx.IsSet(%q) && !fileKeys[%q]", f.FlagName, f.JSONName)
 			case "json":
 				// Can't reliably zero-check an arbitrary Go value; fall back
 				// to "was either --file or the flag provided".
@@ -1164,6 +1187,37 @@ func readJSONBody(ctx *cli.Context, v any) error {
 		return err
 	}
 	return decodeJSONOrYAML(data, label, path, v)
+}
+
+// readJSONBodyKeys is readJSONBody that also returns the set of top-level
+// keys --file supplied. Commands with a required bool use it, because a
+// decoded false cannot show whether the file set the field. The set is empty
+// when --file is not set.
+func readJSONBodyKeys(ctx *cli.Context, v any) (map[string]bool, error) {
+	keys := map[string]bool{}
+	path := ctx.String("file")
+	if path == "" {
+		return keys, nil
+	}
+	data, label, err := readBodyBytes(ctx, path)
+	if err != nil {
+		return nil, err
+	}
+	data, err = applyVars(ctx, data)
+	if err != nil {
+		return nil, err
+	}
+	if err := decodeJSONOrYAML(data, label, path, v); err != nil {
+		return nil, err
+	}
+	var top map[string]any
+	if err := decodeJSONOrYAML(data, label, path, &top); err != nil {
+		return nil, err
+	}
+	for k := range top {
+		keys[k] = true
+	}
+	return keys, nil
 }
 
 // decodeFlagJSON decodes a JSON-typed flag value. The value can be:
