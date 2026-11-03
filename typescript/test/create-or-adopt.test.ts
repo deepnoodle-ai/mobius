@@ -16,7 +16,10 @@ function agent(id = "agent_1"): Agent {
     external_ref: "tenant-42/pr-reviewer",
     created_at: "2026-07-17T00:00:00Z",
     updated_at: "2026-07-17T00:00:00Z",
-  } as Agent;
+    tool_approval_mode: "destructive",
+    can_edit: true,
+    memory_enabled: false,
+  };
 }
 
 async function withMockFetch(
