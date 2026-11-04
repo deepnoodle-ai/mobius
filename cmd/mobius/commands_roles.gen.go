@@ -37,7 +37,8 @@ func registerRolesCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			var body api.CreateRoleJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
+			fileKeys, err := readJSONBodyKeys(ctx, &body)
+			if err != nil {
 				return err
 			}
 			if ctx.IsSet("description") {
@@ -60,7 +61,7 @@ func registerRolesCommands(app *cli.App) {
 			if body.Name == "" {
 				return fmt.Errorf("--name is required (or supply it via --file)")
 			}
-			if len(body.Permissions) == 0 {
+			if !ctx.IsSet("permissions") && !fileKeys["permissions"] {
 				return fmt.Errorf("--permissions is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {

@@ -26,7 +26,7 @@ func registerApiKeysCommands(app *cli.App) {
 			cli.String("expires-at", "").Help("Optional hard expiry. Omit for a non-expiring key. Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("[required] Human-readable label, unique within the organization."),
 			cli.String("principal-id", "").Help("Principal this key authenticates as. Omit to use the permanent organization principal with the requested role as a mandatory scope."),
-			cli.String("role", "").Help("Mandatory scope role when `principal_id` is omitted. The permanent organization principal holds Owner, and this credential scope can only narrow it. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers organization administration…"),
+			cli.String("role", "").Help("Mandatory scope role when `principal_id` is omitted. The permanent organization principal holds Owner, and this credential scope can only narrow it. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers organization administration and team resource posture, plus billing reads; `User` can use reachable resources and build private configuration; `Viewer` is read-only. `Worker` is not selectable here — org-level keys are barred from the job endpoints, so it would be inert. For a narrower cap, such as use-only automation, bind the key to a principal and set `scope_role_id` to a custom role. Ignored when `principal_id` is set."),
 			cli.String("scope-role-id", "").Help("Optional role whose permissions cap this key below its principal's full grants. Only applicable when `principal_id` is set."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -77,7 +77,7 @@ func registerApiKeysCommands(app *cli.App) {
 				return fmt.Errorf("--name is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body, "expires_at", "tags")
+				return printDryRun(ctx, body, "tags")
 			}
 			resp, err := client.CreateAPIKeyWithResponse(ctx.Context(), body)
 			if err != nil {

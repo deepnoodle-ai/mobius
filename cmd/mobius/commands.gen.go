@@ -73,8 +73,8 @@ func readJSONBody(ctx *cli.Context, v any) error {
 }
 
 // readJSONBodyKeys is readJSONBody that also returns the set of top-level
-// keys --file supplied. Commands with a required bool use it, because a
-// decoded false cannot show whether the file set the field. The set is empty
+// keys --file supplied. Commands with a required bool or list use it,
+// because a decoded false or [] cannot show whether the file set the field. The set is empty
 // when --file is not set.
 func readJSONBodyKeys(ctx *cli.Context, v any) (map[string]bool, error) {
 	keys := map[string]bool{}

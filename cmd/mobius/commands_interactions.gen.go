@@ -61,7 +61,7 @@ func registerInteractionsCommands(app *cli.App) {
 			cli.String("delivery", "").Help("Optional per-interaction delivery override. When absent, each participant is notified via the app inbox only. Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Optional longer responder-facing detail or instructions."),
 			cli.String("expires-at", "").Help("Timestamp after which this interaction expires if not responded to. Accepts JSON, @file, or @-."),
-			cli.String("kind", "").Help("[required] Protocol kind of the interaction: * `request_information` — a data-collection protocol with structured or free-form input * `request_approval` — a decision protocol (yes/no, optionally yes/no/defer) * `request_review` — a judgment protocol that evaluates supplied material…"),
+			cli.String("kind", "").Help("[required] Protocol kind of the interaction: * `request_information` — a data-collection protocol with structured or free-form input * `request_approval` — a decision protocol (yes/no, optionally yes/no/defer) * `request_review` — a judgment protocol that evaluates supplied material * `assign_work` — assigned work performed by a user or agent, which submits the result. Pair it with `resolution_policy.review` when the result must be accepted before the interaction resolves."),
 			cli.String("properties", "").Help("Free-form structured metadata to attach to the interaction. Accepts JSON, @file, or @-."),
 			cli.String("references", "").Help("Supporting links and related entities. Accepts JSON, @file, or @-."),
 			cli.Bool("require-all", "").Help("When true, all target users must respond before the interaction is considered complete. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code."),
@@ -82,7 +82,8 @@ func registerInteractionsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			var body api.CreateInteractionJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
+			fileKeys, err := readJSONBodyKeys(ctx, &body)
+			if err != nil {
 				return err
 			}
 			if ctx.IsSet("consumer") {
@@ -157,14 +158,14 @@ func registerInteractionsCommands(app *cli.App) {
 			if body.Kind == "" {
 				return fmt.Errorf("--kind is required (or supply it via --file)")
 			}
-			if len(body.TargetUserIds) == 0 {
+			if !ctx.IsSet("target-user-ids") && !fileKeys["target_user_ids"] {
 				return fmt.Errorf("--target-user-ids is required (or supply it via --file)")
 			}
 			if body.Title == "" {
 				return fmt.Errorf("--title is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body, "consumer", "context", "delivery", "expires_at", "properties", "references", "resolution_policy", "spec", "subject", "tags")
+				return printDryRun(ctx, body, "consumer", "context", "delivery", "properties", "references", "resolution_policy", "spec", "subject", "tags")
 			}
 			resp, err := client.CreateInteractionWithResponse(ctx.Context(), body)
 			if err != nil {

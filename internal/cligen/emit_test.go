@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"strings"
 	"testing"
+
+	"github.com/deepnoodle-ai/wonton/assert"
 )
 
 func TestEmitStringSliceValue(t *testing.T) {
@@ -205,4 +207,12 @@ func TestBooleanQueryParamsWithoutATrueDefaultStaySingleFlags(t *testing.T) {
 	if strings.Contains(b.String(), "no-latest-only") {
 		t.Fatalf("unexpected negated flag:\n%s", b.String())
 	}
+}
+
+// summarizeHelp keeps the whole first paragraph: a cut drops constraints such
+// as the last enum value or a deprecation note.
+func TestSummarizeHelpKeepsFirstParagraph(t *testing.T) {
+	long := strings.Repeat("Words that explain the flag. ", 12) + "`writes` asks before any write."
+	assert.Equal(t, long, summarizeHelp(long+"\n\nDetail for the docs only."))
+	assert.Equal(t, "one line", summarizeHelp("  one\n   line  "))
 }

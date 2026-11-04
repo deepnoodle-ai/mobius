@@ -360,41 +360,30 @@ func isBuiltin(t string) bool {
 	return false
 }
 
-// summarizeHelp turns a verbose OpenAPI description into a one-line CLI
-// help string. It takes the first paragraph (up to a blank line, the
-// schema-doc convention for "short summary") and collapses whitespace.
+// summarizeHelp turns an OpenAPI description into a one-line CLI help
+// string. It takes the first paragraph (up to a blank line, the schema-doc
+// convention for "short summary") and collapses whitespace.
 //
-// wonton's help renderer prints the string verbatim and lets the terminal
-// soft-wrap, so a full sentence or two is fine; we only shorten genuinely
-// long descriptions. When we do, we break on a word boundary rather than a
-// fixed offset so we never sever a word, an enum value, or a `code span`
-// mid-token (the old fixed 100-char cut left dangling fragments like
-// "tooling t…" and hid trailing enum values).
+// It does not cut the paragraph. Flag descriptions carry constraints such as
+// enum values and deprecation notes, and any cut point drops some of them.
+// wonton's help renderer prints the string verbatim and the terminal
+// soft-wraps it, so a long paragraph stays readable. Put detail that does not
+// belong in help after a blank line in the spec.
 func summarizeHelp(s string) string {
 	s = strings.TrimSpace(s)
-	if s == "" {
-		return s
-	}
 	if idx := strings.Index(s, "\n\n"); idx > 0 {
 		s = s[:idx]
 	}
-	s = strings.Join(strings.Fields(s), " ")
-	const maxHelpLen = 280
-	if len(s) <= maxHelpLen {
-		return s
-	}
-	cut := strings.LastIndexByte(s[:maxHelpLen], ' ')
-	if cut <= 0 {
-		cut = maxHelpLen - 1
-	}
-	return strings.TrimRight(s[:cut], " ,;:.") + "…"
+	return strings.Join(strings.Fields(s), " ")
 }
 
-// hasRequiredBool reports whether a body has a required bool field that is
-// settable by flag. Such commands decode --file with readJSONBodyKeys.
-func hasRequiredBool(body *BodyArg) bool {
+// needsFileKeys reports whether a body has a required bool or string-list
+// field that is settable by flag. Its zero value (false, []) is a valid
+// answer, so the command decodes --file with readJSONBodyKeys and checks
+// presence instead.
+func needsFileKeys(body *BodyArg) bool {
 	for _, f := range body.Fields {
-		if f.Kind == "bool" && f.Required && !isReservedFlag(f.FlagName) {
+		if (f.Kind == "bool" || f.Kind == "strings") && f.Required && !isReservedFlag(f.FlagName) {
 			return true
 		}
 	}
@@ -950,10 +939,10 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 	// Body decoding.
 	if c.Body != nil {
 		fmt.Fprintf(b, "\t\t\tvar body api.%s\n", c.Body.TypeName)
-		// A required bool has no zero value that means "missing": false is a
-		// real answer. Record which keys --file supplied so the required-field
-		// check below can tell "omitted" from "false".
-		if hasRequiredBool(c.Body) {
+		// A required bool or list has no zero value that means "missing":
+		// false and [] are real answers. Record which keys --file supplied so
+		// the required-field check below can tell "omitted" from "empty".
+		if needsFileKeys(c.Body) {
 			fmt.Fprintf(b, "\t\t\tfileKeys, err := readJSONBodyKeys(ctx, &body)\n")
 			fmt.Fprintf(b, "\t\t\tif err != nil { return err }\n")
 		} else {
@@ -1055,9 +1044,7 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 				zeroExpr = fmt.Sprintf("body.%s == \"\"", f.GoField)
 			case "int", "int64":
 				zeroExpr = fmt.Sprintf("body.%s == 0", f.GoField)
-			case "strings":
-				zeroExpr = fmt.Sprintf("len(body.%s) == 0", f.GoField)
-			case "bool":
+			case "strings", "bool":
 				zeroExpr = fmt.Sprintf("!ctx.IsSet(%q) && !fileKeys[%q]", f.FlagName, f.JSONName)
 			case "json":
 				// Can't reliably zero-check an arbitrary Go value; fall back
@@ -1110,7 +1097,8 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 		// protects nested write-only values without depending on an API group name.
 		var redactArgs string
 		for _, f := range c.Body.Fields {
-			if f.Kind == "json" || isSensitiveFlagName(f.FlagName) {
+			// A timestamp is a JSON-kind flag but never carries a secret.
+			if (f.Kind == "json" && f.ElemType != "time.Time") || isSensitiveFlagName(f.FlagName) {
 				redactArgs += fmt.Sprintf(", %q", strings.ReplaceAll(f.FlagName, "-", "_"))
 			}
 		}
@@ -1194,8 +1182,8 @@ func readJSONBody(ctx *cli.Context, v any) error {
 }
 
 // readJSONBodyKeys is readJSONBody that also returns the set of top-level
-// keys --file supplied. Commands with a required bool use it, because a
-// decoded false cannot show whether the file set the field. The set is empty
+// keys --file supplied. Commands with a required bool or list use it,
+// because a decoded false or [] cannot show whether the file set the field. The set is empty
 // when --file is not set.
 func readJSONBodyKeys(ctx *cli.Context, v any) (map[string]bool, error) {
 	keys := map[string]bool{}

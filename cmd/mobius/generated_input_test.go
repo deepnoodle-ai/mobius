@@ -167,3 +167,43 @@ func TestGeneratedRestoreAgentAllowsBareRestore(t *testing.T) {
 	assert.True(t, result.Success(), "bare restore failed: %v\nstderr: %s", result.Err, result.Stderr)
 	assert.Contains(t, result.Stdout, "{}")
 }
+
+// skill_ids is a required full replace-set, so an explicit [] clears every
+// skill and must reach the API. An omitted key is still an error.
+func TestGeneratedRequiredListAllowsExplicitEmpty(t *testing.T) {
+	dir := t.TempDir()
+	empty := filepath.Join(dir, "empty.json")
+	assert.NoError(t, os.WriteFile(empty, []byte(`{"skill_ids": []}`), 0o644))
+	omitted := filepath.Join(dir, "omitted.json")
+	assert.NoError(t, os.WriteFile(omitted, []byte(`{}`), 0o644))
+
+	run := func(path string) *cli.TestResult {
+		return newApp().Test(t, cli.TestArgs(
+			"agents", "replace-skill-assignments", "agent_test",
+			"--file", path, "--dry-run", "--api-key", "mbx_test",
+		))
+	}
+
+	result := run(empty)
+	assert.True(t, result.Success(), "empty replace-set failed: %v\nstderr: %s", result.Err, result.Stderr)
+	assert.Contains(t, result.Stdout, `"skill_ids": []`)
+
+	result = run(omitted)
+	assert.False(t, result.Success())
+	assert.Error(t, result.Err)
+	assert.Contains(t, result.Err.Error(), "--skill-ids is required")
+}
+
+// A timestamp is not a secret, so --dry-run prints it instead of redacting it.
+func TestGeneratedDryRunShowsTimestamps(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "agent.json")
+	err := os.WriteFile(path, []byte(`{"name": "pr-reviewer", "expected_updated_at": "2026-07-17T00:00:00Z"}`), 0o644)
+	assert.NoError(t, err)
+
+	result := newApp().Test(t, cli.TestArgs(
+		"agents", "update", "agent_test",
+		"--file", path, "--dry-run", "--api-key", "mbx_test",
+	))
+	assert.True(t, result.Success(), "dry run failed: %v\nstderr: %s", result.Err, result.Stderr)
+	assert.Contains(t, result.Stdout, `"expected_updated_at": "2026-07-17T00:00:00Z"`)
+}

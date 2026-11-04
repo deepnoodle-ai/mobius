@@ -36,14 +36,15 @@ func registerAgentsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := api.IDParam(ctx.Arg(0))
 			var body api.AddAgentMembersJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
+			fileKeys, err := readJSONBodyKeys(ctx, &body)
+			if err != nil {
 				return err
 			}
 			if ctx.IsSet("principal-ids") {
 				v := ctx.Strings("principal-ids")
 				body.PrincipalIds = v
 			}
-			if len(body.PrincipalIds) == 0 {
+			if !ctx.IsSet("principal-ids") && !fileKeys["principal_ids"] {
 				return fmt.Errorf("--principal-ids is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
@@ -116,8 +117,8 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("color", "").Help("Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a hash-derived color."),
 			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values. Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Optional human-readable description."),
-			cli.String("external-ref", "").Help("Client-owned durable identity key. Unique within the org when present. Treat this as assign-once: create requests may set it; update requests may set it only while the agent has no existing external_ref, or repeat the current value idempotently. Required when `if_exists` is…"),
-			cli.String("if-exists", "").Help("Create-or-adopt behavior when a request's `external_ref` matches an existing resource. `error` (the default) rejects the request with 409. `adopt` returns the existing resource unchanged instead — mutable fields in the request are ignored, since no write happens — and…"),
+			cli.String("external-ref", "").Help("Client-owned durable identity key. Unique within the org when present. Treat this as assign-once: create requests may set it; update requests may set it only while the agent has no existing external_ref, or repeat the current value idempotently. Required when `if_exists` is `adopt`."),
+			cli.String("if-exists", "").Help("Create-or-adopt behavior when a request's `external_ref` matches an existing resource. `error` (the default) rejects the request with 409. `adopt` returns the existing resource unchanged instead — mutable fields in the request are ignored, since no write happens — and requires `external_ref` to be set; omitting it returns 400."),
 			cli.Strings("members", "").Help("The audience for a `restricted` or `private` agent, written in the same transaction as the agent row."),
 			cli.String("memory-context", "").Help("Automatic memory delivery policy. The JSON object requires `mode` (`index`, `full`, or `off`) and optionally accepts `max_bytes`, for example `{\"mode\":\"full\",\"max_bytes\":131072}`. Accepts JSON, @file, or @-."),
 			cli.Bool("memory-enabled", "").Help("Hard gate for runtime memory. When false, memory tools and automatic memory context are absent. Defaults to true."),
@@ -128,9 +129,9 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("owner", "").Help("The human or team responsible for this resource. Accepts JSON, @file, or @-."),
 			cli.String("system-prompt", "").Help("Custom system prompt for agents. Empty uses the generated default."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
-			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the…"),
+			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session, or the provider's own default when nothing sets a level."),
 			cli.Int("timeout-seconds", "").Help("Per-turn execution timeout in seconds for this agent. Omit or `0` to use the platform default (1800s / 30 minutes); a request's `operation.timeout_seconds` overrides it for that turn."),
-			cli.String("tool-approval-mode", "").Help("Which tool calls on a connected account or a remote tool wait for a person's approval. `never` asks before nothing. `destructive` asks before a call that cannot be undone, such as sending an email, deleting, or posting publicly. `writes` asks before any call that is not…"),
+			cli.String("tool-approval-mode", "").Help("Which tool calls on a connected account or a remote tool wait for a person's approval. `never` asks before nothing. `destructive` asks before a call that cannot be undone, such as sending an email, deleting, or posting publicly. `writes` asks before any call that is not read-only. Tools inside Mobius (memory, Library, tables, the workspace) never ask. One approval covers that tool for the rest of the message, or the routine run."),
 			cli.String("tool-presentation", "").Help("Controls how selected actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers."),
 			cli.String("visibility", "").Help("Who, inside the org that owns this agent, may reach it at all."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -370,7 +371,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("channel-context", "").Help("Optional messaging provider/channel routing context (Slack, Telegram, …). Persisted on the started turn's input-message metadata under a `channel_context` key so chat history and support views can trace a turn back to the provider thread it came from. Accepts JSON, @file, or @-."),
 			cli.String("input", "").Help("[required] The caller input message that starts the agent turn. Accepts JSON, @file, or @-."),
 			cli.String("operation", "").Help("Operational policy for this newly admitted turn only. It is not saved on the session. Its timeout takes precedence over the agent default and must be at least one second. Accepts JSON, @file, or @-."),
-			cli.String("session", "").Help("How to resolve or create the session this invocation runs in. Mirrors the create-session policy: `mode` + `session_key` resolve a durable conversation for the agent, and the remaining fields seed a session that does not already exist (they are ignored when an existing session is… Accepts JSON, @file, or @-."),
+			cli.String("session", "").Help("How to resolve or create the session this invocation runs in. Mirrors the create-session policy: `mode` + `session_key` resolve a durable conversation for the agent, and the remaining fields seed a session that does not already exist (they are ignored when an existing session is resolved). Omit the whole object to use a single default session per agent in `continue_or_create` mode. Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -728,14 +729,15 @@ func registerAgentsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := api.IDParam(ctx.Arg(0))
 			var body api.ReplaceAgentSkillAssignmentsJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
+			fileKeys, err := readJSONBodyKeys(ctx, &body)
+			if err != nil {
 				return err
 			}
 			if ctx.IsSet("skill-ids") {
 				v := ctx.Strings("skill-ids")
 				body.SkillIds = v
 			}
-			if len(body.SkillIds) == 0 {
+			if !ctx.IsSet("skill-ids") && !fileKeys["skill_ids"] {
 				return fmt.Errorf("--skill-ids is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
@@ -988,7 +990,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("description", "").Help("Replacement description."),
 			cli.String("expected-updated-at", "").Help("The agent's `updated_at` as the caller last read it. When set, the update saves only if the agent is unchanged since then, compared to the microsecond; otherwise it returns 409 with code `agent_changed` and saves nothing. Accepts JSON, @file, or @-."),
 			cli.String("external-ref", "").Help("Assign-once client identity key, unique within the org. Accepted when the agent has no external_ref, or when it repeats the current value idempotently. Changing an already-set value returns 409."),
-			cli.Strings("members", "").Help("Replacement members for a `restricted` or `private` agent: the exact set after this call. Omit to leave membership unchanged. An empty set is refused, and a `private` agent's one member is the person it belongs to. Use the members endpoints instead. Deprecated: this property has…"),
+			cli.Strings("members", "").Help("Replacement members for a `restricted` or `private` agent: the exact set after this call. Omit to leave membership unchanged. An empty set is refused, and a `private` agent's one member is the person it belongs to. Use the members endpoints instead. Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set"),
 			cli.String("memory-context", "").Help("Replacement automatic memory delivery policy. Send an empty object to clear the stored override and restore the bounded index default. Otherwise `mode` is required (`index`, `full`, or `off`) and `max_bytes` is optional. Accepts JSON, @file, or @-."),
 			cli.Bool("memory-enabled", "").Help("Replacement runtime memory hard gate. It cannot be overridden at invocation time."),
 			cli.String("model", "").Help("Replacement model identifier for agents (any id from `GET /v1/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id)."),
@@ -999,9 +1001,9 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("stranded-disposition", "").Help("Ignored. Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set"),
 			cli.String("system-prompt", "").Help("Replacement system prompt for agents."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
-			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the…"),
+			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session, or the provider's own default when nothing sets a level."),
 			cli.Int("timeout-seconds", "").Help("Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (1800s / 30 minutes); a request's `operation.timeout_seconds` overrides it for that turn."),
-			cli.String("tool-approval-mode", "").Help("Which tool calls on a connected account or a remote tool wait for a person's approval. `never` asks before nothing. `destructive` asks before a call that cannot be undone, such as sending an email, deleting, or posting publicly. `writes` asks before any call that is not…"),
+			cli.String("tool-approval-mode", "").Help("Which tool calls on a connected account or a remote tool wait for a person's approval. `never` asks before nothing. `destructive` asks before a call that cannot be undone, such as sending an email, deleting, or posting publicly. `writes` asks before any call that is not read-only. Tools inside Mobius (memory, Library, tables, the workspace) never ask. One approval covers that tool for the rest of the message, or the routine run."),
 			cli.String("tool-presentation", "").Help("Controls how selected actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers."),
 			cli.String("visibility", "").Help("Who, inside the org that owns this agent, may reach it at all."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -1127,7 +1129,7 @@ func registerAgentsCommands(app *cli.App) {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body, "action_selectors", "affected_resource_dispositions", "compaction_policy", "expected_updated_at", "memory_context", "model_route", "tags")
+				return printDryRun(ctx, body, "action_selectors", "affected_resource_dispositions", "compaction_policy", "memory_context", "model_route", "tags")
 			}
 			resp, err := client.UpdateAgentWithResponse(ctx.Context(), p0, body)
 			if err != nil {

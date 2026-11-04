@@ -150,7 +150,7 @@ func registerArtifactsCommands(app *cli.App) {
 	artifactsGrp.Command("list").
 		Description("List artifacts").
 		Flags(
-			cli.Bool("latest-only", "").Help("Return the explicitly selected current version when accessible, otherwise the latest available and accessible version per root. Excludes trashed files. Apply before name/MIME filters and pagination. This is the default, and what the Library shows. Only an explicit `true` adds…"),
+			cli.Bool("latest-only", "").Help("Return the explicitly selected current version when accessible, otherwise the latest available and accessible version per root. Excludes trashed files. Apply before name/MIME filters and pagination. This is the default, and what the Library shows. Only an explicit `true` adds the lineage fields (`root_id`, `previous_id`, `version`) to each item. `false` returns every available version of every file, including superseded versions and files in the trash."),
 			cli.Bool("no-latest-only", "").Help("Turn off --latest-only, which the server applies by default."),
 			cli.String("mime", "").Help("Mime prefix filter (e.g. `image/`)"),
 			cli.String("q", "").Help("Case-insensitive substring match on the artifact name. Filenames are how people and agents refer to a file, so this is the search key for \"find the file called ...\"."),
