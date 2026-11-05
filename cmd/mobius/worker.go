@@ -79,6 +79,7 @@ func registerWorkerCommand(app *cli.App) {
 			if err != nil {
 				return err
 			}
+			hideWorkerKeyFromChildren()
 			logger := newLogger(ctx.String("log-level"))
 
 			name := ctx.String("name")
@@ -141,6 +142,24 @@ func registerWorkerCommand(app *cli.App) {
 					logger.Warn("ollama enabled but no models are installed; run `ollama pull <model>`", "ollama_url", ollamaURL)
 				} else {
 					logger.Info("ollama generation enabled", "ollama_url", ollamaURL, "models", ollamaModelNames(discovered))
+				}
+			}
+
+			// In a managed environment, git in job shells gets credentials
+			// from this process over a local socket instead of from the key.
+			if environmentID != "" {
+				creds, err := startGitCredentialServer(ctx.Context(), client, environmentID, logger)
+				if err != nil {
+					return fmt.Errorf("git credential socket: %w", err)
+				}
+				defer creds.Close()
+				if err := os.Setenv(gitCredentialSocketEnv, creds.Path()); err != nil {
+					return err
+				}
+				// Best-effort: without the config, git in job shells has no
+				// credentials, but jobs that do not use git still run.
+				if err := action.ConfigureEnvironmentGitCredentials(ctx.Context()); err != nil {
+					logger.Warn("git credential helper not configured", "error", err)
 				}
 			}
 
