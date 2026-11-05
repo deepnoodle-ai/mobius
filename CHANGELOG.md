@@ -10,6 +10,8 @@ the minor version.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-05
+
 ### Added
 
 - Background helpers in session streams: the `helper.upsert` stream frame,
