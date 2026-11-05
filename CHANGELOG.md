@@ -33,6 +33,14 @@ the minor version.
   longer falls back to an org upload without one. Its retired
   `source_artifact_id` input is removed.
 
+### Fixed
+
+- `environment.git.clone` with `commit` or `fetch_ref` (a pull request
+  checkout) now also fetches the remote's branches, as a plain clone does, so
+  `git diff origin/main...HEAD` works. The checkout used to hold only the
+  fetched commit. If the extra fetch fails, the clone still succeeds at the
+  requested commit.
+
 ## [0.5.1] - 2026-10-28
 
 ### Added

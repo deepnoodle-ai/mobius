@@ -1104,3 +1104,69 @@ func TestIsPermanentRefError(t *testing.T) {
 		}
 	}
 }
+
+// A pull request checkout pins the PR's head commit, but reviewing it needs
+// the base branch too. The checkout once held only the fetched commit, so
+// `git diff origin/main...HEAD` failed and the assistant had to find the base
+// commit by hand.
+func TestImmutableCheckoutAlsoFetchesRemoteBranches(t *testing.T) {
+	tmp := realPath(t, t.TempDir())
+	t.Setenv("GIT_CONFIG_GLOBAL", filepath.Join(tmp, "gitconfig"))
+	t.Setenv("GIT_CONFIG_SYSTEM", filepath.Join(tmp, "gitconfig-system"))
+
+	// A bare "GitHub" repository with main and a pull request ref one commit
+	// ahead of it.
+	work := filepath.Join(tmp, "work")
+	if err := os.MkdirAll(work, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	runGit(t, work, "init", "-q", "-b", "main")
+	runGit(t, work, "config", "user.email", "test@example.com")
+	runGit(t, work, "config", "user.name", "Test")
+	writeFile(t, work, "README.md", "base\n")
+	runGit(t, work, "add", ".")
+	runGit(t, work, "commit", "-q", "-m", "base")
+	base := gitOutput(t, work, "rev-parse", "HEAD")
+	writeFile(t, work, "README.md", "change\n")
+	runGit(t, work, "commit", "-q", "-am", "change")
+	prHead := gitOutput(t, work, "rev-parse", "HEAD")
+	runGit(t, work, "reset", "-q", "--hard", base)
+	bare := filepath.Join(tmp, "origin", "o", "r.git")
+	runGit(t, tmp, "clone", "-q", "--bare", work, bare)
+	runGit(t, bare, "update-ref", "refs/pull/7/head", prHead)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"username":"x-access-token","token":"tok_brokered"}`))
+	}))
+	t.Cleanup(srv.Close)
+	client, err := mobius.NewClient(mobius.WithBaseURL(srv.URL), mobius.WithAPIKey("mbx_worker"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	actx := testClientLeasedActionContext{testLeasedActionContext{testActionContext{Context: context.Background()}}, client}
+	origin := gitHubOrigin
+	gitHubOrigin = "file://" + filepath.Join(tmp, "origin")
+	t.Cleanup(func() { gitHubOrigin = origin })
+
+	target := filepath.Join(tmp, "checkout")
+	out, err := prepareImmutableCheckout(actx, GitCloneInput{
+		RepoFullName: "o/r",
+		Commit:       prHead,
+		FetchRef:     "refs/pull/7/head",
+	}, target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if code, ok := gitResultExitCode(out); !ok || code != 0 {
+		t.Fatalf("checkout failed: %#v", out)
+	}
+	if got := gitOutput(t, target, "rev-parse", "HEAD"); got != prHead {
+		t.Fatalf("HEAD = %s, want the pull request head %s", got, prHead)
+	}
+	if got := gitOutput(t, target, "rev-parse", "origin/main"); got != base {
+		t.Fatalf("origin/main = %s, want %s", got, base)
+	}
+	if got := gitOutput(t, target, "diff", "--name-only", "origin/main...HEAD"); got != "README.md" {
+		t.Fatalf("diff against origin/main = %q, want README.md", got)
+	}
+}

@@ -564,6 +564,42 @@ func cloneWithRetry(ctx mobius.Context, repoFullName, target string, args []stri
 // transient credential 404 still recovers), and each attempt rebuilds from a
 // clean directory.
 func prepareImmutableCheckout(ctx mobius.Context, in GitCloneInput, target string) (any, error) {
+	result, err := checkoutImmutableTarget(ctx, in, target)
+	if err != nil {
+		return result, err
+	}
+	if code, ok := gitResultExitCode(result); ok && code == 0 {
+		fetchRemoteBranches(ctx, in, target)
+	}
+	return result, nil
+}
+
+// fetchRemoteBranches gives an immutable checkout the remote-tracking branches
+// a plain clone has, so reviewing a pull request can diff against origin/main.
+// Without them the checkout held only the fetched commit, and
+// `git diff origin/main...HEAD` failed. It is best effort: the checkout is
+// already at the requested commit, so a failure here is logged, not returned.
+func fetchRemoteBranches(ctx mobius.Context, in GitCloneInput, target string) {
+	args := []string{"fetch"}
+	if in.Depth > 0 {
+		args = append(args, "--depth", fmt.Sprint(in.Depth))
+	}
+	args = append(args, "--", "origin")
+	result, err := runGitWithCredential(ctx, in.RepoFullName, "fetch", target, args)
+	code, ok := gitResultExitCode(result)
+	if err == nil && ok && code == 0 {
+		return
+	}
+	if lg := ctx.Logger(); lg != nil {
+		lg.Warn("git clone: fetching remote branches failed; checkout has only the requested commit",
+			"repo_full_name", in.RepoFullName,
+			"exit_code", code,
+			"stderr", lastNonEmptyLines(gitResultStderr(result), 3),
+			"error", err)
+	}
+}
+
+func checkoutImmutableTarget(ctx mobius.Context, in GitCloneInput, target string) (any, error) {
 	url := gitHubRemoteURL(in.RepoFullName)
 	fetchTarget := strings.TrimSpace(in.FetchRef)
 	if fetchTarget == "" {
