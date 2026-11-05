@@ -1451,6 +1451,48 @@ func (e HeldCallViewEffect) Valid() bool {
 	}
 }
 
+// Defines values for HelperUpsertFrameEventType.
+const (
+	HelperUpsertFrameEventTypeHelperUpsert HelperUpsertFrameEventType = "helper.upsert"
+)
+
+// Valid indicates whether the value is a known member of the HelperUpsertFrameEventType enum.
+func (e HelperUpsertFrameEventType) Valid() bool {
+	switch e {
+	case HelperUpsertFrameEventTypeHelperUpsert:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HelperUpsertFrameState.
+const (
+	HelperUpsertFrameStateFinished   HelperUpsertFrameState = "finished"
+	HelperUpsertFrameStateStopped    HelperUpsertFrameState = "stopped"
+	HelperUpsertFrameStateUnfinished HelperUpsertFrameState = "unfinished"
+	HelperUpsertFrameStateWaiting    HelperUpsertFrameState = "waiting"
+	HelperUpsertFrameStateWorking    HelperUpsertFrameState = "working"
+)
+
+// Valid indicates whether the value is a known member of the HelperUpsertFrameState enum.
+func (e HelperUpsertFrameState) Valid() bool {
+	switch e {
+	case HelperUpsertFrameStateFinished:
+		return true
+	case HelperUpsertFrameStateStopped:
+		return true
+	case HelperUpsertFrameStateUnfinished:
+		return true
+	case HelperUpsertFrameStateWaiting:
+		return true
+	case HelperUpsertFrameStateWorking:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for IfExists.
 const (
 	IfExistsAdopt IfExists = "adopt"
@@ -2828,6 +2870,54 @@ func (e SessionEventSubscriptionStatus) Valid() bool {
 	case SessionEventSubscriptionStatusFundingPaused:
 		return true
 	case SessionEventSubscriptionStatusStopped:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SessionHelperState.
+const (
+	SessionHelperStateFinished   SessionHelperState = "finished"
+	SessionHelperStateStopped    SessionHelperState = "stopped"
+	SessionHelperStateUnfinished SessionHelperState = "unfinished"
+	SessionHelperStateWaiting    SessionHelperState = "waiting"
+	SessionHelperStateWorking    SessionHelperState = "working"
+)
+
+// Valid indicates whether the value is a known member of the SessionHelperState enum.
+func (e SessionHelperState) Valid() bool {
+	switch e {
+	case SessionHelperStateFinished:
+		return true
+	case SessionHelperStateStopped:
+		return true
+	case SessionHelperStateUnfinished:
+		return true
+	case SessionHelperStateWaiting:
+		return true
+	case SessionHelperStateWorking:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SessionHelperStepStatus.
+const (
+	SessionHelperStepStatusDone    SessionHelperStepStatus = "done"
+	SessionHelperStepStatusFailed  SessionHelperStepStatus = "failed"
+	SessionHelperStepStatusRunning SessionHelperStepStatus = "running"
+)
+
+// Valid indicates whether the value is a known member of the SessionHelperStepStatus enum.
+func (e SessionHelperStepStatus) Valid() bool {
+	switch e {
+	case SessionHelperStepStatusDone:
+		return true
+	case SessionHelperStepStatusFailed:
+		return true
+	case SessionHelperStepStatusRunning:
 		return true
 	default:
 		return false
@@ -6879,6 +6969,45 @@ type HeldItemView struct {
 	Subject *string `json:"subject,omitempty"`
 }
 
+// HelperUpsertFrame defines model for HelperUpsertFrame.
+type HelperUpsertFrame struct {
+	// CreatedAt When the start call made the helper.
+	CreatedAt time.Time `json:"created_at"`
+
+	// EarlierSteps How many steps came before the ones listed.
+	EarlierSteps int `json:"earlier_steps"`
+
+	// EndedAt When the helper ended. Absent until it ends.
+	EndedAt   *time.Time                 `json:"ended_at,omitempty"`
+	EventType HelperUpsertFrameEventType `json:"event_type"`
+
+	// HelperId The helper's id, the same as the start step's display.helper.id.
+	HelperId  string `json:"helper_id"`
+	SessionId string `json:"session_id"`
+
+	// StartedAt When the helper started running, after any wait for a slot. Absent while waiting.
+	StartedAt *time.Time `json:"started_at,omitempty"`
+
+	// State waiting: queued for a free slot. working: running. finished, unfinished (it ended without a result), and stopped are ends.
+	State HelperUpsertFrameState `json:"state"`
+
+	// Steps The helper's last steps, newest last.
+	Steps []SessionHelperStep `json:"steps"`
+
+	// Title A short plain title for the person, such as "Welcome email".
+	Title string `json:"title"`
+
+	// ToolCallId The start call's id.
+	ToolCallId string `json:"tool_call_id"`
+	TurnId     string `json:"turn_id"`
+}
+
+// HelperUpsertFrameEventType defines model for HelperUpsertFrame.EventType.
+type HelperUpsertFrameEventType string
+
+// HelperUpsertFrameState waiting: queued for a free slot. working: running. finished, unfinished (it ended without a result), and stopped are ends.
+type HelperUpsertFrameState string
+
 // HttpSubscriberConsumer defines model for HttpSubscriberConsumer.
 type HttpSubscriberConsumer struct {
 	// CallbackUrl Absolute http(s) URL the server POSTs to when the interaction resolves. The body is a JSON object with the interaction id, kind, status, outcome value, comment, responder, and `resolved_by`. Delivery is enqueued as a `source_events` dispatch so the worker can retry failed attempts instead of dropping them inline with interaction resolution.
@@ -7781,7 +7910,7 @@ type MessageUpsertFrame struct {
 	EventType       MessageUpsertFrameEventType `json:"event_type"`
 	Id              string                      `json:"id"`
 
-	// Metadata Free-form metadata for this message. A `compaction` entry carries the server-owned keys described on `SessionMessage.metadata`.
+	// Metadata Free-form metadata for this message. A `compaction` entry carries the server-owned keys described on `SessionMessage.metadata`. A `helper_result` key marks untrusted helper output, as described there.
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 
 	// Role Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
@@ -9278,6 +9407,50 @@ type SessionEventSubscriptionListResponse struct {
 // SessionEventSubscriptionStatus defines model for SessionEventSubscriptionStatus.
 type SessionEventSubscriptionStatus string
 
+// SessionHelper A background helper as the person sees it while its turn runs. The server sends the whole state on every change, so a client shows the latest one.
+type SessionHelper struct {
+	// CreatedAt When the start call made the helper.
+	CreatedAt time.Time `json:"created_at"`
+
+	// EarlierSteps How many steps came before the ones listed.
+	EarlierSteps int `json:"earlier_steps"`
+
+	// EndedAt When the helper ended. Absent until it ends.
+	EndedAt *time.Time `json:"ended_at,omitempty"`
+
+	// HelperId The helper's id, the same as the start step's display.helper.id.
+	HelperId string `json:"helper_id"`
+
+	// StartedAt When the helper started running, after any wait for a slot. Absent while waiting.
+	StartedAt *time.Time `json:"started_at,omitempty"`
+
+	// State waiting: queued for a free slot. working: running. finished, unfinished (it ended without a result), and stopped are ends.
+	State SessionHelperState `json:"state"`
+
+	// Steps The helper's last steps, newest last.
+	Steps []SessionHelperStep `json:"steps"`
+
+	// Title A short plain title for the person, such as "Welcome email".
+	Title string `json:"title"`
+
+	// ToolCallId The start call's id.
+	ToolCallId string `json:"tool_call_id"`
+	TurnId     string `json:"turn_id"`
+}
+
+// SessionHelperState waiting: queued for a free slot. working: running. finished, unfinished (it ended without a result), and stopped are ends.
+type SessionHelperState string
+
+// SessionHelperStep One step of a background helper, as the display catalog phrases it. Never the step's input, output, tool name, or the helper's own text.
+type SessionHelperStep struct {
+	// Phrase For example "Saving a row in support_hire_onboarding…".
+	Phrase string                  `json:"phrase"`
+	Status SessionHelperStepStatus `json:"status"`
+}
+
+// SessionHelperStepStatus defines model for SessionHelperStep.Status.
+type SessionHelperStepStatus string
+
 // SessionImageBlock An image block, e.g. multimodal caller input.
 type SessionImageBlock struct {
 	// MediaType Server-detected MIME type for an artifact-backed image.
@@ -9332,10 +9505,10 @@ type SessionListResponse struct {
 
 // SessionLiveSnapshot Ephemeral live transcript snapshot for an in-flight turn. Deployments with shared cache support make it available across backend replicas.
 type SessionLiveSnapshot struct {
-	// Frames Live-only frame payloads in live_sequence order. Each item has the same shape as its SSE `data:` payload.
+	// Frames Always empty. Kept for the response shape while the endpoint is retired.
 	Frames []map[string]interface{} `json:"frames"`
 
-	// LastLiveSequence Highest live_sequence included in `frames`, or 0 when no live frames are available.
+	// LastLiveSequence Highest live_sequence recorded for the turn, or 0 when none is known.
 	LastLiveSequence int64  `json:"last_live_sequence"`
 	SessionId        string `json:"session_id"`
 	TurnId           string `json:"turn_id"`
@@ -9370,7 +9543,7 @@ type SessionMessage struct {
 	// Id Stable message identifier.
 	Id string `json:"id"`
 
-	// Metadata Free-form caller metadata for this message. A `compaction` entry instead carries server-owned keys describing the pass that wrote it: `trigger` (a `CompactionTrigger`: what started the pass), `conversation_message_count` (transcript rows folded into the summary, counting only rows a reader sees — the number to show a user), `message_count` (the raw window size, including host-injected context rows), `from_sequence` / `through_sequence` (the window's sequence bounds), `estimated_tokens`, `strategy`, `summary_model`, and `summary_provider`.
+	// Metadata Free-form caller metadata for this message. A `compaction` entry instead carries server-owned keys describing the pass that wrote it: `trigger` (a `CompactionTrigger`: what started the pass), `conversation_message_count` (transcript rows folded into the summary, counting only rows a reader sees — the number to show a user), `message_count` (the raw window size, including host-injected context rows), `from_sequence` / `through_sequence` (the window's sequence bounds), `estimated_tokens`, `strategy`, `summary_model`, and `summary_provider`. A `helper_result` key (`{id, tool_call_id, title, outcome, text}`; `text` only when finished) marks a background helper's result, written only by the server; callers cannot set it. The row's text is then the helper's own final message: untrusted helper output, not the person's words, even though the row's role is `user`. A reader that feeds rows to a model must skip these rows.
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 
 	// Role Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
@@ -9657,6 +9830,9 @@ type SessionToolDisplay struct {
 	// Error One safe line explaining a failure, only for Mobius's own tools. Empty for integration and third party tools, whose error text can quote private content.
 	Error *string `json:"error,omitempty"`
 
+	// Helper A background helper that a step started, named for the person.
+	Helper *SessionToolHelper `json:"helper,omitempty"`
+
 	// Integration The integration's name as people know it, shown before the label, for example "GitHub".
 	Integration *string `json:"integration,omitempty"`
 
@@ -9674,6 +9850,15 @@ type SessionToolDisplay struct {
 
 	// Subject The one thing the call acted on, such as a file name. Never message bodies.
 	Subject *string `json:"subject,omitempty"`
+}
+
+// SessionToolHelper A background helper that a step started, named for the person.
+type SessionToolHelper struct {
+	// Id The helper's id. A result row names the same id in metadata.helper_result.
+	Id string `json:"id"`
+
+	// Title A short plain title for the person, such as "Welcome email".
+	Title string `json:"title"`
 }
 
 // SessionToolResultBlock The result of a tool call.
@@ -9758,7 +9943,7 @@ type SessionTranscriptMessage struct {
 	EventProjection *SessionEventProjection `json:"event_projection,omitempty"`
 	Id              string                  `json:"id"`
 
-	// Metadata Free-form metadata for this message. A `compaction` entry carries the server-owned keys described on `SessionMessage.metadata`.
+	// Metadata Free-form metadata for this message. A `compaction` entry carries the server-owned keys described on `SessionMessage.metadata`. A `helper_result` key marks untrusted helper output, as described there.
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 
 	// Role Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
@@ -9776,6 +9961,9 @@ type SessionTranscriptMessage struct {
 type SessionTranscriptSnapshot struct {
 	// HasMore Whether next_page_token continues this fixed transcript cut.
 	HasMore bool `json:"has_more"`
+
+	// Helpers The latest state of each background helper in a turn that has not ended, in the order they were made. Live only: never stored, and empty once the turn ends.
+	Helpers *[]SessionHelper `json:"helpers,omitempty"`
 
 	// Interactions Pending interactions raised by agent tool calls in this session.
 	Interactions []Interaction              `json:"interactions"`
@@ -16582,6 +16770,34 @@ func (t *SessionTranscriptFrame) MergeVoiceCallEndedFrame(v VoiceCallEndedFrame)
 	return err
 }
 
+// AsHelperUpsertFrame returns the union data inside the SessionTranscriptFrame as a HelperUpsertFrame
+func (t SessionTranscriptFrame) AsHelperUpsertFrame() (HelperUpsertFrame, error) {
+	var body HelperUpsertFrame
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromHelperUpsertFrame overwrites any union data inside the SessionTranscriptFrame as the provided HelperUpsertFrame
+func (t *SessionTranscriptFrame) FromHelperUpsertFrame(v HelperUpsertFrame) error {
+	v.EventType = "helper.upsert"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeHelperUpsertFrame performs a merge with any union data inside the SessionTranscriptFrame, using the provided HelperUpsertFrame
+func (t *SessionTranscriptFrame) MergeHelperUpsertFrame(v HelperUpsertFrame) error {
+	v.EventType = "helper.upsert"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t SessionTranscriptFrame) Discriminator() (string, error) {
 	var discriminator struct {
 		Discriminator string `json:"event_type"`
@@ -16596,6 +16812,8 @@ func (t SessionTranscriptFrame) ValueByDiscriminator() (interface{}, error) {
 		return nil, err
 	}
 	switch discriminator {
+	case "helper.upsert":
+		return t.AsHelperUpsertFrame()
 	case "interaction.upsert":
 		return t.AsInteractionUpsertFrame()
 	case "message.block":

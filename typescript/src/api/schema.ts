@@ -1685,7 +1685,7 @@ export interface paths {
         };
         /**
          * Get live session turn snapshot
-         * @description Returns the process-local, live-only transcript preview frames currently known for an in-flight turn. This is an ephemeral recovery primitive for SSE reconnects and `live_sequence` gaps; it is not a durable event log replay endpoint and may return an empty frame list after process handoff or once the durable transcript has caught up.
+         * @description Deprecated and being retired. Returns the highest `live_sequence` recorded for an in-flight turn. `frames` is always empty: the server no longer keeps live frames. Reconnecting clients recover an in-flight turn from the transcript stream instead.
          */
         get: operations["getSessionTurnLive"];
         put?: never;
@@ -6091,7 +6091,7 @@ export interface components {
             turn_index: number | null;
             sequence: number | null;
             covers_through_sequence?: number | null;
-            /** @description Free-form metadata for this message. A `compaction` entry carries the server-owned keys described on `SessionMessage.metadata`. */
+            /** @description Free-form metadata for this message. A `compaction` entry carries the server-owned keys described on `SessionMessage.metadata`. A `helper_result` key marks untrusted helper output, as described there. */
             metadata?: {
                 [key: string]: unknown;
             };
@@ -6147,8 +6147,63 @@ export interface components {
             resume_cursor: string;
             /** @description Opaque continuation present when has_more is true. */
             next_page_token?: string;
+            /** @description The latest state of each background helper in a turn that has not ended, in the order they were made. Live only: never stored, and empty once the turn ends. */
+            helpers?: components["schemas"]["SessionHelper"][];
         };
-        SessionTranscriptFrame: components["schemas"]["MessageUpsertFrame"] | components["schemas"]["MessageBlockFrame"] | components["schemas"]["MessageBlockPatchFrame"] | components["schemas"]["MessageDeltaFrame"] | components["schemas"]["TurnUpsertFrame"] | components["schemas"]["InteractionUpsertFrame"] | components["schemas"]["StreamReadyFrame"] | components["schemas"]["StreamEndFrame"] | components["schemas"]["VoiceCallStartedFrame"] | components["schemas"]["VoiceCallEndedFrame"];
+        /** @description One step of a background helper, as the display catalog phrases it. Never the step's input, output, tool name, or the helper's own text. */
+        SessionHelperStep: {
+            /** @description For example "Saving a row in support_hire_onboarding…". */
+            phrase: string;
+            /** @enum {string} */
+            status: "running" | "done" | "failed";
+        };
+        /** @description A background helper as the person sees it while its turn runs. The server sends the whole state on every change, so a client shows the latest one. */
+        SessionHelper: {
+            turn_id: string;
+            /** @description The helper's id, the same as the start step's display.helper.id. */
+            helper_id: string;
+            /** @description The start call's id. */
+            tool_call_id: string;
+            /** @description A short plain title for the person, such as "Welcome email". */
+            title: string;
+            /**
+             * @description waiting: queued for a free slot. working: running. finished, unfinished (it ended without a result), and stopped are ends.
+             * @enum {string}
+             */
+            state: "waiting" | "working" | "finished" | "unfinished" | "stopped";
+            /** @description The helper's last steps, newest last. */
+            steps: components["schemas"]["SessionHelperStep"][];
+            /** @description How many steps came before the ones listed. */
+            earlier_steps: number;
+            /**
+             * Format: date-time
+             * @description When the start call made the helper.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When the helper started running, after any wait for a slot. Absent while waiting.
+             */
+            started_at?: string;
+            /**
+             * Format: date-time
+             * @description When the helper ended. Absent until it ends.
+             */
+            ended_at?: string;
+        };
+        /** @description Live pulse: a helper's whole state, sent on every change (made, started, a step starts or ends, ended). Not stored; a reconnect reads it from the snapshot. */
+        HelperUpsertFrame: components["schemas"]["SessionHelper"] & {
+            /** @enum {string} */
+            event_type: "helper.upsert";
+            session_id: string;
+        } & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event_type: "helper.upsert";
+        };
+        SessionTranscriptFrame: components["schemas"]["MessageUpsertFrame"] | components["schemas"]["MessageBlockFrame"] | components["schemas"]["MessageBlockPatchFrame"] | components["schemas"]["MessageDeltaFrame"] | components["schemas"]["TurnUpsertFrame"] | components["schemas"]["InteractionUpsertFrame"] | components["schemas"]["StreamReadyFrame"] | components["schemas"]["StreamEndFrame"] | components["schemas"]["VoiceCallStartedFrame"] | components["schemas"]["VoiceCallEndedFrame"] | components["schemas"]["HelperUpsertFrame"];
         MessageUpsertFrame: components["schemas"]["SessionTranscriptMessage"] & {
             /** @enum {string} */
             event_type: "message.upsert";
@@ -6273,13 +6328,13 @@ export interface components {
         SessionLiveSnapshot: {
             session_id: string;
             turn_id: string;
-            /** @description Live-only frame payloads in live_sequence order. Each item has the same shape as its SSE `data:` payload. */
+            /** @description Always empty. Kept for the response shape while the endpoint is retired. */
             frames: {
                 [key: string]: unknown;
             }[];
             /**
              * Format: int64
-             * @description Highest live_sequence included in `frames`, or 0 when no live frames are available.
+             * @description Highest live_sequence recorded for the turn, or 0 when none is known.
              */
             last_live_sequence: number;
             /**
@@ -6610,6 +6665,15 @@ export interface components {
             integration_key?: string;
             /** @description One safe line explaining a failure, only for Mobius's own tools. Empty for integration and third party tools, whose error text can quote private content. */
             error?: string;
+            /** @description The background helper this step started. Present only on a subagent call that started one, never on a blocking call. */
+            helper?: components["schemas"]["SessionToolHelper"];
+        };
+        /** @description A background helper that a step started, named for the person. */
+        SessionToolHelper: {
+            /** @description The helper's id. A result row names the same id in metadata.helper_result. */
+            id: string;
+            /** @description A short plain title for the person, such as "Welcome email". */
+            title: string;
         };
         /** @description The result of a tool call. */
         SessionToolResultBlock: {
@@ -6825,7 +6889,7 @@ export interface components {
             sequence: number;
             /** @description AgentTurn that produced this message. Run, step, and channel identity for the message are read from this turn. Absent for compaction summaries and messages not tied to a turn. */
             turn_id?: string;
-            /** @description Free-form caller metadata for this message. A `compaction` entry instead carries server-owned keys describing the pass that wrote it: `trigger` (a `CompactionTrigger`: what started the pass), `conversation_message_count` (transcript rows folded into the summary, counting only rows a reader sees — the number to show a user), `message_count` (the raw window size, including host-injected context rows), `from_sequence` / `through_sequence` (the window's sequence bounds), `estimated_tokens`, `strategy`, `summary_model`, and `summary_provider`. */
+            /** @description Free-form caller metadata for this message. A `compaction` entry instead carries server-owned keys describing the pass that wrote it: `trigger` (a `CompactionTrigger`: what started the pass), `conversation_message_count` (transcript rows folded into the summary, counting only rows a reader sees — the number to show a user), `message_count` (the raw window size, including host-injected context rows), `from_sequence` / `through_sequence` (the window's sequence bounds), `estimated_tokens`, `strategy`, `summary_model`, and `summary_provider`. A `helper_result` key (`{id, tool_call_id, title, outcome, text}`; `text` only when finished) marks a background helper's result, written only by the server; callers cannot set it. The row's text is then the helper's own final message: untrusted helper output, not the person's words, even though the row's role is `user`. A reader that feeds rows to a model must skip these rows. */
             metadata?: {
                 [key: string]: unknown;
             };
