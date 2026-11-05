@@ -579,6 +579,9 @@ func prepareImmutableCheckout(ctx mobius.Context, in GitCloneInput, target strin
 // Without them the checkout held only the fetched commit, and
 // `git diff origin/main...HEAD` failed. It is best effort: the checkout is
 // already at the requested commit, so a failure here is logged, not returned.
+//
+// It keeps the requested depth. A shallow checkout's branch tips usually
+// share no history with HEAD, so a three-dot diff needs a full-depth clone.
 func fetchRemoteBranches(ctx mobius.Context, in GitCloneInput, target string) {
 	args := []string{"fetch"}
 	if in.Depth > 0 {

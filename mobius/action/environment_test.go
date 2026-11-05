@@ -1110,43 +1110,8 @@ func TestIsPermanentRefError(t *testing.T) {
 // `git diff origin/main...HEAD` failed and the assistant had to find the base
 // commit by hand.
 func TestImmutableCheckoutAlsoFetchesRemoteBranches(t *testing.T) {
-	tmp := realPath(t, t.TempDir())
-	t.Setenv("GIT_CONFIG_GLOBAL", filepath.Join(tmp, "gitconfig"))
-	t.Setenv("GIT_CONFIG_SYSTEM", filepath.Join(tmp, "gitconfig-system"))
-
-	// A bare "GitHub" repository with main and a pull request ref one commit
-	// ahead of it.
-	work := filepath.Join(tmp, "work")
-	if err := os.MkdirAll(work, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	runGit(t, work, "init", "-q", "-b", "main")
-	runGit(t, work, "config", "user.email", "test@example.com")
-	runGit(t, work, "config", "user.name", "Test")
-	writeFile(t, work, "README.md", "base\n")
-	runGit(t, work, "add", ".")
-	runGit(t, work, "commit", "-q", "-m", "base")
-	base := gitOutput(t, work, "rev-parse", "HEAD")
-	writeFile(t, work, "README.md", "change\n")
-	runGit(t, work, "commit", "-q", "-am", "change")
-	prHead := gitOutput(t, work, "rev-parse", "HEAD")
-	runGit(t, work, "reset", "-q", "--hard", base)
-	bare := filepath.Join(tmp, "origin", "o", "r.git")
-	runGit(t, tmp, "clone", "-q", "--bare", work, bare)
-	runGit(t, bare, "update-ref", "refs/pull/7/head", prHead)
-
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte(`{"username":"x-access-token","token":"tok_brokered"}`))
-	}))
-	t.Cleanup(srv.Close)
-	client, err := mobius.NewClient(mobius.WithBaseURL(srv.URL), mobius.WithAPIKey("mbx_worker"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	actx := testClientLeasedActionContext{testLeasedActionContext{testActionContext{Context: context.Background()}}, client}
-	origin := gitHubOrigin
-	gitHubOrigin = "file://" + filepath.Join(tmp, "origin")
-	t.Cleanup(func() { gitHubOrigin = origin })
+	tmp, base, prHead := newPullRequestOrigin(t)
+	actx := brokeredGitContext(t, func(int) bool { return true })
 
 	target := filepath.Join(tmp, "checkout")
 	out, err := prepareImmutableCheckout(actx, GitCloneInput{
@@ -1169,4 +1134,86 @@ func TestImmutableCheckoutAlsoFetchesRemoteBranches(t *testing.T) {
 	if got := gitOutput(t, target, "diff", "--name-only", "origin/main...HEAD"); got != "README.md" {
 		t.Fatalf("diff against origin/main = %q, want README.md", got)
 	}
+}
+
+// The branch fetch runs after the checkout is already at the requested
+// commit, so its failure must not fail the clone.
+func TestImmutableCheckoutSucceedsWhenBranchFetchFails(t *testing.T) {
+	tmp, _, prHead := newPullRequestOrigin(t)
+	// The first credential request (the checkout's fetch) succeeds; the
+	// second (the branch fetch) fails.
+	actx := brokeredGitContext(t, func(call int) bool { return call == 1 })
+
+	target := filepath.Join(tmp, "checkout")
+	out, err := prepareImmutableCheckout(actx, GitCloneInput{
+		RepoFullName: "o/r",
+		Commit:       prHead,
+		FetchRef:     "refs/pull/7/head",
+	}, target)
+	if err != nil {
+		t.Fatalf("a failed branch fetch failed the clone: %v", err)
+	}
+	if code, ok := gitResultExitCode(out); !ok || code != 0 {
+		t.Fatalf("checkout failed: %#v", out)
+	}
+	if got := gitOutput(t, target, "rev-parse", "HEAD"); got != prHead {
+		t.Fatalf("HEAD = %s, want the pull request head %s", got, prHead)
+	}
+}
+
+// brokeredGitContext is an action context whose credential broker answers the
+// nth request when ok(n) is true and returns 500 otherwise.
+func brokeredGitContext(t *testing.T, ok func(call int) bool) testClientLeasedActionContext {
+	t.Helper()
+	var calls int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		if !ok(calls) {
+			http.Error(w, "broker unavailable", http.StatusInternalServerError)
+			return
+		}
+		_, _ = w.Write([]byte(`{"username":"x-access-token","token":"tok_brokered"}`))
+	}))
+	t.Cleanup(srv.Close)
+	client, err := mobius.NewClient(mobius.WithBaseURL(srv.URL), mobius.WithAPIKey("mbx_worker"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return testClientLeasedActionContext{testLeasedActionContext{testActionContext{Context: context.Background()}}, client}
+}
+
+// newPullRequestOrigin points gitHubOrigin at a local bare repository o/r
+// with main and a pull request ref one commit ahead of it. It returns the
+// temp directory and the two commits.
+func newPullRequestOrigin(t *testing.T) (tmp, base, prHead string) {
+	t.Helper()
+	tmp = realPath(t, t.TempDir())
+	t.Setenv("GIT_CONFIG_GLOBAL", filepath.Join(tmp, "gitconfig"))
+	t.Setenv("GIT_CONFIG_SYSTEM", filepath.Join(tmp, "gitconfig-system"))
+
+	// A bare "GitHub" repository with main and a pull request ref one commit
+	// ahead of it.
+	work := filepath.Join(tmp, "work")
+	if err := os.MkdirAll(work, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	runGit(t, work, "init", "-q", "-b", "main")
+	runGit(t, work, "config", "user.email", "test@example.com")
+	runGit(t, work, "config", "user.name", "Test")
+	writeFile(t, work, "README.md", "base\n")
+	runGit(t, work, "add", ".")
+	runGit(t, work, "commit", "-q", "-m", "base")
+	base = gitOutput(t, work, "rev-parse", "HEAD")
+	writeFile(t, work, "README.md", "change\n")
+	runGit(t, work, "commit", "-q", "-am", "change")
+	prHead = gitOutput(t, work, "rev-parse", "HEAD")
+	runGit(t, work, "reset", "-q", "--hard", base)
+	bare := filepath.Join(tmp, "origin", "o", "r.git")
+	runGit(t, tmp, "clone", "-q", "--bare", work, bare)
+	runGit(t, bare, "update-ref", "refs/pull/7/head", prHead)
+
+	origin := gitHubOrigin
+	gitHubOrigin = "file://" + filepath.Join(tmp, "origin")
+	t.Cleanup(func() { gitHubOrigin = origin })
+	return tmp, base, prHead
 }
