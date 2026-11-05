@@ -22,7 +22,7 @@ func registerArtifactsCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "artifact-id", Description: "ID of the artifact", Required: true}).
 		Flags(
 			cli.Int("ttl-seconds", "").Help("Requested signed URL TTL. The server caps this at the maximum supported artifact download TTL."),
-			cli.String("disposition", "").Help("How a browser should treat the bytes. `inline` lets the browser render them. `attachment` makes the browser save them under the artifact's…"),
+			cli.String("disposition", "").Help("How a browser should treat the bytes. `inline` lets the browser render them. `attachment` makes the browser save them under the artifact's file name."),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -70,7 +70,7 @@ func registerArtifactsCommands(app *cli.App) {
 		Description("List folders").
 		Flags(
 			cli.String("parent", "").Help("Folder whose children are listed. Omit for the root."),
-			cli.String("place", "").Help("Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read…"),
+			cli.String("place", "").Help("Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read. `personal` is the caller's own files, which only the caller can read. Omit it to list every section the caller can read."),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -150,14 +150,15 @@ func registerArtifactsCommands(app *cli.App) {
 	artifactsGrp.Command("list").
 		Description("List artifacts").
 		Flags(
-			cli.Bool("latest-only", "").Help("Return the explicitly selected current version when accessible, otherwise the latest available and accessible version per root. Excludes…"),
+			cli.Bool("latest-only", "").Help("Return the explicitly selected current version when accessible, otherwise the latest available and accessible version per root. Excludes trashed files. Apply before name/MIME filters and pagination. This is the default, and what the Library shows. Only an explicit `true` adds the lineage fields (`root_id`, `previous_id`, `version`) to each item. `false` returns every available version of every file, including superseded versions and files in the trash."),
 			cli.Bool("no-latest-only", "").Help("Turn off --latest-only, which the server applies by default."),
 			cli.String("mime", "").Help("Mime prefix filter (e.g. `image/`)"),
-			cli.String("q", "").Help("Case-insensitive substring match on the artifact name. Filenames are how people and agents refer to a file, so this is the search key for…"),
-			cli.String("folder", "").Help("Folder to list, as a relative path with no leading or trailing slash. A file's folder is the directory part of its `name`, so…"),
-			cli.Bool("recursive", "").Help("Include files in subfolders of `folder`. With `false`, only files whose folder is exactly `folder` are returned; at the root that means…"),
+			cli.String("q", "").Help("Case-insensitive substring match on the artifact name. Filenames are how people and agents refer to a file, so this is the search key for \"find the file called ...\"."),
+			cli.String("folder", "").Help("Folder to list, as a relative path with no leading or trailing slash. A file's folder is the directory part of its `name`, so `reports/2026` returns `reports/2026/weekly.md`. Omit it or send an empty value for the root."),
+			cli.Bool("recursive", "").Help("Include files in subfolders of `folder`. With `false`, only files whose folder is exactly `folder` are returned; at the root that means files whose name carries no folder at all."),
 			cli.Bool("no-recursive", "").Help("Turn off --recursive, which the server applies by default."),
-			cli.String("place", "").Help("Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read…"),
+			cli.String("agent-id", "").Help("Only files this assistant made, in any folder. An assistant picks a folder for each file, so its files are not in one place."),
+			cli.String("place", "").Help("Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read. `personal` is the caller's own files, which only the caller can read. Omit it to list every section the caller can read."),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
@@ -194,6 +195,10 @@ func registerArtifactsCommands(app *cli.App) {
 			} else if ctx.IsSet("recursive") {
 				v := ctx.Bool("recursive")
 				params.Recursive = &v
+			}
+			if ctx.IsSet("agent-id") {
+				v := ctx.String("agent-id")
+				params.AgentId = &v
 			}
 			if ctx.IsSet("place") {
 				v := api.ListArtifactsParamsPlace(ctx.String("place"))

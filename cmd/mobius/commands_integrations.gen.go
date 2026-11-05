@@ -194,7 +194,8 @@ func registerIntegrationsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := ctx.Arg(0)
 			var body api.MaterializeConnectionGrantsJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
+			fileKeys, err := readJSONBodyKeys(ctx, &body)
+			if err != nil {
 				return err
 			}
 			if ctx.IsSet("agent-ids") {
@@ -206,7 +207,7 @@ func registerIntegrationsCommands(app *cli.App) {
 					return err
 				}
 			}
-			if len(body.AgentIds) == 0 {
+			if !ctx.IsSet("agent-ids") && !fileKeys["agent_ids"] {
 				return fmt.Errorf("--agent-ids is required (or supply it via --file)")
 			}
 			if ctx.String("file") == "" && !ctx.IsSet("audience") {

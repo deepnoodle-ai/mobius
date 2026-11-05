@@ -37,6 +37,8 @@ def _agent(agent_id: str = "agent_1") -> dict:
         "posture": "team",
         "external_ref": "tenant-42/pr-reviewer",
         "memory_enabled": False,
+        "tool_approval_mode": "destructive",
+        "can_edit": True,
         "created_at": "2026-07-17T00:00:00Z",
         "updated_at": "2026-07-17T00:00:00Z",
     }

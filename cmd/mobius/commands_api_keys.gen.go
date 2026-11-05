@@ -22,11 +22,11 @@ func registerApiKeysCommands(app *cli.App) {
 	apiKeysGrp.Command("create").
 		Description("Create API key").
 		Flags(
-			cli.Bool("allow-unassigned-principal", "").Help("Allow minting a key for a principal with no role assignments. The resulting key cannot access org resources until a role is assigned. Omit…"),
+			cli.Bool("allow-unassigned-principal", "").Help("Allow minting a key for a principal with no role assignments. The resulting key cannot access org resources until a role is assigned. Omit this for normal onboarding so a missing assignment fails with `principal_has_no_roles`. Only applicable when `principal_id` is set."),
 			cli.String("expires-at", "").Help("Optional hard expiry. Omit for a non-expiring key. Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("[required] Human-readable label, unique within the organization."),
 			cli.String("principal-id", "").Help("Principal this key authenticates as. Omit to use the permanent organization principal with the requested role as a mandatory scope."),
-			cli.String("role", "").Help("Mandatory scope role when `principal_id` is omitted. The permanent organization principal holds Owner, and this credential scope can only…"),
+			cli.String("role", "").Help("Mandatory scope role when `principal_id` is omitted. The permanent organization principal holds Owner, and this credential scope can only narrow it. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers organization administration and team resource posture, plus billing reads; `User` can use reachable resources and build private configuration; `Viewer` is read-only. `Worker` is not selectable here — org-level keys are barred from the job endpoints, so it would be inert. For a narrower cap, such as use-only automation, bind the key to a principal and set `scope_role_id` to a custom role. Ignored when `principal_id` is set."),
 			cli.String("scope-role-id", "").Help("Optional role whose permissions cap this key below its principal's full grants. Only applicable when `principal_id` is set."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -77,7 +77,7 @@ func registerApiKeysCommands(app *cli.App) {
 				return fmt.Errorf("--name is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body, "expires_at", "tags")
+				return printDryRun(ctx, body, "tags")
 			}
 			resp, err := client.CreateAPIKeyWithResponse(ctx.Context(), body)
 			if err != nil {
@@ -102,24 +102,6 @@ func registerApiKeysCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "deleteAPIKey", resp.StatusCode(), resp.Body)
-		})
-
-	apiKeysGrp.Command("get").
-		Description("Get API key").
-		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := api.IDParam(ctx.Arg(0))
-			resp, err := client.GetAPIKeyWithResponse(ctx.Context(), p0)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "getAPIKey", resp.StatusCode(), resp.Body)
 		})
 
 	apiKeysGrp.Command("list").

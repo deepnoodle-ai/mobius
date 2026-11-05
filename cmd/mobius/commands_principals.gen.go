@@ -97,7 +97,7 @@ func registerPrincipalsCommands(app *cli.App) {
 			cli.String("metadata", "").Help("Replacement metadata. Accepts JSON, @file, or @-."),
 			cli.String("owner-id", "").Help("Human principal accountable for this principal."),
 			cli.Strings("role-ids", "").Help("Replacement role IDs for this principal in the org. Send an empty array to remove all org role assignments. Requires `mobius.org.admin`."),
-			cli.String("state", "").Help("Canonical business-lifecycle state. `active` allows authentication and job claims; `disabled` is a reversible kill switch that blocks them…"),
+			cli.String("state", "").Help("Canonical business-lifecycle state. `active` allows authentication and job claims; `disabled` is a reversible kill switch that blocks them but preserves the record and its assignments; `deleted` is the retained archived state used for audit, attribution, and history."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),

@@ -20,7 +20,7 @@ func registerBillingCommands(app *cli.App) {
 		Description("List usage events").
 		Flags(
 			cli.String("period-start", "").Help("Filter to usage events in this billing period. Accepts an RFC3339 timestamp (for example: 2026-07-22T12:00:00Z)."),
-			cli.String("recorded-after", "").Help("Inclusive lower bound on `recorded_at`. When present, results and cursors use chronological `(recorded_at, id)` order for durable… Accepts an RFC3339 timestamp (for example: 2026-07-22T12:00:00Z)."),
+			cli.String("recorded-after", "").Help("Inclusive lower bound on `recorded_at`. When present, results and cursors use chronological `(recorded_at, id)` order for durable incremental mirroring. Accepts an RFC3339 timestamp (for example: 2026-07-22T12:00:00Z)."),
 			cli.String("counter", "").Help("Filter to one usage counter."),
 			cli.String("source-type", "").Help("Filter to one usage source type."),
 			cli.String("source-id", "").Help("Filter to one source identifier."),

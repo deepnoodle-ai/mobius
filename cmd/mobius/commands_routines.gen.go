@@ -23,10 +23,10 @@ func registerRoutinesCommands(app *cli.App) {
 		Description("Add a principal to a routine's roster").
 		Args("routine-id").
 		Flags(
-			cli.Bool("confirm-audience-expansion", "").Help("Confirm access to existing and future routine results and the selected manager powers. Required when inviting another person to private…"),
+			cli.Bool("confirm-audience-expansion", "").Help("Confirm access to existing and future routine results and the selected manager powers. Required when inviting another person to private work."),
 			cli.String("level", "").Help("Narrows what a follower is notified about. Ignored on the other relationships, which are always notified."),
 			cli.String("principal-id", "").Help("[required] principal-id"),
-			cli.String("relationship", "").Help("[required] The relationship a principal holds to a routine. `follower` is opt-in attention, `responsible` is the person the routine waits on…"),
+			cli.String("relationship", "").Help("[required] The relationship a principal holds to a routine. `follower` is opt-in attention, `responsible` is the person the routine waits on, `manager` may change it. One principal may hold more than one."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -79,10 +79,10 @@ func registerRoutinesCommands(app *cli.App) {
 			cli.Bool("confirm-audience-expansion", "").Help("Confirm sharing existing and future routine results with the proposed named people."),
 			cli.String("connection-bindings", "").Help("Connected accounts each run uses, replacing the proposed ones. An empty object uses none. Accepts JSON, @file, or @-."),
 			cli.Int("daily-ceiling-milli", "").Help("daily-ceiling-milli"),
-			cli.Strings("follower-principal-ids", "").Help("People to share the routine with, replacing the proposed list. An empty list shares it with nobody. Naming anyone requires…"),
+			cli.Strings("follower-principal-ids", "").Help("People to share the routine with, replacing the proposed list. An empty list shares it with nobody. Naming anyone requires confirm_audience_expansion."),
 			cli.String("instructions", "").Help("instructions Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
 			cli.String("name", "").Help("name"),
-			cli.String("output-folder", "").Help("Library folder for the routine's files. An empty string means the top level of the Library."),
+			cli.String("output-folder", "").Help("Ignored. An assistant chooses a folder for each file it saves. Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set"),
 			cli.Int("per-occurrence-ceiling-milli", "").Help("per-occurrence-ceiling-milli"),
 			cli.String("schedule", "").Help("Exactly one of at, interval, or cron is required. Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -156,25 +156,27 @@ func registerRoutinesCommands(app *cli.App) {
 		Flags(
 			cli.String("agent-id", "").Help("[required] agent-id"),
 			cli.Int("concurrency", "").Help("Maximum concurrent threads. Only a human can raise it."),
-			cli.Bool("confirm-audience-expansion", "").Help("Confirm access to existing and future routine results and the selected manager powers. Required when inviting another person to private…"),
-			cli.String("connection-bindings", "").Help("Exact accounts available to routine actions, keyed by provider. Each call selects one account and revalidates its live grant. Event watches… Accepts JSON, @file, or @-."),
+			cli.Bool("confirm-audience-expansion", "").Help("Confirm access to existing and future routine results and the selected manager powers. Required when inviting another person to private work."),
+			cli.String("connection-bindings", "").Help("Exact accounts available to routine actions, keyed by provider. Each call selects one account and revalidates its live grant. Event watches are separate. Accepts JSON, @file, or @-."),
 			cli.Int("daily-ceiling-milli", "").Help("[required] daily-ceiling-milli"),
-			cli.String("event", "").Help("Runs the routine when a matching integration event arrives. Each matched event creates a ledger entry for each followed thread. Runs… Accepts JSON, @file, or @-."),
+			cli.String("event", "").Help("Runs the routine when a matching integration event arrives. Each matched event creates a ledger entry for each followed thread. Runs serialize within a thread, with concurrent threads bounded by the routine's concurrency setting; each-event routines serialize per routine. Waiting thread events may be coalesced into the newest entry. A run still waiting six hours later is closed `skipped` with `error_code` `stale`. `event_type` may be omitted when `follow_target` names a provider target, which derives the subscription; the `event`, `routine`, and `custom` follow targets require an explicit event type. Accepts JSON, @file, or @-."),
 			cli.String("follow-key", "").Help("Immutable expr over event and meta; required only with custom. Must yield a non-empty string of at most 2048 bytes."),
-			cli.String("follow-target", "").Help("Immutable follow target from the event catalog. Omitted uses the catalog target whose default_for matches the event type, or event when…"),
+			cli.String("follow-target", "").Help("Immutable follow target from the event catalog. Omitted uses the catalog target whose default_for matches the event type, or event when none does; event always creates a conversation per event; routine shares one conversation; custom evaluates follow_key. A provider target keeps an event type it covers and otherwise subscribes to the whole provider."),
 			cli.Strings("follower-principal-ids", "").Help("Principals who opt into the routine's results. The creator is added automatically."),
 			cli.Int("idle-after", "").Help("Seconds without events before an open thread is shown as idle."),
 			cli.String("instructions", "").Help("[required] instructions Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
 			cli.String("kind", "").Help("V1 accepts invoke; notify is reserved and returns unsupported_routine_kind."),
 			cli.String("managed-by", "").Help("Defaults to `named`."),
 			cli.Int("max-turns-per-thread", "").Help("Turn allowance per thread. Only a human can raise it."),
+			cli.String("model-override", "").Help("Model every run uses instead of the assistant's. Omit to use the assistant's model. Whether the organization may run it is checked when each run starts. Rejected for a worker-routed assistant."),
 			cli.String("name", "").Help("name"),
-			cli.String("output-folder", "").Help("Library folder these files are saved to, for example `routines/weekly-report`. A file name that already contains a folder always wins. Omit…"),
+			cli.String("output-folder", "").Help("Ignored. An assistant chooses a folder for each file it saves. Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set"),
 			cli.String("owner-kind", "").Help("Defaults to `person`. `team` requires organization administration."),
 			cli.Int("per-occurrence-ceiling-milli", "").Help("[required] per-occurrence-ceiling-milli"),
 			cli.Strings("responsible-principal-ids", "").Help("The people the routine waits on. Required and non-empty when `owner_kind` is `team`; rejected otherwise. Each must be a person."),
 			cli.String("schedule", "").Help("Exactly one of at, interval, or cron is required. Accepts JSON, @file, or @-."),
-			cli.String("session-id", "").Help("Optional conversation this routine was proposed in, kept as provenance. Occurrences run in their own sessions, so this never affects where…"),
+			cli.String("session-id", "").Help("Optional conversation this routine was proposed in, kept as provenance. Occurrences run in their own sessions, so this never affects where results are delivered. Omitted for a routine created from the form."),
+			cli.String("thinking-effort", "").Help("Reasoning effort every run uses instead of the assistant's. Omit (or send `inherit`) to use the assistant's."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -248,6 +250,10 @@ func registerRoutinesCommands(app *cli.App) {
 				v := ctx.Int("max-turns-per-thread")
 				body.MaxTurnsPerThread = &v
 			}
+			if ctx.IsSet("model-override") {
+				v := ctx.String("model-override")
+				body.ModelOverride = &v
+			}
 			if ctx.IsSet("name") {
 				v := ctx.String("name")
 				body.Name = &v
@@ -275,6 +281,10 @@ func registerRoutinesCommands(app *cli.App) {
 			if ctx.IsSet("session-id") {
 				v := ctx.String("session-id")
 				body.SessionId = &v
+			}
+			if ctx.IsSet("thinking-effort") {
+				v := api.ThinkingEffort(ctx.String("thinking-effort"))
+				body.ThinkingEffort = &v
 			}
 			if body.AgentId == "" {
 				return fmt.Errorf("--agent-id is required (or supply it via --file)")
@@ -783,19 +793,21 @@ func registerRoutinesCommands(app *cli.App) {
 		Args("routine-id").
 		Flags(
 			cli.Int("concurrency", "").Help("Maximum concurrent threads. Only a human can raise it."),
-			cli.String("connection-bindings", "").Help("Exact accounts available to routine actions, keyed by provider. Each call selects one account and revalidates its live grant. Event watches… Accepts JSON, @file, or @-."),
+			cli.String("connection-bindings", "").Help("Exact accounts available to routine actions, keyed by provider. Each call selects one account and revalidates its live grant. Event watches are separate. Accepts JSON, @file, or @-."),
 			cli.Int("daily-ceiling-milli", "").Help("Must remain at least the per-occurrence ceiling. A person may move it either way; an agent may only lower it."),
 			cli.String("event", "").Help("Makes this an event routine, dropping any schedule it had. Rejected together with `schedule`. Accepts JSON, @file, or @-."),
-			cli.String("follow-key", "").Help("Immutable custom follow expression. May be omitted or echo the current value; changing it is rejected. Create a new routine to use a…"),
-			cli.String("follow-target", "").Help("Immutable follow target. May be omitted or echo the current value (null and event are the same value); changing it is rejected. Create a…"),
+			cli.String("follow-key", "").Help("Immutable custom follow expression. May be omitted or echo the current value; changing it is rejected. Create a new routine to use a different expression."),
+			cli.String("follow-target", "").Help("Immutable follow target. May be omitted or echo the current value (null and event are the same value); changing it is rejected. Create a new routine to follow a different target."),
 			cli.Int("idle-after", "").Help("Seconds without events before an open thread is shown as idle."),
 			cli.String("instructions", "").Help("instructions Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
 			cli.String("managed-by", "").Help("Only a person may change this. An agent manager receives 403."),
 			cli.Int("max-turns-per-thread", "").Help("Turn allowance per thread. Only a human can raise it."),
+			cli.String("model-override", "").Help("Replacement model for every run. Omit to leave it unchanged; send an empty string to return to the assistant's model."),
 			cli.String("name", "").Help("name"),
-			cli.String("output-folder", "").Help("Replacement Library folder, for example `routines/weekly-report`. Omit to leave it unchanged; send an empty string to clear it and save to…"),
-			cli.Int("per-occurrence-ceiling-milli", "").Help("A person may move this either way. An agent may only lower it, so no agent widens the budget it runs under; raising it as an agent receives…"),
+			cli.String("output-folder", "").Help("Ignored. An assistant chooses a folder for each file it saves. Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set"),
+			cli.Int("per-occurrence-ceiling-milli", "").Help("A person may move this either way. An agent may only lower it, so no agent widens the budget it runs under; raising it as an agent receives 403."),
 			cli.String("schedule", "").Help("Makes this a scheduled routine, dropping any event trigger it had. Rejected together with `event`. Accepts JSON, @file, or @-."),
+			cli.String("thinking-effort", "").Help("Replacement reasoning effort for every run. Omit to leave it unchanged; send `inherit` to return to the assistant's."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -856,6 +868,10 @@ func registerRoutinesCommands(app *cli.App) {
 				v := ctx.Int("max-turns-per-thread")
 				body.MaxTurnsPerThread = &v
 			}
+			if ctx.IsSet("model-override") {
+				v := ctx.String("model-override")
+				body.ModelOverride = &v
+			}
 			if ctx.IsSet("name") {
 				v := ctx.String("name")
 				body.Name = &v
@@ -873,7 +889,11 @@ func registerRoutinesCommands(app *cli.App) {
 					return err
 				}
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("concurrency") && !ctx.IsSet("connection-bindings") && !ctx.IsSet("daily-ceiling-milli") && !ctx.IsSet("event") && !ctx.IsSet("follow-key") && !ctx.IsSet("follow-target") && !ctx.IsSet("idle-after") && !ctx.IsSet("instructions") && !ctx.IsSet("managed-by") && !ctx.IsSet("max-turns-per-thread") && !ctx.IsSet("name") && !ctx.IsSet("output-folder") && !ctx.IsSet("per-occurrence-ceiling-milli") && !ctx.IsSet("schedule") {
+			if ctx.IsSet("thinking-effort") {
+				v := api.ThinkingEffort(ctx.String("thinking-effort"))
+				body.ThinkingEffort = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("concurrency") && !ctx.IsSet("connection-bindings") && !ctx.IsSet("daily-ceiling-milli") && !ctx.IsSet("event") && !ctx.IsSet("follow-key") && !ctx.IsSet("follow-target") && !ctx.IsSet("idle-after") && !ctx.IsSet("instructions") && !ctx.IsSet("managed-by") && !ctx.IsSet("max-turns-per-thread") && !ctx.IsSet("model-override") && !ctx.IsSet("name") && !ctx.IsSet("output-folder") && !ctx.IsSet("per-occurrence-ceiling-milli") && !ctx.IsSet("schedule") && !ctx.IsSet("thinking-effort") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

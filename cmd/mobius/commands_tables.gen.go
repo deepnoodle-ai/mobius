@@ -64,7 +64,7 @@ func registerTablesCommands(app *cli.App) {
 			cli.String("instructions", "").Help("Optional author guidance for how this table should be used (e.g. surfaced to agents). Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
 			cli.String("name", "").Help("[required] Table name (lowercase, snake_case); unique within the org."),
 			cli.String("owner", "").Help("The human or team responsible for this resource. Accepts JSON, @file, or @-."),
-			cli.String("schema", "").Help("[required] Column definition for a virtual table. Each table has exactly one required string identity column and may nominate one optional string… Accepts JSON, @file, or @-."),
+			cli.String("schema", "").Help("[required] Column definition for a virtual table. Each table has exactly one required string identity column and may nominate one optional string secondary key column. Accepts JSON, @file, or @-."),
 			cli.String("visibility", "").Help("Who the custodian chose to share the resource with."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -261,7 +261,7 @@ func registerTablesCommands(app *cli.App) {
 		Flags(
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
-			cli.String("name", "").Help("Filter tables by name. Table names are unique within an org; use this as a discovery filter and use the returned table `id` for follow-up…"),
+			cli.String("name", "").Help("Filter tables by name. Table names are unique within an org; use this as a discovery filter and use the returned table `id` for follow-up operations."),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -348,8 +348,8 @@ func registerTablesCommands(app *cli.App) {
 			cli.String("cursor", "").Help("Opaque cursor from a prior search response."),
 			cli.String("filter", "").Help("Optional column equality or operator filter applied before search. Accepts JSON, @file, or @-."),
 			cli.Int("limit", "").Help("Maximum number of rows to return (1–100, default 20)."),
-			cli.String("mode", "").Help("Search mode. `keyword` uses token-prefix matching, `semantic` uses similarity over indexed row text, and `hybrid` combines both."),
-			cli.String("query", "").Help("[required] Search query. Hyphens and other punctuation split terms for keyword matching."),
+			cli.String("mode", "").Help("Search mode. `keyword` matches words with the keyword syntax, `semantic` uses similarity over indexed row text, and `hybrid` combines both and drops rows that hold an excluded term."),
+			cli.String("query", "").Help("[required] Search query. In keyword and hybrid mode it uses the keyword syntax: words are all required, `\"quoted words\"` are a phrase, `OR` between two terms accepts either, and `-term` excludes. Punctuation splits words. See the operation description."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -405,7 +405,7 @@ func registerTablesCommands(app *cli.App) {
 			cli.String("description", "").Help("Optional human-readable description of the table."),
 			cli.String("instructions", "").Help("Optional author guidance for how this table should be used (e.g. surfaced to agents). Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
 			cli.String("name", "").Help("Table name (lowercase, snake_case); unique within the org."),
-			cli.String("schema", "").Help("Column definition for a virtual table. Each table has exactly one required string identity column and may nominate one optional string… Accepts JSON, @file, or @-."),
+			cli.String("schema", "").Help("Column definition for a virtual table. Each table has exactly one required string identity column and may nominate one optional string secondary key column. Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).

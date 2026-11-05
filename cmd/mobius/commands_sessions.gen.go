@@ -167,14 +167,14 @@ func registerSessionsCommands(app *cli.App) {
 		Description("Create or resolve a session").
 		Flags(
 			cli.String("agent-id", "").Help("[required] Agent container that executes the session. The agent never owns it."),
-			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
+			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values. Accepts JSON, @file, or @-."),
 			cli.String("metadata", "").Help("Free-form caller metadata for the session. Accepts JSON, @file, or @-."),
-			cli.String("mode", "").Help("`continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session…"),
-			cli.String("model-override", "").Help("Model to use for a newly created session. Overrides the stored agent's model. Ignored when an existing session is resolved. Creating a…"),
+			cli.String("mode", "").Help("`continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists."),
+			cli.String("model-override", "").Help("Model to use for a newly created session. Overrides the stored agent's model. Ignored when an existing session is resolved. Creating a session for a worker-routed agent returns `400 invalid_argument` with `details.argument = model_override`."),
 			cli.String("owner", "").Help("The human or team responsible for this resource. Accepts JSON, @file, or @-."),
-			cli.String("retention", "").Help("Controls how long a session is retained. Applied only when the session is first created (like `compaction_policy`); ignored when an… Accepts JSON, @file, or @-."),
+			cli.String("retention", "").Help("Controls how long a session is retained. Applied only when the session is first created (like `compaction_policy`); ignored when an existing session is resolved. `standard` is the default and keeps the session forever. `bounded` expires the session — pruning its transcript from every read path — once it has been idle past `ttl_seconds`. Kept for audit after expiry: a tombstone session row with its token totals, and the turn rows with their status, error, usage, and timings. Accepts JSON, @file, or @-."),
 			cli.String("session-key", "").Help("Stable key identifying the conversation within the agent."),
-			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on…"),
+			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session, or the provider's own default when nothing sets a level."),
 			cli.String("title", "").Help("Human-friendly session title."),
 			cli.String("visibility", "").Help("Who the custodian chose to share the resource with."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -294,7 +294,7 @@ func registerSessionsCommands(app *cli.App) {
 			cli.String("expires-at", "").Help("Optional future stop time. Accepts JSON, @file, or @-."),
 			cli.String("filters", "").Help("[required] ORed public-event filter branches. Accepts JSON, @file, or @-."),
 			cli.String("idempotency-key", "").Help("Retry key scoped to this session."),
-			cli.Bool("once", "").Help("When true, the subscription ends after its first matching event. That event is still delivered to the conversation, and the subscription…"),
+			cli.Bool("once", "").Help("When true, the subscription ends after its first matching event. That event is still delivered to the conversation, and the subscription stops with `stop_reason` `delivered_once` in the same step, so no later event can match it. When false, the subscription keeps delivering until it is unsubscribed, stopped, or expires. Retrying with the same `idempotency_key` must repeat the same value."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -332,7 +332,7 @@ func registerSessionsCommands(app *cli.App) {
 				return fmt.Errorf("--filters is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body, "expires_at", "filters")
+				return printDryRun(ctx, body, "filters")
 			}
 			resp, err := client.CreateSessionEventSubscriptionWithResponse(ctx.Context(), p0, body)
 			if err != nil {
@@ -538,13 +538,13 @@ func registerSessionsCommands(app *cli.App) {
 		Flags(
 			cli.String("agent-id", "").Help("Filter to sessions owned by this agent."),
 			cli.String("agent-name", "").Help("Filter to sessions owned by the org-unique agent with this exact name. Mutually exclusive with `agent_id`."),
-			cli.String("session-key", "").Help("Look up the session with this exact routing key — a read-only deterministic lookup that avoids a create-or-resolve round trip, returning…"),
+			cli.String("session-key", "").Help("Look up the session with this exact routing key — a read-only deterministic lookup that avoids a create-or-resolve round trip, returning the one matching session or an empty list. Requires exactly one of `agent_id` or `agent_name`, since session keys are scoped to an agent."),
 			cli.String("status", "").Help("Filter by session status."),
 			cli.String("scope", "").Help("Filter by session scope."),
 			cli.String("provider", "").Help("Filter messaging sessions by provider metadata, e.g. `slack` or `telegram`."),
 			cli.String("integration-id", "").Help("Filter to sessions created by this integration, e.g. agent sessions started from a connected provider."),
 			cli.String("since", "").Help("Only include sessions with activity after this timestamp. Accepts an RFC3339 timestamp (for example: 2026-07-22T12:00:00Z)."),
-			cli.Int("per-agent-limit", "").Help("Return at most this many sessions per agent, each agent's newest activity first, so one busy agent cannot crowd the others out of the page…"),
+			cli.Int("per-agent-limit", "").Help("Return at most this many sessions per agent, each agent's newest activity first, so one busy agent cannot crowd the others out of the page. `limit` still caps the total. Cannot be combined with `cursor`, `agent_id`, or `agent_name`."),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
@@ -616,7 +616,7 @@ func registerSessionsCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "subscription-id", Description: "Durable session event subscription identifier.", Required: true}).
 		Flags(
 			cli.Strings("status", "").Help("status"),
-			cli.String("order", "").Help("Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first — the way to fetch the latest rows of…"),
+			cli.String("order", "").Help("Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first — the way to fetch the latest rows of a long list (the tail) in a single request. Items in the response are always ordered ascending regardless of this value; `order` only selects which end of the list the page is taken from."),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
@@ -662,7 +662,7 @@ func registerSessionsCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Flags(
 			cli.Strings("status", "").Help("Filter by one or more subscription states."),
-			cli.String("order", "").Help("Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first — the way to fetch the latest rows of…"),
+			cli.String("order", "").Help("Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first — the way to fetch the latest rows of a long list (the tail) in a single request. Items in the response are always ordered ascending regardless of this value; `order` only selects which end of the list the page is taken from."),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
@@ -706,12 +706,12 @@ func registerSessionsCommands(app *cli.App) {
 		Description("List session messages").
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Flags(
-			cli.Int("after-sequence", "").Help("Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this…"),
-			cli.Int("before-sequence", "").Help("Backward continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly less than this…"),
-			cli.String("order", "").Help("Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first — the way to fetch the latest rows of…"),
+			cli.Int("after-sequence", "").Help("Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this value. Pass the `next_sequence` from the previous response to fetch the next page."),
+			cli.Int("before-sequence", "").Help("Backward continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly less than this value. Combine with `order=desc` to page toward older rows from a known position; pass the `prev_sequence` from the previous response to fetch the next older page."),
+			cli.String("order", "").Help("Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first — the way to fetch the latest rows of a long list (the tail) in a single request. Items in the response are always ordered ascending regardless of this value; `order` only selects which end of the list the page is taken from."),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
-			cli.String("include", "").Help("Set to `context` to include caller-supplied runtime context rows whose model-visible names begin with `app-`. Platform-owned runtime…"),
-			cli.Bool("include-terminal-partials", "").Help("Set to `true` to include durable transcript rows salvaged from a failed or cancelled turn. These rows carry `partial` and…"),
+			cli.String("include", "").Help("Set to `context` to include caller-supplied runtime context rows whose model-visible names begin with `app-`. Platform-owned runtime context remains hidden."),
+			cli.Bool("include-terminal-partials", "").Help("Set to `true` to include durable transcript rows salvaged from a failed or cancelled turn. These rows carry `partial` and `terminal_outcome` metadata and remain excluded from future model context."),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -758,7 +758,7 @@ func registerSessionsCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Flags(
 			cli.Strings("status", "").Help("Filter by one or more nudge statuses."),
-			cli.String("order", "").Help("Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first — the way to fetch the latest rows of…"),
+			cli.String("order", "").Help("Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first — the way to fetch the latest rows of a long list (the tail) in a single request. Items in the response are always ordered ascending regardless of this value; `order` only selects which end of the list the page is taken from."),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
@@ -802,8 +802,8 @@ func registerSessionsCommands(app *cli.App) {
 		Description("List session turns").
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Flags(
-			cli.Strings("ids", "").Help("Return exactly the turns with these ids (the transcript-join primitive). When set, pagination and ordering are ignored and the named turns…"),
-			cli.String("order", "").Help("Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first — the way to fetch the latest rows of…"),
+			cli.Strings("ids", "").Help("Return exactly the turns with these ids (the transcript-join primitive). When set, pagination and ordering are ignored and the named turns are returned in chronological order."),
+			cli.String("order", "").Help("Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first — the way to fetch the latest rows of a long list (the tail) in a single request. Items in the response are always ordered ascending regardless of this value; `order` only selects which end of the list the page is taken from."),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
@@ -864,7 +864,7 @@ func registerSessionsCommands(app *cli.App) {
 			cli.String("content", "").Help("[required] User direction to deliver at the next iteration boundary."),
 			cli.String("idempotency-key", "").Help("Dedup key scoped to the session. Reusing the key with identical content returns the original nudge request; different content conflicts."),
 			cli.String("metadata", "").Help("Free-form caller metadata retained with the nudge request. Accepts JSON, @file, or @-."),
-			cli.Bool("wake", "").Help("When true and the target turn is waiting on an interruptible agent tool, resolve that tool call with `{ \"interrupted\": true, \"reason\"…"),
+			cli.Bool("wake", "").Help("When true and the target turn is waiting on an interruptible agent tool, resolve that tool call with `{ \"interrupted\": true, \"reason\": \"user_direction\" }` and resume the same turn. Running and newly queued turns ignore this field."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -913,11 +913,11 @@ func registerSessionsCommands(app *cli.App) {
 		Description("Start an agent turn").
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Flags(
-			cli.String("content", "").Help("[required] Ordered content blocks for the input message. Canonical documents use `{ \"type\": \"document\", \"source\": { \"type\": \"base64\", \"media_type\"… Accepts JSON, @file, or @-."),
-			cli.String("context", "").Help("Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on… Accepts JSON, @file, or @-."),
-			cli.String("idempotency-key", "").Help("Dedup key scoped to the session. A repeat call with the same key returns the existing invocation and writes nothing new; it never restarts…"),
+			cli.String("content", "").Help("[required] Ordered content blocks for the input message. Canonical documents use `{ \"type\": \"document\", \"source\": { \"type\": \"base64\", \"media_type\": \"application/pdf\", \"data\": \"...\" }, \"title\": \"report.pdf\" }` or a URL source. Mobius also translates supported OpenAI `input_file` and Chat Completions `file` blocks at ingestion. Accepts JSON, @file, or @-."),
+			cli.String("context", "").Help("Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on first use, material change, or after compaction removes its prior value from the active model window. Omitting a name leaves its last value standing; send an explicit value such as `none` to clear application state. Names must be unique within the request. Content is limited to 8,192 UTF-8 bytes per item and 16,384 bytes total. Accepts JSON, @file, or @-."),
+			cli.String("idempotency-key", "").Help("Dedup key scoped to the session. A repeat call with the same key returns the existing invocation and writes nothing new; it never restarts a terminal turn. Omitting it or sending a blank value disables retry deduplication."),
 			cli.String("metadata", "").Help("Free-form caller metadata attached to the input message. Accepts JSON, @file, or @-."),
-			cli.String("operation", "").Help("Operational policy for this newly admitted turn only. It is not saved on the session. Its timeout takes precedence over the agent default… Accepts JSON, @file, or @-."),
+			cli.String("operation", "").Help("Operational policy for this newly admitted turn only. It is not saved on the session. Its timeout takes precedence over the agent default and must be at least one second. Accepts JSON, @file, or @-."),
 			cli.String("role", "").Help("Role of the input message. A turn carries caller input, so only `user` is accepted; defaults to `user` when omitted."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -997,8 +997,8 @@ func registerSessionsCommands(app *cli.App) {
 		Description("Stream a session's activity").
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Flags(
-			cli.Int("after-sequence", "").Help("Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this…"),
-			cli.Int("last-event-id", "").Help("SSE reconnect cursor. The browser EventSource API replays the last event's `id` in this header on automatic reconnect; the server resumes…"),
+			cli.Int("after-sequence", "").Help("Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this value. Pass the `next_sequence` from the previous response to fetch the next page."),
+			cli.Int("last-event-id", "").Help("SSE reconnect cursor. The browser EventSource API replays the last event's `id` in this header on automatic reconnect; the server resumes the stream after that sequence number. When both this header and the `after_sequence` query parameter are supplied, the larger sequence wins, so an explicit `after_sequence` never rewinds a live reconnect. Ignored for non-streaming (JSON) requests."),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -1029,7 +1029,7 @@ func registerSessionsCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Flags(
 			cli.String("cursor", "").Help("Opaque resume cursor."),
-			cli.Bool("tail", "").Help("With no cursor, start at the session's current end instead of replaying its history. The stream still sends the in-flight rows, the turns…"),
+			cli.Bool("tail", "").Help("With no cursor, start at the session's current end instead of replaying its history. The stream still sends the in-flight rows, the turns that have not finished, and pending interactions, then `stream.ready`. For a client that reads the history from the messages API. A cursor takes precedence."),
 			cli.String("last-event-id", "").Help("Opaque resume cursor from the last delivered state frame."),
 		).
 		Use(requireAuth()).
@@ -1084,9 +1084,10 @@ func registerSessionsCommands(app *cli.App) {
 		Description("Update session").
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Flags(
-			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
+			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values. Accepts JSON, @file, or @-."),
+			cli.String("model-override", "").Help("Model later turns in this session run on. The history is kept and each reply records the model that produced it. Send an empty string to go back to the agent's own model. Omit to leave it unchanged. Worker-routed agents return `400 invalid_argument` with `details.argument = model_override`."),
 			cli.String("status", "").Help("Durable conversation session status: `active`, `archived`, or `deleted`."),
-			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on…"),
+			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session, or the provider's own default when nothing sets a level."),
 			cli.String("title", "").Help("Human-readable session title."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -1108,6 +1109,10 @@ func registerSessionsCommands(app *cli.App) {
 					return err
 				}
 			}
+			if ctx.IsSet("model-override") {
+				v := ctx.String("model-override")
+				body.ModelOverride = &v
+			}
 			if ctx.IsSet("status") {
 				v := api.SessionStatus(ctx.String("status"))
 				body.Status = &v
@@ -1120,7 +1125,7 @@ func registerSessionsCommands(app *cli.App) {
 				v := ctx.String("title")
 				body.Title = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("compaction-policy") && !ctx.IsSet("status") && !ctx.IsSet("thinking-effort") && !ctx.IsSet("title") {
+			if ctx.String("file") == "" && !ctx.IsSet("compaction-policy") && !ctx.IsSet("model-override") && !ctx.IsSet("status") && !ctx.IsSet("thinking-effort") && !ctx.IsSet("title") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

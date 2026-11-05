@@ -11,11 +11,16 @@ package main
 //     operationId, e.g. `listSkills` -> `list`, `getSkill` -> `get`).
 //   - Description overrides the short help string (default: the OpenAPI
 //     operation summary).
+//   - AllowEmptyBody lets the command send an empty body when every body
+//     field is optional. By default such a command requires at least one
+//     flag or --file, so that a bare `update` does not silently no-op. Set it
+//     when the empty body is a real request.
 type Override struct {
-	Skip        bool
-	Group       string
-	Command     string
-	Description string
+	Skip           bool
+	Group          string
+	Command        string
+	Description    string
+	AllowEmptyBody bool
 }
 
 // overrides is the generator's override table, keyed by operationId.
@@ -42,18 +47,17 @@ var overrides = map[string]Override{
 	"rotateActionSecret": {Skip: true},
 
 	// --- agents -----------------------------------------------------------
-	"previewAgentVisibilityChange": {Command: "preview-visibility-change"},
 	"provisionAgentInbox":          {Command: "provision-inbox"},
-	"replaceAgentMembers":          {Command: "replace-members"},
 	"saveAgentMessagingBinding":    {Command: "save-messaging-binding"},
 	"saveAgentMemoryEntry":         {Command: "save-memory-entry"},
 	"promoteAgentMemoryEntry":      {Command: "promote-memory-entry"},
 	"revertAgentMemoryPromotion":   {Command: "revert-memory-promotion"},
 	"replaceAgentSkillAssignments": {Command: "replace-skill-assignments"},
-	// Turn-scoped (GET /v1/turns/{turn_id}/messages), not agent-scoped: the
-	// bare `list-messages` leaf would read like the session-scoped command of
-	// the same name, so keep the turn in the name.
-	"listTurnMessages": {Command: "list-turn-messages"},
+	// Lists deleted agents. The default `list-agents` reads as the live list
+	// next to `agents list`.
+	"listDeletedAgents": {Command: "list-deleted"},
+	// `name` is optional: a bare restore keeps the old name.
+	"restoreAgent": {AllowEmptyBody: true},
 	// Tagged `sessions` in the spec because it returns a turn transcript, but
 	// the path is /v1/agents/invoke and users look for it next to the other
 	// agent commands.
@@ -78,7 +82,6 @@ var overrides = map[string]Override{
 	// Drop the redundant `key` token; the group name already carries it.
 	"createAPIKey": {Command: "create"},
 	"listAPIKeys":  {Command: "list"},
-	"getAPIKey":    {Command: "get"},
 	"deleteAPIKey": {Command: "delete"},
 
 	// --- organizations ------------------------------------------------------

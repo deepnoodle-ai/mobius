@@ -61,15 +61,15 @@ func registerInteractionsCommands(app *cli.App) {
 			cli.String("delivery", "").Help("Optional per-interaction delivery override. When absent, each participant is notified via the app inbox only. Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Optional longer responder-facing detail or instructions."),
 			cli.String("expires-at", "").Help("Timestamp after which this interaction expires if not responded to. Accepts JSON, @file, or @-."),
-			cli.String("kind", "").Help("[required] Protocol kind of the interaction: * `request_information` — a data-collection protocol with structured or free-form input *…"),
+			cli.String("kind", "").Help("[required] Protocol kind of the interaction: * `request_information` — a data-collection protocol with structured or free-form input * `request_approval` — a decision protocol (yes/no, optionally yes/no/defer) * `request_review` — a judgment protocol that evaluates supplied material * `assign_work` — assigned work performed by a user or agent, which submits the result. Pair it with `resolution_policy.review` when the result must be accepted before the interaction resolves."),
 			cli.String("properties", "").Help("Free-form structured metadata to attach to the interaction. Accepts JSON, @file, or @-."),
 			cli.String("references", "").Help("Supporting links and related entities. Accepts JSON, @file, or @-."),
-			cli.Bool("require-all", "").Help("When true, all target users must respond before the interaction is considered complete. Defaults to false when omitted. Mutually exclusive…"),
-			cli.String("resolution-policy", "").Help("Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome, and whether that… Accepts JSON, @file, or @-."),
-			cli.String("spec", "").Help("The set of questions one responder answers atomically. Group related questions into a single interaction rather than opening several: each… Accepts JSON, @file, or @-."),
+			cli.Bool("require-all", "").Help("When true, all target users must respond before the interaction is considered complete. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code."),
+			cli.String("resolution-policy", "").Help("Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome, and whether that outcome needs acceptance before it is final. Accepts JSON, @file, or @-."),
+			cli.String("spec", "").Help("The set of questions one responder answers atomically. Group related questions into a single interaction rather than opening several: each interaction is a separate item in someone's inbox and a separate interruption. Accepts JSON, @file, or @-."),
 			cli.String("subject", "").Help("Pointer to the work item, artifact, external ticket, or Mobius entity this interaction is about. Accepts JSON, @file, or @-."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
-			cli.Strings("target-user-ids", "").Help("[required] Resolved user IDs to target directly. At least one target is required — every interaction needs someone who can answer it, even when a…"),
+			cli.Strings("target-user-ids", "").Help("[required] Resolved user IDs to target directly. At least one target is required — every interaction needs someone who can answer it, even when a machine consumer is waiting on the outcome. Agents use their agent principal IDs."),
 			cli.String("title", "").Help("[required] Short non-empty title shown to the responder."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -82,7 +82,8 @@ func registerInteractionsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			var body api.CreateInteractionJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
+			fileKeys, err := readJSONBodyKeys(ctx, &body)
+			if err != nil {
 				return err
 			}
 			if ctx.IsSet("consumer") {
@@ -157,14 +158,14 @@ func registerInteractionsCommands(app *cli.App) {
 			if body.Kind == "" {
 				return fmt.Errorf("--kind is required (or supply it via --file)")
 			}
-			if len(body.TargetUserIds) == 0 {
+			if !ctx.IsSet("target-user-ids") && !fileKeys["target_user_ids"] {
 				return fmt.Errorf("--target-user-ids is required (or supply it via --file)")
 			}
 			if body.Title == "" {
 				return fmt.Errorf("--title is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body, "consumer", "context", "delivery", "expires_at", "properties", "references", "resolution_policy", "spec", "subject", "tags")
+				return printDryRun(ctx, body, "consumer", "context", "delivery", "properties", "references", "resolution_policy", "spec", "subject", "tags")
 			}
 			resp, err := client.CreateInteractionWithResponse(ctx.Context(), body)
 			if err != nil {
@@ -214,9 +215,11 @@ func registerInteractionsCommands(app *cli.App) {
 		Flags(
 			cli.String("status", "").Help("Filter by status"),
 			cli.String("kind", "").Help("Filter by interaction protocol kind"),
-			cli.String("session-id", "").Help("Filter to interactions raised by an agent tool call (`consumer.kind=agent_tool`) whose invocation is a turn of the given chat session. Lets…"),
+			cli.String("session-id", "").Help("Filter to interactions raised by an agent tool call (`consumer.kind=agent_tool`) whose invocation is a turn of the given chat session. Lets a chat surface the pending interactions opened by its own agent tool calls."),
 			cli.String("target-user-id", "").Help("Filter by resolved target user ID."),
 			cli.Bool("inbox", "").Help("When true, returns only interactions visible to the authenticated user."),
+			cli.Bool("responded-by-me", "").Help("When true, returns only interactions the authenticated user submitted a response to, newest answer first (ordered and paged by the caller's latest response time). Cannot be combined with inbox=true; sent together, the request fails with 400."),
+			cli.String("responded-since", "").Help("Keeps only interactions the user responded to at or after this time. Requires responded_by_me=true; sent without it, the request fails with 400. Accepts an RFC3339 timestamp (for example: 2026-07-22T12:00:00Z)."),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
@@ -248,6 +251,17 @@ func registerInteractionsCommands(app *cli.App) {
 				v := ctx.Bool("inbox")
 				params.Inbox = &v
 			}
+			if ctx.IsSet("responded-by-me") {
+				v := ctx.Bool("responded-by-me")
+				params.RespondedByMe = &v
+			}
+			if ctx.IsSet("responded-since") {
+				v, err := parseTimeFlag("responded-since", ctx.String("responded-since"))
+				if err != nil {
+					return err
+				}
+				params.RespondedSince = &v
+			}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))
 				params.Cursor = &v
@@ -269,7 +283,8 @@ func registerInteractionsCommands(app *cli.App) {
 		Flags(
 			cli.String("action", "").Help("Operation to perform through the canonical response endpoint. `submit` answers the interaction."),
 			cli.String("answers", "").Help("[required] The responder's complete answer set. Required for `submit`. Every required question must be answered; there is no partial submit. Accepts JSON, @file, or @-."),
-			cli.String("comment", "").Help("Optional free-text comment accompanying the action. Available on every interaction kind and never gated by the spec; the responder may…"),
+			cli.String("comment", "").Help("Optional free-text comment accompanying the action. Available on every interaction kind and never gated by the spec; the responder may always attach reasoning, caveats, or follow-up notes alongside their answers. It is one note per response, not per question."),
+			cli.Bool("held-card-seen", "").Help("Send true only from a view that shows the full details of the held tool calls. An approval Mobius opened for held tool calls refuses every answer without it."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -298,6 +313,10 @@ func registerInteractionsCommands(app *cli.App) {
 				v := ctx.String("comment")
 				body.Comment = &v
 			}
+			if ctx.IsSet("held-card-seen") {
+				v := ctx.Bool("held-card-seen")
+				body.HeldCardSeen = &v
+			}
 			if ctx.String("file") == "" && !ctx.IsSet("answers") {
 				return fmt.Errorf("--answers is required (or supply it via --file)")
 			}
@@ -316,7 +335,7 @@ func registerInteractionsCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("action", "").Help("[required] `accept` resolves the interaction and resumes any waiting consumer. `request_changes` returns it to `pending` for another round."),
-			cli.String("comment", "").Help("The reviewer's reasoning. Required for `request_changes` — work sent back without a reason gives the assignee nothing to act on. Optional…"),
+			cli.String("comment", "").Help("The reviewer's reasoning. Required for `request_changes` — work sent back without a reason gives the assignee nothing to act on. Optional for `accept`, where it is recorded as an acceptance note."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).

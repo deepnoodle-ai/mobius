@@ -24,7 +24,7 @@ func registerRolesCommands(app *cli.App) {
 		Flags(
 			cli.String("description", "").Help("Optional human-readable description of what this role grants."),
 			cli.String("name", "").Help("[required] Unique name within the org."),
-			cli.Strings("permissions", "").Help("[required] Permission strings to include. Source allowed values from `GET /v1/permissions`; legacy IDs or values not present in that catalog are…"),
+			cli.Strings("permissions", "").Help("[required] Permission strings to include. Source allowed values from `GET /v1/permissions`; legacy IDs or values not present in that catalog are rejected."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -37,7 +37,8 @@ func registerRolesCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			var body api.CreateRoleJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
+			fileKeys, err := readJSONBodyKeys(ctx, &body)
+			if err != nil {
 				return err
 			}
 			if ctx.IsSet("description") {
@@ -60,7 +61,7 @@ func registerRolesCommands(app *cli.App) {
 			if body.Name == "" {
 				return fmt.Errorf("--name is required (or supply it via --file)")
 			}
-			if len(body.Permissions) == 0 {
+			if !ctx.IsSet("permissions") && !fileKeys["permissions"] {
 				return fmt.Errorf("--permissions is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
@@ -234,7 +235,7 @@ func registerRolesCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("description", "").Help("Replacement description."),
-			cli.Strings("permissions", "").Help("Replaces the existing permissions array entirely. Source allowed values from `GET /v1/permissions`; legacy IDs or values not present in…"),
+			cli.Strings("permissions", "").Help("Replaces the existing permissions array entirely. Source allowed values from `GET /v1/permissions`; legacy IDs or values not present in that catalog are rejected."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),

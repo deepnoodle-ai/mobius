@@ -72,6 +72,37 @@ func readJSONBody(ctx *cli.Context, v any) error {
 	return decodeJSONOrYAML(data, label, path, v)
 }
 
+// readJSONBodyKeys is readJSONBody that also returns the set of top-level
+// keys --file supplied. Commands with a required bool or list use it,
+// because a decoded false or [] cannot show whether the file set the field. The set is empty
+// when --file is not set.
+func readJSONBodyKeys(ctx *cli.Context, v any) (map[string]bool, error) {
+	keys := map[string]bool{}
+	path := ctx.String("file")
+	if path == "" {
+		return keys, nil
+	}
+	data, label, err := readBodyBytes(ctx, path)
+	if err != nil {
+		return nil, err
+	}
+	data, err = applyVars(ctx, data)
+	if err != nil {
+		return nil, err
+	}
+	if err := decodeJSONOrYAML(data, label, path, v); err != nil {
+		return nil, err
+	}
+	var top map[string]any
+	if err := decodeJSONOrYAML(data, label, path, &top); err != nil {
+		return nil, err
+	}
+	for k := range top {
+		keys[k] = true
+	}
+	return keys, nil
+}
+
 // decodeFlagJSON decodes a JSON-typed flag value. The value can be:
 //   - bare JSON literal (e.g. {"k":"v"})
 //   - "@path" to read from a file (JSON or YAML)
