@@ -10,6 +10,12 @@ the minor version.
 
 ## [Unreleased]
 
+### Added
+
+- Background helpers in session streams: the `helper.upsert` stream frame,
+  `helpers` on the session transcript, and the `SessionHelper`,
+  `SessionHelperStep`, and `SessionToolHelper` types (Go, Python, TypeScript).
+
 ### Security
 
 - `mobius worker` removes `MOBIUS_API_KEY` from its environment at startup and,

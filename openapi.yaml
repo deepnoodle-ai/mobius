@@ -3872,11 +3872,9 @@ paths:
       tags:
       - sessions
       summary: Get live session turn snapshot
-      description: Returns the process-local, live-only transcript preview frames currently
-        known for an in-flight turn. This is an ephemeral recovery primitive for SSE reconnects
-        and `live_sequence` gaps; it is not a durable event log replay endpoint and may return
-        an empty frame list after process handoff or once the durable transcript has caught
-        up.
+      description: 'Deprecated and being retired. Returns the highest `live_sequence` recorded
+        for an in-flight turn. `frames` is always empty: the server no longer keeps live frames.
+        Reconnecting clients recover an in-flight turn from the transcript stream instead.'
       parameters:
       - $ref: '#/components/parameters/SessionIdParam'
       - $ref: '#/components/parameters/TurnIdParam'
@@ -13157,7 +13155,8 @@ components:
           type: object
           additionalProperties: true
           description: Free-form metadata for this message. A `compaction` entry carries the
-            server-owned keys described on `SessionMessage.metadata`.
+            server-owned keys described on `SessionMessage.metadata`. A `helper_result` key
+            marks untrusted helper output, as described there.
         event_projection:
           $ref: '#/components/schemas/SessionEventProjection'
           description: Server-owned safe display projection when this message was triggered
@@ -13270,6 +13269,105 @@ components:
         next_page_token:
           type: string
           description: Opaque continuation present when has_more is true.
+        helpers:
+          type: array
+          description: 'The latest state of each background helper in a turn that has not
+            ended, in the order they were made. Live only: never stored, and empty once the
+            turn ends.'
+          items:
+            $ref: '#/components/schemas/SessionHelper'
+    SessionHelperStep:
+      type: object
+      additionalProperties: false
+      required:
+      - phrase
+      - status
+      description: One step of a background helper, as the display catalog phrases it. Never
+        the step's input, output, tool name, or the helper's own text.
+      properties:
+        phrase:
+          type: string
+          description: For example "Saving a row in support_hire_onboarding…".
+        status:
+          type: string
+          enum:
+          - running
+          - done
+          - failed
+    SessionHelper:
+      type: object
+      additionalProperties: false
+      required:
+      - turn_id
+      - helper_id
+      - tool_call_id
+      - title
+      - state
+      - steps
+      - earlier_steps
+      - created_at
+      description: A background helper as the person sees it while its turn runs. The server
+        sends the whole state on every change, so a client shows the latest one.
+      properties:
+        turn_id:
+          type: string
+        helper_id:
+          type: string
+          description: The helper's id, the same as the start step's display.helper.id.
+        tool_call_id:
+          type: string
+          description: The start call's id.
+        title:
+          type: string
+          description: A short plain title for the person, such as "Welcome email".
+        state:
+          type: string
+          enum:
+          - waiting
+          - working
+          - finished
+          - unfinished
+          - stopped
+          description: 'waiting: queued for a free slot. working: running. finished, unfinished
+            (it ended without a result), and stopped are ends.'
+        steps:
+          type: array
+          maxItems: 5
+          description: The helper's last steps, newest last.
+          items:
+            $ref: '#/components/schemas/SessionHelperStep'
+        earlier_steps:
+          type: integer
+          description: How many steps came before the ones listed.
+        created_at:
+          type: string
+          format: date-time
+          description: When the start call made the helper.
+        started_at:
+          type: string
+          format: date-time
+          description: When the helper started running, after any wait for a slot. Absent
+            while waiting.
+        ended_at:
+          type: string
+          format: date-time
+          description: When the helper ended. Absent until it ends.
+    HelperUpsertFrame:
+      allOf:
+      - $ref: '#/components/schemas/SessionHelper'
+      - type: object
+        required:
+        - event_type
+        - session_id
+        properties:
+          event_type:
+            type: string
+            enum:
+            - helper.upsert
+          session_id:
+            type: string
+      description: 'Live pulse: a helper''s whole state, sent on every change (made, started,
+        a step starts or ends, ended). Not stored; a reconnect reads it from the snapshot.'
     SessionTranscriptFrame:
       oneOf:
       - $ref: '#/components/schemas/MessageUpsertFrame'
@@ -13282,6 +13380,7 @@ components:
       - $ref: '#/components/schemas/StreamEndFrame'
       - $ref: '#/components/schemas/VoiceCallStartedFrame'
       - $ref: '#/components/schemas/VoiceCallEndedFrame'
+      - $ref: '#/components/schemas/HelperUpsertFrame'
       discriminator:
         propertyName: event_type
         mapping:
@@ -13295,6 +13394,7 @@ components:
           stream.end: '#/components/schemas/StreamEndFrame'
           voice_call.started: '#/components/schemas/VoiceCallStartedFrame'
           voice_call.ended: '#/components/schemas/VoiceCallEndedFrame'
+          helper.upsert: '#/components/schemas/HelperUpsertFrame'
     MessageUpsertFrame:
       allOf:
       - $ref: '#/components/schemas/SessionTranscriptMessage'
@@ -13520,16 +13620,14 @@ components:
           type: string
         frames:
           type: array
-          description: Live-only frame payloads in live_sequence order. Each item has the
-            same shape as its SSE `data:` payload.
+          description: Always empty. Kept for the response shape while the endpoint is retired.
           items:
             type: object
             additionalProperties: true
         last_live_sequence:
           type: integer
           format: int64
-          description: Highest live_sequence included in `frames`, or 0 when no live frames
-            are available.
+          description: Highest live_sequence recorded for the turn, or 0 when none is known.
         updated_at:
           type: string
           format: date-time
@@ -14100,6 +14198,24 @@ components:
           type: string
           description: One safe line explaining a failure, only for Mobius's own tools. Empty
             for integration and third party tools, whose error text can quote private content.
+        helper:
+          $ref: '#/components/schemas/SessionToolHelper'
+          description: The background helper this step started. Present only on a subagent
+            call that started one, never on a blocking call.
+    SessionToolHelper:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      description: A background helper that a step started, named for the person.
+      properties:
+        id:
+          type: string
+          description: The helper's id. A result row names the same id in metadata.helper_result.
+        title:
+          type: string
+          description: A short plain title for the person, such as "Welcome email".
     SessionToolResultBlock:
       type: object
       additionalProperties: true
@@ -14479,7 +14595,12 @@ components:
             the summary, counting only rows a reader sees — the number to show a user), `message_count`
             (the raw window size, including host-injected context rows), `from_sequence` /
             `through_sequence` (the window''s sequence bounds), `estimated_tokens`, `strategy`,
-            `summary_model`, and `summary_provider`.'
+            `summary_model`, and `summary_provider`. A `helper_result` key (`{id, tool_call_id,
+            title, outcome, text}`; `text` only when finished) marks a background helper''s
+            result, written only by the server; callers cannot set it. The row''s text is
+            then the helper''s own final message: untrusted helper output, not the person''s
+            words, even though the row''s role is `user`. A reader that feeds rows to a model
+            must skip these rows.'
         event_projection:
           $ref: '#/components/schemas/SessionEventProjection'
           description: Server-owned safe display projection when this message was triggered

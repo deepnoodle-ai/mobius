@@ -4449,19 +4449,103 @@ class UpdateSessionRequest(BaseModel):
     )
 
 
+class Status4(StrEnum):
+    running = 'running'
+    done = 'done'
+    failed = 'failed'
+
+
+class SessionHelperStep(BaseModel):
+    """
+    One step of a background helper, as the display catalog phrases it. Never the step's input, output, tool name, or the helper's own text.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    phrase: str = Field(
+        ..., description='For example "Saving a row in support_hire_onboarding…".'
+    )
+    status: Status4
+
+
+class State2(StrEnum):
+    """
+    waiting: queued for a free slot. working: running. finished, unfinished (it ended without a result), and stopped are ends.
+    """
+
+    waiting = 'waiting'
+    working = 'working'
+    finished = 'finished'
+    unfinished = 'unfinished'
+    stopped = 'stopped'
+
+
+class SessionHelper(BaseModel):
+    """
+    A background helper as the person sees it while its turn runs. The server sends the whole state on every change, so a client shows the latest one.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    turn_id: str
+    helper_id: str = Field(
+        ...,
+        description="The helper's id, the same as the start step's display.helper.id.",
+    )
+    tool_call_id: str = Field(..., description="The start call's id.")
+    title: str = Field(
+        ..., description='A short plain title for the person, such as "Welcome email".'
+    )
+    state: State2 = Field(
+        ...,
+        description='waiting: queued for a free slot. working: running. finished, unfinished (it ended without a result), and stopped are ends.',
+    )
+    steps: list[SessionHelperStep] = Field(
+        ..., description="The helper's last steps, newest last.", max_length=5
+    )
+    earlier_steps: int = Field(
+        ..., description='How many steps came before the ones listed.'
+    )
+    created_at: AwareDatetime = Field(
+        ..., description='When the start call made the helper.'
+    )
+    started_at: AwareDatetime | None = Field(
+        None,
+        description='When the helper started running, after any wait for a slot. Absent while waiting.',
+    )
+    ended_at: AwareDatetime | None = Field(
+        None, description='When the helper ended. Absent until it ends.'
+    )
+
+
 class EventType1(StrEnum):
-    message_upsert = 'message.upsert'
+    helper_upsert = 'helper.upsert'
+
+
+class HelperUpsertFrame(SessionHelper):
+    """
+    Live pulse: a helper's whole state, sent on every change (made, started, a step starts or ends, ended). Not stored; a reconnect reads it from the snapshot.
+    """
+
+    event_type: Literal['helper.upsert']
+    session_id: str
 
 
 class EventType2(StrEnum):
-    message_block = 'message.block'
+    message_upsert = 'message.upsert'
 
 
 class EventType3(StrEnum):
-    message_block_patch = 'message.block.patch'
+    message_block = 'message.block'
 
 
 class EventType4(StrEnum):
+    message_block_patch = 'message.block.patch'
+
+
+class EventType5(StrEnum):
     message_delta = 'message.delta'
 
 
@@ -4477,15 +4561,15 @@ class MessageDeltaFrame(BaseModel):
     thinking: str | None = None
 
 
-class EventType5(StrEnum):
+class EventType6(StrEnum):
     turn_upsert = 'turn.upsert'
 
 
-class EventType6(StrEnum):
+class EventType7(StrEnum):
     interaction_upsert = 'interaction.upsert'
 
 
-class EventType7(StrEnum):
+class EventType8(StrEnum):
     stream_ready = 'stream.ready'
 
 
@@ -4498,7 +4582,7 @@ class StreamReadyFrame(BaseModel):
     resume_cursor: str
 
 
-class EventType8(StrEnum):
+class EventType9(StrEnum):
     session_message_preview = 'session.message.preview'
 
 
@@ -4514,18 +4598,18 @@ class SessionLiveSnapshot(BaseModel):
     turn_id: str
     frames: list[dict[str, Any]] = Field(
         ...,
-        description='Live-only frame payloads in live_sequence order. Each item has the same shape as its SSE `data:` payload.',
+        description='Always empty. Kept for the response shape while the endpoint is retired.',
     )
     last_live_sequence: int = Field(
         ...,
-        description='Highest live_sequence included in `frames`, or 0 when no live frames are available.',
+        description='Highest live_sequence recorded for the turn, or 0 when none is known.',
     )
     updated_at: AwareDatetime = Field(
         ..., description='Server timestamp when the snapshot was last updated.'
     )
 
 
-class EventType9(StrEnum):
+class EventType10(StrEnum):
     session_resync = 'session.resync'
 
 
@@ -4537,14 +4621,14 @@ class SessionResyncFrame(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    event_type: EventType9
+    event_type: EventType10
     session_id: str
     reason: str = Field(
         ..., description='Machine-readable resync reason, e.g. `subscriber_overflow`.'
     )
 
 
-class EventType10(StrEnum):
+class EventType11(StrEnum):
     stream_end = 'stream.end'
 
 
@@ -4567,7 +4651,7 @@ class StreamEndFrame(BaseModel):
     reason: Reason2
 
 
-class EventType11(StrEnum):
+class EventType12(StrEnum):
     voice_call_started = 'voice_call.started'
 
 
@@ -4584,7 +4668,7 @@ class VoiceCallFrameCall(BaseModel):
     principal_id: str
 
 
-class EventType12(StrEnum):
+class EventType13(StrEnum):
     voice_call_ended = 'voice_call.ended'
 
 
@@ -4806,54 +4890,20 @@ class SessionResolvedAction(BaseModel):
     )
 
 
-class SessionToolDisplay(BaseModel):
+class SessionToolHelper(BaseModel):
     """
-    Plain-language phrasing for a tool call, recorded when the call is made. Clients show these words instead of the tool name or its arguments.
+    A background helper that a step started, named for the person.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    label: str = Field(
+    id: str = Field(
         ...,
-        description='What the tool does, in sentence case, for example "Export a PDF".',
+        description="The helper's id. A result row names the same id in metadata.helper_result.",
     )
-    running: str | None = Field(
-        None, description='Phrase while the call runs, for example "Exporting a PDF…".'
-    )
-    done: str | None = Field(
-        None,
-        description='Phrase once it succeeds, for example: Exported "Q3 update.pdf".',
-    )
-    done_many: str | None = Field(
-        None,
-        description='Phrase for a group of these calls; "{n}" is replaced by the count.',
-    )
-    subject: str | None = Field(
-        None,
-        description='The one thing the call acted on, such as a file name. Never message bodies.',
-    )
-    artifact_id: str | None = Field(
-        None, description='The artifact the call created or changed, when there is one.'
-    )
-    artifact_root_id: str | None = Field(
-        None,
-        description='The first version of the document artifact_id belongs to, when the call made a document version. Revisions of one document share it.',
-    )
-    session_id: str | None = Field(
-        None,
-        description='The private assistant exchange opened by this call, when there is one. Access is checked when opened.',
-    )
-    integration: str | None = Field(
-        None,
-        description='The integration\'s name as people know it, shown before the label, for example "GitHub".',
-    )
-    integration_key: str | None = Field(
-        None, description='Provider key for the integration icon, for example "github".'
-    )
-    error: str | None = Field(
-        None,
-        description="One safe line explaining a failure, only for Mobius's own tools. Empty for integration and third party tools, whose error text can quote private content.",
+    title: str = Field(
+        ..., description='A short plain title for the person, such as "Welcome email".'
     )
 
 
@@ -5640,7 +5690,7 @@ class SessionEventDeliveryListResponse(BaseModel):
     next_cursor: str | None = None
 
 
-class State2(StrEnum):
+class State3(StrEnum):
     converting = 'converting'
     ready = 'ready'
     failed = 'failed'
@@ -5654,7 +5704,7 @@ class ArtifactConversionSummary(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    state: State2
+    state: State3
     error: str | None = Field(None, description='Failure reason when state is failed.')
 
 
@@ -5939,7 +5989,7 @@ class Trigger(StrEnum):
     event = 'event'
 
 
-class Status4(StrEnum):
+class Status5(StrEnum):
     """
     `blocked` is a run that ended without doing its work: the assistant reported it (`error_code` `agent_reported`), or the conversation's files could not be opened (`workspace_unavailable`). `error_message` says why. A pending run with `next_attempt_at` is waiting to be tried again after an attempt that stopped.
     """
@@ -5965,7 +6015,7 @@ class Changes(BaseModel):
     after: dict[str, Any] | None = None
 
 
-class Status5(StrEnum):
+class Status6(StrEnum):
     success = 'success'
     failure = 'failure'
 
@@ -6000,7 +6050,7 @@ class RoutineChange(BaseModel):
         None,
         description='The values before and after. Withheld fields read as `<redacted>` rather than disappearing.',
     )
-    status: Status5
+    status: Status6
     error_type: str | None = None
     created_at: AwareDatetime
 
@@ -6014,7 +6064,7 @@ class RoutineChangeList(BaseModel):
     next_cursor: str | None = None
 
 
-class Status6(StrEnum):
+class Status7(StrEnum):
     pending = 'pending'
     approved = 'approved'
     dismissed = 'dismissed'
@@ -6029,7 +6079,7 @@ class RoutineProposal(BaseModel):
     session_id: str
     agent_id: str
     proposed_to: str
-    status: Status6
+    status: Status7
     routine_id: str | None = None
     expires_at: AwareDatetime
     payload: dict[str, Any] = Field(..., description='What the agent proposed.')
@@ -6039,7 +6089,7 @@ class RoutineProposal(BaseModel):
     )
 
 
-class State3(StrEnum):
+class State4(StrEnum):
     open = 'open'
     idle = 'idle'
     closed = 'closed'
@@ -6052,7 +6102,7 @@ class RoutineThread(BaseModel):
     key: str = Field(..., description='Opaque stable URL-safe thread key.')
     routine_id: str
     session_id: str | None = None
-    state: State3
+    state: State4
     outcome: str | None = None
     title: str
     url: str | None = None
@@ -6266,7 +6316,7 @@ class BlueprintSkillInput(BaseModel):
     tags: TagMap | None = None
 
 
-class Status7(StrEnum):
+class Status8(StrEnum):
     """
     `applied` for a mutating apply, `previewed` for a preview.
     """
@@ -6321,7 +6371,7 @@ class SetBlueprintProtectionRequest(BaseModel):
     protected: bool
 
 
-class Status8(StrEnum):
+class Status9(StrEnum):
     deleted = 'deleted'
 
 
@@ -6329,7 +6379,7 @@ class BlueprintDeleteResult(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    status: Status8
+    status: Status9
     namespace: str | None = None
     blueprint_key: str
     deleted: list[BlueprintBinding] = Field(
@@ -7996,22 +8046,6 @@ class SessionTranscriptTurn(BaseModel):
     )
 
 
-class MessageBlockPatchFrame(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    event_type: Literal['message.block.patch']
-    session_id: str
-    message_id: str
-    content_index: int = Field(..., ge=0)
-    status: str | None = Field(
-        None, description='Known values are pending, running, ok, error, and cancelled.'
-    )
-    progress: dict[str, Any] | None = None
-    resolved_action: SessionResolvedAction | None = None
-    display: SessionToolDisplay | None = None
-
-
 class TurnUpsertFrame(SessionTranscriptTurn):
     event_type: Literal['turn.upsert']
 
@@ -8052,30 +8086,59 @@ class NudgeEventPayload(BaseModel):
     status: SessionNudgeStatus
 
 
-class SessionToolUseBlock(BaseModel):
+class SessionToolDisplay(BaseModel):
     """
-    A tool call the agent issued.
+    Plain-language phrasing for a tool call, recorded when the call is made. Clients show these words instead of the tool name or its arguments.
     """
 
     model_config = ConfigDict(
-        extra='allow',
+        extra='forbid',
     )
-    type: Literal['tool_use']
-    id: str = Field(
-        ..., description='Tool-call id; the matching tool_result references it.'
+    label: str = Field(
+        ...,
+        description='What the tool does, in sentence case, for example "Export a PDF".',
     )
-    name: str = Field(..., description='Tool name.')
-    input: dict[str, Any] = Field(..., description='Tool input arguments.')
-    status: str | None = Field(
+    running: str | None = Field(
+        None, description='Phrase while the call runs, for example "Exporting a PDF…".'
+    )
+    done: str | None = Field(
         None,
-        description='Known values are pending, running, ok, error, and cancelled; unknown values must be preserved.',
+        description='Phrase once it succeeds, for example: Exported "Q3 update.pdf".',
     )
-    progress: dict[str, Any] | None = Field(
+    done_many: str | None = Field(
         None,
-        description='Latest in-flight progress snapshot. Absent on final transcript rows.',
+        description='Phrase for a group of these calls; "{n}" is replaced by the count.',
     )
-    resolved_action: SessionResolvedAction | None = None
-    display: SessionToolDisplay | None = None
+    subject: str | None = Field(
+        None,
+        description='The one thing the call acted on, such as a file name. Never message bodies.',
+    )
+    artifact_id: str | None = Field(
+        None, description='The artifact the call created or changed, when there is one.'
+    )
+    artifact_root_id: str | None = Field(
+        None,
+        description='The first version of the document artifact_id belongs to, when the call made a document version. Revisions of one document share it.',
+    )
+    session_id: str | None = Field(
+        None,
+        description='The private assistant exchange opened by this call, when there is one. Access is checked when opened.',
+    )
+    integration: str | None = Field(
+        None,
+        description='The integration\'s name as people know it, shown before the label, for example "GitHub".',
+    )
+    integration_key: str | None = Field(
+        None, description='Provider key for the integration icon, for example "github".'
+    )
+    error: str | None = Field(
+        None,
+        description="One safe line explaining a failure, only for Mobius's own tools. Empty for integration and third party tools, whose error text can quote private content.",
+    )
+    helper: SessionToolHelper | None = Field(
+        None,
+        description='The background helper this step started. Present only on a subagent call that started one, never on a blocking call.',
+    )
 
 
 class SessionImageBlock(BaseModel):
@@ -8532,7 +8595,7 @@ class RoutineOccurrence(BaseModel):
         None,
         description='The concrete event type that arrived (`github.issues.opened`), not the pattern the routine subscribed to. Present only when `trigger` is `event`.',
     )
-    status: Status4 = Field(
+    status: Status5 = Field(
         ...,
         description="`blocked` is a run that ended without doing its work: the assistant reported it (`error_code` `agent_reported`), or the conversation's files could not be opened (`workspace_unavailable`). `error_message` says why. A pending run with `next_attempt_at` is waiting to be tried again after an attempt that stopped.",
     )
@@ -8711,7 +8774,7 @@ class BlueprintApplyResult(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    status: Status7 = Field(
+    status: Status8 = Field(
         ..., description='`applied` for a mutating apply, `previewed` for a preview.'
     )
     namespace: str | None = None
@@ -9054,8 +9117,50 @@ class DeletedAgentListResponse(BaseModel):
     total: int = Field(..., description='How many deleted agents the organization has.')
 
 
+class MessageBlockPatchFrame(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    event_type: Literal['message.block.patch']
+    session_id: str
+    message_id: str
+    content_index: int = Field(..., ge=0)
+    status: str | None = Field(
+        None, description='Known values are pending, running, ok, error, and cancelled.'
+    )
+    progress: dict[str, Any] | None = None
+    resolved_action: SessionResolvedAction | None = None
+    display: SessionToolDisplay | None = None
+
+
 class InteractionUpsertFrame(Interaction):
     event_type: Literal['interaction.upsert']
+
+
+class SessionToolUseBlock(BaseModel):
+    """
+    A tool call the agent issued.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    type: Literal['tool_use']
+    id: str = Field(
+        ..., description='Tool-call id; the matching tool_result references it.'
+    )
+    name: str = Field(..., description='Tool name.')
+    input: dict[str, Any] = Field(..., description='Tool input arguments.')
+    status: str | None = Field(
+        None,
+        description='Known values are pending, running, ok, error, and cancelled; unknown values must be preserved.',
+    )
+    progress: dict[str, Any] | None = Field(
+        None,
+        description='Latest in-flight progress snapshot. Absent on final transcript rows.',
+    )
+    resolved_action: SessionResolvedAction | None = None
+    display: SessionToolDisplay | None = None
 
 
 class BlueprintResources(BaseModel):
@@ -9123,7 +9228,7 @@ class SessionTranscriptMessage(BaseModel):
     covers_through_sequence: int | None = None
     metadata: dict[str, Any] | None = Field(
         None,
-        description='Free-form metadata for this message. A `compaction` entry carries the server-owned keys described on `SessionMessage.metadata`.',
+        description='Free-form metadata for this message. A `compaction` entry carries the server-owned keys described on `SessionMessage.metadata`. A `helper_result` key marks untrusted helper output, as described there.',
     )
     event_projection: SessionEventProjection | None = Field(
         None,
@@ -9153,6 +9258,10 @@ class SessionTranscriptSnapshot(BaseModel):
     next_page_token: str | None = Field(
         None, description='Opaque continuation present when has_more is true.'
     )
+    helpers: list[SessionHelper] | None = Field(
+        None,
+        description='The latest state of each background helper in a turn that has not ended, in the order they were made. Live only: never stored, and empty once the turn ends.',
+    )
 
 
 class MessageBlockFrame(BaseModel):
@@ -9174,7 +9283,7 @@ class SessionMessagePreviewFrame(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
-    event_type: EventType8
+    event_type: EventType9
     id: str = Field(
         ...,
         description='Provisional live id. Do not persist or use as the durable message id.',
@@ -9378,7 +9487,7 @@ class SessionMessage(BaseModel):
     )
     metadata: dict[str, Any] | None = Field(
         None,
-        description="Free-form caller metadata for this message. A `compaction` entry instead carries server-owned keys describing the pass that wrote it: `trigger` (a `CompactionTrigger`: what started the pass), `conversation_message_count` (transcript rows folded into the summary, counting only rows a reader sees — the number to show a user), `message_count` (the raw window size, including host-injected context rows), `from_sequence` / `through_sequence` (the window's sequence bounds), `estimated_tokens`, `strategy`, `summary_model`, and `summary_provider`.",
+        description="Free-form caller metadata for this message. A `compaction` entry instead carries server-owned keys describing the pass that wrote it: `trigger` (a `CompactionTrigger`: what started the pass), `conversation_message_count` (transcript rows folded into the summary, counting only rows a reader sees — the number to show a user), `message_count` (the raw window size, including host-injected context rows), `from_sequence` / `through_sequence` (the window's sequence bounds), `estimated_tokens`, `strategy`, `summary_model`, and `summary_provider`. A `helper_result` key (`{id, tool_call_id, title, outcome, text}`; `text` only when finished) marks a background helper's result, written only by the server; callers cannot set it. The row's text is then the helper's own final message: untrusted helper output, not the person's words, even though the row's role is `user`. A reader that feeds rows to a model must skip these rows.",
     )
     event_projection: SessionEventProjection | None = Field(
         None,
@@ -9529,6 +9638,7 @@ class SessionTranscriptFrame(
         | StreamEndFrame
         | VoiceCallStartedFrame
         | VoiceCallEndedFrame
+        | HelperUpsertFrame
     ]
 ):
     root: (
@@ -9542,6 +9652,7 @@ class SessionTranscriptFrame(
         | StreamEndFrame
         | VoiceCallStartedFrame
         | VoiceCallEndedFrame
+        | HelperUpsertFrame
     ) = Field(..., discriminator='event_type')
 
 

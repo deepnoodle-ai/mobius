@@ -51,11 +51,22 @@ func TestTranscriptFrameContract(t *testing.T) {
 	var fixture transcriptFrameContract
 	readTranscriptFixture(t, "transcript_frames.json", &fixture)
 	view := NewSessionTranscript()
+	var helperFrames int
 	for _, event := range fixture.Events {
 		var frame api.SessionTranscriptFrame
 		assert.NoError(t, frame.UnmarshalJSON(event.Frame))
+		// The view ignores helper frames; they must still decode, and must not
+		// change the messages or cursor the expectations below check.
+		if kind, _ := frame.Discriminator(); kind == "helper.upsert" {
+			helper, err := frame.AsHelperUpsertFrame()
+			assert.NoError(t, err)
+			assert.Equal(t, helper.HelperId, "help_1")
+			assert.Equal(t, len(helper.Steps), 2)
+			helperFrames++
+		}
 		view.Apply(TranscriptStreamEvent{ID: event.ID, Frame: frame})
 	}
+	assert.Equal(t, helperFrames, 1)
 
 	assert.Equal(t, view.Cursor(), fixture.Expected.Cursor)
 	assert.Equal(t, transcriptMessageIDs(view.Messages()), fixture.Expected.MessageIDs)
@@ -131,11 +142,16 @@ func TestTranscriptSnapshotContract(t *testing.T) {
 	var fixture transcriptSnapshotContract
 	readTranscriptFixture(t, "transcript_snapshot.json", &fixture)
 	view := NewSessionTranscript()
+	var helpers int
 	for _, raw := range fixture.Pages {
 		var page api.SessionTranscriptSnapshot
 		assert.NoError(t, json.Unmarshal(raw, &page))
+		if page.Helpers != nil {
+			helpers += len(*page.Helpers)
+		}
 		view.ApplySnapshot(&page)
 	}
+	assert.Equal(t, helpers, 1)
 	assert.Equal(t, view.Cursor(), fixture.Expected.Cursor)
 	assert.Equal(t, transcriptMessageIDs(view.Messages()), fixture.Expected.MessageIDs)
 	assert.Equal(t, transcriptMessageIDs(view.RenderableMessages()), fixture.Expected.RenderableIDs)
