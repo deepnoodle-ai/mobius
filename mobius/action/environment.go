@@ -1242,7 +1242,7 @@ func runGitWithCredential(ctx mobius.Context, repoFullName, operation, dir strin
 	}
 	defer func() { _ = os.RemoveAll(filepath.Dir(askpass)) }()
 	// The askpass already holds this call's credential. Reset the global
-	// credential.helper that clone installs for environment.bash: git asks
+	// credential.helper that the worker installs at startup for job shells: git asks
 	// helpers before askpass, and the helper has no job lease in this process,
 	// so it would print a 403 into the result before askpass succeeded.
 	args = append([]string{"-c", "credential.helper="}, args...)

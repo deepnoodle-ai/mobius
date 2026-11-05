@@ -12,10 +12,10 @@ the minor version.
 
 ### Security
 
-- `mobius worker` removes `MOBIUS_API_KEY` from its environment at startup, and
-  on Linux marks itself non-dumpable so children cannot read the key from
-  `/proc/<pid>/environ`. Commands a job starts (`environment.bash`, coding
-  agents, git and its hooks) no longer see the worker's key.
+- `mobius worker` removes `MOBIUS_API_KEY` from its environment at startup and,
+  on Linux, marks itself non-dumpable, so commands a job starts no longer
+  inherit the key or read it from `/proc/<pid>/environ`. A command with root or
+  passwordless sudo still can. See SECURITY.md.
 - `mobius git-credential-helper` needs no API key: it asks the worker for a
   token over a private Unix socket (`MOBIUS_GIT_CREDENTIAL_SOCKET`). The worker
   writes the helper's git config at startup; `environment.git.clone` now sets

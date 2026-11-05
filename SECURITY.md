@@ -27,8 +27,9 @@ run with the worker's process environment, but **not with `MOBIUS_API_KEY`**.
 `mobius worker` removes the key from its own environment at startup, so no
 child inherits it. On Linux it also marks itself non-dumpable, so a child
 running as the same user cannot read the key from `/proc/<pid>/environ`. A
-child running as root still can, so do not give job commands root if the key
-matters to you.
+child running as root, or able to use passwordless `sudo`, still can, and can
+also read any key file the worker was started from. Do not give job commands
+root or passwordless `sudo` if the key matters to you.
 
 Git in a job shell authenticates through `mobius git-credential-helper`. In a
 managed environment the worker serves credentials on a Unix socket in a private
