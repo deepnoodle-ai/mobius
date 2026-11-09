@@ -42,6 +42,7 @@ def _skill(skill_id: str = "skill_1", source: str = "custom") -> dict:
         "visibility": "organization",
         "container": None,
         "posture": "team",
+        "controls": {"can_edit": True, "can_delete": True},
         "created_at": "2026-07-17T00:00:00Z",
         "updated_at": "2026-07-17T00:00:00Z",
     }

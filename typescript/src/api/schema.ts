@@ -1467,7 +1467,7 @@ export interface paths {
         put?: never;
         /**
          * Start an agent turn
-         * @description Appends one caller input message to the session and starts an agent turn to respond. By default returns `202 Accepted` immediately with a durable `after_sequence` cursor (a message `sequence`) to stream from. The turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection, equivalent to opening `GET .../stream` at the returned cursor. A repeated call with the same `idempotency_key` returns the existing invocation without restarting it or writing new input. A distinct send while a direct turn is queued, running, or waiting returns `409 session_turn_active` before appending the new input; use the nudge endpoint explicitly to steer an active turn. Requires the `mobius.resource.use` permission (or the agent's own backing principal).
+         * @description Appends one caller input message to the session and starts an agent turn to respond. By default returns `202 Accepted` immediately with a `resume_cursor`; open `GET .../transcript/stream?cursor=<resume_cursor>` to follow the turn. The turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection. The inline stream cannot be resumed; a client that loses it follows the turn on the transcript stream from `resume_cursor`. A repeated call with the same `idempotency_key` returns the existing invocation without restarting it or writing new input. A distinct send while a direct turn is queued, running, or waiting returns `409 session_turn_active` before appending the new input; use the nudge endpoint explicitly to steer an active turn. Requires the `mobius.resource.use` permission (or the agent's own backing principal).
          *
          *     Set `operation.timeout_seconds` to at least one for a one-shot timeout override on this turn. It takes precedence over the agent default and is not saved on the session.
          */
@@ -1752,32 +1752,6 @@ export interface paths {
          * @description Resumable SSE view of the transcript snapshot. The explicit cursor query parameter takes precedence over Last-Event-ID. State-frame ids are delivered watermarks and never regress.
          */
         get: operations["streamSessionTranscript"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/sessions/{session_id}/stream": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Stream a session's activity
-         * @description Opens a long-lived Server-Sent Events stream that is a live view over the session's one durable conversation log (its transcript messages). It is the single streaming surface for a session.
-         *
-         *     The transcript messages with `sequence > after_sequence` are replayed first — covering any turn that committed between the client's last read and the stream open — then the in-flight turn is tailed live. Each committed message is framed as `event: <type>` (`user.message`, `agent.message`, or the non-terminal `compaction.created`) with a `data:` line carrying the message payload and an `id:` line carrying the message `sequence`. The cursor is therefore the same `sequence` the messages API uses: reconnect with `?after_sequence=N` (or the `Last-Event-ID` header) to resume exactly where you left off, with no separate event cursor.
-         *
-         *     The stream follows the session's active turn and closes once the session is idle — no queued or running turn — after the active turn's committed rows and a terminal `turn.completed` / `turn.failed` / `turn.cancelled` frame have been delivered. A later turn is a new activity tail; open a new stream for it or use the streaming `POST .../turns` response.
-         *
-         *     Live-only `generation.delta`, `session.message.preview`, `session.resync`, `tool.call`, and `tool.result` frames carry no `id:`, are interleaved best-effort for low-latency rendering, and are never persisted or replayed — on reconnect the durable message frames are the source of truth.
-         */
-        get: operations["streamSession"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2828,39 +2802,6 @@ export interface components {
                 };
             };
         };
-        /** @description Live-only token preview frame that can appear on session SSE streams. It is not persisted, does not carry an SSE `id:`, and cannot be replayed with `after_sequence` or `Last-Event-ID`. */
-        GenerationDeltaFrame: {
-            /** @enum {string} */
-            event_type: "generation.delta";
-            session_id?: string | null;
-            turn_id?: string | null;
-            job_id?: string | null;
-            tool_call_id?: string | null;
-            /**
-             * Format: int64
-             * @description Monotonic per-turn sequence across all live-only session frames; use to detect dropped live frames.
-             */
-            live_sequence?: number | null;
-            /**
-             * Format: int64
-             * @description Publisher-local ordering hint for deltas within a turn, not a replay cursor.
-             */
-            delta_sequence?: number | null;
-            /**
-             * Format: date-time
-             * @description Server timestamp when this live preview frame was emitted.
-             */
-            emitted_at?: string | null;
-            /** @description Token preview payload. Normal answer text arrives as `{ "text": "..." }`; summarized reasoning/thinking arrives as `{ "type": "thinking", "thinking": "..." }`. */
-            delta: {
-                [key: string]: unknown;
-            };
-            worker_id?: string | null;
-            /** @description Model producing the generation, e.g. `claude-sonnet-4-6`. */
-            model?: string | null;
-        } & {
-            [key: string]: unknown;
-        };
         /** @description The human or team responsible for this resource. */
         ResourceOwner: {
             /** @enum {string} */
@@ -2884,6 +2825,13 @@ export interface components {
          * @enum {string}
          */
         ResourcePosture: "only_you" | "shared_by_you" | "shared_with_group" | "team" | "someone_else";
+        /** @description What the current caller may do to this resource, answered by the same access rule the update and delete routes run. Clients offer controls from this and never re-derive it from posture or role. Team-owned resources are changed only by those who look after them. */
+        ResourceControls: {
+            /** @description Whether the caller may change the resource, including its content, rows, or secrets. */
+            can_edit: boolean;
+            /** @description Whether the caller may delete the resource. */
+            can_delete: boolean;
+        };
         /**
          * @description Whether a catalog capability — an action, an event source, or an integration provider — is usable right now. `ready` means it can be used as-is; `needs_setup` means it is known and supported but blocked by configuration, credentials, permissions, provider runtime availability, or implementation status. This is catalog *readiness*, and is deliberately separate from a resource's lifecycle state (such as integration `status` or artifact lifecycle).
          * @enum {string}
@@ -3235,6 +3183,7 @@ export interface components {
             session_key: string;
             visibility: components["schemas"]["ResourceVisibility"];
             posture: components["schemas"]["ResourcePosture"];
+            controls: components["schemas"]["ResourceControls"];
             /** @description Model selected for this session. Omitted when the session inherits the agent's model. */
             model_override?: string;
             /** @description Model the session most recently exchanged tokens with. */
@@ -3709,6 +3658,7 @@ export interface components {
             visibility: components["schemas"]["ResourceVisibility"];
             container?: components["schemas"]["ResourceContainer"];
             posture: components["schemas"]["ResourcePosture"];
+            controls: components["schemas"]["ResourceControls"];
             /** @description Stable identifier the action is called by. */
             name: string;
             /** @description Human-readable display title for the action. */
@@ -3824,6 +3774,8 @@ export interface components {
             container?: components["schemas"]["ResourceContainer"];
             /** @description Present for an organization-authored custom action. */
             posture?: components["schemas"]["ResourcePosture"];
+            /** @description Present for an organization-authored custom action. */
+            controls?: components["schemas"]["ResourceControls"];
         };
         /** @description Execution-location metadata surfaced to action pickers. */
         ActionExecutionMetadata: {
@@ -4815,7 +4767,7 @@ export interface components {
             /** @description Empty for a file. */
             name: string;
             /**
-             * @description `audience`: the skill is private to fewer people than the copy is for; its custodian can share it. `needs_admin`: only an Admin grants a company account. `failed`: the copy or grant failed.
+             * @description `audience`: the skill is private to fewer people than the copy is for, and its custodian can share it; or the file belongs to a chat and stays in it. `needs_admin`: only an Admin grants a company account. `failed`: the copy or grant failed.
              * @enum {string}
              */
             reason: "audience" | "needs_admin" | "failed";
@@ -5010,7 +4962,7 @@ export interface components {
             account?: string;
             /** @description True when the items a held delete would remove could not be read. The card still shows the call's arguments and can be approved. */
             details_unavailable?: boolean;
-            /** @description True when the card leaves out or shortens part of what the held calls would do, such as recipients, attachments, message text, or an argument. Such a card can only be declined. */
+            /** @description True when the card cannot show part of what the held calls would do, such as an attachment with no readable name. Values are never shortened for length. Such a card can only be declined. */
             details_cut?: boolean;
             /** @description True when the held calls belong to a routine run. */
             in_routine?: boolean;
@@ -5160,6 +5112,8 @@ export interface components {
             visibility: components["schemas"]["ResourceVisibility"];
             container?: components["schemas"]["ResourceContainer"];
             posture: components["schemas"]["ResourcePosture"];
+            /** @description What the caller may do to this interaction. `can_edit` means the caller may cancel (dismiss) it and `can_delete` that they may delete it once it is closed: whoever asked, the person the asking turn ran for, a recipient, a reviewer, or an administrator. Present on responses to a person's request. */
+            controls?: components["schemas"]["ResourceControls"];
             /** @description Protocol kind of the interaction. */
             kind: components["schemas"]["InteractionKind"];
             /** @description Current lifecycle state of the interaction. */
@@ -5911,6 +5865,7 @@ export interface components {
             visibility: components["schemas"]["ResourceVisibility"];
             container: components["schemas"]["ResourceContainer"];
             posture: components["schemas"]["ResourcePosture"];
+            controls: components["schemas"]["ResourceControls"];
             /**
              * @description Canonical action names, wildcard selectors, or group references naming the actions this skill needs. Uses the same selector vocabulary as agent action selections.
              *
@@ -6009,6 +5964,11 @@ export interface components {
              * @description When the turn reached a terminal status.
              */
             completed_at?: string;
+            /**
+             * Format: date-time
+             * @description When the person pressed Stop. A running turn keeps running until its executor ends it, usually within a second; a cancelled turn with this set was stopped by the person, and what it wrote and did stays in the conversation.
+             */
+            stop_requested_at?: string;
             /**
              * Format: date-time
              * @description When this turn was taken back from the transcript. The turn record is kept so its usage stays readable, but its messages no longer appear in the transcript or in the agent's context. Absent on a turn that is still part of the conversation.
@@ -6133,6 +6093,11 @@ export interface components {
             completed_at?: string;
             /**
              * Format: date-time
+             * @description When the person pressed Stop. Same as `stop_requested_at` on the turn resource. A reducer keeps the turn's streaming rows as they stood from then on; the stored rows that end the turn replace them.
+             */
+            stop_requested_at?: string;
+            /**
+             * Format: date-time
              * @description Set when the turn has been taken back. A reducer that receives this drops the turn and every row belonging to it; the turn frame is the whole signal, since the removed message rows are never re-sent.
              */
             deleted_at?: string | null;
@@ -6253,6 +6218,25 @@ export interface components {
             content_index: number;
             text?: string;
             thinking?: string;
+            /**
+             * Format: int64
+             * @description The turn's live revision that carried this text. A page that stops the turn sends the last one it showed, so the saved reply ends where the page did.
+             */
+            revision?: number;
+            /**
+             * Format: date-time
+             * @description When the server published this frame. The server merges a block's deltas for up to 50 ms or 2 KiB, so this is when the merged text left the server. Clients use it to measure lag.
+             */
+            emitted_at?: string;
+        };
+        CancelSessionRequest: {
+            /** @description What the person had on screen when they pressed Stop: for each turn they were watching, the last live revision the page showed. A stopped reply is saved through that revision. Without it, the reply is saved as it stood when the stop arrived. */
+            shown?: components["schemas"]["ShownTurnRevision"][];
+        };
+        ShownTurnRevision: {
+            turn_id: string;
+            /** Format: int64 */
+            revision: number;
         };
         TurnUpsertFrame: components["schemas"]["SessionTranscriptTurn"] & {
             /** @enum {string} */
@@ -6284,13 +6268,13 @@ export interface components {
             resume_cursor: string;
         };
         /**
-         * @description JSON payload of a single `data:` line on the session SSE stream, paired with an `event: <event type>` line.
+         * @description JSON payload of a single `data:` line on a turn's SSE response, paired with an `event: <event type>` line. The streaming responses of `startTurn` and `invokeAgent` use it. The response first replays the transcript messages committed after the cursor, then tails the turn live, and closes once the session is idle.
          *
          *     The `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.
          *
-         *     Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, `compaction.started`, `compaction.failed`, and `generation.delta` frames are live-only and carry no `id:`. `stream.end` is the final envelope on every deliberate server-side close and also carries no `id:`.
+         *     Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>`. That `id:` is not a resume cursor: the inline stream cannot be resumed, and a repeated POST starts another turn unless it reuses the same `idempotency_key`. A client that loses the inline stream follows the turn on `streamSessionTranscript` from the acknowledgement's `resume_cursor` (`?cursor=`). Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, `compaction.started`, `compaction.failed`, and the transcript preview frames (`message.upsert`, `message.block`, `message.block.patch`, `message.delta`) are live-only and carry no `id:`. Streamed text arrives as `message.delta`, coalesced per block. `stream.end` is the final envelope on every deliberate server-side close and also carries no `id:`.
          */
-        SessionStreamFrame: components["schemas"]["SessionUserMessagePayload"] | components["schemas"]["AgentMessagePayload"] | components["schemas"]["CompactionStartedPayload"] | components["schemas"]["CompactionCreatedPayload"] | components["schemas"]["CompactionFailedPayload"] | components["schemas"]["TurnStartedPayload"] | components["schemas"]["TurnWaitingPayload"] | components["schemas"]["TurnCompletedPayload"] | components["schemas"]["TurnFailedPayload"] | components["schemas"]["TurnCancelledPayload"] | components["schemas"]["NudgeEventPayload"] | components["schemas"]["SessionMessagePreviewFrame"] | components["schemas"]["SessionResyncFrame"] | components["schemas"]["StreamEndFrame"] | components["schemas"]["ToolCallPayload"] | components["schemas"]["ToolResultPayload"] | components["schemas"]["GenerationDeltaFrame"];
+        SessionStreamFrame: components["schemas"]["SessionUserMessagePayload"] | components["schemas"]["AgentMessagePayload"] | components["schemas"]["CompactionStartedPayload"] | components["schemas"]["CompactionCreatedPayload"] | components["schemas"]["CompactionFailedPayload"] | components["schemas"]["TurnStartedPayload"] | components["schemas"]["TurnWaitingPayload"] | components["schemas"]["TurnCompletedPayload"] | components["schemas"]["TurnFailedPayload"] | components["schemas"]["TurnCancelledPayload"] | components["schemas"]["NudgeEventPayload"] | components["schemas"]["SessionMessagePreviewFrame"] | components["schemas"]["SessionResyncFrame"] | components["schemas"]["StreamEndFrame"] | components["schemas"]["ToolCallPayload"] | components["schemas"]["ToolResultPayload"] | components["schemas"]["MessageUpsertFrame"] | components["schemas"]["MessageBlockFrame"] | components["schemas"]["MessageBlockPatchFrame"] | components["schemas"]["MessageDeltaFrame"];
         /** @description Live-only, SessionMessage-compatible transcript preview for an in-flight agent response segment. It carries no durable `seq`, transcript `sequence`, or stable `message_id`; the committed row later replaces it by `turn_id` plus `metadata.response_message_index`. */
         SessionMessagePreviewFrame: {
             /** @enum {string} */
@@ -7129,7 +7113,7 @@ export interface components {
             resume_cursor: string;
             /**
              * Format: int64
-             * @description The transcript message `sequence` cursor to stream from. Pass it as `after_sequence` to `GET .../stream` to follow this turn.
+             * @description The transcript message `sequence` this turn starts after. To follow the turn, pass `resume_cursor` to `GET .../transcript/stream`.
              */
             after_sequence: number;
             /** @description True when a repeated idempotency key returned an existing turn without restarting it. */
@@ -7658,8 +7642,8 @@ export interface components {
              * @default 5
              */
             concurrency?: number;
-            /** @description Actions permitted for this caller; the server rechecks each request. */
-            available_actions?: ("edit" | "run" | "pause" | "resume" | "delete" | "invite")[];
+            /** @description Actions permitted for this caller; the server rechecks each request. `edit` changes the name, schedule, model, and lowers limits. `configure` also changes the instructions, the watched event, the accounts it uses, and raises limits: on a person's routine only its owner may. */
+            available_actions?: ("edit" | "configure" | "run" | "pause" | "resume" | "delete" | "invite")[];
             posture?: components["schemas"]["ResourcePosture"];
             /** @enum {string} */
             audience?: "private" | "named" | "organization" | "team";
@@ -8394,6 +8378,7 @@ export interface components {
             visibility: components["schemas"]["ResourceVisibility"];
             container?: components["schemas"]["ResourceContainer"];
             posture: components["schemas"]["ResourcePosture"];
+            controls: components["schemas"]["ResourceControls"];
             /** @description Lowercase snake_case table name, unique within the org. */
             name: string;
             /** @description Human-readable table description. */
@@ -11681,7 +11666,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Server-sent event stream of the turn's activity, returned when the request sets `Accept: text/event-stream`. Framing matches `GET /v1/sessions/{session_id}/stream`. */
+            /** @description Server-sent event stream of the turn's activity, returned when the request sets `Accept: text/event-stream`. `SessionStreamFrame` describes the framing. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -12269,7 +12254,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Server-sent event stream of the turn's activity, returned when the request sets `Accept: text/event-stream`. Framing matches `GET .../stream`. */
+            /** @description Server-sent event stream of the turn's activity, returned when the request sets `Accept: text/event-stream`. `SessionStreamFrame` describes the framing. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -12816,38 +12801,6 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    streamSession: {
-        parameters: {
-            query?: {
-                /** @description Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this value. Pass the `next_sequence` from the previous response to fetch the next page. */
-                after_sequence?: components["parameters"]["AfterSequenceParam"];
-            };
-            header?: {
-                /** @description SSE reconnect cursor. The browser EventSource API replays the last event's `id` in this header on automatic reconnect; the server resumes the stream after that sequence number. When both this header and the `after_sequence` query parameter are supplied, the larger sequence wins, so an explicit `after_sequence` never rewinds a live reconnect. Ignored for non-streaming (JSON) requests. */
-                "Last-Event-ID"?: components["parameters"]["LastEventIDParam"];
-            };
-            path: {
-                /** @description Identifier of the conversation session. */
-                session_id: components["parameters"]["SessionIdParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description A Server-Sent Events stream of session activity. Each frame is `event: <event type>` followed by a `data:` line carrying the JSON-encoded payload. Durable message frames carry an `id:` line with the message `sequence` for `Last-Event-ID` resume; live-only frames (`generation.delta`, `session.message.preview`, `session.resync`, `tool.call`, `tool.result`) do not carry `id:` and cannot be replayed. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/event-stream": components["schemas"]["SessionStreamFrame"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
     cancelSession: {
         parameters: {
             query?: never;
@@ -12858,7 +12811,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CancelSessionRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -13324,6 +13281,13 @@ export interface operations {
                     "application/json": components["schemas"]["Routine"];
                 };
             };
+            /** @description Routine paused by an administrator who may stop it but not read it, so no routine is returned. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
         };
@@ -13347,6 +13311,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Routine"];
                 };
+            };
+            /** @description Routine resumed by an administrator who may stop it but not read it, so no routine is returned. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];

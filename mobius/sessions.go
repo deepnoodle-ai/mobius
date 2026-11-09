@@ -223,9 +223,10 @@ func (c *Client) turnTranscript(ctx context.Context, op string, ack *api.TurnAck
 }
 
 // InvokeAgentStream behaves like InvokeAgent but streams the turn's activity
-// inline on the same connection instead of waiting for a TurnAck, identical
-// to framing from GET …/sessions/{id}/stream. The channel is closed when ctx
-// is cancelled or the server closes the connection.
+// inline on the same connection instead of waiting for a TurnAck. The inline
+// stream cannot be resumed; to follow the turn after it drops, open
+// GET …/transcript/stream from the turn's resume_cursor. The channel is closed
+// when ctx is cancelled or the server closes the connection.
 func (c *Client) InvokeAgentStream(ctx context.Context, opts InvokeAgentOptions) (<-chan SessionStreamEvent, error) {
 	req, err := invokeAgentRequest(opts)
 	if err != nil {
@@ -299,7 +300,11 @@ func (c *Client) GetSession(ctx context.Context, sessionID string) (*api.Session
 
 // CancelSession cancels the session's active turn.
 func (c *Client) CancelSession(ctx context.Context, sessionID string) (*api.Session, error) {
-	resp, err := c.ac.CancelSessionWithResponse(ctx, api.SessionIdParam(sessionID))
+	resp, err := c.ac.CancelSessionWithResponse(
+		ctx,
+		api.SessionIdParam(sessionID),
+		api.CancelSessionJSONRequestBody{},
+	)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: cancel session: %w", err)
 	}

@@ -2827,7 +2827,7 @@ paths:
       responses:
         '200':
           description: 'Server-sent event stream of the turn''s activity, returned when the
-            request sets `Accept: text/event-stream`. Framing matches `GET /v1/sessions/{session_id}/stream`.'
+            request sets `Accept: text/event-stream`. `SessionStreamFrame` describes the framing.'
           content:
             text/event-stream:
               schema:
@@ -3437,7 +3437,7 @@ paths:
       - sessions
       summary: Start an agent turn
       description: |-
-        Appends one caller input message to the session and starts an agent turn to respond. By default returns `202 Accepted` immediately with a durable `after_sequence` cursor (a message `sequence`) to stream from. The turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection, equivalent to opening `GET .../stream` at the returned cursor. A repeated call with the same `idempotency_key` returns the existing invocation without restarting it or writing new input. A distinct send while a direct turn is queued, running, or waiting returns `409 session_turn_active` before appending the new input; use the nudge endpoint explicitly to steer an active turn. Requires the `mobius.resource.use` permission (or the agent's own backing principal).
+        Appends one caller input message to the session and starts an agent turn to respond. By default returns `202 Accepted` immediately with a `resume_cursor`; open `GET .../transcript/stream?cursor=<resume_cursor>` to follow the turn. The turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection. The inline stream cannot be resumed; a client that loses it follows the turn on the transcript stream from `resume_cursor`. A repeated call with the same `idempotency_key` returns the existing invocation without restarting it or writing new input. A distinct send while a direct turn is queued, running, or waiting returns `409 session_turn_active` before appending the new input; use the nudge endpoint explicitly to steer an active turn. Requires the `mobius.resource.use` permission (or the agent's own backing principal).
 
         Set `operation.timeout_seconds` to at least one for a one-shot timeout override on this turn. It takes precedence over the agent default and is not saved on the session.
       parameters:
@@ -3451,7 +3451,7 @@ paths:
       responses:
         '200':
           description: 'Server-sent event stream of the turn''s activity, returned when the
-            request sets `Accept: text/event-stream`. Framing matches `GET .../stream`.'
+            request sets `Accept: text/event-stream`. `SessionStreamFrame` describes the framing.'
           content:
             text/event-stream:
               schema:
@@ -3999,41 +3999,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/sessions/{session_id}/stream:
-    get:
-      operationId: streamSession
-      tags:
-      - sessions
-      summary: Stream a session's activity
-      description: |-
-        Opens a long-lived Server-Sent Events stream that is a live view over the session's one durable conversation log (its transcript messages). It is the single streaming surface for a session.
-
-        The transcript messages with `sequence > after_sequence` are replayed first — covering any turn that committed between the client's last read and the stream open — then the in-flight turn is tailed live. Each committed message is framed as `event: <type>` (`user.message`, `agent.message`, or the non-terminal `compaction.created`) with a `data:` line carrying the message payload and an `id:` line carrying the message `sequence`. The cursor is therefore the same `sequence` the messages API uses: reconnect with `?after_sequence=N` (or the `Last-Event-ID` header) to resume exactly where you left off, with no separate event cursor.
-
-        The stream follows the session's active turn and closes once the session is idle — no queued or running turn — after the active turn's committed rows and a terminal `turn.completed` / `turn.failed` / `turn.cancelled` frame have been delivered. A later turn is a new activity tail; open a new stream for it or use the streaming `POST .../turns` response.
-
-        Live-only `generation.delta`, `session.message.preview`, `session.resync`, `tool.call`, and `tool.result` frames carry no `id:`, are interleaved best-effort for low-latency rendering, and are never persisted or replayed — on reconnect the durable message frames are the source of truth.
-      parameters:
-      - $ref: '#/components/parameters/SessionIdParam'
-      - $ref: '#/components/parameters/AfterSequenceParam'
-      - $ref: '#/components/parameters/LastEventIDParam'
-      responses:
-        '200':
-          description: 'A Server-Sent Events stream of session activity. Each frame is `event:
-            <event type>` followed by a `data:` line carrying the JSON-encoded payload. Durable
-            message frames carry an `id:` line with the message `sequence` for `Last-Event-ID`
-            resume; live-only frames (`generation.delta`, `session.message.preview`, `session.resync`,
-            `tool.call`, `tool.result`) do not carry `id:` and cannot be replayed.'
-          content:
-            text/event-stream:
-              schema:
-                $ref: '#/components/schemas/SessionStreamFrame'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
   /v1/sessions/{session_id}/cancel:
     post:
       operationId: cancelSession
@@ -4049,6 +4014,12 @@ paths:
         permission (or the agent's own backing principal).
       parameters:
       - $ref: '#/components/parameters/SessionIdParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelSessionRequest'
       responses:
         '200':
           description: OK
@@ -4610,6 +4581,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Routine'
+        '204':
+          description: Routine paused by an administrator who may stop it but not read it,
+            so no routine is returned.
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -4630,6 +4604,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Routine'
+        '204':
+          description: Routine resumed by an administrator who may stop it but not read it,
+            so no routine is returned.
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -6864,62 +6841,6 @@ components:
               description: Optional structured details specific to a `code`. Endpoints that
                 set this document the per-code shape inline. Absent for codes whose `code`
                 + `message` are sufficient.
-    GenerationDeltaFrame:
-      type: object
-      additionalProperties: true
-      required:
-      - event_type
-      - delta
-      description: Live-only token preview frame that can appear on session SSE streams. It
-        is not persisted, does not carry an SSE `id:`, and cannot be replayed with `after_sequence`
-        or `Last-Event-ID`.
-      properties:
-        event_type:
-          type: string
-          enum:
-          - generation.delta
-        session_id:
-          type: string
-          nullable: true
-        turn_id:
-          type: string
-          nullable: true
-        job_id:
-          type: string
-          nullable: true
-        tool_call_id:
-          type: string
-          nullable: true
-        live_sequence:
-          type: integer
-          format: int64
-          nullable: true
-          description: Monotonic per-turn sequence across all live-only session frames; use
-            to detect dropped live frames.
-        delta_sequence:
-          type: integer
-          format: int64
-          nullable: true
-          description: Publisher-local ordering hint for deltas within a turn, not a replay
-            cursor.
-        emitted_at:
-          type: string
-          format: date-time
-          nullable: true
-          description: Server timestamp when this live preview frame was emitted.
-        delta:
-          type: object
-          additionalProperties: true
-          description: 'Token preview payload. Normal answer text arrives as `{ "text": "..."
-            }`; summarized reasoning/thinking arrives as `{ "type": "thinking", "thinking":
-            "..." }`.'
-        worker_id:
-          type: string
-          nullable: true
-        model:
-          type: string
-          nullable: true
-          description: Model producing the generation, e.g. `claude-sonnet-4-6`.
     ResourceOwner:
       type: object
       additionalProperties: false
@@ -6968,6 +6889,24 @@ components:
       - someone_else
       description: Employee-facing effective ownership and audience posture for the current
         caller.
+    ResourceControls:
+      type: object
+      additionalProperties: false
+      required:
+      - can_edit
+      - can_delete
+      description: What the current caller may do to this resource, answered by the same access
+        rule the update and delete routes run. Clients offer controls from this and never
+        re-derive it from posture or role. Team-owned resources are changed only by those
+        who look after them.
+      properties:
+        can_edit:
+          type: boolean
+          description: Whether the caller may change the resource, including its content,
+            rows, or secrets.
+        can_delete:
+          type: boolean
+          description: Whether the caller may delete the resource.
     CapabilityReadiness:
       type: string
       enum:
@@ -7575,6 +7514,7 @@ components:
       - session_key
       - visibility
       - posture
+      - controls
       - message_count
       - token_input_total
       - token_output_total
@@ -7623,6 +7563,8 @@ components:
           $ref: '#/components/schemas/ResourceVisibility'
         posture:
           $ref: '#/components/schemas/ResourcePosture'
+        controls:
+          $ref: '#/components/schemas/ResourceControls'
         model_override:
           type: string
           description: Model selected for this session. Omitted when the session inherits
@@ -8243,6 +8185,7 @@ components:
       - owner
       - visibility
       - posture
+      - controls
       - name
       - endpoint_kind
       - invocation_format
@@ -8260,6 +8203,8 @@ components:
           $ref: '#/components/schemas/ResourceContainer'
         posture:
           $ref: '#/components/schemas/ResourcePosture'
+        controls:
+          $ref: '#/components/schemas/ResourceControls'
         name:
           type: string
           description: Stable identifier the action is called by.
@@ -8468,6 +8413,9 @@ components:
           description: Present when a custom action is narrowed by an agent container.
         posture:
           $ref: '#/components/schemas/ResourcePosture'
+          description: Present for an organization-authored custom action.
+        controls:
+          $ref: '#/components/schemas/ResourceControls'
           description: Present for an organization-authored custom action.
     ActionExecutionMetadata:
       type: object
@@ -10653,8 +10601,9 @@ components:
           - needs_admin
           - failed
           description: '`audience`: the skill is private to fewer people than the copy is
-            for; its custodian can share it. `needs_admin`: only an Admin grants a company
-            account. `failed`: the copy or grant failed.'
+            for, and its custodian can share it; or the file belongs to a chat and stays in
+            it. `needs_admin`: only an Admin grants a company account. `failed`: the copy
+            or grant failed.'
     InteractionMode:
       type: string
       enum:
@@ -11058,9 +11007,9 @@ components:
             card still shows the call's arguments and can be approved.
         details_cut:
           type: boolean
-          description: True when the card leaves out or shortens part of what the held calls
-            would do, such as recipients, attachments, message text, or an argument. Such
-            a card can only be declined.
+          description: True when the card cannot show part of what the held calls would do,
+            such as an attachment with no readable name. Values are never shortened for length.
+            Such a card can only be declined.
         in_routine:
           type: boolean
           description: True when the held calls belong to a routine run.
@@ -11384,6 +11333,12 @@ components:
           $ref: '#/components/schemas/ResourceContainer'
         posture:
           $ref: '#/components/schemas/ResourcePosture'
+        controls:
+          $ref: '#/components/schemas/ResourceControls'
+          description: 'What the caller may do to this interaction. `can_edit` means the caller
+            may cancel (dismiss) it and `can_delete` that they may delete it once it is closed:
+            whoever asked, the person the asking turn ran for, a recipient, a reviewer, or
+            an administrator. Present on responses to a person''s request.'
         kind:
           $ref: '#/components/schemas/InteractionKind'
           description: Protocol kind of the interaction.
@@ -12791,6 +12746,7 @@ components:
       - visibility
       - container
       - posture
+      - controls
       - created_at
       - updated_at
       properties:
@@ -12821,6 +12777,8 @@ components:
           $ref: '#/components/schemas/ResourceContainer'
         posture:
           $ref: '#/components/schemas/ResourcePosture'
+        controls:
+          $ref: '#/components/schemas/ResourceControls'
         allowed_actions:
           type: array
           description: |-
@@ -12981,6 +12939,12 @@ components:
           type: string
           format: date-time
           description: When the turn reached a terminal status.
+        stop_requested_at:
+          type: string
+          format: date-time
+          description: When the person pressed Stop. A running turn keeps running until its
+            executor ends it, usually within a second; a cancelled turn with this set was
+            stopped by the person, and what it wrote and did stays in the conversation.
         deleted_at:
           type: string
           format: date-time
@@ -13231,6 +13195,12 @@ components:
         completed_at:
           type: string
           format: date-time
+        stop_requested_at:
+          type: string
+          format: date-time
+          description: When the person pressed Stop. Same as `stop_requested_at` on the turn
+            resource. A reducer keeps the turn's streaming rows as they stood from then on;
+            the stored rows that end the turn replace them.
         deleted_at:
           type: string
           format: date-time
@@ -13484,6 +13454,42 @@ components:
           type: string
         thinking:
           type: string
+        revision:
+          type: integer
+          format: int64
+          description: The turn's live revision that carried this text. A page that stops
+            the turn sends the last one it showed, so the saved reply ends where the page
+            did.
+        emitted_at:
+          type: string
+          format: date-time
+          description: When the server published this frame. The server merges a block's deltas
+            for up to 50 ms or 2 KiB, so this is when the merged text left the server. Clients
+            use it to measure lag.
+    CancelSessionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        shown:
+          type: array
+          description: 'What the person had on screen when they pressed Stop: for each turn
+            they were watching, the last live revision the page showed. A stopped reply is
+            saved through that revision. Without it, the reply is saved as it stood when the
+            stop arrived.'
+          items:
+            $ref: '#/components/schemas/ShownTurnRevision'
+    ShownTurnRevision:
+      type: object
+      additionalProperties: false
+      required:
+      - turn_id
+      - revision
+      properties:
+        turn_id:
+          type: string
+        revision:
+          type: integer
+          format: int64
     TurnUpsertFrame:
       allOf:
       - $ref: '#/components/schemas/SessionTranscriptTurn'
@@ -13540,13 +13546,16 @@ components:
       - $ref: '#/components/schemas/StreamEndFrame'
       - $ref: '#/components/schemas/ToolCallPayload'
       - $ref: '#/components/schemas/ToolResultPayload'
-      - $ref: '#/components/schemas/GenerationDeltaFrame'
+      - $ref: '#/components/schemas/MessageUpsertFrame'
+      - $ref: '#/components/schemas/MessageBlockFrame'
+      - $ref: '#/components/schemas/MessageBlockPatchFrame'
+      - $ref: '#/components/schemas/MessageDeltaFrame'
       description: |-
-        JSON payload of a single `data:` line on the session SSE stream, paired with an `event: <event type>` line.
+        JSON payload of a single `data:` line on a turn's SSE response, paired with an `event: <event type>` line. The streaming responses of `startTurn` and `invokeAgent` use it. The response first replays the transcript messages committed after the cursor, then tails the turn live, and closes once the session is idle.
 
         The `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.
 
-        Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, `compaction.started`, `compaction.failed`, and `generation.delta` frames are live-only and carry no `id:`. `stream.end` is the final envelope on every deliberate server-side close and also carries no `id:`.
+        Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>`. That `id:` is not a resume cursor: the inline stream cannot be resumed, and a repeated POST starts another turn unless it reuses the same `idempotency_key`. A client that loses the inline stream follows the turn on `streamSessionTranscript` from the acknowledgement's `resume_cursor` (`?cursor=`). Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, `compaction.started`, `compaction.failed`, and the transcript preview frames (`message.upsert`, `message.block`, `message.block.patch`, `message.delta`) are live-only and carry no `id:`. Streamed text arrives as `message.delta`, coalesced per block. `stream.end` is the final envelope on every deliberate server-side close and also carries no `id:`.
     SessionMessagePreviewFrame:
       type: object
       additionalProperties: true
@@ -15066,8 +15075,8 @@ components:
         after_sequence:
           type: integer
           format: int64
-          description: The transcript message `sequence` cursor to stream from. Pass it as
-            `after_sequence` to `GET .../stream` to follow this turn.
+          description: The transcript message `sequence` this turn starts after. To follow
+            the turn, pass `resume_cursor` to `GET .../transcript/stream`.
         deduped:
           type: boolean
           description: True when a repeated idempotency key returned an existing turn without
@@ -16096,11 +16105,15 @@ components:
           description: Maximum concurrent threads. Only a human can raise it.
         available_actions:
           type: array
-          description: Actions permitted for this caller; the server rechecks each request.
+          description: 'Actions permitted for this caller; the server rechecks each request.
+            `edit` changes the name, schedule, model, and lowers limits. `configure` also
+            changes the instructions, the watched event, the accounts it uses, and raises
+            limits: on a person''s routine only its owner may.'
           items:
             type: string
             enum:
             - edit
+            - configure
             - run
             - pause
             - resume
@@ -17539,6 +17552,7 @@ components:
       - owner
       - visibility
       - posture
+      - controls
       - name
       - schema
       - created_at
@@ -17556,6 +17570,8 @@ components:
           $ref: '#/components/schemas/ResourceContainer'
         posture:
           $ref: '#/components/schemas/ResourcePosture'
+        controls:
+          $ref: '#/components/schemas/ResourceControls'
         name:
           type: string
           pattern: ^[a-z][a-z0-9_]*$

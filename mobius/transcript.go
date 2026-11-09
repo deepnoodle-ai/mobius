@@ -596,9 +596,9 @@ func (t *TurnTranscript) TurnError() error {
 // without restarting it or starting a new one.
 func (t *TurnTranscript) Deduped() bool { return t.deduped }
 
-// AfterSequence is the durable v1 stream cursor from the turn-start response;
-// pass it as after_sequence to GET …/sessions/{id}/stream (RawClient) to
-// follow this turn on the v1 session stream instead.
+// AfterSequence is the message sequence from the turn-start response. It is
+// not a stream cursor: to follow the turn yourself, open
+// GET …/transcript/stream (RawClient) from the response's resume_cursor.
 func (t *TurnTranscript) AfterSequence() int64 { return t.afterSequence }
 
 // Next advances the transcript by one state change, opening the stream on the

@@ -1418,21 +1418,6 @@ func (e EventCatalogSourceKind) Valid() bool {
 	}
 }
 
-// Defines values for GenerationDeltaFrameEventType.
-const (
-	GenerationDeltaFrameEventTypeGenerationDelta GenerationDeltaFrameEventType = "generation.delta"
-)
-
-// Valid indicates whether the value is a known member of the GenerationDeltaFrameEventType enum.
-func (e GenerationDeltaFrameEventType) Valid() bool {
-	switch e {
-	case GenerationDeltaFrameEventTypeGenerationDelta:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for HeldCallViewEffect.
 const (
 	HeldCallViewEffectDestructive HeldCallViewEffect = "destructive"
@@ -2368,17 +2353,20 @@ func (e RoutineAudience) Valid() bool {
 
 // Defines values for RoutineAvailableActions.
 const (
-	RoutineAvailableActionsDelete RoutineAvailableActions = "delete"
-	RoutineAvailableActionsEdit   RoutineAvailableActions = "edit"
-	RoutineAvailableActionsInvite RoutineAvailableActions = "invite"
-	RoutineAvailableActionsPause  RoutineAvailableActions = "pause"
-	RoutineAvailableActionsResume RoutineAvailableActions = "resume"
-	RoutineAvailableActionsRun    RoutineAvailableActions = "run"
+	RoutineAvailableActionsConfigure RoutineAvailableActions = "configure"
+	RoutineAvailableActionsDelete    RoutineAvailableActions = "delete"
+	RoutineAvailableActionsEdit      RoutineAvailableActions = "edit"
+	RoutineAvailableActionsInvite    RoutineAvailableActions = "invite"
+	RoutineAvailableActionsPause     RoutineAvailableActions = "pause"
+	RoutineAvailableActionsResume    RoutineAvailableActions = "resume"
+	RoutineAvailableActionsRun       RoutineAvailableActions = "run"
 )
 
 // Valid indicates whether the value is a known member of the RoutineAvailableActions enum.
 func (e RoutineAvailableActions) Valid() bool {
 	switch e {
+	case RoutineAvailableActionsConfigure:
+		return true
 	case RoutineAvailableActionsDelete:
 		return true
 	case RoutineAvailableActionsEdit:
@@ -4261,6 +4249,9 @@ type Action struct {
 	// Container The agent that contains this resource and may further narrow who can reach it.
 	Container *ResourceContainer `json:"container,omitempty"`
 
+	// Controls What the current caller may do to this resource, answered by the same access rule the update and delete routes run. Clients offer controls from this and never re-derive it from posture or role. Team-owned resources are changed only by those who look after them.
+	Controls ResourceControls `json:"controls"`
+
 	// CreatedAt Timestamp when this action was created.
 	CreatedAt time.Time `json:"created_at"`
 
@@ -4342,6 +4333,9 @@ type ActionCatalogEntry struct {
 
 	// Container The agent that contains this resource and may further narrow who can reach it.
 	Container *ResourceContainer `json:"container,omitempty"`
+
+	// Controls What the current caller may do to this resource, answered by the same access rule the update and delete routes run. Clients offer controls from this and never re-derive it from posture or role. Team-owned resources are changed only by those who look after them.
+	Controls *ResourceControls `json:"controls,omitempty"`
 
 	// DefinitionScope Scope that owns the selected definition: `platform` for Mobius and integration actions, or `custom` for an action authored in the current organization.
 	DefinitionScope ActionCatalogEntryDefinitionScope `json:"definition_scope"`
@@ -4774,14 +4768,14 @@ type AgentCopyLeftOut struct {
 	// Name Empty for a file.
 	Name string `json:"name"`
 
-	// Reason `audience`: the skill is private to fewer people than the copy is for; its custodian can share it. `needs_admin`: only an Admin grants a company account. `failed`: the copy or grant failed.
+	// Reason `audience`: the skill is private to fewer people than the copy is for, and its custodian can share it; or the file belongs to a chat and stays in it. `needs_admin`: only an Admin grants a company account. `failed`: the copy or grant failed.
 	Reason AgentCopyLeftOutReason `json:"reason"`
 }
 
 // AgentCopyLeftOutKind defines model for AgentCopyLeftOut.Kind.
 type AgentCopyLeftOutKind string
 
-// AgentCopyLeftOutReason `audience`: the skill is private to fewer people than the copy is for; its custodian can share it. `needs_admin`: only an Admin grants a company account. `failed`: the copy or grant failed.
+// AgentCopyLeftOutReason `audience`: the skill is private to fewer people than the copy is for, and its custodian can share it; or the file belongs to a chat and stays in it. `needs_admin`: only an Admin grants a company account. `failed`: the copy or grant failed.
 type AgentCopyLeftOutReason string
 
 // AgentListResponse defines model for AgentListResponse.
@@ -5219,6 +5213,9 @@ type AgentTurn struct {
 
 	// Status Agent turn lifecycle status: `queued`, `running`, `waiting`, `completed`, `failed`, or `cancelled`.
 	Status AgentTurnStatus `json:"status"`
+
+	// StopRequestedAt When the person pressed Stop. A running turn keeps running until its executor ends it, usually within a second; a cancelled turn with this set was stopped by the person, and what it wrote and did stays in the conversation.
+	StopRequestedAt *time.Time `json:"stop_requested_at,omitempty"`
 
 	// UpdatedAt Time the turn was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
@@ -5923,6 +5920,12 @@ type BulkInsertRowsResult struct {
 type CancelInteractionRequest struct {
 	// Reason Free-text reason recorded on the interaction.
 	Reason *string `json:"reason,omitempty"`
+}
+
+// CancelSessionRequest defines model for CancelSessionRequest.
+type CancelSessionRequest struct {
+	// Shown What the person had on screen when they pressed Stop: for each turn they were watching, the last live revision the page showed. A stopped reply is saved through that revision. Without it, the reply is saved as it stood when the stop arrived.
+	Shown *[]ShownTurnRevision `json:"shown,omitempty"`
 }
 
 // CapabilityReadiness Whether a catalog capability — an action, an event source, or an integration provider — is usable right now. `ready` means it can be used as-is; `needs_setup` means it is known and supported but blocked by configuration, credentials, permissions, provider runtime availability, or implementation status. This is catalog *readiness*, and is deliberately separate from a resource's lifecycle state (such as integration `status` or artifact lifecycle).
@@ -6880,41 +6883,13 @@ type EventTrigger struct {
 	SourceBindings []ConnectionBinding `json:"source_bindings"`
 }
 
-// GenerationDeltaFrame Live-only token preview frame that can appear on session SSE streams. It is not persisted, does not carry an SSE `id:`, and cannot be replayed with `after_sequence` or `Last-Event-ID`.
-type GenerationDeltaFrame struct {
-	// Delta Token preview payload. Normal answer text arrives as `{ "text": "..." }`; summarized reasoning/thinking arrives as `{ "type": "thinking", "thinking": "..." }`.
-	Delta map[string]interface{} `json:"delta"`
-
-	// DeltaSequence Publisher-local ordering hint for deltas within a turn, not a replay cursor.
-	DeltaSequence *int64 `json:"delta_sequence,omitempty"`
-
-	// EmittedAt Server timestamp when this live preview frame was emitted.
-	EmittedAt *time.Time                    `json:"emitted_at,omitempty"`
-	EventType GenerationDeltaFrameEventType `json:"event_type"`
-	JobId     *string                       `json:"job_id,omitempty"`
-
-	// LiveSequence Monotonic per-turn sequence across all live-only session frames; use to detect dropped live frames.
-	LiveSequence *int64 `json:"live_sequence,omitempty"`
-
-	// Model Model producing the generation, e.g. `claude-sonnet-4-6`.
-	Model                *string                `json:"model,omitempty"`
-	SessionId            *string                `json:"session_id,omitempty"`
-	ToolCallId           *string                `json:"tool_call_id,omitempty"`
-	TurnId               *string                `json:"turn_id,omitempty"`
-	WorkerId             *string                `json:"worker_id,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-
-// GenerationDeltaFrameEventType defines model for GenerationDeltaFrame.EventType.
-type GenerationDeltaFrameEventType string
-
 // HeldCallApproval defines model for HeldCallApproval.
 type HeldCallApproval struct {
 	Account       *string        `json:"account,omitempty"`
 	AssistantName *string        `json:"assistant_name,omitempty"`
 	Calls         []HeldCallView `json:"calls"`
 
-	// DetailsCut True when the card leaves out or shortens part of what the held calls would do, such as recipients, attachments, message text, or an argument. Such a card can only be declined.
+	// DetailsCut True when the card cannot show part of what the held calls would do, such as an attachment with no readable name. Values are never shortened for length. Such a card can only be declined.
 	DetailsCut *bool `json:"details_cut,omitempty"`
 
 	// DetailsUnavailable True when the items a held delete would remove could not be read. The card still shows the call's arguments and can be approved.
@@ -7153,6 +7128,9 @@ type Interaction struct {
 
 	// Context Additional key-value context surfaced in the UI alongside the title and description when supplied.
 	Context *map[string]interface{} `json:"context,omitempty"`
+
+	// Controls What the current caller may do to this resource, answered by the same access rule the update and delete routes run. Clients offer controls from this and never re-derive it from posture or role. Team-owned resources are changed only by those who look after them.
+	Controls *ResourceControls `json:"controls,omitempty"`
 
 	// CreatedAt Timestamp when this interaction was created.
 	CreatedAt time.Time `json:"created_at"`
@@ -7562,6 +7540,9 @@ type InteractionUpsertFrame struct {
 	// Context Additional key-value context surfaced in the UI alongside the title and description when supplied.
 	Context *map[string]interface{} `json:"context,omitempty"`
 
+	// Controls What the current caller may do to this resource, answered by the same access rule the update and delete routes run. Clients offer controls from this and never re-derive it from posture or role. Team-owned resources are changed only by those who look after them.
+	Controls *ResourceControls `json:"controls,omitempty"`
+
 	// CreatedAt Timestamp when this interaction was created.
 	CreatedAt time.Time `json:"created_at"`
 
@@ -7881,12 +7862,18 @@ type MessageBlockPatchFrameEventType string
 
 // MessageDeltaFrame defines model for MessageDeltaFrame.
 type MessageDeltaFrame struct {
-	ContentIndex int                        `json:"content_index"`
-	EventType    MessageDeltaFrameEventType `json:"event_type"`
-	MessageId    string                     `json:"message_id"`
-	SessionId    string                     `json:"session_id"`
-	Text         *string                    `json:"text,omitempty"`
-	Thinking     *string                    `json:"thinking,omitempty"`
+	ContentIndex int `json:"content_index"`
+
+	// EmittedAt When the server published this frame. The server merges a block's deltas for up to 50 ms or 2 KiB, so this is when the merged text left the server. Clients use it to measure lag.
+	EmittedAt *time.Time                 `json:"emitted_at,omitempty"`
+	EventType MessageDeltaFrameEventType `json:"event_type"`
+	MessageId string                     `json:"message_id"`
+
+	// Revision The turn's live revision that carried this text. A page that stops the turn sends the last one it showed, so the saved reply ends where the page did.
+	Revision  *int64  `json:"revision,omitempty"`
+	SessionId string  `json:"session_id"`
+	Text      *string `json:"text,omitempty"`
+	Thinking  *string `json:"thinking,omitempty"`
 }
 
 // MessageDeltaFrameEventType defines model for MessageDeltaFrame.EventType.
@@ -8272,6 +8259,15 @@ type ResourceContainer struct {
 // ResourceContainerKind defines model for ResourceContainer.Kind.
 type ResourceContainerKind string
 
+// ResourceControls What the current caller may do to this resource, answered by the same access rule the update and delete routes run. Clients offer controls from this and never re-derive it from posture or role. Team-owned resources are changed only by those who look after them.
+type ResourceControls struct {
+	// CanDelete Whether the caller may delete the resource.
+	CanDelete bool `json:"can_delete"`
+
+	// CanEdit Whether the caller may change the resource, including its content, rows, or secrets.
+	CanEdit bool `json:"can_edit"`
+}
+
 // ResourceOwner The human or team responsible for this resource.
 type ResourceOwner struct {
 	// Id Human principal ID when kind is person; null for the team.
@@ -8470,7 +8466,7 @@ type Routine struct {
 	Attention *RoutineAttention `json:"attention,omitempty"`
 	Audience  *RoutineAudience  `json:"audience,omitempty"`
 
-	// AvailableActions Actions permitted for this caller; the server rechecks each request.
+	// AvailableActions Actions permitted for this caller; the server rechecks each request. `edit` changes the name, schedule, model, and lowers limits. `configure` also changes the instructions, the watched event, the accounts it uses, and raises limits: on a person's routine only its owner may.
 	AvailableActions *[]RoutineAvailableActions `json:"available_actions,omitempty"`
 	CompletedAt      *time.Time                 `json:"completed_at,omitempty"`
 
@@ -9041,6 +9037,9 @@ type Session struct {
 
 	// Container The agent that contains this resource and may further narrow who can reach it.
 	Container *ResourceContainer `json:"container,omitempty"`
+
+	// Controls What the current caller may do to this resource, answered by the same access rule the update and delete routes run. Clients offer controls from this and never re-derive it from posture or role. Team-owned resources are changed only by those who look after them.
+	Controls ResourceControls `json:"controls"`
 
 	// CreatedAt Record creation timestamp.
 	CreatedAt time.Time `json:"created_at"`
@@ -9779,11 +9778,11 @@ type SessionScope string
 // SessionStatus Durable conversation session status: `active`, `archived`, or `deleted`.
 type SessionStatus string
 
-// SessionStreamFrame JSON payload of a single `data:` line on the session SSE stream, paired with an `event: <event type>` line.
+// SessionStreamFrame JSON payload of a single `data:` line on a turn's SSE response, paired with an `event: <event type>` line. The streaming responses of `startTurn` and `invokeAgent` use it. The response first replays the transcript messages committed after the cursor, then tails the turn live, and closes once the session is idle.
 //
 // The `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.
 //
-// Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, `compaction.started`, `compaction.failed`, and `generation.delta` frames are live-only and carry no `id:`. `stream.end` is the final envelope on every deliberate server-side close and also carries no `id:`.
+// Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>`. That `id:` is not a resume cursor: the inline stream cannot be resumed, and a repeated POST starts another turn unless it reuses the same `idempotency_key`. A client that loses the inline stream follows the turn on `streamSessionTranscript` from the acknowledgement's `resume_cursor` (`?cursor=`). Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, `compaction.started`, `compaction.failed`, and the transcript preview frames (`message.upsert`, `message.block`, `message.block.patch`, `message.delta`) are live-only and carry no `id:`. Streamed text arrives as `message.delta`, coalesced per block. `stream.end` is the final envelope on every deliberate server-side close and also carries no `id:`.
 type SessionStreamFrame struct {
 	union json.RawMessage
 }
@@ -10004,8 +10003,11 @@ type SessionTranscriptTurn struct {
 	SessionId    string                 `json:"session_id"`
 
 	// Status Known AgentTurn status; unknown values must be preserved.
-	Status    string    `json:"status"`
-	UpdatedAt time.Time `json:"updated_at"`
+	Status string `json:"status"`
+
+	// StopRequestedAt When the person pressed Stop. Same as `stop_requested_at` on the turn resource. A reducer keeps the turn's streaming rows as they stood from then on; the stored rows that end the turn replace them.
+	StopRequestedAt *time.Time `json:"stop_requested_at,omitempty"`
+	UpdatedAt       time.Time  `json:"updated_at"`
 
 	// Usage Aggregate token accounting for one terminal turn, summed over every LLM call the turn made, across every segment of a resumed turn. On the turn resource, a failed turn reports the calls that finished before it failed; `turn.failed` carries no usage. It is a usage report, not a bill — see the billing usage events for charged amounts.
 	Usage *AgentTurnUsage        `json:"usage,omitempty"`
@@ -10055,6 +10057,12 @@ type SetConnectionDefaultRequest struct {
 	GrantId       string                   `json:"grant_id"`
 }
 
+// ShownTurnRevision defines model for ShownTurnRevision.
+type ShownTurnRevision struct {
+	Revision int64  `json:"revision"`
+	TurnId   string `json:"turn_id"`
+}
+
 // Skill Reusable instruction bundle assignable to agents.
 type Skill struct {
 	// AllowedActions Canonical action names, wildcard selectors, or group references naming the actions this skill needs. Uses the same selector vocabulary as agent action selections.
@@ -10064,6 +10072,9 @@ type Skill struct {
 
 	// Container The agent that contains this resource and may further narrow who can reach it.
 	Container *ResourceContainer `json:"container"`
+
+	// Controls What the current caller may do to this resource, answered by the same access rule the update and delete routes run. Clients offer controls from this and never re-derive it from posture or role. Team-owned resources are changed only by those who look after them.
+	Controls ResourceControls `json:"controls"`
 
 	// CreatedAt Record creation timestamp.
 	CreatedAt time.Time `json:"created_at"`
@@ -10254,6 +10265,9 @@ type StreamReadyFrameEventType string
 type Table struct {
 	// Container The agent that contains this resource and may further narrow who can reach it.
 	Container *ResourceContainer `json:"container,omitempty"`
+
+	// Controls What the current caller may do to this resource, answered by the same access rule the update and delete routes run. Clients offer controls from this and never re-derive it from posture or role. Team-owned resources are changed only by those who look after them.
+	Controls ResourceControls `json:"controls"`
 
 	// CreatedAt Time the table was created.
 	CreatedAt time.Time `json:"created_at"`
@@ -10452,7 +10466,7 @@ type ToolResultPayload struct {
 
 // TurnAck Acknowledgement that a turn started, with a stream cursor.
 type TurnAck struct {
-	// AfterSequence The transcript message `sequence` cursor to stream from. Pass it as `after_sequence` to `GET .../stream` to follow this turn.
+	// AfterSequence The transcript message `sequence` this turn starts after. To follow the turn, pass `resume_cursor` to `GET .../transcript/stream`.
 	AfterSequence int64 `json:"after_sequence"`
 
 	// Deduped True when a repeated idempotency key returned an existing turn without restarting it.
@@ -10528,8 +10542,11 @@ type TurnUpsertFrame struct {
 	SessionId    string                 `json:"session_id"`
 
 	// Status Known AgentTurn status; unknown values must be preserved.
-	Status    string    `json:"status"`
-	UpdatedAt time.Time `json:"updated_at"`
+	Status string `json:"status"`
+
+	// StopRequestedAt When the person pressed Stop. Same as `stop_requested_at` on the turn resource. A reducer keeps the turn's streaming rows as they stood from then on; the stored rows that end the turn replace them.
+	StopRequestedAt *time.Time `json:"stop_requested_at,omitempty"`
+	UpdatedAt       time.Time  `json:"updated_at"`
 
 	// Usage Aggregate token accounting for one terminal turn, summed over every LLM call the turn made, across every segment of a resumed turn. On the turn resource, a failed turn reports the calls that finished before it failed; `turn.failed` carries no usage. It is a usage report, not a bill — see the billing usage events for charged amounts.
 	Usage *AgentTurnUsage        `json:"usage,omitempty"`
@@ -11220,9 +11237,6 @@ type CursorParam = string
 // IDParam defines model for IDParam.
 type IDParam = string
 
-// LastEventIDParam defines model for LastEventIDParam.
-type LastEventIDParam = int64
-
 // LibraryPlaceParam defines model for LibraryPlaceParam.
 type LibraryPlaceParam string
 
@@ -11842,15 +11856,6 @@ type ListSessionNudgesParams struct {
 // ListSessionNudgesParamsOrder defines parameters for ListSessionNudges.
 type ListSessionNudgesParamsOrder string
 
-// StreamSessionParams defines parameters for StreamSession.
-type StreamSessionParams struct {
-	// AfterSequence Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this value. Pass the `next_sequence` from the previous response to fetch the next page.
-	AfterSequence *AfterSequenceParam `form:"after_sequence,omitempty" json:"after_sequence,omitempty"`
-
-	// LastEventID SSE reconnect cursor. The browser EventSource API replays the last event's `id` in this header on automatic reconnect; the server resumes the stream after that sequence number. When both this header and the `after_sequence` query parameter are supplied, the larger sequence wins, so an explicit `after_sequence` never rewinds a live reconnect. Ignored for non-streaming (JSON) requests.
-	LastEventID *LastEventIDParam `json:"Last-Event-ID,omitempty"`
-}
-
 // GetSessionTranscriptParams defines parameters for GetSessionTranscript.
 type GetSessionTranscriptParams struct {
 	// Cursor Opaque resume_cursor from a prior snapshot or stream.
@@ -12042,6 +12047,9 @@ type CreateSessionAttachmentMultipartRequestBody = CreateSessionAttachmentReques
 
 // CompleteSessionPDFUploadJSONRequestBody defines body for CompleteSessionPDFUpload for application/json ContentType.
 type CompleteSessionPDFUploadJSONRequestBody = CompleteSessionPDFUploadRequest
+
+// CancelSessionJSONRequestBody defines body for CancelSession for application/json ContentType.
+type CancelSessionJSONRequestBody = CancelSessionRequest
 
 // CreateSessionEventSubscriptionJSONRequestBody defines body for CreateSessionEventSubscription for application/json ContentType.
 type CreateSessionEventSubscriptionJSONRequestBody = CreateSessionEventSubscriptionRequest
@@ -12901,222 +12909,6 @@ func (a CompactionStartedPayload) MarshalJSON() ([]byte, error) {
 		object["trigger"], err = json.Marshal(a.Trigger)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'trigger': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for GenerationDeltaFrame. Returns the specified
-// element and whether it was found
-func (a GenerationDeltaFrame) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for GenerationDeltaFrame
-func (a *GenerationDeltaFrame) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for GenerationDeltaFrame to handle AdditionalProperties
-func (a *GenerationDeltaFrame) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["delta"]; found {
-		err = json.Unmarshal(raw, &a.Delta)
-		if err != nil {
-			return fmt.Errorf("error reading 'delta': %w", err)
-		}
-		delete(object, "delta")
-	}
-
-	if raw, found := object["delta_sequence"]; found {
-		err = json.Unmarshal(raw, &a.DeltaSequence)
-		if err != nil {
-			return fmt.Errorf("error reading 'delta_sequence': %w", err)
-		}
-		delete(object, "delta_sequence")
-	}
-
-	if raw, found := object["emitted_at"]; found {
-		err = json.Unmarshal(raw, &a.EmittedAt)
-		if err != nil {
-			return fmt.Errorf("error reading 'emitted_at': %w", err)
-		}
-		delete(object, "emitted_at")
-	}
-
-	if raw, found := object["event_type"]; found {
-		err = json.Unmarshal(raw, &a.EventType)
-		if err != nil {
-			return fmt.Errorf("error reading 'event_type': %w", err)
-		}
-		delete(object, "event_type")
-	}
-
-	if raw, found := object["job_id"]; found {
-		err = json.Unmarshal(raw, &a.JobId)
-		if err != nil {
-			return fmt.Errorf("error reading 'job_id': %w", err)
-		}
-		delete(object, "job_id")
-	}
-
-	if raw, found := object["live_sequence"]; found {
-		err = json.Unmarshal(raw, &a.LiveSequence)
-		if err != nil {
-			return fmt.Errorf("error reading 'live_sequence': %w", err)
-		}
-		delete(object, "live_sequence")
-	}
-
-	if raw, found := object["model"]; found {
-		err = json.Unmarshal(raw, &a.Model)
-		if err != nil {
-			return fmt.Errorf("error reading 'model': %w", err)
-		}
-		delete(object, "model")
-	}
-
-	if raw, found := object["session_id"]; found {
-		err = json.Unmarshal(raw, &a.SessionId)
-		if err != nil {
-			return fmt.Errorf("error reading 'session_id': %w", err)
-		}
-		delete(object, "session_id")
-	}
-
-	if raw, found := object["tool_call_id"]; found {
-		err = json.Unmarshal(raw, &a.ToolCallId)
-		if err != nil {
-			return fmt.Errorf("error reading 'tool_call_id': %w", err)
-		}
-		delete(object, "tool_call_id")
-	}
-
-	if raw, found := object["turn_id"]; found {
-		err = json.Unmarshal(raw, &a.TurnId)
-		if err != nil {
-			return fmt.Errorf("error reading 'turn_id': %w", err)
-		}
-		delete(object, "turn_id")
-	}
-
-	if raw, found := object["worker_id"]; found {
-		err = json.Unmarshal(raw, &a.WorkerId)
-		if err != nil {
-			return fmt.Errorf("error reading 'worker_id': %w", err)
-		}
-		delete(object, "worker_id")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for GenerationDeltaFrame to handle AdditionalProperties
-func (a GenerationDeltaFrame) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Delta != nil {
-		object["delta"], err = json.Marshal(a.Delta)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'delta': %w", err)
-		}
-	}
-
-	if a.DeltaSequence != nil {
-		object["delta_sequence"], err = json.Marshal(a.DeltaSequence)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'delta_sequence': %w", err)
-		}
-	}
-
-	if a.EmittedAt != nil {
-		object["emitted_at"], err = json.Marshal(a.EmittedAt)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'emitted_at': %w", err)
-		}
-	}
-
-	object["event_type"], err = json.Marshal(a.EventType)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'event_type': %w", err)
-	}
-
-	if a.JobId != nil {
-		object["job_id"], err = json.Marshal(a.JobId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'job_id': %w", err)
-		}
-	}
-
-	if a.LiveSequence != nil {
-		object["live_sequence"], err = json.Marshal(a.LiveSequence)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'live_sequence': %w", err)
-		}
-	}
-
-	if a.Model != nil {
-		object["model"], err = json.Marshal(a.Model)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'model': %w", err)
-		}
-	}
-
-	if a.SessionId != nil {
-		object["session_id"], err = json.Marshal(a.SessionId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'session_id': %w", err)
-		}
-	}
-
-	if a.ToolCallId != nil {
-		object["tool_call_id"], err = json.Marshal(a.ToolCallId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'tool_call_id': %w", err)
-		}
-	}
-
-	if a.TurnId != nil {
-		object["turn_id"], err = json.Marshal(a.TurnId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'turn_id': %w", err)
-		}
-	}
-
-	if a.WorkerId != nil {
-		object["worker_id"], err = json.Marshal(a.WorkerId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'worker_id': %w", err)
 		}
 	}
 
@@ -16392,22 +16184,100 @@ func (t *SessionStreamFrame) MergeToolResultPayload(v ToolResultPayload) error {
 	return err
 }
 
-// AsGenerationDeltaFrame returns the union data inside the SessionStreamFrame as a GenerationDeltaFrame
-func (t SessionStreamFrame) AsGenerationDeltaFrame() (GenerationDeltaFrame, error) {
-	var body GenerationDeltaFrame
+// AsMessageUpsertFrame returns the union data inside the SessionStreamFrame as a MessageUpsertFrame
+func (t SessionStreamFrame) AsMessageUpsertFrame() (MessageUpsertFrame, error) {
+	var body MessageUpsertFrame
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromGenerationDeltaFrame overwrites any union data inside the SessionStreamFrame as the provided GenerationDeltaFrame
-func (t *SessionStreamFrame) FromGenerationDeltaFrame(v GenerationDeltaFrame) error {
+// FromMessageUpsertFrame overwrites any union data inside the SessionStreamFrame as the provided MessageUpsertFrame
+func (t *SessionStreamFrame) FromMessageUpsertFrame(v MessageUpsertFrame) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeGenerationDeltaFrame performs a merge with any union data inside the SessionStreamFrame, using the provided GenerationDeltaFrame
-func (t *SessionStreamFrame) MergeGenerationDeltaFrame(v GenerationDeltaFrame) error {
+// MergeMessageUpsertFrame performs a merge with any union data inside the SessionStreamFrame, using the provided MessageUpsertFrame
+func (t *SessionStreamFrame) MergeMessageUpsertFrame(v MessageUpsertFrame) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsMessageBlockFrame returns the union data inside the SessionStreamFrame as a MessageBlockFrame
+func (t SessionStreamFrame) AsMessageBlockFrame() (MessageBlockFrame, error) {
+	var body MessageBlockFrame
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromMessageBlockFrame overwrites any union data inside the SessionStreamFrame as the provided MessageBlockFrame
+func (t *SessionStreamFrame) FromMessageBlockFrame(v MessageBlockFrame) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeMessageBlockFrame performs a merge with any union data inside the SessionStreamFrame, using the provided MessageBlockFrame
+func (t *SessionStreamFrame) MergeMessageBlockFrame(v MessageBlockFrame) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsMessageBlockPatchFrame returns the union data inside the SessionStreamFrame as a MessageBlockPatchFrame
+func (t SessionStreamFrame) AsMessageBlockPatchFrame() (MessageBlockPatchFrame, error) {
+	var body MessageBlockPatchFrame
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromMessageBlockPatchFrame overwrites any union data inside the SessionStreamFrame as the provided MessageBlockPatchFrame
+func (t *SessionStreamFrame) FromMessageBlockPatchFrame(v MessageBlockPatchFrame) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeMessageBlockPatchFrame performs a merge with any union data inside the SessionStreamFrame, using the provided MessageBlockPatchFrame
+func (t *SessionStreamFrame) MergeMessageBlockPatchFrame(v MessageBlockPatchFrame) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsMessageDeltaFrame returns the union data inside the SessionStreamFrame as a MessageDeltaFrame
+func (t SessionStreamFrame) AsMessageDeltaFrame() (MessageDeltaFrame, error) {
+	var body MessageDeltaFrame
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromMessageDeltaFrame overwrites any union data inside the SessionStreamFrame as the provided MessageDeltaFrame
+func (t *SessionStreamFrame) FromMessageDeltaFrame(v MessageDeltaFrame) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeMessageDeltaFrame performs a merge with any union data inside the SessionStreamFrame, using the provided MessageDeltaFrame
+func (t *SessionStreamFrame) MergeMessageDeltaFrame(v MessageDeltaFrame) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -17868,8 +17738,10 @@ type ClientInterface interface {
 	// DeleteSessionAttachment request
 	DeleteSessionAttachment(ctx context.Context, sessionId SessionIdParam, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CancelSession request
-	CancelSession(ctx context.Context, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// CancelSessionWithBody request with any body
+	CancelSessionWithBody(ctx context.Context, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CancelSession(ctx context.Context, sessionId SessionIdParam, body CancelSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CompactSession request
 	CompactSession(ctx context.Context, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -17923,9 +17795,6 @@ type ClientInterface interface {
 	CreateSessionArtifactReferenceWithBody(ctx context.Context, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	CreateSessionArtifactReference(ctx context.Context, sessionId SessionIdParam, body CreateSessionArtifactReferenceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// StreamSession request
-	StreamSession(ctx context.Context, sessionId SessionIdParam, params *StreamSessionParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetSessionTranscript request
 	GetSessionTranscript(ctx context.Context, sessionId SessionIdParam, params *GetSessionTranscriptParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -20082,8 +19951,20 @@ func (c *Client) DeleteSessionAttachment(ctx context.Context, sessionId SessionI
 	return c.Client.Do(req)
 }
 
-func (c *Client) CancelSession(ctx context.Context, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCancelSessionRequest(c.Server, sessionId)
+func (c *Client) CancelSessionWithBody(ctx context.Context, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCancelSessionRequestWithBody(c.Server, sessionId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CancelSession(ctx context.Context, sessionId SessionIdParam, body CancelSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCancelSessionRequest(c.Server, sessionId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -20312,18 +20193,6 @@ func (c *Client) CreateSessionArtifactReferenceWithBody(ctx context.Context, ses
 
 func (c *Client) CreateSessionArtifactReference(ctx context.Context, sessionId SessionIdParam, body CreateSessionArtifactReferenceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateSessionArtifactReferenceRequest(c.Server, sessionId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) StreamSession(ctx context.Context, sessionId SessionIdParam, params *StreamSessionParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewStreamSessionRequest(c.Server, sessionId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -27518,8 +27387,19 @@ func NewDeleteSessionAttachmentRequest(server string, sessionId SessionIdParam, 
 	return req, nil
 }
 
-// NewCancelSessionRequest generates requests for CancelSession
-func NewCancelSessionRequest(server string, sessionId SessionIdParam) (*http.Request, error) {
+// NewCancelSessionRequest calls the generic CancelSession builder with application/json body
+func NewCancelSessionRequest(server string, sessionId SessionIdParam, body CancelSessionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCancelSessionRequestWithBody(server, sessionId, "application/json", bodyReader)
+}
+
+// NewCancelSessionRequestWithBody generates requests for CancelSession with any type of body
+func NewCancelSessionRequestWithBody(server string, sessionId SessionIdParam, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -27544,10 +27424,12 @@ func NewCancelSessionRequest(server string, sessionId SessionIdParam) (*http.Req
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -28421,82 +28303,6 @@ func NewCreateSessionArtifactReferenceRequestWithBody(server string, sessionId S
 	}
 
 	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewStreamSessionRequest generates requests for StreamSession
-func NewStreamSessionRequest(server string, sessionId SessionIdParam, params *StreamSessionParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/sessions/%s/stream", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.AfterSequence != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "after_sequence", *params.AfterSequence, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-
-		if params.LastEventID != nil {
-			var headerParam0 string
-
-			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Last-Event-ID", *params.LastEventID, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "integer", Format: "int64"})
-			if err != nil {
-				return nil, err
-			}
-
-			req.Header.Set("Last-Event-ID", headerParam0)
-		}
-
-	}
 
 	return req, nil
 }
@@ -30434,8 +30240,10 @@ type ClientWithResponsesInterface interface {
 	// DeleteSessionAttachmentWithResponse request
 	DeleteSessionAttachmentWithResponse(ctx context.Context, sessionId SessionIdParam, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*DeleteSessionAttachmentResponse, error)
 
-	// CancelSessionWithResponse request
-	CancelSessionWithResponse(ctx context.Context, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*CancelSessionResponse, error)
+	// CancelSessionWithBodyWithResponse request with any body
+	CancelSessionWithBodyWithResponse(ctx context.Context, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CancelSessionResponse, error)
+
+	CancelSessionWithResponse(ctx context.Context, sessionId SessionIdParam, body CancelSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*CancelSessionResponse, error)
 
 	// CompactSessionWithResponse request
 	CompactSessionWithResponse(ctx context.Context, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*CompactSessionResponse, error)
@@ -30489,9 +30297,6 @@ type ClientWithResponsesInterface interface {
 	CreateSessionArtifactReferenceWithBodyWithResponse(ctx context.Context, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSessionArtifactReferenceResponse, error)
 
 	CreateSessionArtifactReferenceWithResponse(ctx context.Context, sessionId SessionIdParam, body CreateSessionArtifactReferenceJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSessionArtifactReferenceResponse, error)
-
-	// StreamSessionWithResponse request
-	StreamSessionWithResponse(ctx context.Context, sessionId SessionIdParam, params *StreamSessionParams, reqEditors ...RequestEditorFn) (*StreamSessionResponse, error)
 
 	// GetSessionTranscriptWithResponse request
 	GetSessionTranscriptWithResponse(ctx context.Context, sessionId SessionIdParam, params *GetSessionTranscriptParams, reqEditors ...RequestEditorFn) (*GetSessionTranscriptResponse, error)
@@ -35454,38 +35259,6 @@ func (r CreateSessionArtifactReferenceResponse) ContentType() string {
 	return ""
 }
 
-type StreamSessionResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r StreamSessionResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r StreamSessionResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r StreamSessionResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 type GetSessionTranscriptResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -37996,9 +37769,17 @@ func (c *ClientWithResponses) DeleteSessionAttachmentWithResponse(ctx context.Co
 	return ParseDeleteSessionAttachmentResponse(rsp)
 }
 
-// CancelSessionWithResponse request returning *CancelSessionResponse
-func (c *ClientWithResponses) CancelSessionWithResponse(ctx context.Context, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*CancelSessionResponse, error) {
-	rsp, err := c.CancelSession(ctx, sessionId, reqEditors...)
+// CancelSessionWithBodyWithResponse request with arbitrary body returning *CancelSessionResponse
+func (c *ClientWithResponses) CancelSessionWithBodyWithResponse(ctx context.Context, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CancelSessionResponse, error) {
+	rsp, err := c.CancelSessionWithBody(ctx, sessionId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCancelSessionResponse(rsp)
+}
+
+func (c *ClientWithResponses) CancelSessionWithResponse(ctx context.Context, sessionId SessionIdParam, body CancelSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*CancelSessionResponse, error) {
+	rsp, err := c.CancelSession(ctx, sessionId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -38170,15 +37951,6 @@ func (c *ClientWithResponses) CreateSessionArtifactReferenceWithResponse(ctx con
 		return nil, err
 	}
 	return ParseCreateSessionArtifactReferenceResponse(rsp)
-}
-
-// StreamSessionWithResponse request returning *StreamSessionResponse
-func (c *ClientWithResponses) StreamSessionWithResponse(ctx context.Context, sessionId SessionIdParam, params *StreamSessionParams, reqEditors ...RequestEditorFn) (*StreamSessionResponse, error) {
-	rsp, err := c.StreamSession(ctx, sessionId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseStreamSessionResponse(rsp)
 }
 
 // GetSessionTranscriptWithResponse request returning *GetSessionTranscriptResponse
@@ -45967,46 +45739,6 @@ func ParseCreateSessionArtifactReferenceResponse(rsp *http.Response) (*CreateSes
 			return nil, err
 		}
 		response.JSON503 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseStreamSessionResponse parses an HTTP response from a StreamSessionWithResponse call
-func ParseStreamSessionResponse(rsp *http.Response) (*StreamSessionResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &StreamSessionResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
 
 	}
 

@@ -47,44 +47,6 @@ class ErrorResponse(BaseModel):
     error: Error = Field(..., description='Error detail.')
 
 
-class EventType(StrEnum):
-    generation_delta = 'generation.delta'
-
-
-class GenerationDeltaFrame(BaseModel):
-    """
-    Live-only token preview frame that can appear on session SSE streams. It is not persisted, does not carry an SSE `id:`, and cannot be replayed with `after_sequence` or `Last-Event-ID`.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    event_type: EventType
-    session_id: str | None = None
-    turn_id: str | None = None
-    job_id: str | None = None
-    tool_call_id: str | None = None
-    live_sequence: int | None = Field(
-        None,
-        description='Monotonic per-turn sequence across all live-only session frames; use to detect dropped live frames.',
-    )
-    delta_sequence: int | None = Field(
-        None,
-        description='Publisher-local ordering hint for deltas within a turn, not a replay cursor.',
-    )
-    emitted_at: AwareDatetime | None = Field(
-        None, description='Server timestamp when this live preview frame was emitted.'
-    )
-    delta: dict[str, Any] = Field(
-        ...,
-        description='Token preview payload. Normal answer text arrives as `{ "text": "..." }`; summarized reasoning/thinking arrives as `{ "type": "thinking", "thinking": "..." }`.',
-    )
-    worker_id: str | None = None
-    model: str | None = Field(
-        None, description='Model producing the generation, e.g. `claude-sonnet-4-6`.'
-    )
-
-
 class Kind(StrEnum):
     person = 'person'
     team = 'team'
@@ -139,6 +101,23 @@ class ResourcePosture(StrEnum):
     shared_with_group = 'shared_with_group'
     team = 'team'
     someone_else = 'someone_else'
+
+
+class ResourceControls(BaseModel):
+    """
+    What the current caller may do to this resource, answered by the same access rule the update and delete routes run. Clients offer controls from this and never re-derive it from posture or role. Team-owned resources are changed only by those who look after them.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    can_edit: bool = Field(
+        ...,
+        description='Whether the caller may change the resource, including its content, rows, or secrets.',
+    )
+    can_delete: bool = Field(
+        ..., description='Whether the caller may delete the resource.'
+    )
 
 
 class CapabilityReadiness(StrEnum):
@@ -754,6 +733,7 @@ class Session(BaseModel):
     )
     visibility: ResourceVisibility
     posture: ResourcePosture
+    controls: ResourceControls
     model_override: str | None = Field(
         None,
         description="Model selected for this session. Omitted when the session inherits the agent's model.",
@@ -1223,6 +1203,7 @@ class Action(BaseModel):
     visibility: ResourceVisibility
     container: ResourceContainer | None = None
     posture: ResourcePosture
+    controls: ResourceControls
     name: str = Field(..., description='Stable identifier the action is called by.')
     title: str | None = Field(
         None, description='Human-readable display title for the action.'
@@ -2892,7 +2873,7 @@ class Kind8(StrEnum):
 
 class Reason1(StrEnum):
     """
-    `audience`: the skill is private to fewer people than the copy is for; its custodian can share it. `needs_admin`: only an Admin grants a company account. `failed`: the copy or grant failed.
+    `audience`: the skill is private to fewer people than the copy is for, and its custodian can share it; or the file belongs to a chat and stays in it. `needs_admin`: only an Admin grants a company account. `failed`: the copy or grant failed.
     """
 
     audience = 'audience'
@@ -2909,7 +2890,7 @@ class AgentCopyLeftOut(BaseModel):
     name: str = Field(..., description='Empty for a file.')
     reason: Reason1 = Field(
         ...,
-        description='`audience`: the skill is private to fewer people than the copy is for; its custodian can share it. `needs_admin`: only an Admin grants a company account. `failed`: the copy or grant failed.',
+        description='`audience`: the skill is private to fewer people than the copy is for, and its custodian can share it; or the file belongs to a chat and stays in it. `needs_admin`: only an Admin grants a company account. `failed`: the copy or grant failed.',
     )
 
 
@@ -4322,6 +4303,7 @@ class Skill(BaseModel):
     visibility: ResourceVisibility
     container: ResourceContainer | None
     posture: ResourcePosture
+    controls: ResourceControls
     allowed_actions: list[str] | None = Field(
         None,
         description="Canonical action names, wildcard selectors, or group references naming the actions this skill needs. Uses the same selector vocabulary as agent action selections.\n\nThe constraint takes effect when an agent invokes the skill and lasts for the rest of that turn. Assigning a skill narrows nothing on its own, and an empty list declares nothing and narrows nothing. Lists from skills invoked in the same turn compose as a union, then intersect with the agent's selected actions. No catalog action is exempt, and a skill can never widen an agent's selection.",
@@ -4520,7 +4502,7 @@ class SessionHelper(BaseModel):
     )
 
 
-class EventType1(StrEnum):
+class EventType(StrEnum):
     helper_upsert = 'helper.upsert'
 
 
@@ -4533,19 +4515,19 @@ class HelperUpsertFrame(SessionHelper):
     session_id: str
 
 
-class EventType2(StrEnum):
+class EventType1(StrEnum):
     message_upsert = 'message.upsert'
 
 
-class EventType3(StrEnum):
+class EventType2(StrEnum):
     message_block = 'message.block'
 
 
-class EventType4(StrEnum):
+class EventType3(StrEnum):
     message_block_patch = 'message.block.patch'
 
 
-class EventType5(StrEnum):
+class EventType4(StrEnum):
     message_delta = 'message.delta'
 
 
@@ -4559,17 +4541,33 @@ class MessageDeltaFrame(BaseModel):
     content_index: int = Field(..., ge=0)
     text: str | None = None
     thinking: str | None = None
+    revision: int | None = Field(
+        None,
+        description="The turn's live revision that carried this text. A page that stops the turn sends the last one it showed, so the saved reply ends where the page did.",
+    )
+    emitted_at: AwareDatetime | None = Field(
+        None,
+        description="When the server published this frame. The server merges a block's deltas for up to 50 ms or 2 KiB, so this is when the merged text left the server. Clients use it to measure lag.",
+    )
 
 
-class EventType6(StrEnum):
+class ShownTurnRevision(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    turn_id: str
+    revision: int
+
+
+class EventType5(StrEnum):
     turn_upsert = 'turn.upsert'
 
 
-class EventType7(StrEnum):
+class EventType6(StrEnum):
     interaction_upsert = 'interaction.upsert'
 
 
-class EventType8(StrEnum):
+class EventType7(StrEnum):
     stream_ready = 'stream.ready'
 
 
@@ -4582,7 +4580,7 @@ class StreamReadyFrame(BaseModel):
     resume_cursor: str
 
 
-class EventType9(StrEnum):
+class EventType8(StrEnum):
     session_message_preview = 'session.message.preview'
 
 
@@ -4609,7 +4607,7 @@ class SessionLiveSnapshot(BaseModel):
     )
 
 
-class EventType10(StrEnum):
+class EventType9(StrEnum):
     session_resync = 'session.resync'
 
 
@@ -4621,14 +4619,14 @@ class SessionResyncFrame(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    event_type: EventType10
+    event_type: EventType9
     session_id: str
     reason: str = Field(
         ..., description='Machine-readable resync reason, e.g. `subscriber_overflow`.'
     )
 
 
-class EventType11(StrEnum):
+class EventType10(StrEnum):
     stream_end = 'stream.end'
 
 
@@ -4651,7 +4649,7 @@ class StreamEndFrame(BaseModel):
     reason: Reason2
 
 
-class EventType12(StrEnum):
+class EventType11(StrEnum):
     voice_call_started = 'voice_call.started'
 
 
@@ -4668,7 +4666,7 @@ class VoiceCallFrameCall(BaseModel):
     principal_id: str
 
 
-class EventType13(StrEnum):
+class EventType12(StrEnum):
     voice_call_ended = 'voice_call.ended'
 
 
@@ -5957,6 +5955,7 @@ class RoutineTrigger(StrEnum):
 
 class AvailableAction(StrEnum):
     edit = 'edit'
+    configure = 'configure'
     run = 'run'
     pause = 'pause'
     resume = 'resume'
@@ -6802,6 +6801,7 @@ class Table(BaseModel):
     visibility: ResourceVisibility
     container: ResourceContainer | None = None
     posture: ResourcePosture
+    controls: ResourceControls
     name: str = Field(
         ...,
         description='Lowercase snake_case table name, unique within the org.',
@@ -7447,6 +7447,9 @@ class ActionCatalogEntry(BaseModel):
     posture: ResourcePosture | None = Field(
         None, description='Present for an organization-authored custom action.'
     )
+    controls: ResourceControls | None = Field(
+        None, description='Present for an organization-authored custom action.'
+    )
 
 
 class ActionCatalogListResponse(BaseModel):
@@ -7984,6 +7987,10 @@ class AgentTurn(BaseModel):
     completed_at: AwareDatetime | None = Field(
         None, description='When the turn reached a terminal status.'
     )
+    stop_requested_at: AwareDatetime | None = Field(
+        None,
+        description='When the person pressed Stop. A running turn keeps running until its executor ends it, usually within a second; a cancelled turn with this set was stopped by the person, and what it wrote and did stays in the conversation.',
+    )
     deleted_at: AwareDatetime | None = Field(
         None,
         description="When this turn was taken back from the transcript. The turn record is kept so its usage stays readable, but its messages no longer appear in the transcript or in the agent's context. Absent on a turn that is still part of the conversation.",
@@ -8040,9 +8047,23 @@ class SessionTranscriptTurn(BaseModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     completed_at: AwareDatetime | None = None
+    stop_requested_at: AwareDatetime | None = Field(
+        None,
+        description="When the person pressed Stop. Same as `stop_requested_at` on the turn resource. A reducer keeps the turn's streaming rows as they stood from then on; the stored rows that end the turn replace them.",
+    )
     deleted_at: AwareDatetime | None = Field(
         None,
         description='Set when the turn has been taken back. A reducer that receives this drops the turn and every row belonging to it; the turn frame is the whole signal, since the removed message rows are never re-sent.',
+    )
+
+
+class CancelSessionRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    shown: list[ShownTurnRevision] | None = Field(
+        None,
+        description='What the person had on screen when they pressed Stop: for each turn they were watching, the last live revision the page showed. A stopped reply is saved through that revision. Without it, the reply is saved as it stood when the stop arrived.',
     )
 
 
@@ -8459,7 +8480,7 @@ class Routine(BaseModel):
     )
     available_actions: list[AvailableAction] | None = Field(
         None,
-        description='Actions permitted for this caller; the server rechecks each request.',
+        description="Actions permitted for this caller; the server rechecks each request. `edit` changes the name, schedule, model, and lowers limits. `configure` also changes the instructions, the watched event, the accounts it uses, and raises limits: on a person's routine only its owner may.",
     )
     posture: ResourcePosture | None = None
     audience: Audience | None = None
@@ -8872,7 +8893,7 @@ class HeldCallApproval(BaseModel):
     )
     details_cut: bool | None = Field(
         None,
-        description='True when the card leaves out or shortens part of what the held calls would do, such as recipients, attachments, message text, or an argument. Such a card can only be declined.',
+        description='True when the card cannot show part of what the held calls would do, such as an attachment with no readable name. Values are never shortened for length. Such a card can only be declined.',
     )
     in_routine: bool | None = Field(
         None, description='True when the held calls belong to a routine run.'
@@ -8904,6 +8925,10 @@ class Interaction(BaseModel):
     visibility: ResourceVisibility
     container: ResourceContainer | None = None
     posture: ResourcePosture
+    controls: ResourceControls | None = Field(
+        None,
+        description="What the caller may do to this interaction. `can_edit` means the caller may cancel (dismiss) it and `can_delete` that they may delete it once it is closed: whoever asked, the person the asking turn ran for, a recipient, a reviewer, or an administrator. Present on responses to a person's request.",
+    )
     kind: InteractionKind = Field(..., description='Protocol kind of the interaction.')
     status: InteractionStatus = Field(
         ..., description='Current lifecycle state of the interaction.'
@@ -9283,7 +9308,7 @@ class SessionMessagePreviewFrame(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
-    event_type: EventType9
+    event_type: EventType8
     id: str = Field(
         ...,
         description='Provisional live id. Do not persist or use as the durable message id.',
@@ -9543,7 +9568,7 @@ class TurnAck(BaseModel):
     )
     after_sequence: int = Field(
         ...,
-        description='The transcript message `sequence` cursor to stream from. Pass it as `after_sequence` to `GET .../stream` to follow this turn.',
+        description='The transcript message `sequence` this turn starts after. To follow the turn, pass `resume_cursor` to `GET .../transcript/stream`.',
     )
     deduped: bool | None = Field(
         None,
@@ -9553,51 +9578,6 @@ class TurnAck(BaseModel):
 
 class MessageUpsertFrame(SessionTranscriptMessage):
     event_type: Literal['message.upsert']
-
-
-class SessionStreamFrame(
-    RootModel[
-        SessionUserMessagePayload
-        | AgentMessagePayload
-        | CompactionStartedPayload
-        | CompactionCreatedPayload
-        | CompactionFailedPayload
-        | TurnStartedPayload
-        | TurnWaitingPayload
-        | TurnCompletedPayload
-        | TurnFailedPayload
-        | TurnCancelledPayload
-        | NudgeEventPayload
-        | SessionMessagePreviewFrame
-        | SessionResyncFrame
-        | StreamEndFrame
-        | ToolCallPayload
-        | ToolResultPayload
-        | GenerationDeltaFrame
-    ]
-):
-    root: (
-        SessionUserMessagePayload
-        | AgentMessagePayload
-        | CompactionStartedPayload
-        | CompactionCreatedPayload
-        | CompactionFailedPayload
-        | TurnStartedPayload
-        | TurnWaitingPayload
-        | TurnCompletedPayload
-        | TurnFailedPayload
-        | TurnCancelledPayload
-        | NudgeEventPayload
-        | SessionMessagePreviewFrame
-        | SessionResyncFrame
-        | StreamEndFrame
-        | ToolCallPayload
-        | ToolResultPayload
-        | GenerationDeltaFrame
-    ) = Field(
-        ...,
-        description='JSON payload of a single `data:` line on the session SSE stream, paired with an `event: <event type>` line.\n\nThe `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.\n\nDurable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, `compaction.started`, `compaction.failed`, and `generation.delta` frames are live-only and carry no `id:`. `stream.end` is the final envelope on every deliberate server-side close and also carries no `id:`.',
-    )
 
 
 class SessionContentBlock(
@@ -9654,6 +9634,57 @@ class SessionTranscriptFrame(
         | VoiceCallEndedFrame
         | HelperUpsertFrame
     ) = Field(..., discriminator='event_type')
+
+
+class SessionStreamFrame(
+    RootModel[
+        SessionUserMessagePayload
+        | AgentMessagePayload
+        | CompactionStartedPayload
+        | CompactionCreatedPayload
+        | CompactionFailedPayload
+        | TurnStartedPayload
+        | TurnWaitingPayload
+        | TurnCompletedPayload
+        | TurnFailedPayload
+        | TurnCancelledPayload
+        | NudgeEventPayload
+        | SessionMessagePreviewFrame
+        | SessionResyncFrame
+        | StreamEndFrame
+        | ToolCallPayload
+        | ToolResultPayload
+        | MessageUpsertFrame
+        | MessageBlockFrame
+        | MessageBlockPatchFrame
+        | MessageDeltaFrame
+    ]
+):
+    root: (
+        SessionUserMessagePayload
+        | AgentMessagePayload
+        | CompactionStartedPayload
+        | CompactionCreatedPayload
+        | CompactionFailedPayload
+        | TurnStartedPayload
+        | TurnWaitingPayload
+        | TurnCompletedPayload
+        | TurnFailedPayload
+        | TurnCancelledPayload
+        | NudgeEventPayload
+        | SessionMessagePreviewFrame
+        | SessionResyncFrame
+        | StreamEndFrame
+        | ToolCallPayload
+        | ToolResultPayload
+        | MessageUpsertFrame
+        | MessageBlockFrame
+        | MessageBlockPatchFrame
+        | MessageDeltaFrame
+    ) = Field(
+        ...,
+        description="JSON payload of a single `data:` line on a turn's SSE response, paired with an `event: <event type>` line. The streaming responses of `startTurn` and `invokeAgent` use it. The response first replays the transcript messages committed after the cursor, then tails the turn live, and closes once the session is idle.\n\nThe `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.\n\nDurable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>`. That `id:` is not a resume cursor: the inline stream cannot be resumed, and a repeated POST starts another turn unless it reuses the same `idempotency_key`. A client that loses the inline stream follows the turn on `streamSessionTranscript` from the acknowledgement's `resume_cursor` (`?cursor=`). Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, `compaction.started`, `compaction.failed`, and the transcript preview frames (`message.upsert`, `message.block`, `message.block.patch`, `message.delta`) are live-only and carry no `id:`. Streamed text arrives as `message.delta`, coalesced per block. `stream.end` is the final envelope on every deliberate server-side close and also carries no `id:`.",
+    )
 
 
 SessionTranscriptMessage.model_rebuild()

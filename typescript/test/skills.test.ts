@@ -18,6 +18,7 @@ function skill(id = "skill_1", source: Skill["source"] = "custom"): Skill {
     source,
     instructions: "Check the diff and leave concise findings.",
     allowed_actions: ["github.create_review_comment"],
+    controls: { can_edit: true, can_delete: true },
     created_at: "2026-07-17T00:00:00Z",
     updated_at: "2026-07-17T00:00:00Z",
   };

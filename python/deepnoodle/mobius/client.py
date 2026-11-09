@@ -1546,9 +1546,9 @@ class TurnTranscript:
         self.id: str = ack.turn.id
         # Id of the session this turn runs in.
         self.session_id: str = ack.session.id
-        # Durable v1 stream cursor from the turn-start response; pass it as
-        # after_sequence to GET …/sessions/{id}/stream to follow this turn on
-        # the v1 session stream instead.
+        # Message sequence from the turn-start response. It is not a stream
+        # cursor: to follow the turn yourself, open GET …/transcript/stream
+        # from the response's resume_cursor.
         self.after_sequence: int = ack.after_sequence
         # True when a repeated idempotency key returned an existing turn
         # without restarting it.

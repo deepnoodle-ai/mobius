@@ -90,6 +90,11 @@ func registerSessionsCommands(app *cli.App) {
 	sessionsGrp.Command("cancel").
 		Description("Cancel the session's active turn").
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
+		Flags(
+			cli.String("shown", "").Help("What the person had on screen when they pressed Stop: for each turn they were watching, the last live revision the page showed. A stopped reply is saved through that revision. Without it, the reply is saved as it stood when the stop arrived. Accepts JSON, @file, or @-."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -98,7 +103,19 @@ func registerSessionsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := api.SessionIdParam(ctx.Arg(0))
-			resp, err := client.CancelSessionWithResponse(ctx.Context(), p0)
+			var body api.CancelSessionJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("shown") {
+				if err := decodeFlagJSON(ctx, "shown", ctx.String("shown"), &body.Shown); err != nil {
+					return err
+				}
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body, "shown")
+			}
+			resp, err := client.CancelSessionWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -991,37 +1008,6 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "stopSessionEventSubscriptions", resp.StatusCode(), resp.Body)
-		})
-
-	sessionsGrp.Command("stream").
-		Description("Stream a session's activity").
-		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
-		Flags(
-			cli.Int("after-sequence", "").Help("Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this value. Pass the `next_sequence` from the previous response to fetch the next page."),
-			cli.Int("last-event-id", "").Help("SSE reconnect cursor. The browser EventSource API replays the last event's `id` in this header on automatic reconnect; the server resumes the stream after that sequence number. When both this header and the `after_sequence` query parameter are supplied, the larger sequence wins, so an explicit `after_sequence` never rewinds a live reconnect. Ignored for non-streaming (JSON) requests."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := api.SessionIdParam(ctx.Arg(0))
-			params := &api.StreamSessionParams{}
-			if ctx.IsSet("after-sequence") {
-				v := api.AfterSequenceParam(int64(ctx.Int("after-sequence")))
-				params.AfterSequence = &v
-			}
-			if ctx.IsSet("last-event-id") {
-				v := api.LastEventIDParam(int64(ctx.Int("last-event-id")))
-				params.LastEventID = &v
-			}
-			resp, err := client.StreamSessionWithResponse(ctx.Context(), p0, params)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "streamSession", resp.StatusCode(), resp.Body)
 		})
 
 	sessionsGrp.Command("stream-transcript").

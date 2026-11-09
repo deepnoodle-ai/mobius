@@ -462,6 +462,7 @@ def _turn_ack_body(session_id: str, turn_id: str, after_sequence: int) -> dict[s
             "title": "",
             "visibility": "private",
             "posture": "team",
+            "controls": {"can_edit": True, "can_delete": True},
             "version": 1,
             "message_count": 1,
             "token_input_total": 0,
