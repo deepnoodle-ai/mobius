@@ -77,7 +77,7 @@ The stock worker registers built-in actions like `print`, `fail`, `json`, `time`
 ## Documentation
 
 - [Go API reference](https://pkg.go.dev/github.com/deepnoodle-ai/mobius/mobius)
-- [Mobius docs](https://docs.mobiusops.ai/)
+- [Mobius docs](https://mobiusops.com/docs)
 
 ## SDKs
 

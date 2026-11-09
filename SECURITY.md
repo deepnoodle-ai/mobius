@@ -7,7 +7,7 @@ can address it before public disclosure.
 
 **Please do not open a public GitHub issue for security reports.**
 
-Email: **security@mobiusops.ai**
+Email: **security@mobiusops.com**
 
 Include as much of the following as you can:
 
