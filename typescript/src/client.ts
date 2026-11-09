@@ -1756,7 +1756,8 @@ export class Client {
   /**
    * Behaves like {@link Client.invokeAgent} but streams the turn's
    * activity inline on the same connection instead of waiting for a
-   * TurnAck, identical to framing from `GET …/sessions/{id}/stream`.
+   * TurnAck. The inline stream cannot be resumed; to follow the turn after
+   * it drops, open `GET …/transcript/stream` from the turn's `resume_cursor`.
    */
   async *invokeAgentStream(
     opts: InvokeAgentOptions,
@@ -2069,9 +2070,9 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
   /** Id of the session this turn runs in. */
   readonly sessionId: string;
   /**
-   * Durable v1 stream cursor from the turn-start response; pass it as
-   * `after_sequence` to `GET …/sessions/{id}/stream` to follow this turn on
-   * the v1 session stream instead.
+   * Message sequence from the turn-start response. It is not a stream
+   * cursor: to follow the turn yourself, open `GET …/transcript/stream` from
+   * the response's `resume_cursor`.
    */
   readonly afterSequence: number;
   /** True when a repeated idempotency key returned an existing turn without restarting it. */

@@ -31,6 +31,16 @@ the minor version.
 - `CancelSessionRequest` with `shown` (`ShownTurnRevision`), and
   `mobius sessions cancel --shown`: a stopped reply is saved through what the
   person had on screen.
+- `configure` in a routine's `available_actions`: it permits changing the
+  instructions, watched event, accounts, and raising limits.
+
+### Changed
+
+- Go: the generated `CancelSessionWithResponse` takes a request body, which
+  breaks code that calls it through `RawClient()`. Pass
+  `api.CancelSessionJSONRequestBody{}`. `Client.CancelSession` is unchanged.
+- Routine pause and resume can return `204` with no body, when an administrator
+  who may stop the routine but not read it makes the call.
 
 ## [0.6.0] - 2026-11-05
 
