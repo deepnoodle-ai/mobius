@@ -10,6 +10,8 @@ the minor version.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-09
+
 ### Removed
 
 - `GET /v1/sessions/{session_id}/stream` (`streamSession`) and the
