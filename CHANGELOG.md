@@ -10,6 +10,8 @@ the minor version.
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-11-09
+
 ### Added
 
 - `mobius worker` registers and advertises each stock computer action under
