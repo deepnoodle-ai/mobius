@@ -10,6 +10,28 @@ the minor version.
 
 ## [Unreleased]
 
+### Removed
+
+- `GET /v1/sessions/{session_id}/stream` (`streamSession`) and the
+  `mobius sessions stream` command. Follow a session with the transcript stream
+  (`streamSessionTranscript`, `mobius sessions stream-transcript`), resuming
+  from `resume_cursor` or the last event `id`.
+- The `generation.delta` session stream frame and the `GenerationDeltaFrame`
+  type. Streamed text arrives as `message.delta`, also on the inline
+  `startTurn` and `invokeAgent` streams. The worker socket's `generation.delta`
+  frame is unchanged.
+
+### Added
+
+- `emitted_at` on `message.delta`. The server merges a block's deltas for up
+  to 50 ms or 2 KiB per frame.
+- `controls` (`ResourceControls`: `can_edit`, `can_delete`) on sessions,
+  actions, action catalog entries, interactions, skills, and tables: what the
+  caller may do to each.
+- `CancelSessionRequest` with `shown` (`ShownTurnRevision`), and
+  `mobius sessions cancel --shown`: a stopped reply is saved through what the
+  person had on screen.
+
 ## [0.6.0] - 2026-11-05
 
 ### Added

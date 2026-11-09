@@ -151,7 +151,6 @@ var overrides = map[string]Override{
 	"nudgeSession":            {Command: "nudge"},
 	"cancelNudge":             {Command: "cancel-nudge"},
 	"compactSession":          {Command: "compact"},
-	"streamSession":           {Command: "stream"},
 	"streamSessionTranscript": {Command: "stream-transcript"},
 	"appendSessionMessages":   {Command: "append-messages"},
 	// Multipart upload: the generated client exposes it only in raw-body

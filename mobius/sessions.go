@@ -299,7 +299,11 @@ func (c *Client) GetSession(ctx context.Context, sessionID string) (*api.Session
 
 // CancelSession cancels the session's active turn.
 func (c *Client) CancelSession(ctx context.Context, sessionID string) (*api.Session, error) {
-	resp, err := c.ac.CancelSessionWithResponse(ctx, api.SessionIdParam(sessionID))
+	resp, err := c.ac.CancelSessionWithResponse(
+		ctx,
+		api.SessionIdParam(sessionID),
+		api.CancelSessionJSONRequestBody{},
+	)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: cancel session: %w", err)
 	}

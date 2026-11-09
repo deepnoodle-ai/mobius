@@ -966,6 +966,7 @@ def _ack_body() -> dict[str, object]:
             "title": "",
             "visibility": "private",
             "posture": "team",
+            "controls": {"can_edit": True, "can_delete": True},
             "version": 1,
             "message_count": 1,
             "token_input_total": 0,
