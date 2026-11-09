@@ -1217,3 +1217,38 @@ func newPullRequestOrigin(t *testing.T) (tmp, base, prHead string) {
 	t.Cleanup(func() { gitHubOrigin = origin })
 	return tmp, base, prHead
 }
+
+func TestEnvironmentActionsRegistersBothNames(t *testing.T) {
+	names := map[string]bool{}
+	for _, a := range EnvironmentActions() {
+		if names[a.Name()] {
+			t.Fatalf("duplicate action name %s", a.Name())
+		}
+		names[a.Name()] = true
+	}
+	for name := range names {
+		var other string
+		switch {
+		case strings.HasPrefix(name, "computer."):
+			other = "environment." + strings.TrimPrefix(name, "computer.")
+		case strings.HasPrefix(name, "environment."):
+			other = "computer." + strings.TrimPrefix(name, "environment.")
+		default:
+			t.Fatalf("unexpected stock action %s", name)
+		}
+		if !names[other] {
+			t.Errorf("%s registered without %s", name, other)
+		}
+	}
+}
+
+func TestWithComputerActionAliases(t *testing.T) {
+	got := WithComputerActionAliases([]string{"environment.bash", "computer.files.read", "custom.thing", "environment.agent.run", "computer.bash"})
+	want := []string{"environment.bash", "computer.bash", "computer.files.read", "environment.files.read", "custom.thing", "environment.agent.run"}
+	if strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Fatalf("got %v, want %v", got, want)
+	}
+	if got := WithComputerActionAliases(nil); got != nil {
+		t.Fatalf("empty list = %v, want nil (advertise every registered action)", got)
+	}
+}

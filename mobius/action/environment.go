@@ -954,7 +954,7 @@ func NewEnvironmentArtifactPublishAction() mobius.Action {
 			leaseToken = strings.TrimSpace(lc.LeaseToken())
 		}
 		if leaseToken == "" {
-			return nil, fmt.Errorf("environment.artifact.publish needs an active job lease")
+			return nil, fmt.Errorf("artifact.publish needs an active job lease")
 		}
 		ref, err := ec.MobiusClient().CreateArtifactRefFromFileWithLease(ctx, path, in.Name, in.Mime, leaseToken, in.Tags)
 		if err != nil {
@@ -1040,8 +1040,20 @@ func NewEnvironmentLogsTailAction() mobius.Action {
 	})
 }
 
+// Stock computer actions answer to two names. "computer." is the current
+// name; "environment." is the name servers sent before the Environment to
+// Computer rename and that every older worker knows. Each action is
+// registered under both, so a job for either name runs the same code.
+const (
+	computerActionPrefix    = "computer."
+	environmentActionPrefix = "environment."
+)
+
+// EnvironmentActions returns the stock computer actions (bash, files, git,
+// artifacts, logs), each registered as both computer.<name> and
+// environment.<name>. Both names run the same implementation.
 func EnvironmentActions() []mobius.Action {
-	return []mobius.Action{
+	base := []mobius.Action{
 		NewEnvironmentBashAction(),
 		NewEnvironmentFileReadAction(),
 		NewEnvironmentFileWriteAction(),
@@ -1055,7 +1067,59 @@ func EnvironmentActions() []mobius.Action {
 		NewEnvironmentArtifactDownloadAction(),
 		NewEnvironmentLogsTailAction(),
 	}
+	out := make([]mobius.Action, 0, 2*len(base))
+	for _, a := range base {
+		out = append(out, renamedAction{name: computerActionName(a.Name()), Action: a}, a)
+	}
+	return out
 }
+
+// WithComputerActionAliases returns names with the other name of every
+// stock computer action added: an explicit list naming environment.bash also
+// advertises computer.bash, and the reverse. Other names pass through, and the
+// order of the given names is kept.
+func WithComputerActionAliases(names []string) []string {
+	if len(names) == 0 {
+		return names
+	}
+	stock := map[string]string{}
+	for _, a := range EnvironmentActions() {
+		name := a.Name()
+		if rest, ok := strings.CutPrefix(name, environmentActionPrefix); ok {
+			stock[name] = computerActionPrefix + rest
+		} else if rest, ok := strings.CutPrefix(name, computerActionPrefix); ok {
+			stock[name] = environmentActionPrefix + rest
+		}
+	}
+	seen := make(map[string]struct{}, 2*len(names))
+	out := make([]string, 0, 2*len(names))
+	add := func(name string) {
+		if _, ok := seen[name]; ok {
+			return
+		}
+		seen[name] = struct{}{}
+		out = append(out, name)
+	}
+	for _, name := range names {
+		add(name)
+		if alias, ok := stock[name]; ok {
+			add(alias)
+		}
+	}
+	return out
+}
+
+func computerActionName(environmentName string) string {
+	return computerActionPrefix + strings.TrimPrefix(environmentName, environmentActionPrefix)
+}
+
+// renamedAction runs another action under a different name.
+type renamedAction struct {
+	mobius.Action
+	name string
+}
+
+func (a renamedAction) Name() string { return a.name }
 
 func workspaceRoot() string {
 	if root := strings.TrimSpace(os.Getenv("MOBIUS_RUNTIME_WORKSPACE")); root != "" {

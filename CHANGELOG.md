@@ -10,6 +10,16 @@ the minor version.
 
 ## [Unreleased]
 
+### Added
+
+- `mobius worker` registers and advertises each stock computer action under
+  both names, `computer.*` and `environment.*` (`computer.bash`,
+  `computer.files.read`, ...). Both run the same code. An explicit
+  `--actions` list naming one name advertises the other too.
+- `--computer-id` and `MOBIUS_WORKER_COMPUTER_ID`. The old `--environment-id`
+  (now hidden) and `MOBIUS_WORKER_ENVIRONMENT_ID` still work; if both are set
+  and differ, the worker refuses to start. The wire protocol is unchanged.
+
 ## [0.7.0] - 2026-11-09
 
 ### Removed
