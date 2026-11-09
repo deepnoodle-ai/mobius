@@ -25,6 +25,9 @@ the minor version.
 
 - `emitted_at` on `message.delta`. The server merges a block's deltas for up
   to 50 ms or 2 KiB per frame.
+- `SessionStreamFrame`, the inline `startTurn` and `invokeAgent` stream frame,
+  includes `message.upsert`, `message.block`, `message.block.patch`, and
+  `message.delta` (Go: `AsMessageDeltaFrame` and the others).
 - `controls` (`ResourceControls`: `can_edit`, `can_delete`) on sessions,
   actions, action catalog entries, interactions, skills, and tables: what the
   caller may do to each.

@@ -9782,7 +9782,7 @@ type SessionStatus string
 //
 // The `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.
 //
-// Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, `compaction.started`, `compaction.failed`, and the transcript preview frames (`message.upsert`, `message.block`, `message.block.patch`, `message.delta`) are live-only and carry no `id:`. Streamed text arrives as `message.delta`, coalesced per block. `stream.end` is the final envelope on every deliberate server-side close and also carries no `id:`.
+// Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>`. That `id:` is not a resume cursor: the inline stream cannot be resumed, and a repeated POST starts another turn unless it reuses the same `idempotency_key`. A client that loses the inline stream follows the turn on `streamSessionTranscript` from the acknowledgement's `resume_cursor` (`?cursor=`). Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, `compaction.started`, `compaction.failed`, and the transcript preview frames (`message.upsert`, `message.block`, `message.block.patch`, `message.delta`) are live-only and carry no `id:`. Streamed text arrives as `message.delta`, coalesced per block. `stream.end` is the final envelope on every deliberate server-side close and also carries no `id:`.
 type SessionStreamFrame struct {
 	union json.RawMessage
 }
@@ -16174,6 +16174,110 @@ func (t *SessionStreamFrame) FromToolResultPayload(v ToolResultPayload) error {
 
 // MergeToolResultPayload performs a merge with any union data inside the SessionStreamFrame, using the provided ToolResultPayload
 func (t *SessionStreamFrame) MergeToolResultPayload(v ToolResultPayload) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsMessageUpsertFrame returns the union data inside the SessionStreamFrame as a MessageUpsertFrame
+func (t SessionStreamFrame) AsMessageUpsertFrame() (MessageUpsertFrame, error) {
+	var body MessageUpsertFrame
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromMessageUpsertFrame overwrites any union data inside the SessionStreamFrame as the provided MessageUpsertFrame
+func (t *SessionStreamFrame) FromMessageUpsertFrame(v MessageUpsertFrame) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeMessageUpsertFrame performs a merge with any union data inside the SessionStreamFrame, using the provided MessageUpsertFrame
+func (t *SessionStreamFrame) MergeMessageUpsertFrame(v MessageUpsertFrame) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsMessageBlockFrame returns the union data inside the SessionStreamFrame as a MessageBlockFrame
+func (t SessionStreamFrame) AsMessageBlockFrame() (MessageBlockFrame, error) {
+	var body MessageBlockFrame
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromMessageBlockFrame overwrites any union data inside the SessionStreamFrame as the provided MessageBlockFrame
+func (t *SessionStreamFrame) FromMessageBlockFrame(v MessageBlockFrame) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeMessageBlockFrame performs a merge with any union data inside the SessionStreamFrame, using the provided MessageBlockFrame
+func (t *SessionStreamFrame) MergeMessageBlockFrame(v MessageBlockFrame) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsMessageBlockPatchFrame returns the union data inside the SessionStreamFrame as a MessageBlockPatchFrame
+func (t SessionStreamFrame) AsMessageBlockPatchFrame() (MessageBlockPatchFrame, error) {
+	var body MessageBlockPatchFrame
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromMessageBlockPatchFrame overwrites any union data inside the SessionStreamFrame as the provided MessageBlockPatchFrame
+func (t *SessionStreamFrame) FromMessageBlockPatchFrame(v MessageBlockPatchFrame) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeMessageBlockPatchFrame performs a merge with any union data inside the SessionStreamFrame, using the provided MessageBlockPatchFrame
+func (t *SessionStreamFrame) MergeMessageBlockPatchFrame(v MessageBlockPatchFrame) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsMessageDeltaFrame returns the union data inside the SessionStreamFrame as a MessageDeltaFrame
+func (t SessionStreamFrame) AsMessageDeltaFrame() (MessageDeltaFrame, error) {
+	var body MessageDeltaFrame
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromMessageDeltaFrame overwrites any union data inside the SessionStreamFrame as the provided MessageDeltaFrame
+func (t *SessionStreamFrame) FromMessageDeltaFrame(v MessageDeltaFrame) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeMessageDeltaFrame performs a merge with any union data inside the SessionStreamFrame, using the provided MessageDeltaFrame
+func (t *SessionStreamFrame) MergeMessageDeltaFrame(v MessageDeltaFrame) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err

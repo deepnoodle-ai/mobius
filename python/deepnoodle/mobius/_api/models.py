@@ -9580,49 +9580,6 @@ class MessageUpsertFrame(SessionTranscriptMessage):
     event_type: Literal['message.upsert']
 
 
-class SessionStreamFrame(
-    RootModel[
-        SessionUserMessagePayload
-        | AgentMessagePayload
-        | CompactionStartedPayload
-        | CompactionCreatedPayload
-        | CompactionFailedPayload
-        | TurnStartedPayload
-        | TurnWaitingPayload
-        | TurnCompletedPayload
-        | TurnFailedPayload
-        | TurnCancelledPayload
-        | NudgeEventPayload
-        | SessionMessagePreviewFrame
-        | SessionResyncFrame
-        | StreamEndFrame
-        | ToolCallPayload
-        | ToolResultPayload
-    ]
-):
-    root: (
-        SessionUserMessagePayload
-        | AgentMessagePayload
-        | CompactionStartedPayload
-        | CompactionCreatedPayload
-        | CompactionFailedPayload
-        | TurnStartedPayload
-        | TurnWaitingPayload
-        | TurnCompletedPayload
-        | TurnFailedPayload
-        | TurnCancelledPayload
-        | NudgeEventPayload
-        | SessionMessagePreviewFrame
-        | SessionResyncFrame
-        | StreamEndFrame
-        | ToolCallPayload
-        | ToolResultPayload
-    ) = Field(
-        ...,
-        description="JSON payload of a single `data:` line on a turn's SSE response, paired with an `event: <event type>` line. The streaming responses of `startTurn` and `invokeAgent` use it. The response first replays the transcript messages committed after the cursor, then tails the turn live, and closes once the session is idle.\n\nThe `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.\n\nDurable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, `compaction.started`, `compaction.failed`, and the transcript preview frames (`message.upsert`, `message.block`, `message.block.patch`, `message.delta`) are live-only and carry no `id:`. Streamed text arrives as `message.delta`, coalesced per block. `stream.end` is the final envelope on every deliberate server-side close and also carries no `id:`.",
-    )
-
-
 class SessionContentBlock(
     RootModel[
         SessionTextBlock
@@ -9677,6 +9634,57 @@ class SessionTranscriptFrame(
         | VoiceCallEndedFrame
         | HelperUpsertFrame
     ) = Field(..., discriminator='event_type')
+
+
+class SessionStreamFrame(
+    RootModel[
+        SessionUserMessagePayload
+        | AgentMessagePayload
+        | CompactionStartedPayload
+        | CompactionCreatedPayload
+        | CompactionFailedPayload
+        | TurnStartedPayload
+        | TurnWaitingPayload
+        | TurnCompletedPayload
+        | TurnFailedPayload
+        | TurnCancelledPayload
+        | NudgeEventPayload
+        | SessionMessagePreviewFrame
+        | SessionResyncFrame
+        | StreamEndFrame
+        | ToolCallPayload
+        | ToolResultPayload
+        | MessageUpsertFrame
+        | MessageBlockFrame
+        | MessageBlockPatchFrame
+        | MessageDeltaFrame
+    ]
+):
+    root: (
+        SessionUserMessagePayload
+        | AgentMessagePayload
+        | CompactionStartedPayload
+        | CompactionCreatedPayload
+        | CompactionFailedPayload
+        | TurnStartedPayload
+        | TurnWaitingPayload
+        | TurnCompletedPayload
+        | TurnFailedPayload
+        | TurnCancelledPayload
+        | NudgeEventPayload
+        | SessionMessagePreviewFrame
+        | SessionResyncFrame
+        | StreamEndFrame
+        | ToolCallPayload
+        | ToolResultPayload
+        | MessageUpsertFrame
+        | MessageBlockFrame
+        | MessageBlockPatchFrame
+        | MessageDeltaFrame
+    ) = Field(
+        ...,
+        description="JSON payload of a single `data:` line on a turn's SSE response, paired with an `event: <event type>` line. The streaming responses of `startTurn` and `invokeAgent` use it. The response first replays the transcript messages committed after the cursor, then tails the turn live, and closes once the session is idle.\n\nThe `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.\n\nDurable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>`. That `id:` is not a resume cursor: the inline stream cannot be resumed, and a repeated POST starts another turn unless it reuses the same `idempotency_key`. A client that loses the inline stream follows the turn on `streamSessionTranscript` from the acknowledgement's `resume_cursor` (`?cursor=`). Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, `compaction.started`, `compaction.failed`, and the transcript preview frames (`message.upsert`, `message.block`, `message.block.patch`, `message.delta`) are live-only and carry no `id:`. Streamed text arrives as `message.delta`, coalesced per block. `stream.end` is the final envelope on every deliberate server-side close and also carries no `id:`.",
+    )
 
 
 SessionTranscriptMessage.model_rebuild()
