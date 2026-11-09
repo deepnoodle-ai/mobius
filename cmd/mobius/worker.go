@@ -45,9 +45,15 @@ func registerWorkerCommand(app *cli.App) {
 			cli.Strings("actions", "a").
 				Env("MOBIUS_WORKER_ACTION_NAMES").
 				Help("Action names to advertise; empty = every registered action"),
+			cli.String("computer-id", "").
+				Env("MOBIUS_WORKER_COMPUTER_ID").
+				Help("ID of the Mobius computer this worker runs inside"),
+			// The old name, still sent by servers and Sprites set up before
+			// the Environment to Computer rename.
 			cli.String("environment-id", "").
 				Env("MOBIUS_WORKER_ENVIRONMENT_ID").
-				Help("Managed environment ID this worker is executing inside"),
+				Hidden().
+				Help("Deprecated: use --computer-id"),
 			cli.Int("concurrency", "").
 				Default(1).
 				Help("Max in-flight jobs for one worker process (default 1)"),
@@ -86,7 +92,13 @@ func registerWorkerCommand(app *cli.App) {
 			instanceID := ctx.String("instance-id")
 			queues := firstNonEmptyStrings(ctx.Strings("queues"), splitEnv("MOBIUS_WORKER_QUEUES"))
 			actions := firstNonEmptyStrings(ctx.Strings("actions"), splitEnv("MOBIUS_WORKER_ACTION_NAMES"))
-			environmentID := ctx.String("environment-id")
+			// A worker told to advertise environment.bash also advertises
+			// computer.bash (and the reverse): both names run the same code.
+			actions = action.WithComputerActionAliases(actions)
+			environmentID, err := resolveComputerID(ctx.String("computer-id"), ctx.String("environment-id"))
+			if err != nil {
+				return err
+			}
 			concurrency := ctx.Int("concurrency")
 			workers := ctx.Int("workers")
 			keepWarmWindow, err := parseKeepWarm(ctx.String("keep-warm"))
@@ -201,6 +213,25 @@ func registerWorkerCommand(app *cli.App) {
 			logger.Info("worker stopped")
 			return nil
 		})
+}
+
+// resolveComputerID picks the computer this worker runs inside from
+// --computer-id / MOBIUS_WORKER_COMPUTER_ID and the older --environment-id /
+// MOBIUS_WORKER_ENVIRONMENT_ID. Either may be set alone. When both are set
+// they must name the same computer.
+func resolveComputerID(computerID, environmentID string) (string, error) {
+	computerID = strings.TrimSpace(computerID)
+	environmentID = strings.TrimSpace(environmentID)
+	if computerID != "" && environmentID != "" && computerID != environmentID {
+		return "", fmt.Errorf(
+			"--computer-id (MOBIUS_WORKER_COMPUTER_ID) is %q but --environment-id "+
+				"(MOBIUS_WORKER_ENVIRONMENT_ID) is %q; set only --computer-id",
+			computerID, environmentID)
+	}
+	if computerID != "" {
+		return computerID, nil
+	}
+	return environmentID, nil
 }
 
 // registerStockActions attaches every general-purpose action from
