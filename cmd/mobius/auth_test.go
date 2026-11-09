@@ -300,7 +300,7 @@ func TestGeneratedCommandUsesCustomAPIURL(t *testing.T) {
 func TestDeviceVerificationURLKeepsDefaultServerURL(t *testing.T) {
 	ch := &deviceCodeResponse{
 		UserCode:                "ABCD-EFGH",
-		VerificationURIComplete: "https://mobiusops.ai/auth/device?code=ABCD-EFGH",
+		VerificationURIComplete: "https://mobiusops.com/auth/device?code=ABCD-EFGH",
 	}
 	if got, err := deviceVerificationURL("https://api.mobiusops.com", "", ch); err != nil || got != ch.VerificationURIComplete {
 		t.Fatalf("deviceVerificationURL() = %q, want %q", got, ch.VerificationURIComplete)
@@ -310,7 +310,7 @@ func TestDeviceVerificationURLKeepsDefaultServerURL(t *testing.T) {
 func TestDeviceVerificationURLKeepsDefaultServerURLWithExplicitPort(t *testing.T) {
 	ch := &deviceCodeResponse{
 		UserCode:                "ABCD-EFGH",
-		VerificationURIComplete: "https://mobiusops.ai/auth/device?code=ABCD-EFGH",
+		VerificationURIComplete: "https://mobiusops.com/auth/device?code=ABCD-EFGH",
 	}
 	if got, err := deviceVerificationURL("https://api.mobiusops.com:443", "", ch); err != nil || got != ch.VerificationURIComplete {
 		t.Fatalf("deviceVerificationURL() = %q, want %q", got, ch.VerificationURIComplete)

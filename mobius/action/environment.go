@@ -819,7 +819,7 @@ func sleepContext(ctx context.Context, d time.Duration) error {
 // default git identity (`Sprite <noreply@sprites.dev>`) or `unknown <root@…>`.
 const (
 	environmentGitUserName  = "Mobius Agent"
-	environmentGitUserEmail = "noreply@mobiusops.ai"
+	environmentGitUserEmail = "noreply@mobiusops.com"
 )
 
 // ConfigureEnvironmentGitCredentials writes the global git config that lets

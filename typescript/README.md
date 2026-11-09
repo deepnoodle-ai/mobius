@@ -1,6 +1,6 @@
 # @deepnoodle/mobius
 
-TypeScript SDK for [Mobius](https://www.mobiusops.ai/) — a work coordination
+TypeScript SDK for [Mobius](https://mobiusops.com/) — a work coordination
 platform for mixed teams of humans, systems, and AI agents.
 
 This package contains the runtime client and WebSocket worker used to execute
@@ -195,7 +195,7 @@ The full policy is documented in
 
 ## Documentation
 
-- [Mobius docs](https://docs.mobiusops.ai/)
+- [Mobius docs](https://mobiusops.com/docs)
 - [Repository](https://github.com/deepnoodle-ai/mobius)
 
 ## License

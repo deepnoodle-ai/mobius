@@ -44,6 +44,10 @@ the minor version.
   `api.CancelSessionJSONRequestBody{}`. `Client.CancelSession` is unchanged.
 - Routine pause and resume can return `204` with no body, when an administrator
   who may stop the routine but not read it makes the call.
+- Agent commits in managed environments are authored as
+  `Mobius Agent <noreply@mobiusops.com>` (was `noreply@mobiusops.ai`). Docs,
+  the security contact, and the Homebrew formula homepage now point at
+  mobiusops.com.
 
 ## [0.6.0] - 2026-11-05
 
