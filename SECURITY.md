@@ -38,13 +38,14 @@ lease is not in any job's environment. The worker reads the calling process's
 ID from the socket (`SO_PEERCRED` on Linux, `LOCAL_PEERPID` on macOS) and walks
 its parent processes up to the command of a running job, then brokers a
 repository-scoped GitHub token for that job's lease. A process outside every
-running job's tree gets nothing. Job scripts never receive the API key and
-cannot call the `mobius` CLI with it.
+running job's tree gets nothing. On other operating systems the worker
+cannot tell which process is calling, so it refuses Git credentials and
+action calls. Job scripts never receive the API key and cannot call the
+`mobius` CLI with it.
 
 Workflow script steps call their declared actions the same way, through a
 second private socket, `MOBIUS_ACTION_SOCKET`. Mobius runs only the actions the
-running script step declared, as the workflow, while the step runs. Other
-operating systems refuse these calls.
+running script step declared, as the workflow, while the step runs.
 
 What this does and does not protect: the process check keeps casual misuse
 out, but it is not a boundary between jobs. Job commands run as the worker's

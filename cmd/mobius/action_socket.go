@@ -35,6 +35,10 @@ const maxAncestorDepth = 64
 var errNotJobProcess = errors.New("Only a workflow script step can call actions, from its own processes, while it runs. " +
 	"This process is not part of a running script step.")
 
+// errNoPeerCheck refuses calls where the worker cannot tell which process
+// is calling (operating systems other than Linux and macOS).
+var errNoPeerCheck = errors.New("this worker cannot check which process is calling, so it refuses Git credentials and action calls")
+
 // actionSocketRequest is one request from `mobius actions` or the Python
 // helper.
 type actionSocketRequest struct {
@@ -80,7 +84,8 @@ func startActionSocketServer(ctx context.Context, broker actionBroker, environme
 	if err != nil {
 		return nil, err
 	}
-	listener, err := net.Listen("unix", filepath.Join(dir, "act.sock"))
+	var lc net.ListenConfig
+	listener, err := lc.Listen(ctx, "unix", filepath.Join(dir, "act.sock"))
 	if err != nil {
 		_ = os.RemoveAll(dir)
 		return nil, err
@@ -184,6 +189,9 @@ func brokerMessage(err error) string {
 // job command, stopping at PID 1 or at the worker itself.
 func jobLeaseOfPeer(conn net.Conn) (string, error) {
 	pid, err := peerPID(conn)
+	if errors.Is(err, errNoPeerCheck) {
+		return "", err
+	}
 	if err != nil || pid <= 0 {
 		return "", errNotJobProcess
 	}

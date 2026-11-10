@@ -26,28 +26,21 @@ the minor version.
 - `request_takeover` interaction kind with a `computer_takeover` card
   (`ComputerTakeoverRequest`), created only by Mobius.
 - `workflow_step` on catalog actions.
-- Workflow script steps can call the actions they declare. In a managed
-  computer, `mobius worker` serves a local action socket
-  (`MOBIUS_ACTION_SOCKET`). `mobius actions run <action> --input <json>`
-  and the standard-library Python helper (`from mobius import actions;
-  actions.run(name, input, key=None)`) call through it, and
-  `mobius actions describe <action>` prints an action's inputs and output.
-  The worker accepts a call only from a process inside a running job's
-  process tree, and it sends the call with that job's lease. Scripts never
-  hold a credential. The worker puts the helper on `PYTHONPATH` and its own
-  directory on `PATH` for job shells.
-- `Client.CreateScriptCall` and `Client.DescribeScriptAction`, which the
-  worker uses for those calls.
+- Workflow script steps can call the actions they declare: `mobius actions
+  run`, `mobius actions describe`, and `from mobius import actions` in a
+  managed computer, through a new worker socket (`MOBIUS_ACTION_SOCKET`).
+  See SECURITY.md for what this does and does not protect.
+- `Client.CreateScriptCall` and `Client.DescribeScriptAction`.
 
 ### Changed
 
 - Getting a session or routine no longer writes a read mark; post to
   read-mark instead (the `X-Mobius-Safe-Read` header is gone).
-- `environment.bash` no longer puts `MOBIUS_JOB_LEASE_TOKEN` in a command's
-  environment, where any process in the computer could read it. The Git
-  credential socket now finds the caller's job from its parent processes, as
-  the action socket does, and ignores a lease the caller sends. A script that
-  read `MOBIUS_JOB_LEASE_TOKEN` itself no longer gets it.
+- `environment.bash` no longer sets `MOBIUS_JOB_LEASE_TOKEN`. The Git
+  credential socket finds the caller's job from its parent processes, and
+  ignores any lease the caller sends.
+- Git credentials and action calls in a job work only on Linux and macOS,
+  where the worker can tell which process is calling.
 
 ## [0.7.1] - 2026-11-09
 

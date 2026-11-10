@@ -106,7 +106,11 @@ func (c *Client) CreateScriptCall(ctx context.Context, environmentID, leaseToken
 	var out ScriptCallResult
 	path := "/v1/environments/" + url.PathEscape(environmentID) + "/script-calls"
 	headers := map[string]string{"X-Mobius-Lease-Token": leaseToken}
-	if err := c.doWithHeaders(ctx, c.transferClient, http.MethodPost, path, "application/json", bytes.NewReader(raw), headers, &out); err != nil {
+	client := c.callClient
+	if client == nil {
+		client = c.httpClient
+	}
+	if err := c.doWithHeaders(ctx, client, http.MethodPost, path, "application/json", bytes.NewReader(raw), headers, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil

@@ -45,36 +45,40 @@ func TestEnvironmentBashKeepsTheLeaseOutOfTheCommand(t *testing.T) {
 // While a bash command runs, its process is registered as the root of the
 // job's process tree with the job's lease; when it ends, it is not.
 func TestEnvironmentBashRegistersItsProcessForTheJob(t *testing.T) {
-	t.Setenv("MOBIUS_RUNTIME_WORKSPACE", realPath(t, t.TempDir()))
-	out, err := NewEnvironmentBashAction().Execute(testLeasedActionContext{testActionContext{Context: context.Background()}}, map[string]any{
-		"command": "printf '%s' \"$$\"",
-	})
-	if err != nil {
+	dir := realPath(t, t.TempDir())
+	t.Setenv("MOBIUS_RUNTIME_WORKSPACE", dir)
+	pidFile, goFile := filepath.Join(dir, "pid"), filepath.Join(dir, "go")
+	done := make(chan map[string]any, 1)
+	go func() {
+		out, err := NewEnvironmentBashAction().Execute(testLeasedActionContext{testActionContext{Context: context.Background()}}, map[string]any{
+			"command": "echo $$ > pid; while [ ! -f go ]; do sleep 0.02; done",
+		})
+		if err != nil {
+			t.Error(err)
+		}
+		result, _ := out.(map[string]any)
+		done <- result
+	}()
+	var pid int
+	deadline := time.Now().Add(10 * time.Second)
+	for pid == 0 && time.Now().Before(deadline) {
+		if raw, err := os.ReadFile(pidFile); err == nil {
+			pid, _ = strconv.Atoi(strings.TrimSpace(string(raw)))
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if pid == 0 {
+		t.Fatal("the command did not start")
+	}
+	if lease, ok := JobProcesses.Lease(pid); !ok || lease != "lease_active" {
+		t.Fatalf("while running, pid %d lease = %q, %v; want lease_active", pid, lease, ok)
+	}
+	if err := os.WriteFile(goFile, nil, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	result, _ := out.(map[string]any)
-	pid, err := strconv.Atoi(fmt.Sprint(result["stdout"]))
-	if err != nil {
-		t.Fatalf("bash pid = %#v", result["stdout"])
-	}
+	<-done
 	if _, ok := JobProcesses.Lease(pid); ok {
 		t.Fatalf("pid %d is still registered after the command ended", pid)
-	}
-
-	seen := make(chan string, 1)
-	var started func(int) func()
-	started = func(pid int) func() {
-		done := JobProcesses.Register(pid, "lease_active")
-		lease, _ := JobProcesses.Lease(pid)
-		seen <- lease
-		return done
-	}
-	cmd := exec.Command("true")
-	if _, err := runCommandTracked(cmd, newHeadTailTruncator(100, "stdout", ""), newHeadTailTruncator(100, "stderr", ""), started); err != nil {
-		t.Fatal(err)
-	}
-	if lease := <-seen; lease != "lease_active" {
-		t.Fatalf("lease while running = %q", lease)
 	}
 }
 

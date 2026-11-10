@@ -46,7 +46,7 @@ func registerScriptActionCommands(app *cli.App) {
 	grp.Command("describe").
 		Description("Describe an action's inputs and output").
 		Long("Prints an action's title, whether it changes anything, its inputs, and its output shape. " +
-			"Works only inside a Mobius computer.").
+			"Works only inside a job in a Mobius computer.").
 		Args("action").
 		Flags(cli.Bool("json", "").Help("Print the description as JSON.")).
 		Run(describeScriptAction)
@@ -105,7 +105,7 @@ func callActionSocket(ctx context.Context, req actionSocketRequest) (*actionSock
 	}
 	path := strings.TrimSpace(os.Getenv(actionSocketEnv))
 	if path == "" {
-		return nil, cli.Errorf("mobius actions %s works only inside a workflow script step", req.Op)
+		return nil, cli.Errorf("mobius actions %s works only inside a job in a Mobius computer", req.Op)
 	}
 	dialer := net.Dialer{Timeout: 10 * time.Second}
 	conn, err := dialer.DialContext(ctx, "unix", path)
