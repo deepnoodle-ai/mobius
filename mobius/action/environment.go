@@ -201,10 +201,12 @@ func NewEnvironmentBashAction() mobius.Action {
 		for key, value := range in.Env {
 			cmd.Env = append(cmd.Env, key+"="+value)
 		}
+		// The job's lease never enters the command's environment, where any
+		// process in the computer could read it. The worker's sockets find
+		// the job from a caller's parent processes instead (JobProcesses).
 		leaseToken := ""
 		if lease, ok := ctx.(environmentLeaseContext); ok && lease.LeaseToken() != "" {
 			leaseToken = lease.LeaseToken()
-			cmd.Env = append(cmd.Env, "MOBIUS_JOB_LEASE_TOKEN="+leaseToken)
 		}
 		limit := resolveOutputMaxBytes(in.MaxOutputBytes, defaultCommandOutputMaxBytes)
 		// The command's process is the root of the job's process tree, so

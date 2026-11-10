@@ -43,6 +43,11 @@ the minor version.
 
 - Getting a session or routine no longer writes a read mark; post to
   read-mark instead (the `X-Mobius-Safe-Read` header is gone).
+- `environment.bash` no longer puts `MOBIUS_JOB_LEASE_TOKEN` in a command's
+  environment, where any process in the computer could read it. The Git
+  credential socket now finds the caller's job from its parent processes, as
+  the action socket does, and ignores a lease the caller sends. A script that
+  read `MOBIUS_JOB_LEASE_TOKEN` itself no longer gets it.
 
 ## [0.7.1] - 2026-11-09
 

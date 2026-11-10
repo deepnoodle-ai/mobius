@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"errors"
+	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -25,8 +27,9 @@ func TestHideWorkerKeyFromChildren(t *testing.T) {
 }
 
 // git in a job shell gets credentials from the worker over its socket. The
-// shell sends only the request and its job lease; the worker adds its own
-// credential when it calls the broker.
+// shell sends only the request; the worker finds the caller's job lease from
+// its process tree and adds its own credential when it calls the broker. A
+// lease the caller sends is ignored.
 func TestGitCredentialSocketRoundTrip(t *testing.T) {
 	broker := &fakeBroker{cred: &mobius.EnvironmentGitCredential{
 		Username: "x-access-token",
@@ -43,11 +46,11 @@ func TestGitCredentialSocketRoundTrip(t *testing.T) {
 		Protocol:   "https",
 		Host:       "github.com",
 		Path:       "owner/repo.git",
-		LeaseToken: "lease_active",
+		LeaseToken: "lease_forged",
 	}, &out)
 	assert.NoError(t, err)
 	assert.Equal(t, "owner/repo", broker.calledRepo)
-	assert.Equal(t, "lease_active", broker.calledLease)
+	assert.Equal(t, "lease_cmd", broker.calledLease)
 	assert.Equal(t, "env_123", broker.calledEnv)
 	assert.True(t, strings.Contains(out.String(), "password=ghs_from_socket\n"))
 }
@@ -75,7 +78,9 @@ func TestGitCredentialHelperCommandUsesSocketWithoutAPIKey(t *testing.T) {
 	unsetEnv(t, workerAPIKeyEnv)
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv(gitCredentialSocketEnv, server.Path())
-	t.Setenv("MOBIUS_JOB_LEASE_TOKEN", "lease_cmd")
+	// A lease in the caller's environment is ignored: the worker finds the
+	// job from the caller's process.
+	t.Setenv("MOBIUS_JOB_LEASE_TOKEN", "lease_forged")
 
 	result := newApp().Test(t,
 		cli.TestArgs("git-credential-helper", "get", "--environment", "env_ignored"),
@@ -91,10 +96,29 @@ func TestGitCredentialHelperCommandUsesSocketWithoutAPIKey(t *testing.T) {
 
 func startTestGitCredentialServer(t *testing.T, broker gitCredentialBroker) *gitCredentialServer {
 	t.Helper()
-	server, err := startGitCredentialServer(context.Background(), broker, "env_123", nil)
+	dir, err := os.MkdirTemp("", "mgit-")
 	if err != nil {
 		t.Fatal(err)
 	}
+	listener, err := net.Listen("unix", filepath.Join(dir, "cred.sock"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := &gitCredentialServer{dir: dir, listener: listener, leaseOf: func(net.Conn) (string, error) { return "lease_cmd", nil }}
+	go server.serve(context.Background(), broker, "env_123", nil)
 	t.Cleanup(server.Close)
 	return server
+}
+
+// A process outside every running job gets no Git credential.
+func TestGitCredentialSocketRefusesProcessesOutsideAJob(t *testing.T) {
+	broker := &fakeBroker{cred: &mobius.EnvironmentGitCredential{Token: "ghs_x"}}
+	server := startTestGitCredentialServer(t, broker)
+	server.leaseOf = func(net.Conn) (string, error) { return "", errNotJobProcess }
+	var out strings.Builder
+	err := requestGitCredential(context.Background(), server.Path(), gitCredentialRequest{
+		Protocol: "https", Host: "github.com", Path: "owner/repo.git", LeaseToken: "lease_forged",
+	}, &out)
+	assert.Error(t, err)
+	assert.Equal(t, "", broker.calledLease)
 }

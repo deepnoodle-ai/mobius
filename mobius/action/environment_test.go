@@ -25,18 +25,20 @@ type testLeasedActionContext struct{ testActionContext }
 
 func (testLeasedActionContext) LeaseToken() string { return "lease_active" }
 
-func TestEnvironmentBashPassesCurrentLeaseToGitHelper(t *testing.T) {
+// The job's lease stays out of the command's environment, where any process
+// in the computer could read it. The worker's sockets find the job from the
+// caller's parent processes instead.
+func TestEnvironmentBashKeepsTheLeaseOutOfTheCommand(t *testing.T) {
 	t.Setenv("MOBIUS_RUNTIME_WORKSPACE", realPath(t, t.TempDir()))
 	out, err := NewEnvironmentBashAction().Execute(testLeasedActionContext{testActionContext{Context: context.Background()}}, map[string]any{
-		"command": "printf '%s' \"$MOBIUS_JOB_LEASE_TOKEN\"",
-		"env":     map[string]string{"MOBIUS_JOB_LEASE_TOKEN": "forged"},
+		"command": "printf '%s' \"${MOBIUS_JOB_LEASE_TOKEN:-none}\"",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	result, ok := out.(map[string]any)
-	if !ok || result["stdout"] != "lease_active" {
-		t.Fatalf("bash lease = %#v, want active job lease", out)
+	if !ok || result["stdout"] != "none" {
+		t.Fatalf("bash lease = %#v, want none in the environment", out)
 	}
 }
 
