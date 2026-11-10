@@ -38,6 +38,17 @@ use it: they receive a repository-scoped GitHub token for an active job lease,
 never the API key. Job scripts cannot call the `mobius` CLI with the worker's
 key.
 
+Workflow script steps call their declared actions the same way. The worker
+serves a second private socket, `MOBIUS_ACTION_SOCKET`. It reads the calling
+process's ID from the socket (`SO_PEERCRED` on Linux, `LOCAL_PEERPID` on
+macOS) and walks its parent processes up to the command of a running job.
+A process outside every running job's tree is refused. The worker sends the
+call with that job's lease, and Mobius runs only the actions the job's script
+step declared, while the step runs. A process that can read the worker's key
+and a running job's lease (for example, as root) can make that step's
+declared calls directly until the step ends. Other operating systems refuse
+action calls.
+
 The `environment.logs.tail` action redacts credential-shaped tokens (`mbx_…`,
 GitHub PATs) from returned log content, but that is output hygiene, not an
 isolation boundary. If you embed the stock environment actions in your own

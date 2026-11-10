@@ -201,13 +201,19 @@ func NewEnvironmentBashAction() mobius.Action {
 		for key, value := range in.Env {
 			cmd.Env = append(cmd.Env, key+"="+value)
 		}
+		leaseToken := ""
 		if lease, ok := ctx.(environmentLeaseContext); ok && lease.LeaseToken() != "" {
-			cmd.Env = append(cmd.Env, "MOBIUS_JOB_LEASE_TOKEN="+lease.LeaseToken())
+			leaseToken = lease.LeaseToken()
+			cmd.Env = append(cmd.Env, "MOBIUS_JOB_LEASE_TOKEN="+leaseToken)
 		}
 		limit := resolveOutputMaxBytes(in.MaxOutputBytes, defaultCommandOutputMaxBytes)
-		return runCommand(cmd,
+		// The command's process is the root of the job's process tree, so
+		// the action socket can tell the job's processes from any other.
+		started := func(pid int) func() { return JobProcesses.Register(pid, leaseToken) }
+		return runCommandTracked(cmd,
 			newHeadTailTruncator(limit, "stdout", bashOutputHint),
-			newHeadTailTruncator(limit, "stderr", bashOutputHint))
+			newHeadTailTruncator(limit, "stderr", bashOutputHint),
+			started)
 	})
 }
 
@@ -1222,9 +1228,25 @@ type streamTruncator interface {
 }
 
 func runCommand(cmd *exec.Cmd, stdout, stderr streamTruncator) (map[string]any, error) {
+	return runCommandTracked(cmd, stdout, stderr, nil)
+}
+
+// runCommandTracked runs cmd like runCommand. When started is set, it is
+// called with the process ID once the command starts, and the func it
+// returns is called when the command ends.
+func runCommandTracked(cmd *exec.Cmd, stdout, stderr streamTruncator, started func(pid int) func()) (map[string]any, error) {
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
-	err := cmd.Run()
+	err := cmd.Start()
+	if err == nil {
+		if started != nil {
+			done := started(cmd.Process.Pid)
+			err = cmd.Wait()
+			done()
+		} else {
+			err = cmd.Wait()
+		}
+	}
 	exitCode := 0
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {

@@ -26,6 +26,18 @@ the minor version.
 - `request_takeover` interaction kind with a `computer_takeover` card
   (`ComputerTakeoverRequest`), created only by Mobius.
 - `workflow_step` on catalog actions.
+- Workflow script steps can call the actions they declare. In a managed
+  computer, `mobius worker` serves a local action socket
+  (`MOBIUS_ACTION_SOCKET`). `mobius actions run <action> --input <json>`
+  and the standard-library Python helper (`from mobius import actions;
+  actions.run(name, input, key=None)`) call through it, and
+  `mobius actions describe <action>` prints an action's inputs and output.
+  The worker accepts a call only from a process inside a running job's
+  process tree, and it sends the call with that job's lease. Scripts never
+  hold a credential. The worker puts the helper on `PYTHONPATH` and its own
+  directory on `PATH` for job shells.
+- `Client.CreateScriptCall` and `Client.DescribeScriptAction`, which the
+  worker uses for those calls.
 
 ### Changed
 

@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -36,6 +37,42 @@ func TestEnvironmentBashPassesCurrentLeaseToGitHelper(t *testing.T) {
 	result, ok := out.(map[string]any)
 	if !ok || result["stdout"] != "lease_active" {
 		t.Fatalf("bash lease = %#v, want active job lease", out)
+	}
+}
+
+// While a bash command runs, its process is registered as the root of the
+// job's process tree with the job's lease; when it ends, it is not.
+func TestEnvironmentBashRegistersItsProcessForTheJob(t *testing.T) {
+	t.Setenv("MOBIUS_RUNTIME_WORKSPACE", realPath(t, t.TempDir()))
+	out, err := NewEnvironmentBashAction().Execute(testLeasedActionContext{testActionContext{Context: context.Background()}}, map[string]any{
+		"command": "printf '%s' \"$$\"",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, _ := out.(map[string]any)
+	pid, err := strconv.Atoi(fmt.Sprint(result["stdout"]))
+	if err != nil {
+		t.Fatalf("bash pid = %#v", result["stdout"])
+	}
+	if _, ok := JobProcesses.Lease(pid); ok {
+		t.Fatalf("pid %d is still registered after the command ended", pid)
+	}
+
+	seen := make(chan string, 1)
+	var started func(int) func()
+	started = func(pid int) func() {
+		done := JobProcesses.Register(pid, "lease_active")
+		lease, _ := JobProcesses.Lease(pid)
+		seen <- lease
+		return done
+	}
+	cmd := exec.Command("true")
+	if _, err := runCommandTracked(cmd, newHeadTailTruncator(100, "stdout", ""), newHeadTailTruncator(100, "stderr", ""), started); err != nil {
+		t.Fatal(err)
+	}
+	if lease := <-seen; lease != "lease_active" {
+		t.Fatalf("lease while running = %q", lease)
 	}
 }
 
