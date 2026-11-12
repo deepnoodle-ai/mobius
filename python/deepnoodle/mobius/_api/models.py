@@ -1300,6 +1300,15 @@ class Risk(StrEnum):
     critical = 'critical'
 
 
+class WorkflowStep(StrEnum):
+    """
+    How a workflow step can run this action. `workflow`: the step runs it as the workflow, with no assistant and no account. `account`: it reaches a connected account and the step names the assistant whose grant it uses in `as:`. Omitted when a workflow step cannot run it.
+    """
+
+    workflow = 'workflow'
+    account = 'account'
+
+
 class SupportedLocation(StrEnum):
     """
     Execution location: `managed`, `worker`, or `environment`.
@@ -2417,11 +2426,7 @@ class AgentMessagingBinding(BaseModel):
     )
     all_messages: bool = Field(
         ...,
-        description='Whether every message in the allowed conversations activates the agent.',
-    )
-    channels: list[str] = Field(
-        ...,
-        description='Optional provider conversation allowlist. Empty means any conversation on the integration.',
+        description='Whether every message in a channel activates the agent. Channel settings decide which assistants answer in each channel.',
     )
     dm_policy: AgentMessagingDMPolicy = Field(
         ...,
@@ -3745,10 +3750,6 @@ class AgentMessagingBindingRequest(BaseModel):
         False,
         description='Respond to every message in bound channels, not just mentions. Must be false for microsoft_teams, where the agent answers in channels and group chats only when a person @mentions it.',
     )
-    channels: list[str] | None = Field(
-        None,
-        description='Channel and group IDs the binding is scoped to (empty means all). Direct messages ignore this list.',
-    )
     dm_policy: AgentMessagingDMPolicy | None = Field(
         None,
         description='Who may direct-message this agent: `open`, `allowlist`, or `disabled`.',
@@ -4401,6 +4402,10 @@ class SessionListResponse(BaseModel):
     next_cursor: str | None = Field(
         None,
         description='Opaque cursor for the next page — pass back as `cursor`. Null when `has_more` is false.',
+    )
+    snippets: dict[str, str] | None = Field(
+        None,
+        description='Present when `q` is set. Maps a listed session id to a short piece of message text around a matched word, from the newest message that contains one. A session whose title alone matches has no entry.',
     )
 
 
@@ -7416,6 +7421,10 @@ class ActionCatalogEntry(BaseModel):
     annotations: ActionAnnotations = Field(
         ...,
         description='Safe-use hints returned for this catalog action. Always present; flags default to false.',
+    )
+    workflow_step: WorkflowStep | None = Field(
+        None,
+        description='How a workflow step can run this action. `workflow`: the step runs it as the workflow, with no assistant and no account. `account`: it reaches a connected account and the step names the assistant whose grant it uses in `as:`. Omitted when a workflow step cannot run it.',
     )
     input_schema: dict[str, Any] | None = Field(
         None, description='JSON Schema describing expected input parameters.'

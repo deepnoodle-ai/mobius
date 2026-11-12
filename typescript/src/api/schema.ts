@@ -3749,6 +3749,11 @@ export interface components {
             risk: "low" | "medium" | "high" | "critical";
             /** @description Safe-use hints returned for this catalog action. Always present; flags default to false. */
             annotations: components["schemas"]["ActionAnnotations"];
+            /**
+             * @description How a workflow step can run this action. `workflow`: the step runs it as the workflow, with no assistant and no account. `account`: it reaches a connected account and the step names the assistant whose grant it uses in `as:`. Omitted when a workflow step cannot run it.
+             * @enum {string}
+             */
+            workflow_step?: "workflow" | "account";
             /** @description JSON Schema describing expected input parameters. */
             input_schema?: {
                 [key: string]: unknown;
@@ -4499,10 +4504,8 @@ export interface components {
             dms: boolean;
             /** @description Whether channel/group mentions activate the agent. */
             mentions: boolean;
-            /** @description Whether every message in the allowed conversations activates the agent. */
+            /** @description Whether every message in a channel activates the agent. Channel settings decide which assistants answer in each channel. */
             all_messages: boolean;
-            /** @description Optional provider conversation allowlist. Empty means any conversation on the integration. */
-            channels: string[];
             /** @description Who may direct-message this agent: `open`, `allowlist`, or `disabled`. */
             dm_policy: components["schemas"]["AgentMessagingDMPolicy"];
             /** @description Optional provider sender allowlist. Empty means any sender. */
@@ -5461,8 +5464,6 @@ export interface components {
              * @default false
              */
             all_messages?: boolean;
-            /** @description Channel and group IDs the binding is scoped to (empty means all). Direct messages ignore this list. */
-            channels?: string[];
             /** @description Who may direct-message this agent: `open`, `allowlist`, or `disabled`. */
             dm_policy?: components["schemas"]["AgentMessagingDMPolicy"];
             /** @description Sender IDs allowed to trigger the agent (empty means no allowlist). An enabled `telegram` binding requires at least one numeric Telegram user ID and refuses `*`. */
@@ -6023,6 +6024,10 @@ export interface components {
             has_more?: boolean;
             /** @description Opaque cursor for the next page — pass back as `cursor`. Null when `has_more` is false. */
             next_cursor?: string | null;
+            /** @description Present when `q` is set. Maps a listed session id to a short piece of message text around a matched word, from the newest message that contains one. A session whose title alone matches has no entry. */
+            snippets?: {
+                [key: string]: string;
+            };
         };
         /** @description Mutable display and lifecycle fields for a session. */
         UpdateSessionRequest: {
@@ -8973,6 +8978,8 @@ export interface components {
         OrgIDParam: string;
         /** @description Environment ID. */
         EnvironmentIDParam: string;
+        /** @description Active lease of the job the calling process belongs to. */
+        LeaseTokenHeader: string;
         /** @description Reference type name, such as `slack.channel` or `table.table`. */
         ReferenceTypeParam: string;
         /** @description Exact integration connection this account-scoped operation acts on. Invalid, inaccessible, stale, or wrong-provider IDs never fall back to another connection. */
@@ -9002,6 +9009,7 @@ export interface components {
         RoutineID: string;
         RoutineProposalID: string;
         WorkflowID: string;
+        IntegrationID: string;
         WorkflowRunID: string;
         /** @description Table ID. */
         TableIDParam: string;
@@ -11241,9 +11249,6 @@ export interface operations {
                  *       "dms": true,
                  *       "mentions": true,
                  *       "all_messages": false,
-                 *       "channels": [
-                 *         "C0123456789"
-                 *       ],
                  *       "dm_policy": "open",
                  *       "reply_mode": "auto"
                  *     }
@@ -11723,6 +11728,8 @@ export interface operations {
                 since?: string;
                 /** @description Return at most this many sessions per agent, each agent's newest activity first, so one busy agent cannot crowd the others out of the page. `limit` still caps the total. Cannot be combined with `cursor`, `agent_id`, or `agent_name`. */
                 per_agent_limit?: number;
+                /** @description Keep only conversations that contain every word of this text somewhere in the title or in the person's or the assistant's message text. Tool calls and tool results are not searched. Case and accents are ignored, and a word of 3 or more characters also matches longer words that start with it. Uses the table search syntax: `OR` between two words accepts either, and a leading `-` excludes a word. Quoted words must all appear, in any order. A search with no word to find is a 400. The trimmed text must be 2 to 200 characters. Cannot be combined with `per_agent_limit`. With `q`, `limit` is capped at 20, and a search that runs too long is a 503 with code `search_timeout`. */
+                q?: string;
                 /** @description Cursor for pagination (opaque string from previous response) */
                 cursor?: components["parameters"]["CursorParam"];
                 /** @description Maximum number of items to return */

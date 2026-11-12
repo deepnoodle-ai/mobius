@@ -104,6 +104,24 @@ func (e ActionCatalogEntrySource) Valid() bool {
 	}
 }
 
+// Defines values for ActionCatalogEntryWorkflowStep.
+const (
+	ActionCatalogEntryWorkflowStepAccount  ActionCatalogEntryWorkflowStep = "account"
+	ActionCatalogEntryWorkflowStepWorkflow ActionCatalogEntryWorkflowStep = "workflow"
+)
+
+// Valid indicates whether the value is a known member of the ActionCatalogEntryWorkflowStep enum.
+func (e ActionCatalogEntryWorkflowStep) Valid() bool {
+	switch e {
+	case ActionCatalogEntryWorkflowStepAccount:
+		return true
+	case ActionCatalogEntryWorkflowStepWorkflow:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ActionEndpointKind.
 const (
 	ActionEndpointKindHttp   ActionEndpointKind = "http"
@@ -4396,6 +4414,9 @@ type ActionCatalogEntry struct {
 
 	// Visibility Who the custodian chose to share the resource with.
 	Visibility *ResourceVisibility `json:"visibility,omitempty"`
+
+	// WorkflowStep How a workflow step can run this action. `workflow`: the step runs it as the workflow, with no assistant and no account. `account`: it reaches a connected account and the step names the assistant whose grant it uses in `as:`. Omitted when a workflow step cannot run it.
+	WorkflowStep *ActionCatalogEntryWorkflowStep `json:"workflow_step,omitempty"`
 }
 
 // ActionCatalogEntryDefinitionScope Scope that owns the selected definition: `platform` for Mobius and integration actions, or `custom` for an action authored in the current organization.
@@ -4409,6 +4430,9 @@ type ActionCatalogEntryRisk string
 
 // ActionCatalogEntrySource Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for org-owned HTTP or worker-backed actions. The `integration` field carries the provider slug for integration-backed platform actions.
 type ActionCatalogEntrySource string
+
+// ActionCatalogEntryWorkflowStep How a workflow step can run this action. `workflow`: the step runs it as the workflow, with no assistant and no account. `account`: it reaches a connected account and the step names the assistant whose grant it uses in `as:`. Omitted when a workflow step cannot run it.
+type ActionCatalogEntryWorkflowStep string
 
 // ActionCatalogListResponse Unpaginated action catalog. This endpoint returns the complete set of available custom and platform actions so clients can build pickers without paging across a small catalog.
 type ActionCatalogListResponse struct {
@@ -4973,11 +4997,8 @@ type AgentMessagingBinding struct {
 	// AgentId Agent this binding belongs to.
 	AgentId string `json:"agent_id"`
 
-	// AllMessages Whether every message in the allowed conversations activates the agent.
+	// AllMessages Whether every message in a channel activates the agent. Channel settings decide which assistants answer in each channel.
 	AllMessages bool `json:"all_messages"`
-
-	// Channels Optional provider conversation allowlist. Empty means any conversation on the integration.
-	Channels []string `json:"channels"`
 
 	// CompactionPolicy Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values.
 	CompactionPolicy *SessionCompactionPolicy `json:"compaction_policy,omitempty"`
@@ -5032,9 +5053,6 @@ type AgentMessagingBindingListResponse struct {
 type AgentMessagingBindingRequest struct {
 	// AllMessages Respond to every message in bound channels, not just mentions. Must be false for microsoft_teams, where the agent answers in channels and group chats only when a person @mentions it.
 	AllMessages *bool `json:"all_messages,omitempty"`
-
-	// Channels Channel and group IDs the binding is scoped to (empty means all). Direct messages ignore this list.
-	Channels *[]string `json:"channels,omitempty"`
 
 	// CompactionPolicy Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values.
 	CompactionPolicy *SessionCompactionPolicy `json:"compaction_policy,omitempty"`
@@ -9500,6 +9518,9 @@ type SessionListResponse struct {
 
 	// NextCursor Opaque cursor for the next page — pass back as `cursor`. Null when `has_more` is false.
 	NextCursor *string `json:"next_cursor,omitempty"`
+
+	// Snippets Present when `q` is set. Maps a listed session id to a short piece of message text around a matched word, from the newest message that contains one. A session whose title alone matches has no entry.
+	Snippets *map[string]string `json:"snippets,omitempty"`
 }
 
 // SessionLiveSnapshot Ephemeral live transcript snapshot for an in-flight turn. Deployments with shared cache support make it available across backend replicas.
@@ -11760,6 +11781,9 @@ type ListSessionsParams struct {
 
 	// PerAgentLimit Return at most this many sessions per agent, each agent's newest activity first, so one busy agent cannot crowd the others out of the page. `limit` still caps the total. Cannot be combined with `cursor`, `agent_id`, or `agent_name`.
 	PerAgentLimit *int `form:"per_agent_limit,omitempty" json:"per_agent_limit,omitempty"`
+
+	// Q Keep only conversations that contain every word of this text somewhere in the title or in the person's or the assistant's message text. Tool calls and tool results are not searched. Case and accents are ignored, and a word of 3 or more characters also matches longer words that start with it. Uses the table search syntax: `OR` between two words accepts either, and a leading `-` excludes a word. Quoted words must all appear, in any order. A search with no word to find is a 400. The trimmed text must be 2 to 200 characters. Cannot be combined with `per_agent_limit`. With `q`, `limit` is capped at 20, and a search that runs too long is a 503 with code `search_timeout`.
+	Q *string `form:"q,omitempty" json:"q,omitempty"`
 
 	// Cursor Cursor for pagination (opaque string from previous response)
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
@@ -26974,6 +26998,18 @@ func NewListSessionsRequest(server string, params *ListSessionsParams) (*http.Re
 		if params.PerAgentLimit != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "per_agent_limit", *params.PerAgentLimit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Q != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "q", *params.Q, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {

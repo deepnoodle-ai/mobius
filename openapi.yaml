@@ -2409,8 +2409,6 @@ paths:
               dms: true
               mentions: true
               all_messages: false
-              channels:
-              - C0123456789
               dm_policy: open
               reply_mode: auto
       responses:
@@ -2926,6 +2924,21 @@ paths:
           type: integer
           minimum: 1
           maximum: 20
+      - name: q
+        in: query
+        description: 'Keep only conversations that contain every word of this text somewhere
+          in the title or in the person''s or the assistant''s message text. Tool calls and
+          tool results are not searched. Case and accents are ignored, and a word of 3 or
+          more characters also matches longer words that start with it. Uses the table search
+          syntax: `OR` between two words accepts either, and a leading `-` excludes a word.
+          Quoted words must all appear, in any order. A search with no word to find is a 400.
+          The trimmed text must be 2 to 200 characters. Cannot be combined with `per_agent_limit`.
+          With `q`, `limit` is capped at 20, and a search that runs too long is a 503 with
+          code `search_timeout`.'
+        schema:
+          type: string
+          minLength: 2
+          maxLength: 200
       - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
       responses:
@@ -6542,6 +6555,13 @@ components:
       description: Environment ID.
       schema:
         type: string
+    LeaseTokenHeader:
+      name: X-Mobius-Lease-Token
+      in: header
+      required: true
+      description: Active lease of the job the calling process belongs to.
+      schema:
+        type: string
     ReferenceTypeParam:
       name: reference_type
       in: path
@@ -6663,6 +6683,12 @@ components:
         type: string
     WorkflowID:
       name: workflow_id
+      in: path
+      required: true
+      schema:
+        type: string
+    IntegrationID:
+      name: integration_id
       in: path
       required: true
       schema:
@@ -8383,6 +8409,15 @@ components:
           $ref: '#/components/schemas/ActionAnnotations'
           description: Safe-use hints returned for this catalog action. Always present; flags
             default to false.
+        workflow_step:
+          type: string
+          enum:
+          - workflow
+          - account
+          description: 'How a workflow step can run this action. `workflow`: the step runs
+            it as the workflow, with no assistant and no account. `account`: it reaches a
+            connected account and the step names the assistant whose grant it uses in `as:`.
+            Omitted when a workflow step cannot run it.'
         input_schema:
           type: object
           additionalProperties: true
@@ -9958,7 +9993,6 @@ components:
       - dms
       - mentions
       - all_messages
-      - channels
       - dm_policy
       - sender_allow
       - reply_mode
@@ -9992,13 +10026,8 @@ components:
           description: Whether channel/group mentions activate the agent.
         all_messages:
           type: boolean
-          description: Whether every message in the allowed conversations activates the agent.
-        channels:
-          type: array
-          description: Optional provider conversation allowlist. Empty means any conversation
-            on the integration.
-          items:
-            type: string
+          description: Whether every message in a channel activates the agent. Channel settings
+            decide which assistants answer in each channel.
         dm_policy:
           $ref: '#/components/schemas/AgentMessagingDMPolicy'
           description: 'Who may direct-message this agent: `open`, `allowlist`, or `disabled`.'
@@ -12044,12 +12073,6 @@ components:
           description: Respond to every message in bound channels, not just mentions. Must
             be false for microsoft_teams, where the agent answers in channels and group chats
             only when a person @mentions it.
-        channels:
-          type: array
-          items:
-            type: string
-          description: Channel and group IDs the binding is scoped to (empty means all). Direct
-            messages ignore this list.
         dm_policy:
           $ref: '#/components/schemas/AgentMessagingDMPolicy'
           description: 'Who may direct-message this agent: `open`, `allowlist`, or `disabled`.'
@@ -13042,6 +13065,13 @@ components:
           nullable: true
           description: Opaque cursor for the next page — pass back as `cursor`. Null when
             `has_more` is false.
+        snippets:
+          type: object
+          description: Present when `q` is set. Maps a listed session id to a short piece
+            of message text around a matched word, from the newest message that contains one.
+            A session whose title alone matches has no entry.
+          additionalProperties:
+            type: string
     UpdateSessionRequest:
       type: object
       additionalProperties: false

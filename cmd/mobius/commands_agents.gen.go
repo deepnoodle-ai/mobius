@@ -878,7 +878,6 @@ func registerAgentsCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.Bool("all-messages", "").Help("Respond to every message in bound channels, not just mentions. Must be false for microsoft_teams, where the agent answers in channels and group chats only when a person @mentions it."),
-			cli.Strings("channels", "").Help("Channel and group IDs the binding is scoped to (empty means all). Direct messages ignore this list."),
 			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values. Accepts JSON, @file, or @-."),
 			cli.String("dm-policy", "").Help("Direct-message access policy: `open`, `allowlist`, or `disabled`."),
 			cli.Bool("dms", "").Help("Respond to direct messages."),
@@ -909,10 +908,6 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.IsSet("all-messages") {
 				v := ctx.Bool("all-messages")
 				body.AllMessages = &v
-			}
-			if ctx.IsSet("channels") {
-				v := ctx.Strings("channels")
-				body.Channels = &v
 			}
 			if ctx.IsSet("compaction-policy") {
 				if err := decodeFlagJSON(ctx, "compaction-policy", ctx.String("compaction-policy"), &body.CompactionPolicy); err != nil {
