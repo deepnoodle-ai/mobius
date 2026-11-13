@@ -26,11 +26,21 @@ the minor version.
 - `request_takeover` interaction kind with a `computer_takeover` card
   (`ComputerTakeoverRequest`), created only by Mobius.
 - `workflow_step` on catalog actions.
+- Workflow script steps can call the actions they declare: `mobius actions
+  run`, `mobius actions describe`, and `from mobius import actions` in a
+  managed computer, through a new worker socket (`MOBIUS_ACTION_SOCKET`).
+  See SECURITY.md for what this does and does not protect.
+- `Client.CreateScriptCall` and `Client.DescribeScriptAction`.
 
 ### Changed
 
 - Getting a session or routine no longer writes a read mark; post to
   read-mark instead (the `X-Mobius-Safe-Read` header is gone).
+- `environment.bash` no longer sets `MOBIUS_JOB_LEASE_TOKEN`. The Git
+  credential socket finds the caller's job from its parent processes, and
+  ignores any lease the caller sends.
+- Git credentials and action calls in a job work only on Linux and macOS,
+  where the worker can tell which process is calling.
 
 ## [0.7.1] - 2026-11-09
 
