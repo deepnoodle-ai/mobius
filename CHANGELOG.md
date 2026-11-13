@@ -20,8 +20,9 @@ the minor version.
 
 ### Added
 
-- `q` on `listSessions` (`mobius sessions list --q`) for full-text search over
-  titles and message text; matching responses carry `snippets`.
+- `q` on `listSessions` for full-text search over titles and message text, in
+  the Go, Python, and TypeScript helpers and `mobius sessions list --q`.
+  Matching responses carry `snippets`.
 - `request_takeover` interaction kind with a `computer_takeover` card
   (`ComputerTakeoverRequest`), created only by Mobius.
 - `workflow_step` on catalog actions.
