@@ -4,28 +4,6 @@
  */
 
 export interface paths {
-    "/v1/resources/{resource_type}/{resource_id}/ownership": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Update a resource's custody or audience
-         * @description Shares, un-shares, hands custody to the team, transfers custody to a person, or detaches a narrowing agent container. Audience-expanding changes require an explicit confirmation. Un-sharing is refused while the resource remains delegated to a wider agent audience.
-         *
-         *     A conversation's audience is set when it starts, so `session` always returns `409`. Share the chat instead, or start a new one.
-         */
-        patch: operations["updateResourceOwnership"];
-        trace?: never;
-    };
     "/v1/api-keys": {
         parameters: {
             query?: never;
@@ -1285,7 +1263,7 @@ export interface paths {
         };
         /**
          * Get session
-         * @description Returns one durable conversation session. During the web-client transition, callers that already posted a read mark may send X-Mobius-Safe-Read as 1 to suppress the legacy GET watermark write.
+         * @description Returns one durable conversation session. Reading it never marks anything read; post to read-mark for that.
          */
         get: operations["getSession"];
         put?: never;
@@ -1953,7 +1931,7 @@ export interface paths {
         };
         /**
          * Get a routine
-         * @description Returns one reachable routine and its current schedule and lifecycle state. During the web-client transition, callers that already posted a read mark may send X-Mobius-Safe-Read as 1 to suppress the legacy GET watermark write.
+         * @description Returns one reachable routine and its current schedule and lifecycle state. Reading it never marks anything read; post to read-mark for that.
          */
         get: operations["getRoutine"];
         put?: never;
@@ -2857,26 +2835,6 @@ export interface components {
          * @enum {string}
          */
         IfExists: "error" | "adopt";
-        ResourceOwnershipTransitionRequest: {
-            owner?: components["schemas"]["ResourceOwner"];
-            visibility?: components["schemas"]["ResourceVisibility"];
-            /**
-             * @description Clear the agent container when the resource supports detachment.
-             * @default false
-             */
-            detach_container?: boolean;
-            /**
-             * @description Required before sharing, handing custody to the team, or detaching a container.
-             * @default false
-             */
-            confirm_audience_expansion?: boolean;
-        } | unknown | unknown | unknown;
-        ResourceOwnershipState: {
-            owner: components["schemas"]["ResourceOwner"];
-            visibility: components["schemas"]["ResourceVisibility"];
-            container: components["schemas"]["ResourceContainer"];
-            posture: components["schemas"]["ResourcePosture"];
-        };
         /**
          * @description Administrative status. Inactive agents cannot claim new jobs. Deleted agents are excluded from normal reads.
          * @enum {string}
@@ -3749,6 +3707,11 @@ export interface components {
             risk: "low" | "medium" | "high" | "critical";
             /** @description Safe-use hints returned for this catalog action. Always present; flags default to false. */
             annotations: components["schemas"]["ActionAnnotations"];
+            /**
+             * @description How a workflow step can run this action. `workflow`: the step runs it as the workflow, with no assistant and no account. `account`: it reaches a connected account and the step names the assistant whose grant it uses in `as:`. Omitted when a workflow step cannot run it.
+             * @enum {string}
+             */
+            workflow_step?: "workflow" | "account";
             /** @description JSON Schema describing expected input parameters. */
             input_schema?: {
                 [key: string]: unknown;
@@ -4499,10 +4462,8 @@ export interface components {
             dms: boolean;
             /** @description Whether channel/group mentions activate the agent. */
             mentions: boolean;
-            /** @description Whether every message in the allowed conversations activates the agent. */
+            /** @description Whether every message in a channel activates the agent. Channel settings decide which assistants answer in each channel. */
             all_messages: boolean;
-            /** @description Optional provider conversation allowlist. Empty means any conversation on the integration. */
-            channels: string[];
             /** @description Who may direct-message this agent: `open`, `allowlist`, or `disabled`. */
             dm_policy: components["schemas"]["AgentMessagingDMPolicy"];
             /** @description Optional provider sender allowlist. Empty means any sender. */
@@ -4872,11 +4833,16 @@ export interface components {
          *     * `assign_work` — assigned work performed by a user or agent, which
          *     submits the result. Pair it with `resolution_policy.review` when the
          *     result must be accepted before the interaction resolves.
+         *     * `request_takeover` — an assistant asks a person to take over a
+         *     Computer's screen and finish a step only a person can do. Only
+         *     Mobius creates it; `computer_takeover` carries the card. A person
+         *     answers only by dismissing it (`outcome` = `declined`); Mobius
+         *     records how the takeover ended.
          *
          *     The first three are *answered*; `assign_work` is *worked*. Kind does not by itself decide when an interaction closes — the resolution policy does.
          * @enum {string}
          */
-        InteractionKind: "request_information" | "request_approval" | "request_review" | "assign_work";
+        InteractionKind: "request_information" | "request_approval" | "request_review" | "assign_work" | "request_takeover";
         /**
          * @description Lifecycle state of the interaction.
          *     * `pending` — open; the assigned users still need to act.
@@ -4956,6 +4922,13 @@ export interface components {
             session_id?: string;
             /** @description True when Mobius opened this approval for tool calls it held because the assistant's approval mode asks before them, rather than a question the assistant asked. Its outcome resumes the held calls. */
             readonly held_call?: boolean;
+        };
+        /** @description A takeover request's card. `reason` is the assistant's own words: show it as plain text, and say the assistant wrote it. */
+        ComputerTakeoverRequest: {
+            /** @description The Computer to take over. Open the viewer with it and this interaction's ID. */
+            computer_id: string;
+            computer_name: string;
+            reason: string;
         };
         HeldCallApproval: {
             assistant_name?: string;
@@ -5177,6 +5150,8 @@ export interface components {
             consumer?: components["schemas"]["Consumer"] | null;
             /** @description What an approval for held tool calls covers, built from the exact arguments the approved calls run with. Present only when `consumer.agent_tool.held_call` is true. Every field is plain text. */
             readonly held_calls?: components["schemas"]["HeldCallApproval"] | null;
+            /** @description What a takeover request asks. Present only when `kind` is `request_takeover`. */
+            readonly computer_takeover?: components["schemas"]["ComputerTakeoverRequest"] | null;
             /** @description The conversation whose assistant asked this question. A caller who can read that conversation gets it on get and list reads whenever an assistant asked from one. Null for questions no conversation asked. Omitted for a person this interaction asks who cannot use the conversation (see asker_name). */
             source_conversation?: components["schemas"]["InteractionSourceConversation"] | null;
             /** @description Optional per-interaction delivery override. When absent, the dispatcher delivers to the app inbox only. */
@@ -5461,8 +5436,6 @@ export interface components {
              * @default false
              */
             all_messages?: boolean;
-            /** @description Channel and group IDs the binding is scoped to (empty means all). Direct messages ignore this list. */
-            channels?: string[];
             /** @description Who may direct-message this agent: `open`, `allowlist`, or `disabled`. */
             dm_policy?: components["schemas"]["AgentMessagingDMPolicy"];
             /** @description Sender IDs allowed to trigger the agent (empty means no allowlist). An enabled `telegram` binding requires at least one numeric Telegram user ID and refuses `*`. */
@@ -6023,6 +5996,10 @@ export interface components {
             has_more?: boolean;
             /** @description Opaque cursor for the next page — pass back as `cursor`. Null when `has_more` is false. */
             next_cursor?: string | null;
+            /** @description Present when `q` is set. Maps a listed session id to a short piece of message text around a matched word, from the newest message that contains one. A session whose title alone matches has no entry. */
+            snippets?: {
+                [key: string]: string;
+            };
         };
         /** @description Mutable display and lifecycle fields for a session. */
         UpdateSessionRequest: {
@@ -8973,6 +8950,10 @@ export interface components {
         OrgIDParam: string;
         /** @description Environment ID. */
         EnvironmentIDParam: string;
+        /** @description Sign-in ID. */
+        SignInIDParam: string;
+        /** @description Active lease of the job the calling process belongs to. */
+        LeaseTokenHeader: string;
         /** @description Reference type name, such as `slack.channel` or `table.table`. */
         ReferenceTypeParam: string;
         /** @description Exact integration connection this account-scoped operation acts on. Invalid, inaccessible, stale, or wrong-provider IDs never fall back to another connection. */
@@ -9002,6 +8983,7 @@ export interface components {
         RoutineID: string;
         RoutineProposalID: string;
         WorkflowID: string;
+        IntegrationID: string;
         WorkflowRunID: string;
         /** @description Table ID. */
         TableIDParam: string;
@@ -9027,39 +9009,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    updateResourceOwnership: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                resource_type: "action" | "artifact" | "environment" | "routine" | "secret" | "session" | "skill" | "table" | "webhook";
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ResourceOwnershipTransitionRequest"];
-            };
-        };
-        responses: {
-            /** @description Updated ownership state */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResourceOwnershipState"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-        };
-    };
     listAPIKeys: {
         parameters: {
             query?: {
@@ -11241,9 +11190,6 @@ export interface operations {
                  *       "dms": true,
                  *       "mentions": true,
                  *       "all_messages": false,
-                 *       "channels": [
-                 *         "C0123456789"
-                 *       ],
                  *       "dm_policy": "open",
                  *       "reply_mode": "auto"
                  *     }
@@ -11397,7 +11343,7 @@ export interface operations {
             query?: {
                 /** @description Optional search over entry keys, kinds, summaries, and content. Omit to list. */
                 query?: string;
-                /** @description Search ranking mode for a non-blank `query`. Omit for backwards-compatible keyword search. Semantic and hybrid search can return `503 memory_semantic_search_unavailable` when the embedding or search-index service is unavailable; callers may retry or fall back to `keyword`. */
+                /** @description Search ranking mode for a non-blank `query`. Omit for backwards-compatible keyword search. Semantic and hybrid search can return `503 memory_semantic_search_unavailable` when the embedding or search-index service is unavailable; callers may retry or fall back to `keyword`. A search reads at most the 500 best keyword matches and the 500 nearest semantic matches; paging ends after them. */
                 search_mode?: components["schemas"]["MemorySearchMode"];
                 /** @description Optional filter to a single memory kind. */
                 kind?: components["schemas"]["MemoryKind"];
@@ -11723,6 +11669,8 @@ export interface operations {
                 since?: string;
                 /** @description Return at most this many sessions per agent, each agent's newest activity first, so one busy agent cannot crowd the others out of the page. `limit` still caps the total. Cannot be combined with `cursor`, `agent_id`, or `agent_name`. */
                 per_agent_limit?: number;
+                /** @description Keep only conversations that contain every word of this text somewhere in the title or in the person's or the assistant's message text. Tool calls and tool results are not searched. Case and accents are ignored, and a word of 3 or more characters also matches longer words that start with it. Uses the table search syntax: `OR` between two words accepts either, and a leading `-` excludes a word. Quoted words must all appear, in any order. A search with no word to find is a 400. The trimmed text must be 2 to 200 characters. Cannot be combined with `per_agent_limit`. With `q`, `limit` is capped at 20, and a search that runs too long is a 503 with code `search_timeout`. */
+                q?: string;
                 /** @description Cursor for pagination (opaque string from previous response) */
                 cursor?: components["parameters"]["CursorParam"];
                 /** @description Maximum number of items to return */

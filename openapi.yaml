@@ -21,9 +21,6 @@ servers:
 security:
 - BearerAuth: []
 tags:
-- name: resources
-  x-displayName: Resources
-  description: Resources API operations.
 - name: api-keys
   x-displayName: API Keys
   description: Organization API keys used for programmatic authentication.
@@ -83,57 +80,6 @@ tags:
   x-displayName: Artifacts
   description: Files produced by agents during loop runs and stored for later inspection.
 paths:
-  /v1/resources/{resource_type}/{resource_id}/ownership:
-    patch:
-      operationId: updateResourceOwnership
-      x-public: true
-      tags:
-      - resources
-      summary: Update a resource's custody or audience
-      description: |-
-        Shares, un-shares, hands custody to the team, transfers custody to a person, or detaches a narrowing agent container. Audience-expanding changes require an explicit confirmation. Un-sharing is refused while the resource remains delegated to a wider agent audience.
-
-        A conversation's audience is set when it starts, so `session` always returns `409`. Share the chat instead, or start a new one.
-      parameters:
-      - name: resource_type
-        in: path
-        required: true
-        schema:
-          type: string
-          enum:
-          - action
-          - artifact
-          - environment
-          - routine
-          - secret
-          - session
-          - skill
-          - table
-          - webhook
-      - $ref: '#/components/parameters/IDParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ResourceOwnershipTransitionRequest'
-      responses:
-        '200':
-          description: Updated ownership state
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ResourceOwnershipState'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
   /v1/api-keys:
     post:
       operationId: createAPIKey
@@ -2409,8 +2355,6 @@ paths:
               dms: true
               mentions: true
               all_messages: false
-              channels:
-              - C0123456789
               dm_policy: open
               reply_mode: auto
       responses:
@@ -2582,7 +2526,8 @@ paths:
         description: Search ranking mode for a non-blank `query`. Omit for backwards-compatible
           keyword search. Semantic and hybrid search can return `503 memory_semantic_search_unavailable`
           when the embedding or search-index service is unavailable; callers may retry or
-          fall back to `keyword`.
+          fall back to `keyword`. A search reads at most the 500 best keyword matches and
+          the 500 nearest semantic matches; paging ends after them.
         schema:
           $ref: '#/components/schemas/MemorySearchMode'
       - name: kind
@@ -2926,6 +2871,21 @@ paths:
           type: integer
           minimum: 1
           maximum: 20
+      - name: q
+        in: query
+        description: 'Keep only conversations that contain every word of this text somewhere
+          in the title or in the person''s or the assistant''s message text. Tool calls and
+          tool results are not searched. Case and accents are ignored, and a word of 3 or
+          more characters also matches longer words that start with it. Uses the table search
+          syntax: `OR` between two words accepts either, and a leading `-` excludes a word.
+          Quoted words must all appear, in any order. A search with no word to find is a 400.
+          The trimmed text must be 2 to 200 characters. Cannot be combined with `per_agent_limit`.
+          With `q`, `limit` is capped at 20, and a search that runs too long is a 503 with
+          code `search_timeout`.'
+        schema:
+          type: string
+          minLength: 2
+          maxLength: 200
       - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
       responses:
@@ -2980,9 +2940,8 @@ paths:
       tags:
       - sessions
       summary: Get session
-      description: Returns one durable conversation session. During the web-client transition,
-        callers that already posted a read mark may send X-Mobius-Safe-Read as 1 to suppress
-        the legacy GET watermark write.
+      description: Returns one durable conversation session. Reading it never marks anything
+        read; post to read-mark for that.
       parameters:
       - $ref: '#/components/parameters/SessionIdParam'
       responses:
@@ -4404,8 +4363,7 @@ paths:
       - routines
       summary: Get a routine
       description: Returns one reachable routine and its current schedule and lifecycle state.
-        During the web-client transition, callers that already posted a read mark may send
-        X-Mobius-Safe-Read as 1 to suppress the legacy GET watermark write.
+        Reading it never marks anything read; post to read-mark for that.
       parameters:
       - $ref: '#/components/parameters/RoutineID'
       responses:
@@ -6542,6 +6500,20 @@ components:
       description: Environment ID.
       schema:
         type: string
+    SignInIDParam:
+      name: sign_in_id
+      in: path
+      required: true
+      description: Sign-in ID.
+      schema:
+        type: string
+    LeaseTokenHeader:
+      name: X-Mobius-Lease-Token
+      in: header
+      required: true
+      description: Active lease of the job the calling process belongs to.
+      schema:
+        type: string
     ReferenceTypeParam:
       name: reference_type
       in: path
@@ -6663,6 +6635,12 @@ components:
         type: string
     WorkflowID:
       name: workflow_id
+      in: path
+      required: true
+      schema:
+        type: string
+    IntegrationID:
+      name: integration_id
       in: path
       required: true
       schema:
@@ -6956,47 +6934,6 @@ components:
         resource. `error` (the default) rejects the request with 409. `adopt` returns the
         existing resource unchanged instead — mutable fields in the request are ignored, since
         no write happens — and requires `external_ref` to be set; omitting it returns 400.
-    ResourceOwnershipTransitionRequest:
-      type: object
-      additionalProperties: false
-      properties:
-        owner:
-          $ref: '#/components/schemas/ResourceOwner'
-        visibility:
-          $ref: '#/components/schemas/ResourceVisibility'
-        detach_container:
-          type: boolean
-          default: false
-          description: Clear the agent container when the resource supports detachment.
-        confirm_audience_expansion:
-          type: boolean
-          default: false
-          description: Required before sharing, handing custody to the team, or detaching
-            a container.
-      anyOf:
-      - required:
-        - owner
-      - required:
-        - visibility
-      - required:
-        - detach_container
-    ResourceOwnershipState:
-      type: object
-      additionalProperties: false
-      required:
-      - owner
-      - visibility
-      - container
-      - posture
-      properties:
-        owner:
-          $ref: '#/components/schemas/ResourceOwner'
-        visibility:
-          $ref: '#/components/schemas/ResourceVisibility'
-        container:
-          $ref: '#/components/schemas/ResourceContainer'
-        posture:
-          $ref: '#/components/schemas/ResourcePosture'
     AgentStatus:
       type: string
       enum:
@@ -8383,6 +8320,15 @@ components:
           $ref: '#/components/schemas/ActionAnnotations'
           description: Safe-use hints returned for this catalog action. Always present; flags
             default to false.
+        workflow_step:
+          type: string
+          enum:
+          - workflow
+          - account
+          description: 'How a workflow step can run this action. `workflow`: the step runs
+            it as the workflow, with no assistant and no account. `account`: it reaches a
+            connected account and the step names the assistant whose grant it uses in `as:`.
+            Omitted when a workflow step cannot run it.'
         input_schema:
           type: object
           additionalProperties: true
@@ -9958,7 +9904,6 @@ components:
       - dms
       - mentions
       - all_messages
-      - channels
       - dm_policy
       - sender_allow
       - reply_mode
@@ -9992,13 +9937,8 @@ components:
           description: Whether channel/group mentions activate the agent.
         all_messages:
           type: boolean
-          description: Whether every message in the allowed conversations activates the agent.
-        channels:
-          type: array
-          description: Optional provider conversation allowlist. Empty means any conversation
-            on the integration.
-          items:
-            type: string
+          description: Whether every message in a channel activates the agent. Channel settings
+            decide which assistants answer in each channel.
         dm_policy:
           $ref: '#/components/schemas/AgentMessagingDMPolicy'
           description: 'Who may direct-message this agent: `open`, `allowlist`, or `disabled`.'
@@ -10788,6 +10728,7 @@ components:
       - request_approval
       - request_review
       - assign_work
+      - request_takeover
       description: |-
         Protocol kind of the interaction:
         * `request_information` — a data-collection protocol with structured
@@ -10799,6 +10740,11 @@ components:
         * `assign_work` — assigned work performed by a user or agent, which
         submits the result. Pair it with `resolution_policy.review` when the
         result must be accepted before the interaction resolves.
+        * `request_takeover` — an assistant asks a person to take over a
+        Computer's screen and finish a step only a person can do. Only
+        Mobius creates it; `computer_takeover` carries the card. A person
+        answers only by dismissing it (`outcome` = `declined`); Mobius
+        records how the takeover ended.
 
         The first three are *answered*; `assign_work` is *worked*. Kind does not by itself decide when an interaction closes — the resolution policy does.
     InteractionStatus:
@@ -10991,6 +10937,25 @@ components:
           description: True when Mobius opened this approval for tool calls it held because
             the assistant's approval mode asks before them, rather than a question the assistant
             asked. Its outcome resumes the held calls.
+    ComputerTakeoverRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - computer_id
+      - computer_name
+      - reason
+      description: 'A takeover request''s card. `reason` is the assistant''s own words: show
+        it as plain text, and say the assistant wrote it.'
+      properties:
+        computer_id:
+          type: string
+          description: The Computer to take over. Open the viewer with it and this interaction's
+            ID.
+        computer_name:
+          type: string
+        reason:
+          type: string
+          maxLength: 200
     HeldCallApproval:
       type: object
       additionalProperties: false
@@ -11461,6 +11426,13 @@ components:
           description: What an approval for held tool calls covers, built from the exact arguments
             the approved calls run with. Present only when `consumer.agent_tool.held_call`
             is true. Every field is plain text.
+        computer_takeover:
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/ComputerTakeoverRequest'
+          nullable: true
+          readOnly: true
+          description: What a takeover request asks. Present only when `kind` is `request_takeover`.
         source_conversation:
           type: object
           allOf:
@@ -12044,12 +12016,6 @@ components:
           description: Respond to every message in bound channels, not just mentions. Must
             be false for microsoft_teams, where the agent answers in channels and group chats
             only when a person @mentions it.
-        channels:
-          type: array
-          items:
-            type: string
-          description: Channel and group IDs the binding is scoped to (empty means all). Direct
-            messages ignore this list.
         dm_policy:
           $ref: '#/components/schemas/AgentMessagingDMPolicy'
           description: 'Who may direct-message this agent: `open`, `allowlist`, or `disabled`.'
@@ -13042,6 +13008,13 @@ components:
           nullable: true
           description: Opaque cursor for the next page — pass back as `cursor`. Null when
             `has_more` is false.
+        snippets:
+          type: object
+          description: Present when `q` is set. Maps a listed session id to a short piece
+            of message text around a matched word, from the newest message that contains one.
+            A session whose title alone matches has no entry.
+          additionalProperties:
+            type: string
     UpdateSessionRequest:
       type: object
       additionalProperties: false
@@ -18289,9 +18262,6 @@ components:
           schema:
             $ref: '#/components/schemas/ActionInvocationV1'
 x-tagGroups:
-- name: Resource Ownership Endpoints
-  tags:
-  - resources
 - name: API Keys
   tags:
   - api-keys

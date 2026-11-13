@@ -187,7 +187,6 @@ var groupDescriptions = map[string]string{
 	"organizations": "Organization settings and control plane",
 	"permissions":   "Assignable org permission catalog",
 	"principals":    "Machine identities and their roles",
-	"resources":     "Resource custody and audience changes",
 	"roles":         "Org roles and assignments",
 	"routines":      "Scheduled routines, occurrences, and rosters",
 	"sessions":      "Conversation sessions, transcripts, and turns",

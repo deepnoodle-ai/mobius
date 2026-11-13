@@ -10,6 +10,27 @@ the minor version.
 
 ## [Unreleased]
 
+### Removed
+
+- `PATCH /v1/resources/{resource_type}/{resource_id}/ownership`
+  (`updateResourceOwnership`), its request/state schemas, and the
+  `mobius resources` command group.
+- `channels` on agent messaging settings and binding requests (and the
+  `--channels` flag). Channel settings now decide which assistants answer.
+
+### Added
+
+- `q` on `listSessions` (`mobius sessions list --q`) for full-text search over
+  titles and message text; matching responses carry `snippets`.
+- `request_takeover` interaction kind with a `computer_takeover` card
+  (`ComputerTakeoverRequest`), created only by Mobius.
+- `workflow_step` on catalog actions.
+
+### Changed
+
+- Getting a session or routine no longer writes a read mark; post to
+  read-mark instead (the `X-Mobius-Safe-Read` header is gone).
+
 ## [0.7.1] - 2026-11-09
 
 ### Added
