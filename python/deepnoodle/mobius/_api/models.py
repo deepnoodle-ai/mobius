@@ -160,78 +160,6 @@ class IfExists(StrEnum):
     adopt = 'adopt'
 
 
-class ResourceOwnershipTransitionRequest1(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    owner: ResourceOwner
-    visibility: ResourceVisibility | None = None
-    detach_container: bool = Field(
-        False,
-        description='Clear the agent container when the resource supports detachment.',
-    )
-    confirm_audience_expansion: bool = Field(
-        False,
-        description='Required before sharing, handing custody to the team, or detaching a container.',
-    )
-
-
-class ResourceOwnershipTransitionRequest2(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    owner: ResourceOwner | None = None
-    visibility: ResourceVisibility
-    detach_container: bool = Field(
-        False,
-        description='Clear the agent container when the resource supports detachment.',
-    )
-    confirm_audience_expansion: bool = Field(
-        False,
-        description='Required before sharing, handing custody to the team, or detaching a container.',
-    )
-
-
-class ResourceOwnershipTransitionRequest3(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    owner: ResourceOwner | None = None
-    visibility: ResourceVisibility | None = None
-    detach_container: bool = Field(
-        ...,
-        description='Clear the agent container when the resource supports detachment.',
-    )
-    confirm_audience_expansion: bool = Field(
-        False,
-        description='Required before sharing, handing custody to the team, or detaching a container.',
-    )
-
-
-class ResourceOwnershipTransitionRequest(
-    RootModel[
-        ResourceOwnershipTransitionRequest1
-        | ResourceOwnershipTransitionRequest2
-        | ResourceOwnershipTransitionRequest3
-    ]
-):
-    root: (
-        ResourceOwnershipTransitionRequest1
-        | ResourceOwnershipTransitionRequest2
-        | ResourceOwnershipTransitionRequest3
-    )
-
-
-class ResourceOwnershipState(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    owner: ResourceOwner
-    visibility: ResourceVisibility
-    container: ResourceContainer | None
-    posture: ResourcePosture
-
-
 class AgentStatus(StrEnum):
     """
     Administrative status. Inactive agents cannot claim new jobs. Deleted agents are excluded from normal reads.
@@ -1298,6 +1226,15 @@ class Risk(StrEnum):
     medium = 'medium'
     high = 'high'
     critical = 'critical'
+
+
+class WorkflowStep(StrEnum):
+    """
+    How a workflow step can run this action. `workflow`: the step runs it as the workflow, with no assistant and no account. `account`: it reaches a connected account and the step names the assistant whose grant it uses in `as:`. Omitted when a workflow step cannot run it.
+    """
+
+    workflow = 'workflow'
+    account = 'account'
 
 
 class SupportedLocation(StrEnum):
@@ -2417,11 +2354,7 @@ class AgentMessagingBinding(BaseModel):
     )
     all_messages: bool = Field(
         ...,
-        description='Whether every message in the allowed conversations activates the agent.',
-    )
-    channels: list[str] = Field(
-        ...,
-        description='Optional provider conversation allowlist. Empty means any conversation on the integration.',
+        description='Whether every message in a channel activates the agent. Channel settings decide which assistants answer in each channel.',
     )
     dm_policy: AgentMessagingDMPolicy = Field(
         ...,
@@ -3091,6 +3024,11 @@ class InteractionKind(StrEnum):
     * `assign_work` — assigned work performed by a user or agent, which
     submits the result. Pair it with `resolution_policy.review` when the
     result must be accepted before the interaction resolves.
+    * `request_takeover` — an assistant asks a person to take over a
+    Computer's screen and finish a step only a person can do. Only
+    Mobius creates it; `computer_takeover` carries the card. A person
+    answers only by dismissing it (`outcome` = `declined`); Mobius
+    records how the takeover ended.
 
     The first three are *answered*; `assign_work` is *worked*. Kind does not by itself decide when an interaction closes — the resolution policy does.
     """
@@ -3099,6 +3037,7 @@ class InteractionKind(StrEnum):
     request_approval = 'request_approval'
     request_review = 'request_review'
     assign_work = 'assign_work'
+    request_takeover = 'request_takeover'
 
 
 class InteractionStatus(StrEnum):
@@ -3219,6 +3158,22 @@ class AgentToolConsumer(BaseModel):
         None,
         description="True when Mobius opened this approval for tool calls it held because the assistant's approval mode asks before them, rather than a question the assistant asked. Its outcome resumes the held calls.",
     )
+
+
+class ComputerTakeoverRequest(BaseModel):
+    """
+    A takeover request's card. `reason` is the assistant's own words: show it as plain text, and say the assistant wrote it.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    computer_id: str = Field(
+        ...,
+        description="The Computer to take over. Open the viewer with it and this interaction's ID.",
+    )
+    computer_name: str
+    reason: str = Field(..., max_length=200)
 
 
 class Effect(StrEnum):
@@ -3744,10 +3699,6 @@ class AgentMessagingBindingRequest(BaseModel):
     all_messages: bool = Field(
         False,
         description='Respond to every message in bound channels, not just mentions. Must be false for microsoft_teams, where the agent answers in channels and group chats only when a person @mentions it.',
-    )
-    channels: list[str] | None = Field(
-        None,
-        description='Channel and group IDs the binding is scoped to (empty means all). Direct messages ignore this list.',
     )
     dm_policy: AgentMessagingDMPolicy | None = Field(
         None,
@@ -4401,6 +4352,10 @@ class SessionListResponse(BaseModel):
     next_cursor: str | None = Field(
         None,
         description='Opaque cursor for the next page — pass back as `cursor`. Null when `has_more` is false.',
+    )
+    snippets: dict[str, str] | None = Field(
+        None,
+        description='Present when `q` is set. Maps a listed session id to a short piece of message text around a matched word, from the newest message that contains one. A session whose title alone matches has no entry.',
     )
 
 
@@ -7417,6 +7372,10 @@ class ActionCatalogEntry(BaseModel):
         ...,
         description='Safe-use hints returned for this catalog action. Always present; flags default to false.',
     )
+    workflow_step: WorkflowStep | None = Field(
+        None,
+        description='How a workflow step can run this action. `workflow`: the step runs it as the workflow, with no assistant and no account. `account`: it reaches a connected account and the step names the assistant whose grant it uses in `as:`. Omitted when a workflow step cannot run it.',
+    )
     input_schema: dict[str, Any] | None = Field(
         None, description='JSON Schema describing expected input parameters.'
     )
@@ -9008,6 +8967,10 @@ class Interaction(BaseModel):
     held_calls: HeldCallApproval | None = Field(
         None,
         description='What an approval for held tool calls covers, built from the exact arguments the approved calls run with. Present only when `consumer.agent_tool.held_call` is true. Every field is plain text.',
+    )
+    computer_takeover: ComputerTakeoverRequest | None = Field(
+        None,
+        description='What a takeover request asks. Present only when `kind` is `request_takeover`.',
     )
     source_conversation: InteractionSourceConversation | None = Field(
         None,

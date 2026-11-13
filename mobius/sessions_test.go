@@ -25,10 +25,12 @@ func TestListSessionsFiltersByAgentNameAndSessionKey(t *testing.T) {
 	_, err := c.ListSessions(context.Background(), &ListSessionsOptions{
 		AgentName:  "Scout",
 		SessionKey: "conversation-1",
+		Q:          "invoice",
 	})
 	assert.NoError(t, err)
 	assert.Contains(t, query, "agent_name=Scout")
 	assert.Contains(t, query, "session_key=conversation-1")
+	assert.Contains(t, query, "q=invoice")
 }
 
 func TestInvokeAgent_HighLevelClient(t *testing.T) {

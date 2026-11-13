@@ -517,6 +517,8 @@ export interface ListSessionsOptions {
   agentName?: string;
   sessionKey?: string;
   status?: string;
+  /** Full-text search over titles and message text. Matching responses carry `snippets`. */
+  q?: string;
   scope?: string;
   provider?: string;
   integrationId?: string;
@@ -1105,6 +1107,7 @@ export class Client {
       agent_name: opts.agentName,
       session_key: opts.sessionKey,
       status: opts.status,
+      q: opts.q,
       scope: opts.scope,
       provider: opts.provider,
       integration_id: opts.integrationId,

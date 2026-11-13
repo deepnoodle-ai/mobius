@@ -562,6 +562,7 @@ func registerSessionsCommands(app *cli.App) {
 			cli.String("integration-id", "").Help("Filter to sessions created by this integration, e.g. agent sessions started from a connected provider."),
 			cli.String("since", "").Help("Only include sessions with activity after this timestamp. Accepts an RFC3339 timestamp (for example: 2026-07-22T12:00:00Z)."),
 			cli.Int("per-agent-limit", "").Help("Return at most this many sessions per agent, each agent's newest activity first, so one busy agent cannot crowd the others out of the page. `limit` still caps the total. Cannot be combined with `cursor`, `agent_id`, or `agent_name`."),
+			cli.String("q", "").Help("Keep only conversations that contain every word of this text somewhere in the title or in the person's or the assistant's message text. Tool calls and tool results are not searched. Case and accents are ignored, and a word of 3 or more characters also matches longer words that start with it. Uses the table search syntax: `OR` between two words accepts either, and a leading `-` excludes a word. Quoted words must all appear, in any order. A search with no word to find is a 400. The trimmed text must be 2 to 200 characters. Cannot be combined with `per_agent_limit`. With `q`, `limit` is capped at 20, and a search that runs too long is a 503 with code `search_timeout`."),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
@@ -611,6 +612,10 @@ func registerSessionsCommands(app *cli.App) {
 			if ctx.IsSet("per-agent-limit") {
 				v := ctx.Int("per-agent-limit")
 				params.PerAgentLimit = &v
+			}
+			if ctx.IsSet("q") {
+				v := ctx.String("q")
+				params.Q = &v
 			}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))

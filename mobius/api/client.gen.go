@@ -104,6 +104,24 @@ func (e ActionCatalogEntrySource) Valid() bool {
 	}
 }
 
+// Defines values for ActionCatalogEntryWorkflowStep.
+const (
+	ActionCatalogEntryWorkflowStepAccount  ActionCatalogEntryWorkflowStep = "account"
+	ActionCatalogEntryWorkflowStepWorkflow ActionCatalogEntryWorkflowStep = "workflow"
+)
+
+// Valid indicates whether the value is a known member of the ActionCatalogEntryWorkflowStep enum.
+func (e ActionCatalogEntryWorkflowStep) Valid() bool {
+	switch e {
+	case ActionCatalogEntryWorkflowStepAccount:
+		return true
+	case ActionCatalogEntryWorkflowStepWorkflow:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ActionEndpointKind.
 const (
 	ActionEndpointKindHttp   ActionEndpointKind = "http"
@@ -1565,6 +1583,7 @@ const (
 	InteractionKindRequestApproval    InteractionKind = "request_approval"
 	InteractionKindRequestInformation InteractionKind = "request_information"
 	InteractionKindRequestReview      InteractionKind = "request_review"
+	InteractionKindRequestTakeover    InteractionKind = "request_takeover"
 )
 
 // Valid indicates whether the value is a known member of the InteractionKind enum.
@@ -1577,6 +1596,8 @@ func (e InteractionKind) Valid() bool {
 	case InteractionKindRequestInformation:
 		return true
 	case InteractionKindRequestReview:
+		return true
+	case InteractionKindRequestTakeover:
 		return true
 	default:
 		return false
@@ -3977,45 +3998,6 @@ func (e CreateArtifactSignedUrlParamsDisposition) Valid() bool {
 	}
 }
 
-// Defines values for UpdateResourceOwnershipParamsResourceType.
-const (
-	UpdateResourceOwnershipParamsResourceTypeAction      UpdateResourceOwnershipParamsResourceType = "action"
-	UpdateResourceOwnershipParamsResourceTypeArtifact    UpdateResourceOwnershipParamsResourceType = "artifact"
-	UpdateResourceOwnershipParamsResourceTypeEnvironment UpdateResourceOwnershipParamsResourceType = "environment"
-	UpdateResourceOwnershipParamsResourceTypeRoutine     UpdateResourceOwnershipParamsResourceType = "routine"
-	UpdateResourceOwnershipParamsResourceTypeSecret      UpdateResourceOwnershipParamsResourceType = "secret"
-	UpdateResourceOwnershipParamsResourceTypeSession     UpdateResourceOwnershipParamsResourceType = "session"
-	UpdateResourceOwnershipParamsResourceTypeSkill       UpdateResourceOwnershipParamsResourceType = "skill"
-	UpdateResourceOwnershipParamsResourceTypeTable       UpdateResourceOwnershipParamsResourceType = "table"
-	UpdateResourceOwnershipParamsResourceTypeWebhook     UpdateResourceOwnershipParamsResourceType = "webhook"
-)
-
-// Valid indicates whether the value is a known member of the UpdateResourceOwnershipParamsResourceType enum.
-func (e UpdateResourceOwnershipParamsResourceType) Valid() bool {
-	switch e {
-	case UpdateResourceOwnershipParamsResourceTypeAction:
-		return true
-	case UpdateResourceOwnershipParamsResourceTypeArtifact:
-		return true
-	case UpdateResourceOwnershipParamsResourceTypeEnvironment:
-		return true
-	case UpdateResourceOwnershipParamsResourceTypeRoutine:
-		return true
-	case UpdateResourceOwnershipParamsResourceTypeSecret:
-		return true
-	case UpdateResourceOwnershipParamsResourceTypeSession:
-		return true
-	case UpdateResourceOwnershipParamsResourceTypeSkill:
-		return true
-	case UpdateResourceOwnershipParamsResourceTypeTable:
-		return true
-	case UpdateResourceOwnershipParamsResourceTypeWebhook:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for ListRoutinesParamsAttention.
 const (
 	ListRoutinesParamsAttentionAccountRepair ListRoutinesParamsAttention = "account_repair"
@@ -4396,6 +4378,9 @@ type ActionCatalogEntry struct {
 
 	// Visibility Who the custodian chose to share the resource with.
 	Visibility *ResourceVisibility `json:"visibility,omitempty"`
+
+	// WorkflowStep How a workflow step can run this action. `workflow`: the step runs it as the workflow, with no assistant and no account. `account`: it reaches a connected account and the step names the assistant whose grant it uses in `as:`. Omitted when a workflow step cannot run it.
+	WorkflowStep *ActionCatalogEntryWorkflowStep `json:"workflow_step,omitempty"`
 }
 
 // ActionCatalogEntryDefinitionScope Scope that owns the selected definition: `platform` for Mobius and integration actions, or `custom` for an action authored in the current organization.
@@ -4409,6 +4394,9 @@ type ActionCatalogEntryRisk string
 
 // ActionCatalogEntrySource Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for org-owned HTTP or worker-backed actions. The `integration` field carries the provider slug for integration-backed platform actions.
 type ActionCatalogEntrySource string
+
+// ActionCatalogEntryWorkflowStep How a workflow step can run this action. `workflow`: the step runs it as the workflow, with no assistant and no account. `account`: it reaches a connected account and the step names the assistant whose grant it uses in `as:`. Omitted when a workflow step cannot run it.
+type ActionCatalogEntryWorkflowStep string
 
 // ActionCatalogListResponse Unpaginated action catalog. This endpoint returns the complete set of available custom and platform actions so clients can build pickers without paging across a small catalog.
 type ActionCatalogListResponse struct {
@@ -4973,11 +4961,8 @@ type AgentMessagingBinding struct {
 	// AgentId Agent this binding belongs to.
 	AgentId string `json:"agent_id"`
 
-	// AllMessages Whether every message in the allowed conversations activates the agent.
+	// AllMessages Whether every message in a channel activates the agent. Channel settings decide which assistants answer in each channel.
 	AllMessages bool `json:"all_messages"`
-
-	// Channels Optional provider conversation allowlist. Empty means any conversation on the integration.
-	Channels []string `json:"channels"`
 
 	// CompactionPolicy Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values.
 	CompactionPolicy *SessionCompactionPolicy `json:"compaction_policy,omitempty"`
@@ -5032,9 +5017,6 @@ type AgentMessagingBindingListResponse struct {
 type AgentMessagingBindingRequest struct {
 	// AllMessages Respond to every message in bound channels, not just mentions. Must be false for microsoft_teams, where the agent answers in channels and group chats only when a person @mentions it.
 	AllMessages *bool `json:"all_messages,omitempty"`
-
-	// Channels Channel and group IDs the binding is scoped to (empty means all). Direct messages ignore this list.
-	Channels *[]string `json:"channels,omitempty"`
 
 	// CompactionPolicy Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values.
 	CompactionPolicy *SessionCompactionPolicy `json:"compaction_policy,omitempty"`
@@ -6146,6 +6128,14 @@ type CompleteSessionPDFUploadRequest struct {
 	SizeBytes int64  `json:"size_bytes"`
 }
 
+// ComputerTakeoverRequest A takeover request's card. `reason` is the assistant's own words: show it as plain text, and say the assistant wrote it.
+type ComputerTakeoverRequest struct {
+	// ComputerId The Computer to take over. Open the viewer with it and this interaction's ID.
+	ComputerId   string `json:"computer_id"`
+	ComputerName string `json:"computer_name"`
+	Reason       string `json:"reason"`
+}
+
 // ConnectionBinding A frozen selection of one connection and its explicit grant.
 type ConnectionBinding struct {
 	ConnectionId string `json:"connection_id"`
@@ -6505,6 +6495,11 @@ type CreateInteractionRequest struct {
 	// * `assign_work` — assigned work performed by a user or agent, which
 	// submits the result. Pair it with `resolution_policy.review` when the
 	// result must be accepted before the interaction resolves.
+	// * `request_takeover` — an assistant asks a person to take over a
+	// Computer's screen and finish a step only a person can do. Only
+	// Mobius creates it; `computer_takeover` carries the card. A person
+	// answers only by dismissing it (`outcome` = `declined`); Mobius
+	// records how the takeover ended.
 	//
 	// The first three are *answered*; `assign_work` is *worked*. Kind does not by itself decide when an interaction closes — the resolution policy does.
 	Kind InteractionKind `json:"kind"`
@@ -7120,6 +7115,9 @@ type Interaction struct {
 	// CompletedAt Timestamp when the interaction received a terminal response.
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
 
+	// ComputerTakeover What a takeover request asks. Present only when `kind` is `request_takeover`.
+	ComputerTakeover *ComputerTakeoverRequest `json:"computer_takeover,omitempty"`
+
 	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution.
 	Consumer *Consumer `json:"consumer,omitempty"`
 
@@ -7163,6 +7161,11 @@ type Interaction struct {
 	// * `assign_work` — assigned work performed by a user or agent, which
 	// submits the result. Pair it with `resolution_policy.review` when the
 	// result must be accepted before the interaction resolves.
+	// * `request_takeover` — an assistant asks a person to take over a
+	// Computer's screen and finish a step only a person can do. Only
+	// Mobius creates it; `computer_takeover` carries the card. A person
+	// answers only by dismissing it (`outcome` = `declined`); Mobius
+	// records how the takeover ended.
 	//
 	// The first three are *answered*; `assign_work` is *worked*. Kind does not by itself decide when an interaction closes — the resolution policy does.
 	Kind InteractionKind `json:"kind"`
@@ -7300,6 +7303,11 @@ type InteractionAnswer struct {
 // * `assign_work` — assigned work performed by a user or agent, which
 // submits the result. Pair it with `resolution_policy.review` when the
 // result must be accepted before the interaction resolves.
+// * `request_takeover` — an assistant asks a person to take over a
+// Computer's screen and finish a step only a person can do. Only
+// Mobius creates it; `computer_takeover` carries the card. A person
+// answers only by dismissing it (`outcome` = `declined`); Mobius
+// records how the takeover ended.
 //
 // The first three are *answered*; `assign_work` is *worked*. Kind does not by itself decide when an interaction closes — the resolution policy does.
 type InteractionKind string
@@ -7531,6 +7539,9 @@ type InteractionUpsertFrame struct {
 	// CompletedAt Timestamp when the interaction received a terminal response.
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
 
+	// ComputerTakeover What a takeover request asks. Present only when `kind` is `request_takeover`.
+	ComputerTakeover *ComputerTakeoverRequest `json:"computer_takeover,omitempty"`
+
 	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution.
 	Consumer *Consumer `json:"consumer,omitempty"`
 
@@ -7575,6 +7586,11 @@ type InteractionUpsertFrame struct {
 	// * `assign_work` — assigned work performed by a user or agent, which
 	// submits the result. Pair it with `resolution_policy.review` when the
 	// result must be accepted before the interaction resolves.
+	// * `request_takeover` — an assistant asks a person to take over a
+	// Computer's screen and finish a step only a person can do. Only
+	// Mobius creates it; `computer_takeover` carries the card. A person
+	// answers only by dismissing it (`outcome` = `declined`); Mobius
+	// records how the takeover ended.
 	//
 	// The first three are *answered*; `assign_work` is *worked*. Kind does not by itself decide when an interaction closes — the resolution policy does.
 	Kind InteractionKind `json:"kind"`
@@ -8277,46 +8293,6 @@ type ResourceOwner struct {
 
 // ResourceOwnerKind defines model for ResourceOwner.Kind.
 type ResourceOwnerKind string
-
-// ResourceOwnershipState defines model for ResourceOwnershipState.
-type ResourceOwnershipState struct {
-	// Container The agent that contains this resource and may further narrow who can reach it.
-	Container *ResourceContainer `json:"container"`
-
-	// Owner The human or team responsible for this resource.
-	Owner ResourceOwner `json:"owner"`
-
-	// Posture Employee-facing effective ownership and audience posture for the current caller.
-	Posture ResourcePosture `json:"posture"`
-
-	// Visibility Who the custodian chose to share the resource with.
-	Visibility ResourceVisibility `json:"visibility"`
-}
-
-// ResourceOwnershipTransitionRequest defines model for ResourceOwnershipTransitionRequest.
-type ResourceOwnershipTransitionRequest struct {
-	// ConfirmAudienceExpansion Required before sharing, handing custody to the team, or detaching a container.
-	ConfirmAudienceExpansion *bool `json:"confirm_audience_expansion,omitempty"`
-
-	// DetachContainer Clear the agent container when the resource supports detachment.
-	DetachContainer *bool `json:"detach_container,omitempty"`
-
-	// Owner The human or team responsible for this resource.
-	Owner *ResourceOwner `json:"owner,omitempty"`
-
-	// Visibility Who the custodian chose to share the resource with.
-	Visibility *ResourceVisibility `json:"visibility,omitempty"`
-	union      json.RawMessage
-}
-
-// ResourceOwnershipTransitionRequest0 defines model for .
-type ResourceOwnershipTransitionRequest0 = interface{}
-
-// ResourceOwnershipTransitionRequest1 defines model for .
-type ResourceOwnershipTransitionRequest1 = interface{}
-
-// ResourceOwnershipTransitionRequest2 defines model for .
-type ResourceOwnershipTransitionRequest2 = interface{}
 
 // ResourcePosture Employee-facing effective ownership and audience posture for the current caller.
 type ResourcePosture string
@@ -9500,6 +9476,9 @@ type SessionListResponse struct {
 
 	// NextCursor Opaque cursor for the next page — pass back as `cursor`. Null when `has_more` is false.
 	NextCursor *string `json:"next_cursor,omitempty"`
+
+	// Snippets Present when `q` is set. Maps a listed session id to a short piece of message text around a matched word, from the newest message that contains one. A session whose title alone matches has no entry.
+	Snippets *map[string]string `json:"snippets,omitempty"`
 }
 
 // SessionLiveSnapshot Ephemeral live transcript snapshot for an in-flight turn. Deployments with shared cache support make it available across backend replicas.
@@ -11413,7 +11392,7 @@ type ListAgentMemoryEntriesParams struct {
 	// Query Optional search over entry keys, kinds, summaries, and content. Omit to list.
 	Query *string `form:"query,omitempty" json:"query,omitempty"`
 
-	// SearchMode Search ranking mode for a non-blank `query`. Omit for backwards-compatible keyword search. Semantic and hybrid search can return `503 memory_semantic_search_unavailable` when the embedding or search-index service is unavailable; callers may retry or fall back to `keyword`.
+	// SearchMode Search ranking mode for a non-blank `query`. Omit for backwards-compatible keyword search. Semantic and hybrid search can return `503 memory_semantic_search_unavailable` when the embedding or search-index service is unavailable; callers may retry or fall back to `keyword`. A search reads at most the 500 best keyword matches and the 500 nearest semantic matches; paging ends after them.
 	SearchMode *MemorySearchMode `form:"search_mode,omitempty" json:"search_mode,omitempty"`
 
 	// Kind Optional filter to a single memory kind.
@@ -11638,9 +11617,6 @@ type ListPrincipalsParams struct {
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// UpdateResourceOwnershipParamsResourceType defines parameters for UpdateResourceOwnership.
-type UpdateResourceOwnershipParamsResourceType string
-
 // ListRoleAssignmentsParams defines parameters for ListRoleAssignments.
 type ListRoleAssignmentsParams struct {
 	// PrincipalId Filter to assignments for a specific principal.
@@ -11760,6 +11736,9 @@ type ListSessionsParams struct {
 
 	// PerAgentLimit Return at most this many sessions per agent, each agent's newest activity first, so one busy agent cannot crowd the others out of the page. `limit` still caps the total. Cannot be combined with `cursor`, `agent_id`, or `agent_name`.
 	PerAgentLimit *int `form:"per_agent_limit,omitempty" json:"per_agent_limit,omitempty"`
+
+	// Q Keep only conversations that contain every word of this text somewhere in the title or in the person's or the assistant's message text. Tool calls and tool results are not searched. Case and accents are ignored, and a word of 3 or more characters also matches longer words that start with it. Uses the table search syntax: `OR` between two words accepts either, and a leading `-` excludes a word. Quoted words must all appear, in any order. A search with no word to find is a 400. The trimmed text must be 2 to 200 characters. Cannot be combined with `per_agent_limit`. With `q`, `limit` is capped at 20, and a search that runs too long is a 503 with code `search_timeout`.
+	Q *string `form:"q,omitempty" json:"q,omitempty"`
 
 	// Cursor Cursor for pagination (opaque string from previous response)
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
@@ -12008,9 +11987,6 @@ type CreatePrincipalJSONRequestBody = CreatePrincipalRequest
 
 // UpdatePrincipalJSONRequestBody defines body for UpdatePrincipal for application/json ContentType.
 type UpdatePrincipalJSONRequestBody = UpdatePrincipalRequest
-
-// UpdateResourceOwnershipJSONRequestBody defines body for UpdateResourceOwnership for application/json ContentType.
-type UpdateResourceOwnershipJSONRequestBody = ResourceOwnershipTransitionRequest
 
 // CreateRoleAssignmentJSONRequestBody defines body for CreateRoleAssignment for application/json ContentType.
 type CreateRoleAssignmentJSONRequestBody = CreateRoleAssignmentRequest
@@ -15365,170 +15341,6 @@ func (t *InteractionValue) UnmarshalJSON(b []byte) error {
 	return err
 }
 
-// AsResourceOwnershipTransitionRequest0 returns the union data inside the ResourceOwnershipTransitionRequest as a ResourceOwnershipTransitionRequest0
-func (t ResourceOwnershipTransitionRequest) AsResourceOwnershipTransitionRequest0() (ResourceOwnershipTransitionRequest0, error) {
-	var body ResourceOwnershipTransitionRequest0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromResourceOwnershipTransitionRequest0 overwrites any union data inside the ResourceOwnershipTransitionRequest as the provided ResourceOwnershipTransitionRequest0
-func (t *ResourceOwnershipTransitionRequest) FromResourceOwnershipTransitionRequest0(v ResourceOwnershipTransitionRequest0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeResourceOwnershipTransitionRequest0 performs a merge with any union data inside the ResourceOwnershipTransitionRequest, using the provided ResourceOwnershipTransitionRequest0
-func (t *ResourceOwnershipTransitionRequest) MergeResourceOwnershipTransitionRequest0(v ResourceOwnershipTransitionRequest0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsResourceOwnershipTransitionRequest1 returns the union data inside the ResourceOwnershipTransitionRequest as a ResourceOwnershipTransitionRequest1
-func (t ResourceOwnershipTransitionRequest) AsResourceOwnershipTransitionRequest1() (ResourceOwnershipTransitionRequest1, error) {
-	var body ResourceOwnershipTransitionRequest1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromResourceOwnershipTransitionRequest1 overwrites any union data inside the ResourceOwnershipTransitionRequest as the provided ResourceOwnershipTransitionRequest1
-func (t *ResourceOwnershipTransitionRequest) FromResourceOwnershipTransitionRequest1(v ResourceOwnershipTransitionRequest1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeResourceOwnershipTransitionRequest1 performs a merge with any union data inside the ResourceOwnershipTransitionRequest, using the provided ResourceOwnershipTransitionRequest1
-func (t *ResourceOwnershipTransitionRequest) MergeResourceOwnershipTransitionRequest1(v ResourceOwnershipTransitionRequest1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsResourceOwnershipTransitionRequest2 returns the union data inside the ResourceOwnershipTransitionRequest as a ResourceOwnershipTransitionRequest2
-func (t ResourceOwnershipTransitionRequest) AsResourceOwnershipTransitionRequest2() (ResourceOwnershipTransitionRequest2, error) {
-	var body ResourceOwnershipTransitionRequest2
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromResourceOwnershipTransitionRequest2 overwrites any union data inside the ResourceOwnershipTransitionRequest as the provided ResourceOwnershipTransitionRequest2
-func (t *ResourceOwnershipTransitionRequest) FromResourceOwnershipTransitionRequest2(v ResourceOwnershipTransitionRequest2) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeResourceOwnershipTransitionRequest2 performs a merge with any union data inside the ResourceOwnershipTransitionRequest, using the provided ResourceOwnershipTransitionRequest2
-func (t *ResourceOwnershipTransitionRequest) MergeResourceOwnershipTransitionRequest2(v ResourceOwnershipTransitionRequest2) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t ResourceOwnershipTransitionRequest) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	object := make(map[string]json.RawMessage)
-	if t.union != nil {
-		err = json.Unmarshal(b, &object)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if t.ConfirmAudienceExpansion != nil {
-		object["confirm_audience_expansion"], err = json.Marshal(t.ConfirmAudienceExpansion)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'confirm_audience_expansion': %w", err)
-		}
-	}
-
-	if t.DetachContainer != nil {
-		object["detach_container"], err = json.Marshal(t.DetachContainer)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'detach_container': %w", err)
-		}
-	}
-
-	if t.Owner != nil {
-		object["owner"], err = json.Marshal(t.Owner)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'owner': %w", err)
-		}
-	}
-
-	if t.Visibility != nil {
-		object["visibility"], err = json.Marshal(t.Visibility)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'visibility': %w", err)
-		}
-	}
-	b, err = json.Marshal(object)
-	return b, err
-}
-
-func (t *ResourceOwnershipTransitionRequest) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	if err != nil {
-		return err
-	}
-	object := make(map[string]json.RawMessage)
-	err = json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["confirm_audience_expansion"]; found {
-		err = json.Unmarshal(raw, &t.ConfirmAudienceExpansion)
-		if err != nil {
-			return fmt.Errorf("error reading 'confirm_audience_expansion': %w", err)
-		}
-	}
-
-	if raw, found := object["detach_container"]; found {
-		err = json.Unmarshal(raw, &t.DetachContainer)
-		if err != nil {
-			return fmt.Errorf("error reading 'detach_container': %w", err)
-		}
-	}
-
-	if raw, found := object["owner"]; found {
-		err = json.Unmarshal(raw, &t.Owner)
-		if err != nil {
-			return fmt.Errorf("error reading 'owner': %w", err)
-		}
-	}
-
-	if raw, found := object["visibility"]; found {
-		err = json.Unmarshal(raw, &t.Visibility)
-		if err != nil {
-			return fmt.Errorf("error reading 'visibility': %w", err)
-		}
-	}
-
-	return err
-}
-
 // AsSessionTextBlock returns the union data inside the SessionContentBlock as a SessionTextBlock
 func (t SessionContentBlock) AsSessionTextBlock() (SessionTextBlock, error) {
 	var body SessionTextBlock
@@ -17594,11 +17406,6 @@ type ClientInterface interface {
 
 	UpdatePrincipal(ctx context.Context, resourceId IDParam, body UpdatePrincipalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateResourceOwnershipWithBody request with any body
-	UpdateResourceOwnershipWithBody(ctx context.Context, resourceType UpdateResourceOwnershipParamsResourceType, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateResourceOwnership(ctx context.Context, resourceType UpdateResourceOwnershipParamsResourceType, resourceId IDParam, body UpdateResourceOwnershipJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ListRoleAssignments request
 	ListRoleAssignments(ctx context.Context, params *ListRoleAssignmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -19317,30 +19124,6 @@ func (c *Client) UpdatePrincipalWithBody(ctx context.Context, resourceId IDParam
 
 func (c *Client) UpdatePrincipal(ctx context.Context, resourceId IDParam, body UpdatePrincipalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdatePrincipalRequest(c.Server, resourceId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateResourceOwnershipWithBody(ctx context.Context, resourceType UpdateResourceOwnershipParamsResourceType, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateResourceOwnershipRequestWithBody(c.Server, resourceType, resourceId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateResourceOwnership(ctx context.Context, resourceType UpdateResourceOwnershipParamsResourceType, resourceId IDParam, body UpdateResourceOwnershipJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateResourceOwnershipRequest(c.Server, resourceType, resourceId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -25299,60 +25082,6 @@ func NewUpdatePrincipalRequestWithBody(server string, resourceId IDParam, conten
 	return req, nil
 }
 
-// NewUpdateResourceOwnershipRequest calls the generic UpdateResourceOwnership builder with application/json body
-func NewUpdateResourceOwnershipRequest(server string, resourceType UpdateResourceOwnershipParamsResourceType, resourceId IDParam, body UpdateResourceOwnershipJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateResourceOwnershipRequestWithBody(server, resourceType, resourceId, "application/json", bodyReader)
-}
-
-// NewUpdateResourceOwnershipRequestWithBody generates requests for UpdateResourceOwnership with any type of body
-func NewUpdateResourceOwnershipRequestWithBody(server string, resourceType UpdateResourceOwnershipParamsResourceType, resourceId IDParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "resource_type", resourceType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/resources/%s/%s/ownership", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
 // NewListRoleAssignmentsRequest generates requests for ListRoleAssignments
 func NewListRoleAssignmentsRequest(server string, params *ListRoleAssignmentsParams) (*http.Request, error) {
 	var err error
@@ -26974,6 +26703,18 @@ func NewListSessionsRequest(server string, params *ListSessionsParams) (*http.Re
 		if params.PerAgentLimit != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "per_agent_limit", *params.PerAgentLimit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Q != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "q", *params.Q, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -30095,11 +29836,6 @@ type ClientWithResponsesInterface interface {
 	UpdatePrincipalWithBodyWithResponse(ctx context.Context, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdatePrincipalResponse, error)
 
 	UpdatePrincipalWithResponse(ctx context.Context, resourceId IDParam, body UpdatePrincipalJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdatePrincipalResponse, error)
-
-	// UpdateResourceOwnershipWithBodyWithResponse request with any body
-	UpdateResourceOwnershipWithBodyWithResponse(ctx context.Context, resourceType UpdateResourceOwnershipParamsResourceType, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateResourceOwnershipResponse, error)
-
-	UpdateResourceOwnershipWithResponse(ctx context.Context, resourceType UpdateResourceOwnershipParamsResourceType, resourceId IDParam, body UpdateResourceOwnershipJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateResourceOwnershipResponse, error)
 
 	// ListRoleAssignmentsWithResponse request
 	ListRoleAssignmentsWithResponse(ctx context.Context, params *ListRoleAssignmentsParams, reqEditors ...RequestEditorFn) (*ListRoleAssignmentsResponse, error)
@@ -33365,41 +33101,6 @@ func (r UpdatePrincipalResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r UpdatePrincipalResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type UpdateResourceOwnershipResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *ResourceOwnershipState
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-	JSON409      *Conflict
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateResourceOwnershipResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateResourceOwnershipResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r UpdateResourceOwnershipResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -37311,23 +37012,6 @@ func (c *ClientWithResponses) UpdatePrincipalWithResponse(ctx context.Context, r
 		return nil, err
 	}
 	return ParseUpdatePrincipalResponse(rsp)
-}
-
-// UpdateResourceOwnershipWithBodyWithResponse request with arbitrary body returning *UpdateResourceOwnershipResponse
-func (c *ClientWithResponses) UpdateResourceOwnershipWithBodyWithResponse(ctx context.Context, resourceType UpdateResourceOwnershipParamsResourceType, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateResourceOwnershipResponse, error) {
-	rsp, err := c.UpdateResourceOwnershipWithBody(ctx, resourceType, resourceId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateResourceOwnershipResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateResourceOwnershipWithResponse(ctx context.Context, resourceType UpdateResourceOwnershipParamsResourceType, resourceId IDParam, body UpdateResourceOwnershipJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateResourceOwnershipResponse, error) {
-	rsp, err := c.UpdateResourceOwnership(ctx, resourceType, resourceId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateResourceOwnershipResponse(rsp)
 }
 
 // ListRoleAssignmentsWithResponse request returning *ListRoleAssignmentsResponse
@@ -42827,67 +42511,6 @@ func ParseUpdatePrincipalResponse(rsp *http.Response) (*UpdatePrincipalResponse,
 			return nil, err
 		}
 		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateResourceOwnershipResponse parses an HTTP response from a UpdateResourceOwnershipWithResponse call
-func ParseUpdateResourceOwnershipResponse(rsp *http.Response) (*UpdateResourceOwnershipResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateResourceOwnershipResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ResourceOwnershipState
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
 
 	}
 
