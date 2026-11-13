@@ -92,10 +92,13 @@ type SessionStreamEvent struct {
 
 // ListSessionsOptions configures ListSessions.
 type ListSessionsOptions struct {
-	AgentID       string
-	AgentName     string
-	SessionKey    string
-	Status        string
+	AgentID    string
+	AgentName  string
+	SessionKey string
+	Status     string
+	// Q is a full-text search over titles and message text. Matching
+	// responses carry Snippets.
+	Q             string
 	Scope         string
 	Provider      string
 	IntegrationID string
@@ -264,6 +267,7 @@ func (c *Client) ListSessions(ctx context.Context, opts *ListSessionsOptions) (*
 			v := api.SessionScope(opts.Scope)
 			params.Scope = &v
 		}
+		params.Q = stringPointer(opts.Q)
 		params.Provider = stringPointer(opts.Provider)
 		params.IntegrationId = stringPointer(opts.IntegrationID)
 		params.Since = opts.Since

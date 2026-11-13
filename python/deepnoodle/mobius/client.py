@@ -242,6 +242,9 @@ class ListSessionsOptions:
     agent_name: str | None = None
     session_key: str | None = None
     status: str | None = None
+    # Full-text search over titles and message text. Matching responses
+    # carry ``snippets``.
+    q: str | None = None
     scope: str | None = None
     provider: str | None = None
     integration_id: str | None = None
