@@ -36,9 +36,9 @@ const gitCredentialSocketTimeout = 30 * time.Second
 // It lets ordinary `git` commands run from inside a managed environment (for
 // example via `environment.bash`) authenticate against private GitHub repos
 // without any token ever being written to disk. git invokes this helper on
-// demand. The helper sends git's request and the job's lease token to the
-// running worker over the worker's local socket ($MOBIUS_GIT_CREDENTIAL_SOCKET).
-// The worker brokers a fresh, repository-scoped token with its own API key and
+// demand. The helper sends git's request to the running worker over the
+// worker's local socket ($MOBIUS_GIT_CREDENTIAL_SOCKET). The worker finds the
+// job the calling process belongs to from its parent processes, and brokers a fresh, repository-scoped token with its own API key and
 // returns it. The helper prints it and exits. Nothing is persisted, and the
 // worker's API key never enters the shell that runs git.
 //
@@ -71,9 +71,9 @@ func registerGitCredentialHelperCommand(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			// environment.bash sets the lease of the job that started this
-			// shell. The broker refuses a lease that is not active.
-			req.LeaseToken = os.Getenv("MOBIUS_JOB_LEASE_TOKEN")
+			// The worker finds the job from this process's parents and adds
+			// that job's lease itself; no lease is in the job's environment.
+			req.LeaseToken = ""
 			return requestGitCredential(ctx.Context(), socket, req, ctx.Stdout())
 		})
 }
@@ -169,10 +169,14 @@ func requestGitCredential(ctx context.Context, socket string, req gitCredentialR
 // gitCredentialServer is the worker side of the credential socket. It lives
 // in a fresh 0700 directory, so only the worker's own user can connect. Job
 // shells run as that user and connect on purpose; what they can get is what
-// the broker grants for an active job lease, never the API key itself.
+// the broker grants for the lease of the job whose process tree holds the
+// caller, never the API key itself.
 type gitCredentialServer struct {
 	dir      string
 	listener net.Listener
+	// leaseOf finds the job lease for a calling process, as the action
+	// socket does. Tests replace it.
+	leaseOf func(conn net.Conn) (string, error)
 }
 
 // startGitCredentialServer listens on a new Unix socket and brokers a
@@ -189,7 +193,7 @@ func startGitCredentialServer(ctx context.Context, broker gitCredentialBroker, e
 		_ = os.RemoveAll(dir)
 		return nil, err
 	}
-	s := &gitCredentialServer{dir: dir, listener: listener}
+	s := &gitCredentialServer{dir: dir, listener: listener, leaseOf: jobLeaseOfPeer}
 	go s.serve(ctx, broker, environmentID, logger)
 	return s, nil
 }
@@ -217,6 +221,11 @@ func (s *gitCredentialServer) serve(ctx context.Context, broker gitCredentialBro
 			reqCtx, cancel := context.WithTimeout(ctx, gitCredentialSocketTimeout)
 			defer cancel()
 			req, err := parseGitCredentialRequest(conn)
+			// The lease comes from the caller's process tree, never from the
+			// request: a process outside every running job gets nothing.
+			if err == nil {
+				req.LeaseToken, err = s.leaseOf(conn)
+			}
 			var resp bytes.Buffer
 			if err == nil {
 				err = runGitCredentialHelper(reqCtx, &resp, broker, environmentID, req)
