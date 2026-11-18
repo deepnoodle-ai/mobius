@@ -453,6 +453,11 @@ class Agent(BaseModel):
         ...,
         description="Whether the caller may change this assistant's setup: exactly what `PATCH /v1/agents/{resource_id}` would allow. False on internal administration listings.",
     )
+    active_chat_count: int | None = Field(
+        None,
+        description='Number of distinct shared chats where this assistant was active in the past 7 days. Populated only for organization administrators; absent for other callers. Reveals no chat name, member, or message content.',
+        ge=0,
+    )
     email_address: str | None = Field(
         None,
         description='Inbox address provisioned via POST /v1/agents/{resource_id}/inbox (opt-in; not created automatically at agent creation). The field is populated only after a successful provisioning call. Use this address to add the agent as a member on external platforms (Linear, GitHub, Slack, etc.) so the platform can deliver notifications to the agent.',
@@ -2298,13 +2303,14 @@ class ConnectionController(BaseModel):
 
 class AgentMessagingProvider(StrEnum):
     """
-    Provider supported by built-in agent messaging: `slack`, `telegram`, `linear` (Linear agent sessions), or `microsoft_teams` (Microsoft Teams chats in one linked tenant). A binding's provider must equal its integration's provider.
+    Provider supported by built-in agent messaging: `slack`, `telegram`, `linear` (Linear agent sessions), `microsoft_teams` (Microsoft Teams chats in one linked tenant), or `monday` (a monday.com custom agent answering mentions and assignments on boards). A binding's provider must equal its integration's provider.
     """
 
     slack = 'slack'
     telegram = 'telegram'
     linear = 'linear'
     microsoft_teams = 'microsoft_teams'
+    monday = 'monday'
 
 
 class AgentMessagingDMPolicy(StrEnum):
@@ -2336,7 +2342,8 @@ class AgentMessagingBinding(BaseModel):
     id: str = Field(..., description='Messaging binding identifier.')
     agent_id: str = Field(..., description='Agent this binding belongs to.')
     provider: AgentMessagingProvider = Field(
-        ..., description='Messaging provider for this binding: `slack` or `telegram`.'
+        ...,
+        description='Messaging provider for this binding, such as `slack`, `telegram`, or `monday`.',
     )
     integration_id: str = Field(
         ..., description='Connected integration account this binding applies to.'
@@ -3027,8 +3034,9 @@ class InteractionKind(StrEnum):
     * `request_takeover` — an assistant asks a person to take over a
     Computer's screen and finish a step only a person can do. Only
     Mobius creates it; `computer_takeover` carries the card. A person
-    answers only by dismissing it (`outcome` = `declined`); Mobius
-    records how the takeover ended.
+    answers only by dismissing it — calling `respondToInteraction` with
+    `answers: [{question_id: "outcome", value: "declined"}]` and no
+    other answer; Mobius records how the takeover ended.
 
     The first three are *answered*; `assign_work` is *worked*. Kind does not by itself decide when an interaction closes — the resolution policy does.
     """
@@ -3457,7 +3465,7 @@ class Kind13(StrEnum):
 
 class AgentMember(BaseModel):
     """
-    One person in a group or personal assistant. Being a member is access to the assistant, its chats readable by everyone who uses it, its files, and its shared memory, including what was there before they joined.
+    One person in a group or individual assistant. Being a member is access to the assistant, its chats readable by everyone who uses it, its files, and its shared memory, including what was there before they joined.
     """
 
     model_config = ConfigDict(
@@ -3677,7 +3685,8 @@ class AgentMessagingBindingRequest(BaseModel):
         extra='forbid',
     )
     provider: AgentMessagingProvider = Field(
-        ..., description='Messaging provider for this binding: `slack` or `telegram`.'
+        ...,
+        description='Messaging provider for this binding, such as `slack`, `telegram`, or `monday`.',
     )
     integration_id: str = Field(
         ..., description='ID of the connected integration that backs this binding.'
@@ -4404,6 +4413,10 @@ class SessionHelperStep(BaseModel):
         ..., description='For example "Saving a row in support_hire_onboarding…".'
     )
     status: Status4
+    reason: str | None = Field(
+        None,
+        description='Short, person-actionable cause when status is failed and the failure matches a known cause (for example "Out of credits"). Never raw provider payloads or private content.',
+    )
 
 
 class State2(StrEnum):
@@ -5767,6 +5780,10 @@ class Artifact(BaseModel):
         None,
         description='Principal ID of the actor who created this artifact. Empty for system-initiated writes.',
     )
+    agent_id: str | None = Field(
+        None,
+        description='The assistant whose turn wrote this version, when one did. Absent for uploads and system writes.',
+    )
     updated_at: AwareDatetime | None = Field(
         None, description='Time the artifact metadata was last updated.'
     )
@@ -6174,17 +6191,19 @@ class BlueprintResourceType(StrEnum):
     agent = 'agent'
     table = 'table'
     routine = 'routine'
+    workflow = 'workflow'
 
 
 class BlueprintChangeAction(StrEnum):
     """
-    What apply did (or, in preview, would do): `created` a new resource, `updated` a managed one, `adopted` a matching unmanaged one, or left an `unchanged` resource untouched.
+    What apply did (or, in preview, would do): `created` a new resource, `updated` a managed one, `adopted` a matching unmanaged one, left an `unchanged` resource untouched, or `removed` a workflow a kit no longer ships (archived if the kit created it, released if it adopted it).
     """
 
     created = 'created'
     updated = 'updated'
     adopted = 'adopted'
     unchanged = 'unchanged'
+    removed = 'removed'
 
 
 class BlueprintRef(BaseModel):
@@ -6572,6 +6591,10 @@ class ColumnDef(BaseModel):
         max_length=100,
     )
     display: ColumnDisplay | None = None
+    source: str | None = Field(
+        None,
+        description="The provider a sync fills this column from, for example `github`. Absent for ordinary columns. Only the sync writes a synced column's values; a schema edit keeps a synced column's source and type and cannot remove it.",
+    )
 
 
 class IndexDef(BaseModel):
@@ -7297,6 +7320,14 @@ class ArtifactVersionList(BaseModel):
         extra='forbid',
     )
     root_id: str
+    file_id: str | None = Field(
+        None,
+        description='The Library file this lineage is filed as. Absent when the lineage is not filed.',
+    )
+    current_id: str | None = Field(
+        None,
+        description='The version the file serves: a restored earlier version, or else the newest listed one. Absent when no listed version is current.',
+    )
     versions: list[Artifact] = Field(
         ...,
         description='Accessible available versions ordered oldest to newest. Deleted versions are omitted.',
@@ -7339,6 +7370,10 @@ class ActionCatalogEntry(BaseModel):
     exact_only: bool | None = Field(
         None,
         description='True when only an exact selector naming this action reaches it. Group, provider, and wildcard selectors never include it, so a person turns it on by name.',
+    )
+    implied_by: str | None = Field(
+        None,
+        description='The action that brings this one with it. An agent that holds that action also gets this one, so an editor shows it as coming with that action rather than as a separate choice.',
     )
     endpoint_kind: EndpointKind = Field(
         ...,
@@ -7776,13 +7811,13 @@ class DeletedAgent(BaseModel):
     )
     details_hidden: bool = Field(
         ...,
-        description="True when the caller could not reach this agent while it was live: someone else's personal agent, or a group agent they were not in. Its name, description, color, owner, deleter, and name availability are withheld, as the live agent list withholds them.",
+        description="True when the caller could not reach this agent while it was live: someone else's individual assistant, or a group agent they were not in. Its name, description, color, owner, deleter, and name availability are withheld, as the live agent list withholds them.",
     )
     color: str | None = Field(None, description="The agent's avatar color key, if any.")
     visibility: AgentVisibility
     owner_id: str | None = Field(
         None,
-        description='The person who held a personal agent. Absent for team custody and when `details_hidden` is true.',
+        description='The person who held an individual assistant. Absent for team custody and when `details_hidden` is true.',
     )
     deleted_at: AwareDatetime = Field(..., description='When the agent was deleted.')
     deleted_by: DeletedAgentActor | None = None
@@ -7792,7 +7827,7 @@ class DeletedAgent(BaseModel):
     )
     owner_left: bool | None = Field(
         None,
-        description='True for a personal agent whose owner is no longer in the organization, for example after offboarding. Restore refuses it with `agent_custodian_gone`.',
+        description='True for an individual assistant whose owner is no longer in the organization, for example after offboarding. Restore refuses it with `agent_custodian_gone`.',
     )
 
 
@@ -7803,7 +7838,7 @@ class RestoredAgentResult(BaseModel):
     agent_id: str = Field(..., description="The restored agent's ID.")
     details_hidden: bool = Field(
         ...,
-        description="True when the caller cannot reach the restored agent: someone else's personal agent, or a group agent they are not in. Then `agent` is absent and `not_restored` is empty; the agent's custodian or members see it as before.",
+        description="True when the caller cannot reach the restored agent: someone else's individual assistant, or a group agent they are not in. Then `agent` is absent and `not_restored` is empty; the agent's custodian or members see it as before.",
     )
     agent: Agent | None = None
     not_restored: list[NotRestoredItem] = Field(

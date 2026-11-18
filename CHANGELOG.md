@@ -26,11 +26,20 @@ the minor version.
 - `request_takeover` interaction kind with a `computer_takeover` card
   (`ComputerTakeoverRequest`), created only by Mobius.
 - `workflow_step` on catalog actions.
+- `created_by` filter on `listArtifacts` (`mobius artifacts list --created-by`).
+- `monday` agent messaging provider.
+- `$contains` table query operator for `array` and `multi_select` columns.
+- New optional response fields: `active_chat_count` on agents, `implied_by`
+  on catalog actions, `agent_id` on artifacts, `source` on table columns,
+  `reason` on failed session steps, `file_id`/`current_id` on artifact
+  lineages; `workflow` blueprint resources and a `removed` change action.
 
 ### Changed
 
 - Getting a session or routine no longer writes a read mark; post to
   read-mark instead (the `X-Mobius-Safe-Read` header is gone).
+- `listRoutines` without `status` now returns only active and paused
+  routines; name `completed` or `cancelled` to see those.
 
 ## [0.7.1] - 2026-11-09
 

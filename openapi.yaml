@@ -2096,7 +2096,7 @@ paths:
       description: |-
         Brings a deleted agent back with the same ID, instructions, model, chats, memory, and Library. It comes back `active`. Skills, audience members, and connection grants come back when each is still valid. A grant on a person's own account comes back only when that person restores the agent in their own organization. Every API key and CLI token of the agent is revoked. Each thing that did not come back is listed in `not_restored`.
 
-        Only organization Owners and Admins may restore, including a provider Owner or Admin acting in a managed organization. Everyone else gets 403. Restore refuses with 409 and code `agent_name_taken` when a live agent uses the name (send a new `name`), `agent_custodian_gone` when the person who held a personal agent left, `agent_not_deleted` when the agent is live, and `blueprint_resource_protected` for a protected blueprint agent.
+        Only organization Owners and Admins may restore, including a provider Owner or Admin acting in a managed organization. Everyone else gets 403. Restore refuses with 409 and code `agent_name_taken` when a live agent uses the name (send a new `name`), `agent_custodian_gone` when the person who held an individual assistant left, `agent_not_deleted` when the agent is live, and `blueprint_resource_protected` for a protected blueprint agent.
       parameters:
       - $ref: '#/components/parameters/IDParam'
       requestBody:
@@ -2190,7 +2190,7 @@ paths:
       - agents
       summary: Copy an assistant
       description: |-
-        Creates a new assistant with this one's setup: instructions, model and model settings, tools, memory and conversation settings, the skills whose audience covers the new assistant's, and the picked files, copied into Company files. An assistant's kind never changes, so a copy is how a personal assistant becomes a group or team one.
+        Creates a new assistant with this one's setup: instructions, model and model settings, tools, memory and conversation settings, the skills whose audience covers the new assistant's, and the picked files, copied into Company files. An assistant's kind never changes, so a copy is how an individual assistant becomes a group or team one.
 
         Whoever can edit the assistant may copy it, and the create rules decide who may make the new kind. An Admin's copy is granted the same company accounts. Never copies chats, memory, accounts in a person's own name, chat-app bindings, the inbox, or routines. The source is unchanged.
       parameters:
@@ -2903,6 +2903,8 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
     post:
       operationId: createSession
       tags:
@@ -4192,7 +4194,9 @@ paths:
             $ref: '#/components/schemas/RoutineStatus'
         explode: false
         style: form
-        description: Narrow to these routine statuses. Omit for every status, cancelled included.
+        description: Narrow to these routine statuses. Omit for routines that can still run
+          (active and paused); finished (completed) and stopped (cancelled) routines are listed
+          only when named.
       - name: limit
         in: query
         schema:
@@ -5591,7 +5595,9 @@ paths:
       description: 'Filter, sort, and paginate rows. Filter keys are column names; values
         are either a direct equality match or an operator object: `{"$eq": v}`, `{"$ne": v}`,
         `{"$gt": v}`, `{"$gte": v}`, `{"$lt": v}`, `{"$lte": v}`, `{"$in": [v,...]}`, `{"$exists":
-        bool}`.'
+        bool}`, `{"$contains": v}`. `$contains` works on `array` and `multi_select` columns:
+        `{"$contains": "bug"}` matches rows whose list holds `"bug"`, and `{"$contains": ["bug",
+        "ui"]}` matches rows whose list holds every value given. Values match exactly.'
       parameters:
       - $ref: '#/components/parameters/TableIDParam'
       requestBody:
@@ -6002,6 +6008,13 @@ paths:
           type: string
         description: Only files this assistant made, in any folder. An assistant picks a folder
           for each file, so its files are not in one place.
+      - name: created_by
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Only files created by this principal (for example, an assistant's `principal_id`).
+          With `latest_only=true`, this matches the creator of the returned current version.
       - $ref: '#/components/parameters/LibraryPlaceParam'
       - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
@@ -7247,6 +7260,12 @@ components:
           description: 'Whether the caller may change this assistant''s setup: exactly what
             `PATCH /v1/agents/{resource_id}` would allow. False on internal administration
             listings.'
+        active_chat_count:
+          type: integer
+          minimum: 0
+          description: Number of distinct shared chats where this assistant was active in
+            the past 7 days. Populated only for organization administrators; absent for other
+            callers. Reveals no chat name, member, or message content.
         email_address:
           type: string
           description: Inbox address provisioned via POST /v1/agents/{resource_id}/inbox (opt-in;
@@ -8271,6 +8290,11 @@ components:
           description: True when only an exact selector naming this action reaches it. Group,
             provider, and wildcard selectors never include it, so a person turns it on by
             name.
+        implied_by:
+          type: string
+          description: The action that brings this one with it. An agent that holds that action
+            also gets this one, so an editor shows it as coming with that action rather than
+            as a separate choice.
         endpoint_kind:
           type: string
           enum:
@@ -9875,9 +9899,11 @@ components:
       - telegram
       - linear
       - microsoft_teams
+      - monday
       description: 'Provider supported by built-in agent messaging: `slack`, `telegram`, `linear`
-        (Linear agent sessions), or `microsoft_teams` (Microsoft Teams chats in one linked
-        tenant). A binding''s provider must equal its integration''s provider.'
+        (Linear agent sessions), `microsoft_teams` (Microsoft Teams chats in one linked tenant),
+        or `monday` (a monday.com custom agent answering mentions and assignments on boards).
+        A binding''s provider must equal its integration''s provider.'
     AgentMessagingDMPolicy:
       type: string
       enum:
@@ -9918,7 +9944,8 @@ components:
           description: Agent this binding belongs to.
         provider:
           $ref: '#/components/schemas/AgentMessagingProvider'
-          description: 'Messaging provider for this binding: `slack` or `telegram`.'
+          description: Messaging provider for this binding, such as `slack`, `telegram`, or
+            `monday`.
         integration_id:
           type: string
           description: Connected integration account this binding applies to.
@@ -10743,8 +10770,9 @@ components:
         * `request_takeover` — an assistant asks a person to take over a
         Computer's screen and finish a step only a person can do. Only
         Mobius creates it; `computer_takeover` carries the card. A person
-        answers only by dismissing it (`outcome` = `declined`); Mobius
-        records how the takeover ended.
+        answers only by dismissing it — calling `respondToInteraction` with
+        `answers: [{question_id: "outcome", value: "declined"}]` and no
+        other answer; Mobius records how the takeover ended.
 
         The first three are *answered*; `assign_work` is *worked*. Kind does not by itself decide when an interaction closes — the resolution policy does.
     InteractionStatus:
@@ -11646,8 +11674,8 @@ components:
     AgentMember:
       type: object
       additionalProperties: false
-      description: One person in a group or personal assistant. Being a member is access to
-        the assistant, its chats readable by everyone who uses it, its files, and its shared
+      description: One person in a group or individual assistant. Being a member is access
+        to the assistant, its chats readable by everyone who uses it, its files, and its shared
         memory, including what was there before they joined.
       required:
       - principal_id
@@ -11864,9 +11892,9 @@ components:
         details_hidden:
           type: boolean
           description: 'True when the caller could not reach this agent while it was live:
-            someone else''s personal agent, or a group agent they were not in. Its name, description,
-            color, owner, deleter, and name availability are withheld, as the live agent list
-            withholds them.'
+            someone else''s individual assistant, or a group agent they were not in. Its name,
+            description, color, owner, deleter, and name availability are withheld, as the
+            live agent list withholds them.'
         color:
           type: string
           description: The agent's avatar color key, if any.
@@ -11874,8 +11902,8 @@ components:
           $ref: '#/components/schemas/AgentVisibility'
         owner_id:
           type: string
-          description: The person who held a personal agent. Absent for team custody and when
-            `details_hidden` is true.
+          description: The person who held an individual assistant. Absent for team custody
+            and when `details_hidden` is true.
         deleted_at:
           type: string
           format: date-time
@@ -11888,7 +11916,7 @@ components:
             `name`. Absent when `details_hidden` is true.
         owner_left:
           type: boolean
-          description: True for a personal agent whose owner is no longer in the organization,
+          description: True for an individual assistant whose owner is no longer in the organization,
             for example after offboarding. Restore refuses it with `agent_custodian_gone`.
     DeletedAgentActor:
       type: object
@@ -11933,8 +11961,8 @@ components:
         details_hidden:
           type: boolean
           description: 'True when the caller cannot reach the restored agent: someone else''s
-            personal agent, or a group agent they are not in. Then `agent` is absent and `not_restored`
-            is empty; the agent''s custodian or members see it as before.'
+            individual assistant, or a group agent they are not in. Then `agent` is absent
+            and `not_restored` is empty; the agent''s custodian or members see it as before.'
         agent:
           $ref: '#/components/schemas/Agent'
         not_restored:
@@ -11985,7 +12013,8 @@ components:
       properties:
         provider:
           $ref: '#/components/schemas/AgentMessagingProvider'
-          description: 'Messaging provider for this binding: `slack` or `telegram`.'
+          description: Messaging provider for this binding, such as `slack`, `telegram`, or
+            `monday`.
         integration_id:
           type: string
           description: ID of the connected integration that backs this binding.
@@ -13237,6 +13266,11 @@ components:
           - running
           - done
           - failed
+        reason:
+          type: string
+          description: Short, person-actionable cause when status is failed and the failure
+            matches a known cause (for example "Out of credits"). Never raw provider payloads
+            or private content.
     SessionHelper:
       type: object
       additionalProperties: false
@@ -15651,6 +15685,10 @@ components:
           type: string
           description: Principal ID of the actor who created this artifact. Empty for system-initiated
             writes.
+        agent_id:
+          type: string
+          description: The assistant whose turn wrote this version, when one did. Absent for
+            uploads and system writes.
         updated_at:
           type: string
           format: date-time
@@ -16705,16 +16743,19 @@ components:
       - agent
       - table
       - routine
+      - workflow
     BlueprintChangeAction:
       type: string
       description: 'What apply did (or, in preview, would do): `created` a new resource, `updated`
-        a managed one, `adopted` a matching unmanaged one, or left an `unchanged` resource
-        untouched.'
+        a managed one, `adopted` a matching unmanaged one, left an `unchanged` resource untouched,
+        or `removed` a workflow a kit no longer ships (archived if the kit created it, released
+        if it adopted it).'
       enum:
       - created
       - updated
       - adopted
       - unchanged
+      - removed
     BlueprintResourceRef:
       type: object
       additionalProperties: false
@@ -17317,6 +17358,11 @@ components:
             $ref: '#/components/schemas/ColumnChoice'
         display:
           $ref: '#/components/schemas/ColumnDisplay'
+        source:
+          type: string
+          description: The provider a sync fills this column from, for example `github`. Absent
+            for ordinary columns. Only the sync writes a synced column's values; a schema
+            edit keeps a synced column's source and type and cannot remove it.
     IndexDef:
       type: object
       additionalProperties: false
@@ -18247,6 +18293,14 @@ components:
       properties:
         root_id:
           type: string
+        file_id:
+          type: string
+          description: The Library file this lineage is filed as. Absent when the lineage
+            is not filed.
+        current_id:
+          type: string
+          description: 'The version the file serves: a restored earlier version, or else the
+            newest listed one. Absent when no listed version is current.'
         versions:
           type: array
           description: Accessible available versions ordered oldest to newest. Deleted versions
