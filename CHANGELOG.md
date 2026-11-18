@@ -31,6 +31,13 @@ the minor version.
   managed computer, through a new worker socket (`MOBIUS_ACTION_SOCKET`).
   See SECURITY.md for what this does and does not protect.
 - `Client.CreateScriptCall` and `Client.DescribeScriptAction`.
+- `created_by` filter on `listArtifacts` (`mobius artifacts list --created-by`).
+- `monday` agent messaging provider.
+- `$contains` table query operator for `array` and `multi_select` columns.
+- New optional response fields: `active_chat_count` on agents, `implied_by`
+  on catalog actions, `agent_id` on artifacts, `source` on table columns,
+  `reason` on failed session steps, `file_id`/`current_id` on artifact
+  lineages; `workflow` blueprint resources and a `removed` change action.
 
 ### Changed
 
@@ -41,6 +48,8 @@ the minor version.
   ignores any lease the caller sends.
 - Git credentials and action calls in a job work only on Linux and macOS,
   where the worker can tell which process is calling.
+- `listRoutines` without `status` now returns only active and paused
+  routines; name `completed` or `cancelled` to see those.
 
 ## [0.7.1] - 2026-11-09
 

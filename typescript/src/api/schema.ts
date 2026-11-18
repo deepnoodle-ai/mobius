@@ -919,7 +919,7 @@ export interface paths {
          * Restore a deleted agent
          * @description Brings a deleted agent back with the same ID, instructions, model, chats, memory, and Library. It comes back `active`. Skills, audience members, and connection grants come back when each is still valid. A grant on a person's own account comes back only when that person restores the agent in their own organization. Every API key and CLI token of the agent is revoked. Each thing that did not come back is listed in `not_restored`.
          *
-         *     Only organization Owners and Admins may restore, including a provider Owner or Admin acting in a managed organization. Everyone else gets 403. Restore refuses with 409 and code `agent_name_taken` when a live agent uses the name (send a new `name`), `agent_custodian_gone` when the person who held a personal agent left, `agent_not_deleted` when the agent is live, and `blueprint_resource_protected` for a protected blueprint agent.
+         *     Only organization Owners and Admins may restore, including a provider Owner or Admin acting in a managed organization. Everyone else gets 403. Restore refuses with 409 and code `agent_name_taken` when a live agent uses the name (send a new `name`), `agent_custodian_gone` when the person who held an individual assistant left, `agent_not_deleted` when the agent is live, and `blueprint_resource_protected` for a protected blueprint agent.
          */
         post: operations["restoreAgent"];
         delete?: never;
@@ -965,7 +965,7 @@ export interface paths {
         put?: never;
         /**
          * Copy an assistant
-         * @description Creates a new assistant with this one's setup: instructions, model and model settings, tools, memory and conversation settings, the skills whose audience covers the new assistant's, and the picked files, copied into Company files. An assistant's kind never changes, so a copy is how a personal assistant becomes a group or team one.
+         * @description Creates a new assistant with this one's setup: instructions, model and model settings, tools, memory and conversation settings, the skills whose audience covers the new assistant's, and the picked files, copied into Company files. An assistant's kind never changes, so a copy is how an individual assistant becomes a group or team one.
          *
          *     Whoever can edit the assistant may copy it, and the create rules decide who may make the new kind. An Admin's copy is granted the same company accounts. Never copies chats, memory, accounts in a person's own name, chat-app bindings, the inbox, or routines. The source is unchanged.
          */
@@ -2477,7 +2477,7 @@ export interface paths {
         put?: never;
         /**
          * Query rows
-         * @description Filter, sort, and paginate rows. Filter keys are column names; values are either a direct equality match or an operator object: `{"$eq": v}`, `{"$ne": v}`, `{"$gt": v}`, `{"$gte": v}`, `{"$lt": v}`, `{"$lte": v}`, `{"$in": [v,...]}`, `{"$exists": bool}`.
+         * @description Filter, sort, and paginate rows. Filter keys are column names; values are either a direct equality match or an operator object: `{"$eq": v}`, `{"$ne": v}`, `{"$gt": v}`, `{"$gte": v}`, `{"$lt": v}`, `{"$lte": v}`, `{"$in": [v,...]}`, `{"$exists": bool}`, `{"$contains": v}`. `$contains` works on `array` and `multi_select` columns: `{"$contains": "bug"}` matches rows whose list holds `"bug"`, and `{"$contains": ["bug", "ui"]}` matches rows whose list holds every value given. Values match exactly.
          */
         post: operations["queryTableRows"];
         delete?: never;
@@ -3008,6 +3008,8 @@ export interface components {
             member_count?: number;
             /** @description Whether the caller may change this assistant's setup: exactly what `PATCH /v1/agents/{resource_id}` would allow. False on internal administration listings. */
             can_edit: boolean;
+            /** @description Number of distinct shared chats where this assistant was active in the past 7 days. Populated only for organization administrators; absent for other callers. Reveals no chat name, member, or message content. */
+            active_chat_count?: number;
             /** @description Inbox address provisioned via POST /v1/agents/{resource_id}/inbox (opt-in; not created automatically at agent creation). The field is populated only after a successful provisioning call. Use this address to add the agent as a member on external platforms (Linear, GitHub, Slack, etc.) so the platform can deliver notifications to the agent. */
             email_address?: string;
             /** @description Free-form labels used for filtering, ownership, or automation. */
@@ -3679,6 +3681,8 @@ export interface components {
             description?: string;
             /** @description True when only an exact selector naming this action reaches it. Group, provider, and wildcard selectors never include it, so a person turns it on by name. */
             exact_only?: boolean;
+            /** @description The action that brings this one with it. An agent that holds that action also gets this one, so an editor shows it as coming with that action rather than as a separate choice. */
+            implied_by?: string;
             /**
              * @description Backing kind. "builtin" for Mobius platform actions implemented in Go (no DB row), "http" for org-owned or integration HTTP endpoints, and "worker" for org-owned custom actions dispatched to connected workers.
              * @enum {string}
@@ -4430,10 +4434,10 @@ export interface components {
             display_name?: string;
         };
         /**
-         * @description Provider supported by built-in agent messaging: `slack`, `telegram`, `linear` (Linear agent sessions), or `microsoft_teams` (Microsoft Teams chats in one linked tenant). A binding's provider must equal its integration's provider.
+         * @description Provider supported by built-in agent messaging: `slack`, `telegram`, `linear` (Linear agent sessions), `microsoft_teams` (Microsoft Teams chats in one linked tenant), or `monday` (a monday.com custom agent answering mentions and assignments on boards). A binding's provider must equal its integration's provider.
          * @enum {string}
          */
-        AgentMessagingProvider: "slack" | "telegram" | "linear" | "microsoft_teams";
+        AgentMessagingProvider: "slack" | "telegram" | "linear" | "microsoft_teams" | "monday";
         /**
          * @description Direct-message access policy: `open`, `allowlist`, or `disabled`.
          * @enum {string}
@@ -4450,7 +4454,7 @@ export interface components {
             id: string;
             /** @description Agent this binding belongs to. */
             agent_id: string;
-            /** @description Messaging provider for this binding: `slack` or `telegram`. */
+            /** @description Messaging provider for this binding, such as `slack`, `telegram`, or `monday`. */
             provider: components["schemas"]["AgentMessagingProvider"];
             /** @description Connected integration account this binding applies to. */
             integration_id: string;
@@ -4836,8 +4840,9 @@ export interface components {
          *     * `request_takeover` — an assistant asks a person to take over a
          *     Computer's screen and finish a step only a person can do. Only
          *     Mobius creates it; `computer_takeover` carries the card. A person
-         *     answers only by dismissing it (`outcome` = `declined`); Mobius
-         *     records how the takeover ended.
+         *     answers only by dismissing it — calling `respondToInteraction` with
+         *     `answers: [{question_id: "outcome", value: "declined"}]` and no
+         *     other answer; Mobius records how the takeover ended.
          *
          *     The first three are *answered*; `assign_work` is *worked*. Kind does not by itself decide when an interaction closes — the resolution policy does.
          * @enum {string}
@@ -5255,7 +5260,7 @@ export interface components {
             /** @description Free-text reason recorded on the interaction. */
             reason?: string;
         };
-        /** @description One person in a group or personal assistant. Being a member is access to the assistant, its chats readable by everyone who uses it, its files, and its shared memory, including what was there before they joined. */
+        /** @description One person in a group or individual assistant. Being a member is access to the assistant, its chats readable by everyone who uses it, its files, and its shared memory, including what was there before they joined. */
         AgentMember: {
             /** @description Whether this member manages the group assistant. */
             manager: boolean;
@@ -5344,12 +5349,12 @@ export interface components {
             name: string;
             /** @description The agent's description. Empty when `details_hidden` is true. */
             description: string;
-            /** @description True when the caller could not reach this agent while it was live: someone else's personal agent, or a group agent they were not in. Its name, description, color, owner, deleter, and name availability are withheld, as the live agent list withholds them. */
+            /** @description True when the caller could not reach this agent while it was live: someone else's individual assistant, or a group agent they were not in. Its name, description, color, owner, deleter, and name availability are withheld, as the live agent list withholds them. */
             details_hidden: boolean;
             /** @description The agent's avatar color key, if any. */
             color?: string;
             visibility: components["schemas"]["AgentVisibility"];
-            /** @description The person who held a personal agent. Absent for team custody and when `details_hidden` is true. */
+            /** @description The person who held an individual assistant. Absent for team custody and when `details_hidden` is true. */
             owner_id?: string;
             /**
              * Format: date-time
@@ -5359,7 +5364,7 @@ export interface components {
             deleted_by?: components["schemas"]["DeletedAgentActor"];
             /** @description False when a live agent now uses this name, so restore needs a new `name`. Absent when `details_hidden` is true. */
             name_available?: boolean;
-            /** @description True for a personal agent whose owner is no longer in the organization, for example after offboarding. Restore refuses it with `agent_custodian_gone`. */
+            /** @description True for an individual assistant whose owner is no longer in the organization, for example after offboarding. Restore refuses it with `agent_custodian_gone`. */
             owner_left?: boolean;
         };
         /** @description Who deleted the agent, from the audit log. Absent when the audit log has no record. */
@@ -5379,7 +5384,7 @@ export interface components {
         RestoredAgentResult: {
             /** @description The restored agent's ID. */
             agent_id: string;
-            /** @description True when the caller cannot reach the restored agent: someone else's personal agent, or a group agent they are not in. Then `agent` is absent and `not_restored` is empty; the agent's custodian or members see it as before. */
+            /** @description True when the caller cannot reach the restored agent: someone else's individual assistant, or a group agent they are not in. Then `agent` is absent and `not_restored` is empty; the agent's custodian or members see it as before. */
             details_hidden: boolean;
             agent?: components["schemas"]["Agent"];
             /** @description Each thing the agent had before its delete that did not come back. Empty when `details_hidden` is true. */
@@ -5405,7 +5410,7 @@ export interface components {
             reason: string;
         };
         AgentMessagingBindingRequest: {
-            /** @description Messaging provider for this binding: `slack` or `telegram`. */
+            /** @description Messaging provider for this binding, such as `slack`, `telegram`, or `monday`. */
             provider: components["schemas"]["AgentMessagingProvider"];
             /** @description ID of the connected integration that backs this binding. */
             integration_id: string;
@@ -6098,6 +6103,8 @@ export interface components {
             phrase: string;
             /** @enum {string} */
             status: "running" | "done" | "failed";
+            /** @description Short, person-actionable cause when status is failed and the failure matches a known cause (for example "Out of credits"). Never raw provider payloads or private content. */
+            reason?: string;
         };
         /** @description A background helper as the person sees it while its turn runs. The server sends the whole state on every change, so a client shows the latest one. */
         SessionHelper: {
@@ -7407,6 +7414,8 @@ export interface components {
             created_at: string;
             /** @description Principal ID of the actor who created this artifact. Empty for system-initiated writes. */
             created_by?: string;
+            /** @description The assistant whose turn wrote this version, when one did. Absent for uploads and system writes. */
+            agent_id?: string;
             /**
              * Format: date-time
              * @description Time the artifact metadata was last updated.
@@ -7925,12 +7934,12 @@ export interface components {
          * @description The kind of Mobius resource a binding or change refers to.
          * @enum {string}
          */
-        BlueprintResourceType: "action" | "skill" | "agent" | "table" | "routine";
+        BlueprintResourceType: "action" | "skill" | "agent" | "table" | "routine" | "workflow";
         /**
-         * @description What apply did (or, in preview, would do): `created` a new resource, `updated` a managed one, `adopted` a matching unmanaged one, or left an `unchanged` resource untouched.
+         * @description What apply did (or, in preview, would do): `created` a new resource, `updated` a managed one, `adopted` a matching unmanaged one, left an `unchanged` resource untouched, or `removed` a workflow a kit no longer ships (archived if the kit created it, released if it adopted it).
          * @enum {string}
          */
-        BlueprintChangeAction: "created" | "updated" | "adopted" | "unchanged";
+        BlueprintChangeAction: "created" | "updated" | "adopted" | "unchanged" | "removed";
         /** @description A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved within this apply first, then against existing bindings), or by `blueprint_ref` (resolved by key; its namespace is recorded as provenance and is not used for reference resolution in this version). */
         BlueprintResourceRef: {
             /** @description Direct resource id. */
@@ -8210,6 +8219,8 @@ export interface components {
             /** @description For a `select` or `multi_select` column, the allowed values in display and sort order. */
             choices?: components["schemas"]["ColumnChoice"][];
             display?: components["schemas"]["ColumnDisplay"];
+            /** @description The provider a sync fills this column from, for example `github`. Absent for ordinary columns. Only the sync writes a synced column's values; a schema edit keeps a synced column's source and type and cannot remove it. */
+            source?: string;
         };
         /** @description Compatibility metadata for older table schemas. Declared indexes do not create physical database indexes. */
         IndexDef: {
@@ -8835,6 +8846,10 @@ export interface components {
         };
         ArtifactVersionList: {
             root_id: string;
+            /** @description The Library file this lineage is filed as. Absent when the lineage is not filed. */
+            file_id?: string;
+            /** @description The version the file serves: a restored earlier version, or else the newest listed one. Absent when no listed version is current. */
+            current_id?: string;
             /** @description Accessible available versions ordered oldest to newest. Deleted versions are omitted. */
             versions: components["schemas"]["Artifact"][];
         };
@@ -11695,6 +11710,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     createSession: {
@@ -12928,7 +12944,7 @@ export interface operations {
                 origin_session_id?: string;
                 /** @description Filter to persistent account-repair work assigned to the authenticated human. */
                 attention?: "account_repair";
-                /** @description Narrow to these routine statuses. Omit for every status, cancelled included. */
+                /** @description Narrow to these routine statuses. Omit for routines that can still run (active and paused); finished (completed) and stopped (cancelled) routines are listed only when named. */
                 status?: components["schemas"]["RoutineStatus"][];
                 limit?: number;
                 /** @description next_cursor from the previous page. */
@@ -14749,6 +14765,8 @@ export interface operations {
                 recursive?: boolean;
                 /** @description Only files this assistant made, in any folder. An assistant picks a folder for each file, so its files are not in one place. */
                 agent_id?: string;
+                /** @description Only files created by this principal (for example, an assistant's `principal_id`). With `latest_only=true`, this matches the creator of the returned current version. */
+                created_by?: string;
                 /** @description Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read. `personal` is the caller's own files, which only the caller can read. Omit it to list every section the caller can read. */
                 place?: components["parameters"]["LibraryPlaceParam"];
                 /** @description Cursor for pagination (opaque string from previous response) */
