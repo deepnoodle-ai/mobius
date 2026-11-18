@@ -549,6 +549,7 @@ func (e AgentMessagingDMPolicy) Valid() bool {
 const (
 	AgentMessagingProviderLinear         AgentMessagingProvider = "linear"
 	AgentMessagingProviderMicrosoftTeams AgentMessagingProvider = "microsoft_teams"
+	AgentMessagingProviderMonday         AgentMessagingProvider = "monday"
 	AgentMessagingProviderSlack          AgentMessagingProvider = "slack"
 	AgentMessagingProviderTelegram       AgentMessagingProvider = "telegram"
 )
@@ -559,6 +560,8 @@ func (e AgentMessagingProvider) Valid() bool {
 	case AgentMessagingProviderLinear:
 		return true
 	case AgentMessagingProviderMicrosoftTeams:
+		return true
+	case AgentMessagingProviderMonday:
 		return true
 	case AgentMessagingProviderSlack:
 		return true
@@ -837,6 +840,7 @@ func (e BlueprintApplyResultStatus) Valid() bool {
 const (
 	BlueprintChangeActionAdopted   BlueprintChangeAction = "adopted"
 	BlueprintChangeActionCreated   BlueprintChangeAction = "created"
+	BlueprintChangeActionRemoved   BlueprintChangeAction = "removed"
 	BlueprintChangeActionUnchanged BlueprintChangeAction = "unchanged"
 	BlueprintChangeActionUpdated   BlueprintChangeAction = "updated"
 )
@@ -847,6 +851,8 @@ func (e BlueprintChangeAction) Valid() bool {
 	case BlueprintChangeActionAdopted:
 		return true
 	case BlueprintChangeActionCreated:
+		return true
+	case BlueprintChangeActionRemoved:
 		return true
 	case BlueprintChangeActionUnchanged:
 		return true
@@ -874,11 +880,12 @@ func (e BlueprintDeleteResultStatus) Valid() bool {
 
 // Defines values for BlueprintResourceType.
 const (
-	BlueprintResourceTypeAction  BlueprintResourceType = "action"
-	BlueprintResourceTypeAgent   BlueprintResourceType = "agent"
-	BlueprintResourceTypeRoutine BlueprintResourceType = "routine"
-	BlueprintResourceTypeSkill   BlueprintResourceType = "skill"
-	BlueprintResourceTypeTable   BlueprintResourceType = "table"
+	BlueprintResourceTypeAction   BlueprintResourceType = "action"
+	BlueprintResourceTypeAgent    BlueprintResourceType = "agent"
+	BlueprintResourceTypeRoutine  BlueprintResourceType = "routine"
+	BlueprintResourceTypeSkill    BlueprintResourceType = "skill"
+	BlueprintResourceTypeTable    BlueprintResourceType = "table"
+	BlueprintResourceTypeWorkflow BlueprintResourceType = "workflow"
 )
 
 // Valid indicates whether the value is a known member of the BlueprintResourceType enum.
@@ -893,6 +900,8 @@ func (e BlueprintResourceType) Valid() bool {
 	case BlueprintResourceTypeSkill:
 		return true
 	case BlueprintResourceTypeTable:
+		return true
+	case BlueprintResourceTypeWorkflow:
 		return true
 	default:
 		return false
@@ -4340,6 +4349,9 @@ type ActionCatalogEntry struct {
 	// Id Stable resource identifier. Present for an organization-authored custom action.
 	Id *string `json:"id,omitempty"`
 
+	// ImpliedBy The action that brings this one with it. An agent that holds that action also gets this one, so an editor shows it as coming with that action rather than as a separate choice.
+	ImpliedBy *string `json:"implied_by,omitempty"`
+
 	// InputSchema JSON Schema describing expected input parameters.
 	InputSchema *map[string]interface{} `json:"input_schema,omitempty"`
 
@@ -4631,6 +4643,9 @@ type Agent struct {
 	// ActionSelectors The agent's action selection: the action selectors it may call, expanded against the live action catalog at each build.
 	ActionSelectors *[]ActionSelector `json:"action_selectors,omitempty"`
 
+	// ActiveChatCount Number of distinct shared chats where this assistant was active in the past 7 days. Populated only for organization administrators; absent for other callers. Reveals no chat name, member, or message content.
+	ActiveChatCount *int `json:"active_chat_count,omitempty"`
+
 	// CanEdit Whether the caller may change this assistant's setup: exactly what `PATCH /v1/agents/{resource_id}` would allow. False on internal administration listings.
 	CanEdit bool `json:"can_edit"`
 
@@ -4796,7 +4811,7 @@ type AgentManifestWarning struct {
 	Tool *string `json:"tool,omitempty"`
 }
 
-// AgentMember One person in a group or personal assistant. Being a member is access to the assistant, its chats readable by everyone who uses it, its files, and its shared memory, including what was there before they joined.
+// AgentMember One person in a group or individual assistant. Being a member is access to the assistant, its chats readable by everyone who uses it, its files, and its shared memory, including what was there before they joined.
 type AgentMember struct {
 	// AddedAt When this principal was added to the audience.
 	AddedAt time.Time `json:"added_at"`
@@ -4991,7 +5006,7 @@ type AgentMessagingBinding struct {
 	// ModelRoute Default model route used by built-in messaging and by any turn that does not override the route.
 	ModelRoute *AgentModelRoute `json:"model_route,omitempty"`
 
-	// Provider Provider supported by built-in agent messaging: `slack`, `telegram`, `linear` (Linear agent sessions), or `microsoft_teams` (Microsoft Teams chats in one linked tenant). A binding's provider must equal its integration's provider.
+	// Provider Provider supported by built-in agent messaging: `slack`, `telegram`, `linear` (Linear agent sessions), `microsoft_teams` (Microsoft Teams chats in one linked tenant), or `monday` (a monday.com custom agent answering mentions and assignments on boards). A binding's provider must equal its integration's provider.
 	Provider AgentMessagingProvider `json:"provider"`
 
 	// ReplyMode Reply mode for built-in messaging; currently `auto`.
@@ -5039,7 +5054,7 @@ type AgentMessagingBindingRequest struct {
 	// ModelRoute Default model route used by built-in messaging and by any turn that does not override the route.
 	ModelRoute *AgentModelRoute `json:"model_route,omitempty"`
 
-	// Provider Provider supported by built-in agent messaging: `slack`, `telegram`, `linear` (Linear agent sessions), or `microsoft_teams` (Microsoft Teams chats in one linked tenant). A binding's provider must equal its integration's provider.
+	// Provider Provider supported by built-in agent messaging: `slack`, `telegram`, `linear` (Linear agent sessions), `microsoft_teams` (Microsoft Teams chats in one linked tenant), or `monday` (a monday.com custom agent answering mentions and assignments on boards). A binding's provider must equal its integration's provider.
 	Provider AgentMessagingProvider `json:"provider"`
 
 	// ReplaceExisting When enabling this binding, disable any other active agent binding for the same provider account.
@@ -5058,7 +5073,7 @@ type AgentMessagingBindingRequest struct {
 // AgentMessagingDMPolicy Direct-message access policy: `open`, `allowlist`, or `disabled`.
 type AgentMessagingDMPolicy string
 
-// AgentMessagingProvider Provider supported by built-in agent messaging: `slack`, `telegram`, `linear` (Linear agent sessions), or `microsoft_teams` (Microsoft Teams chats in one linked tenant). A binding's provider must equal its integration's provider.
+// AgentMessagingProvider Provider supported by built-in agent messaging: `slack`, `telegram`, `linear` (Linear agent sessions), `microsoft_teams` (Microsoft Teams chats in one linked tenant), or `monday` (a monday.com custom agent answering mentions and assignments on boards). A binding's provider must equal its integration's provider.
 type AgentMessagingProvider string
 
 // AgentMessagingReplyMode Reply mode for built-in messaging; currently `auto`.
@@ -5334,6 +5349,9 @@ type ApplyBlueprintRequest struct {
 
 // Artifact Stored file or generated artifact metadata. Lineage fields are included by artifact-versions, explicit latest_only=true listings, and uploads declaring previous_artifact_id. Ordinary calls omit the new fields for existing SDKs with strict response decoders.
 type Artifact struct {
+	// AgentId The assistant whose turn wrote this version, when one did. Absent for uploads and system writes.
+	AgentId *string `json:"agent_id,omitempty"`
+
 	// Container The agent that contains this resource and may further narrow who can reach it.
 	Container *ResourceContainer `json:"container,omitempty"`
 
@@ -5592,7 +5610,12 @@ type ArtifactSource struct {
 
 // ArtifactVersionList defines model for ArtifactVersionList.
 type ArtifactVersionList struct {
-	RootId string `json:"root_id"`
+	// CurrentId The version the file serves: a restored earlier version, or else the newest listed one. Absent when no listed version is current.
+	CurrentId *string `json:"current_id,omitempty"`
+
+	// FileId The Library file this lineage is filed as. Absent when the lineage is not filed.
+	FileId *string `json:"file_id,omitempty"`
+	RootId string  `json:"root_id"`
 
 	// Versions Accessible available versions ordered oldest to newest. Deleted versions are omitted.
 	Versions []Artifact `json:"versions"`
@@ -5774,7 +5797,7 @@ type BlueprintBindingListResponse struct {
 
 // BlueprintChange defines model for BlueprintChange.
 type BlueprintChange struct {
-	// Action What apply did (or, in preview, would do): `created` a new resource, `updated` a managed one, `adopted` a matching unmanaged one, or left an `unchanged` resource untouched.
+	// Action What apply did (or, in preview, would do): `created` a new resource, `updated` a managed one, `adopted` a matching unmanaged one, left an `unchanged` resource untouched, or `removed` a workflow a kit no longer ships (archived if the kit created it, released if it adopted it).
 	Action BlueprintChangeAction `json:"action"`
 	Key    string                `json:"key"`
 
@@ -5785,7 +5808,7 @@ type BlueprintChange struct {
 	ResourceType BlueprintResourceType `json:"resource_type"`
 }
 
-// BlueprintChangeAction What apply did (or, in preview, would do): `created` a new resource, `updated` a managed one, `adopted` a matching unmanaged one, or left an `unchanged` resource untouched.
+// BlueprintChangeAction What apply did (or, in preview, would do): `created` a new resource, `updated` a managed one, `adopted` a matching unmanaged one, left an `unchanged` resource untouched, or `removed` a workflow a kit no longer ships (archived if the kit created it, released if it adopted it).
 type BlueprintChangeAction string
 
 // BlueprintDeleteResult defines model for BlueprintDeleteResult.
@@ -5978,6 +6001,9 @@ type ColumnDef struct {
 
 	// Rollup For a `rollup` column, a read-only aggregate over rows in another table that link to this row.
 	Rollup *ColumnRollup `json:"rollup,omitempty"`
+
+	// Source The provider a sync fills this column from, for example `github`. Absent for ordinary columns. Only the sync writes a synced column's values; a schema edit keeps a synced column's source and type and cannot remove it.
+	Source *string `json:"source,omitempty"`
 
 	// Type Column value type: `string`, `number`, `boolean`, `date`, `object`, `array`, or `any`. `link` stores one row of another table and reads as `{id, name}`. `lookup` and `rollup` are computed on read and cannot be written. `select` holds one of the column's `choices`; `multi_select` holds an array of them.
 	Type ColumnType `json:"type"`
@@ -6498,8 +6524,9 @@ type CreateInteractionRequest struct {
 	// * `request_takeover` — an assistant asks a person to take over a
 	// Computer's screen and finish a step only a person can do. Only
 	// Mobius creates it; `computer_takeover` carries the card. A person
-	// answers only by dismissing it (`outcome` = `declined`); Mobius
-	// records how the takeover ended.
+	// answers only by dismissing it — calling `respondToInteraction` with
+	// `answers: [{question_id: "outcome", value: "declined"}]` and no
+	// other answer; Mobius records how the takeover ended.
 	//
 	// The first three are *answered*; `assign_work` is *worked*. Kind does not by itself decide when an interaction closes — the resolution policy does.
 	Kind InteractionKind `json:"kind"`
@@ -6708,7 +6735,7 @@ type DeletedAgent struct {
 	// Description The agent's description. Empty when `details_hidden` is true.
 	Description string `json:"description"`
 
-	// DetailsHidden True when the caller could not reach this agent while it was live: someone else's personal agent, or a group agent they were not in. Its name, description, color, owner, deleter, and name availability are withheld, as the live agent list withholds them.
+	// DetailsHidden True when the caller could not reach this agent while it was live: someone else's individual assistant, or a group agent they were not in. Its name, description, color, owner, deleter, and name availability are withheld, as the live agent list withholds them.
 	DetailsHidden bool `json:"details_hidden"`
 
 	// Id The agent ID. Restore keeps it.
@@ -6720,10 +6747,10 @@ type DeletedAgent struct {
 	// NameAvailable False when a live agent now uses this name, so restore needs a new `name`. Absent when `details_hidden` is true.
 	NameAvailable *bool `json:"name_available,omitempty"`
 
-	// OwnerId The person who held a personal agent. Absent for team custody and when `details_hidden` is true.
+	// OwnerId The person who held an individual assistant. Absent for team custody and when `details_hidden` is true.
 	OwnerId *string `json:"owner_id,omitempty"`
 
-	// OwnerLeft True for a personal agent whose owner is no longer in the organization, for example after offboarding. Restore refuses it with `agent_custodian_gone`.
+	// OwnerLeft True for an individual assistant whose owner is no longer in the organization, for example after offboarding. Restore refuses it with `agent_custodian_gone`.
 	OwnerLeft *bool `json:"owner_left,omitempty"`
 
 	// Visibility Who, inside the org that owns this agent, may reach it at all.
@@ -7164,8 +7191,9 @@ type Interaction struct {
 	// * `request_takeover` — an assistant asks a person to take over a
 	// Computer's screen and finish a step only a person can do. Only
 	// Mobius creates it; `computer_takeover` carries the card. A person
-	// answers only by dismissing it (`outcome` = `declined`); Mobius
-	// records how the takeover ended.
+	// answers only by dismissing it — calling `respondToInteraction` with
+	// `answers: [{question_id: "outcome", value: "declined"}]` and no
+	// other answer; Mobius records how the takeover ended.
 	//
 	// The first three are *answered*; `assign_work` is *worked*. Kind does not by itself decide when an interaction closes — the resolution policy does.
 	Kind InteractionKind `json:"kind"`
@@ -7306,8 +7334,9 @@ type InteractionAnswer struct {
 // * `request_takeover` — an assistant asks a person to take over a
 // Computer's screen and finish a step only a person can do. Only
 // Mobius creates it; `computer_takeover` carries the card. A person
-// answers only by dismissing it (`outcome` = `declined`); Mobius
-// records how the takeover ended.
+// answers only by dismissing it — calling `respondToInteraction` with
+// `answers: [{question_id: "outcome", value: "declined"}]` and no
+// other answer; Mobius records how the takeover ended.
 //
 // The first three are *answered*; `assign_work` is *worked*. Kind does not by itself decide when an interaction closes — the resolution policy does.
 type InteractionKind string
@@ -7589,8 +7618,9 @@ type InteractionUpsertFrame struct {
 	// * `request_takeover` — an assistant asks a person to take over a
 	// Computer's screen and finish a step only a person can do. Only
 	// Mobius creates it; `computer_takeover` carries the card. A person
-	// answers only by dismissing it (`outcome` = `declined`); Mobius
-	// records how the takeover ended.
+	// answers only by dismissing it — calling `respondToInteraction` with
+	// `answers: [{question_id: "outcome", value: "declined"}]` and no
+	// other answer; Mobius records how the takeover ended.
 	//
 	// The first three are *answered*; `assign_work` is *worked*. Kind does not by itself decide when an interaction closes — the resolution policy does.
 	Kind InteractionKind `json:"kind"`
@@ -8332,7 +8362,7 @@ type RestoredAgentResult struct {
 	// AgentId The restored agent's ID.
 	AgentId string `json:"agent_id"`
 
-	// DetailsHidden True when the caller cannot reach the restored agent: someone else's personal agent, or a group agent they are not in. Then `agent` is absent and `not_restored` is empty; the agent's custodian or members see it as before.
+	// DetailsHidden True when the caller cannot reach the restored agent: someone else's individual assistant, or a group agent they are not in. Then `agent` is absent and `not_restored` is empty; the agent's custodian or members see it as before.
 	DetailsHidden bool `json:"details_hidden"`
 
 	// NotRestored Each thing the agent had before its delete that did not come back. Empty when `details_hidden` is true.
@@ -9419,7 +9449,10 @@ type SessionHelperState string
 // SessionHelperStep One step of a background helper, as the display catalog phrases it. Never the step's input, output, tool name, or the helper's own text.
 type SessionHelperStep struct {
 	// Phrase For example "Saving a row in support_hire_onboarding…".
-	Phrase string                  `json:"phrase"`
+	Phrase string `json:"phrase"`
+
+	// Reason Short, person-actionable cause when status is failed and the failure matches a known cause (for example "Out of credits"). Never raw provider payloads or private content.
+	Reason *string                 `json:"reason,omitempty"`
 	Status SessionHelperStepStatus `json:"status"`
 }
 
@@ -11461,6 +11494,9 @@ type ListArtifactsParams struct {
 	// AgentId Only files this assistant made, in any folder. An assistant picks a folder for each file, so its files are not in one place.
 	AgentId *string `form:"agent_id,omitempty" json:"agent_id,omitempty"`
 
+	// CreatedBy Only files created by this principal (for example, an assistant's `principal_id`). With `latest_only=true`, this matches the creator of the returned current version.
+	CreatedBy *string `form:"created_by,omitempty" json:"created_by,omitempty"`
+
 	// Place Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read. `personal` is the caller's own files, which only the caller can read. Omit it to list every section the caller can read.
 	Place *ListArtifactsParamsPlace `form:"place,omitempty" json:"place,omitempty"`
 
@@ -11646,7 +11682,7 @@ type ListRoutinesParams struct {
 	// Attention Filter to persistent account-repair work assigned to the authenticated human.
 	Attention *ListRoutinesParamsAttention `form:"attention,omitempty" json:"attention,omitempty"`
 
-	// Status Narrow to these routine statuses. Omit for every status, cancelled included.
+	// Status Narrow to these routine statuses. Omit for routines that can still run (active and paused); finished (completed) and stopped (cancelled) routines are listed only when named.
 	Status *[]RoutineStatus `form:"status,omitempty" json:"status,omitempty"`
 	Limit  *int             `form:"limit,omitempty" json:"limit,omitempty"`
 
@@ -22900,6 +22936,18 @@ func NewListArtifactsRequest(server string, params *ListArtifactsParams) (*http.
 
 		}
 
+		if params.CreatedBy != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "created_by", *params.CreatedBy, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if params.Place != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "place", *params.Place, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
@@ -34111,6 +34159,7 @@ type ListSessionsResponse struct {
 	JSON401      *Unauthorized
 	JSON403      *Forbidden
 	JSON404      *NotFound
+	JSON503      *ServiceUnavailable
 }
 
 // Status returns HTTPResponse.Status
@@ -44017,6 +44066,13 @@ func ParseListSessionsResponse(rsp *http.Response) (*ListSessionsResponse, error
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest ServiceUnavailable
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
 
 	}
 

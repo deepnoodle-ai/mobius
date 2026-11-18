@@ -424,7 +424,7 @@ func registerRoutinesCommands(app *cli.App) {
 			cli.String("agent-id", "").Help("agent-id"),
 			cli.String("origin-session-id", "").Help("Filter to routines proposed in one conversation. Provenance only; it is not where they run."),
 			cli.String("attention", "").Help("Filter to persistent account-repair work assigned to the authenticated human."),
-			cli.Strings("status", "").Help("Narrow to these routine statuses. Omit for every status, cancelled included."),
+			cli.Strings("status", "").Help("Narrow to these routine statuses. Omit for routines that can still run (active and paused); finished (completed) and stopped (cancelled) routines are listed only when named."),
 			cli.Int("limit", "").Help("limit"),
 			cli.String("cursor", "").Help("next_cursor from the previous page."),
 		).

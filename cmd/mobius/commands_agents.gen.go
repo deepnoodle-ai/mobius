@@ -885,7 +885,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("integration-id", "").Help("[required] ID of the connected integration that backs this binding."),
 			cli.Bool("mentions", "").Help("Respond when the agent is @-mentioned."),
 			cli.String("model-route", "").Help("Default model route used by built-in messaging and by any turn that does not override the route. Accepts JSON, @file, or @-."),
-			cli.String("provider", "").Help("[required] Provider supported by built-in agent messaging: `slack`, `telegram`, `linear` (Linear agent sessions), or `microsoft_teams` (Microsoft Teams chats in one linked tenant). A binding's provider must equal its integration's provider."),
+			cli.String("provider", "").Help("[required] Provider supported by built-in agent messaging: `slack`, `telegram`, `linear` (Linear agent sessions), `microsoft_teams` (Microsoft Teams chats in one linked tenant), or `monday` (a monday.com custom agent answering mentions and assignments on boards). A binding's provider must equal its integration's provider."),
 			cli.Bool("replace-existing", "").Help("When enabling this binding, disable any other active agent binding for the same provider account."),
 			cli.String("reply-mode", "").Help("Reply mode for built-in messaging; currently `auto`."),
 			cli.Strings("sender-allow", "").Help("Sender IDs allowed to trigger the agent (empty means no allowlist). An enabled `telegram` binding requires at least one numeric Telegram user ID and refuses `*`."),

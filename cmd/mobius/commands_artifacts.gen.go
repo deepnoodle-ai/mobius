@@ -158,6 +158,7 @@ func registerArtifactsCommands(app *cli.App) {
 			cli.Bool("recursive", "").Help("Include files in subfolders of `folder`. With `false`, only files whose folder is exactly `folder` are returned; at the root that means files whose name carries no folder at all."),
 			cli.Bool("no-recursive", "").Help("Turn off --recursive, which the server applies by default."),
 			cli.String("agent-id", "").Help("Only files this assistant made, in any folder. An assistant picks a folder for each file, so its files are not in one place."),
+			cli.String("created-by", "").Help("Only files created by this principal (for example, an assistant's `principal_id`). With `latest_only=true`, this matches the creator of the returned current version."),
 			cli.String("place", "").Help("Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read. `personal` is the caller's own files, which only the caller can read. Omit it to list every section the caller can read."),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
@@ -199,6 +200,10 @@ func registerArtifactsCommands(app *cli.App) {
 			if ctx.IsSet("agent-id") {
 				v := ctx.String("agent-id")
 				params.AgentId = &v
+			}
+			if ctx.IsSet("created-by") {
+				v := ctx.String("created-by")
+				params.CreatedBy = &v
 			}
 			if ctx.IsSet("place") {
 				v := api.ListArtifactsParamsPlace(ctx.String("place"))
