@@ -33,10 +33,27 @@ root or passwordless `sudo` if the key matters to you.
 
 Git in a job shell authenticates through `mobius git-credential-helper`. In a
 managed environment the worker serves credentials on a Unix socket in a private
-`0700` directory and names it in `MOBIUS_GIT_CREDENTIAL_SOCKET`. Job shells can
-use it: they receive a repository-scoped GitHub token for an active job lease,
-never the API key. Job scripts cannot call the `mobius` CLI with the worker's
-key.
+`0700` directory and names it in `MOBIUS_GIT_CREDENTIAL_SOCKET`. The job's
+lease is not in any job's environment. The worker reads the calling process's
+ID from the socket (`SO_PEERCRED` on Linux, `LOCAL_PEERPID` on macOS) and walks
+its parent processes up to the command of a running job, then brokers a
+repository-scoped GitHub token for that job's lease. A process outside every
+running job's tree gets nothing. On other operating systems the worker
+cannot tell which process is calling, so it refuses Git credentials and
+action calls. Job scripts never receive the API key and cannot call the
+`mobius` CLI with it.
+
+Workflow script steps call their declared actions the same way, through a
+second private socket, `MOBIUS_ACTION_SOCKET`. Mobius runs only the actions the
+running script step declared, as the workflow, while the step runs.
+
+What this does and does not protect: the process check keeps casual misuse
+out, but it is not a boundary between jobs. Job commands run as the worker's
+user, and in a managed computer that user can use `sudo`. So **while a script
+step runs, any code in the run's computer can make that step's declared
+calls.** That includes an assistant's commands in the same run. The step's
+declared list limits what such code can do, Mobius checks each call against
+the workflow's account access, and every call is recorded under the step.
 
 The `environment.logs.tail` action redacts credential-shaped tokens (`mbx_…`,
 GitHub PATs) from returned log content, but that is output hygiene, not an

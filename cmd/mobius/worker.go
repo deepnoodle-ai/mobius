@@ -173,6 +173,23 @@ func registerWorkerCommand(app *cli.App) {
 				if err := action.ConfigureEnvironmentGitCredentials(ctx.Context()); err != nil {
 					logger.Warn("git credential helper not configured", "error", err)
 				}
+				// Workflow script steps call their declared actions through
+				// this process too, so the key never enters the job shell.
+				acts, err := startActionSocketServer(ctx.Context(), client, environmentID, logger)
+				if err != nil {
+					return fmt.Errorf("action socket: %w", err)
+				}
+				defer acts.Close()
+				if err := os.Setenv(actionSocketEnv, acts.Path()); err != nil {
+					return err
+				}
+				// Best-effort: without them, scripts can still call
+				// actions through the full path of the binary.
+				if cleanup, err := installScriptHelpers(); err != nil {
+					logger.Warn("script helpers not installed", "error", err)
+				} else {
+					defer cleanup()
+				}
 			}
 
 			auth := authFor(ctx)

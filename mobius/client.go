@@ -35,10 +35,14 @@ type Client struct {
 	// phases on its transport instead and leaves body transfer time to the
 	// caller's context.
 	transferClient *http.Client
-	customHTTP     bool
-	maxRetries     int
-	ac             *api.ClientWithResponses
-	config         *ClientConfig
+	// callClient waits as long as the request's context allows for response
+	// headers, and never retries: a script call can run an action for
+	// minutes before it answers, and a repeated POST could run it twice.
+	callClient *http.Client
+	customHTTP bool
+	maxRetries int
+	ac         *api.ClientWithResponses
+	config     *ClientConfig
 	// clientHeader is the X-Mobius-Client value sent on every request.
 	clientHeader string
 	// clientHeaderSet records that WithClientName chose clientHeader, so the
@@ -162,10 +166,12 @@ func NewClient(opts ...Option) (*Client, error) {
 				Logger:     c.config.Logger,
 			},
 		}
+		c.callClient = &http.Client{Transport: longCallTransport()}
 	} else {
 		// A caller-supplied client owns its own timeout policy; use it for
 		// transfers unchanged.
 		c.transferClient = c.httpClient
+		c.callClient = c.httpClient
 	}
 	ac, err := api.NewClientWithResponses(c.baseURL,
 		api.WithHTTPClient(c.httpClient),
@@ -188,6 +194,17 @@ func transferTransport() http.RoundTripper {
 	if t, ok := http.DefaultTransport.(*http.Transport); ok {
 		clone := t.Clone()
 		clone.ResponseHeaderTimeout = defaultHTTPTimeout
+		return clone
+	}
+	return http.DefaultTransport
+}
+
+// longCallTransport clones the default transport with no response-header
+// timeout, so only the request's context bounds a long call.
+func longCallTransport() http.RoundTripper {
+	if t, ok := http.DefaultTransport.(*http.Transport); ok {
+		clone := t.Clone()
+		clone.ResponseHeaderTimeout = 0
 		return clone
 	}
 	return http.DefaultTransport

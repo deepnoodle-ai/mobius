@@ -61,6 +61,7 @@ func newApp() *cli.App {
 	registerArtifactFolderCommands(app)
 	registerSessionAttachCommand(app)
 	registerActionSecretCommands(app)
+	registerScriptActionCommands(app)
 	registerReplaceOAuthReturnOriginsCommand(app)
 	registerSkillImportCommands(app)
 
