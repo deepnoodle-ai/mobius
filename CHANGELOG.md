@@ -10,6 +10,43 @@ the minor version.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-25
+
+Breaking: syncs the next round of the API reshape in mobius-cloud
+([#2627](https://github.com/deepnoodle-ai/mobius-cloud/issues/2627)). The
+removed operations no longer exist in production.
+
+### Removed
+
+- `updateArtifact` (`PATCH /v1/artifacts/{id}`) and its `UpdateArtifactRequest`
+  schema. CLI: `artifacts move`. Renaming and moving a file now goes through
+  the Library file routes, which are not in the public API, so do it in the
+  Mobius web app.
+- `getOAuthReturnOrigins` and `replaceOAuthReturnOrigins`, the org setting
+  they managed, and the SDK helpers wrapping them (`GetOAuthReturnOrigins`,
+  `ReplaceOAuthReturnOrigins` and Python/TS twins). CLI:
+  `organizations get-oauth-return-origins` and
+  `organizations replace-oauth-return-origins`. Every provider connection now
+  finishes in Mobius, so nothing read the setting.
+- `createSessionEventSubscription`, `getSessionEventSubscription` and
+  `listSessionEventDeliveries`, with their schemas. CLI:
+  `sessions create-event-subscription`, `sessions get-event-subscription`,
+  `sessions list-event-deliveries`. Assistants subscribe through their own
+  tools; listing and stopping subscriptions stays.
+- The `http_subscriber` interaction consumer: `consumer` on
+  `createInteraction` (`interactions create --consumer`), and the
+  `ConsumerInput`, `HttpSubscriberConsumerInput` and `HttpSubscriberConsumer`
+  schemas. It never delivered a callback.
+
+### Changed
+
+- `Artifact` carries `file_id` for any version of a file in the Library.
+
+### Added
+
+- `listCatalogProviders` (`GET /v1/catalog/providers`), the integration
+  provider catalog. CLI: `catalog list-providers`.
+
 ## [0.9.0] - 2026-11-25
 
 Breaking: syncs the API reshape in mobius-cloud

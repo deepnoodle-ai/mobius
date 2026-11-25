@@ -62,7 +62,6 @@ func newApp() *cli.App {
 	registerSessionAttachCommand(app)
 	registerActionSecretCommands(app)
 	registerScriptActionCommands(app)
-	registerReplaceOAuthReturnOriginsCommand(app)
 	registerSkillImportCommands(app)
 
 	return app

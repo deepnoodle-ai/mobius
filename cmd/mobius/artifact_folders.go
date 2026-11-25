@@ -13,24 +13,11 @@ import (
 
 // registerArtifactFolderCommands adds the Library folder commands. A folder
 // is the directory part of an artifact name, so these read as their
-// filesystem counterparts; the generator skips the three operations
-// (updateArtifact, createArtifactFolder, deleteArtifactFolder) because each
-// one wants a positional argument that its request shape cannot express.
+// filesystem counterparts; the generator skips the two operations
+// (createArtifactFolder, deleteArtifactFolder) because each one wants a
+// positional argument that its request shape cannot express.
 func registerArtifactFolderCommands(app *cli.App) {
 	grp := app.Group("artifacts")
-
-	grp.Command("move").
-		Description("Move or rename a file").
-		Long("Changes an artifact's name. The name is a relative path, so a leading " +
-			"folder is what places the file: `reports/2026/weekly.md` moves it into " +
-			"`reports/2026`, and a bare `weekly.md` moves it to the top level of the " +
-			"Library. The file's whole version history moves with it, so its past " +
-			"versions never sit in a different folder. The ID, custody, visibility, " +
-			"and stored bytes are unchanged.").
-		AddArg(&cli.Arg{Name: "artifact-id", Description: "ID of the artifact", Required: true}).
-		AddArg(&cli.Arg{Name: "new-name", Description: "New name as a relative path; a leading folder places the file.", Required: true}).
-		Use(requireAuth()).
-		Run(runArtifactMove)
 
 	grp.Command("mkdir").
 		Description("Create folder").
@@ -67,25 +54,6 @@ func init() {
 	RegisterResponseRenderer("listArtifactFolders", func(ctx *cli.Context, body []byte) error {
 		return renderPretty(ctx, body, "name", "path", "declared")
 	})
-}
-
-func runArtifactMove(ctx *cli.Context) error {
-	mc, err := clientFromContext(ctx)
-	if err != nil {
-		return err
-	}
-	name := ctx.Arg(1)
-	if strings.TrimSpace(name) == "" {
-		return cli.Errorf("new name is required")
-	}
-	resp, err := mc.RawClient().UpdateArtifactWithResponse(
-		ctx.Context(), api.ArtifactIdParam(ctx.Arg(0)),
-		api.UpdateArtifactJSONRequestBody{Name: name},
-	)
-	if err != nil {
-		return err
-	}
-	return printResponse(ctx, "updateArtifact", resp.StatusCode(), resp.Body)
 }
 
 func runArtifactMkdir(ctx *cli.Context) error {

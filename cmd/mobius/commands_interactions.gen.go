@@ -56,7 +56,6 @@ func registerInteractionsCommands(app *cli.App) {
 	interactionsGrp.Command("create").
 		Description("Create interaction").
 		Flags(
-			cli.String("consumer", "").Help("A caller may attach an HTTP subscriber or no consumer. Agent-tool consumers are runtime-only. Accepts JSON, @file, or @-."),
 			cli.String("context", "").Help("Additional key-value context surfaced in the UI alongside the title and description. Accepts JSON, @file, or @-."),
 			cli.String("delivery", "").Help("Optional per-interaction delivery override. When absent, each participant is notified via the app inbox only. Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Optional longer responder-facing detail or instructions."),
@@ -85,11 +84,6 @@ func registerInteractionsCommands(app *cli.App) {
 			fileKeys, err := readJSONBodyKeys(ctx, &body)
 			if err != nil {
 				return err
-			}
-			if ctx.IsSet("consumer") {
-				if err := decodeFlagJSON(ctx, "consumer", ctx.String("consumer"), &body.Consumer); err != nil {
-					return err
-				}
 			}
 			if ctx.IsSet("context") {
 				if err := decodeFlagJSON(ctx, "context", ctx.String("context"), &body.Context); err != nil {
@@ -165,7 +159,7 @@ func registerInteractionsCommands(app *cli.App) {
 				return fmt.Errorf("--title is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body, "consumer", "context", "delivery", "properties", "references", "resolution_policy", "spec", "subject", "tags")
+				return printDryRun(ctx, body, "context", "delivery", "properties", "references", "resolution_policy", "spec", "subject", "tags")
 			}
 			resp, err := client.CreateInteractionWithResponse(ctx.Context(), body)
 			if err != nil {

@@ -29,12 +29,10 @@ import type {
   InteractionListResponse,
   MemoryKind,
   MemorySearchMode,
-  OAuthReturnOrigins,
   PermissionCatalogResponse,
   Principal,
   PrincipalKind,
   PrincipalListResponse,
-  PutOAuthReturnOriginsRequest,
   RuntimeContextItem,
   ReplaceSkillsRequest,
   SaveAgentMemoryEntryRequest,
@@ -1151,36 +1149,6 @@ export class Client {
     const agent = (await resp.json()) as Agent;
     this.agentNameCache.set(agent.name, agent);
     return agent;
-  }
-
-  /**
-   * Returns the organization's allowlist of exact HTTPS origins an embedded
-   * partner may name as an OAuth connect `return_url`. An empty list means
-   * embedded return is disabled. Requires Admin or Owner membership.
-   */
-  async getOAuthReturnOrigins(): Promise<OAuthReturnOrigins> {
-    const resp = await this.request("/v1/orgs/current/oauth-return-origins", {
-      method: "GET",
-    });
-    return (await resp.json()) as OAuthReturnOrigins;
-  }
-
-  /**
-   * Full-replaces the organization's OAuth return-origin allowlist. The
-   * server normalizes each entry (lowercase host, default ports stripped)
-   * and rejects invalid origins; no validation happens client-side. Pass an
-   * empty array to disable embedded return. Requires Admin or Owner
-   * membership.
-   */
-  async replaceOAuthReturnOrigins(
-    origins: string[],
-  ): Promise<OAuthReturnOrigins> {
-    const body: PutOAuthReturnOriginsRequest = { origins };
-    const resp = await this.request("/v1/orgs/current/oauth-return-origins", {
-      method: "PUT",
-      body,
-    });
-    return (await resp.json()) as OAuthReturnOrigins;
   }
 
   async resolveAgent(name: string): Promise<Agent> {

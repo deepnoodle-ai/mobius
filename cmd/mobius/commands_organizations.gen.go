@@ -73,24 +73,6 @@ func registerOrganizationsCommands(app *cli.App) {
 			return printResponse(ctx, "getOrgDeletion", resp.StatusCode(), resp.Body)
 		})
 
-	organizationsGrp.Command("get-oauth-return-origins").
-		Description("Get the org's OAuth return-origin allowlist").
-		AddArg(&cli.Arg{Name: "org-id", Description: "Organization ID, or `current` for the caller's active organization. Any organization the caller may not act in answers 404.", Required: true}).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := api.OrgPathParam(ctx.Arg(0))
-			resp, err := client.GetOAuthReturnOriginsWithResponse(ctx.Context(), p0)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "getOAuthReturnOrigins", resp.StatusCode(), resp.Body)
-		})
-
 	organizationsGrp.Command("replace-context").
 		Description("Replace the organization's shared context").
 		AddArg(&cli.Arg{Name: "org-id", Description: "Organization ID, or `current` for the caller's active organization. Any organization the caller may not act in answers 404.", Required: true}).

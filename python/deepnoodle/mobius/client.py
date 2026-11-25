@@ -41,12 +41,10 @@ from ._api.models import (
     InteractionListResponse,
     MemoryKind,
     MemorySearchMode,
-    OAuthReturnOrigins,
     PermissionCatalogResponse,
     Principal,
     PrincipalKind,
     PrincipalListResponse,
-    PutOAuthReturnOriginsRequest,
     RuntimeContext,
     RuntimeContextItem,
     SaveAgentMemoryEntryRequest,
@@ -755,33 +753,6 @@ class Client:
             cursor = page.next_cursor
             if not page.has_more:
                 return changes, cursor
-
-    def get_oauth_return_origins(self) -> OAuthReturnOrigins:
-        """Return the org's OAuth return-origin allowlist.
-
-        Exact HTTPS origins an embedded partner may name as an OAuth connect
-        ``return_url``. An empty list means embedded return is disabled.
-        Requires Admin or Owner membership.
-        """
-        resp = self._request("GET", "/v1/orgs/current/oauth-return-origins")
-        return OAuthReturnOrigins.model_validate(resp.json())
-
-    def replace_oauth_return_origins(
-        self, origins: Sequence[str]
-    ) -> OAuthReturnOrigins:
-        """Full-replace the org's OAuth return-origin allowlist.
-
-        The server normalizes each entry (lowercase host, default ports
-        stripped) and rejects invalid origins; no validation happens
-        client-side. Pass an empty sequence to disable embedded return.
-        Requires Admin or Owner membership.
-        """
-        resp = self._request(
-            "PUT",
-            "/v1/orgs/current/oauth-return-origins",
-            json=PutOAuthReturnOriginsRequest(origins=list(origins)),
-        )
-        return OAuthReturnOrigins.model_validate(resp.json())
 
     def list_action_invocations(
         self, opts: ListActionInvocationsOptions | None = None
