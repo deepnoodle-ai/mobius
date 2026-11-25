@@ -529,8 +529,8 @@ if (turn.error) throw turn.error;
 To follow a started turn yourself instead, open the transcript stream from
 the turn's resume cursor; the send request has no inline stream.
 
-A new turn accepts a one-shot execution
-timeout. Set `Operation: &api.AgentTurnOperationPolicy{TimeoutSeconds: &seconds}`
+A new turn accepts a one-shot `operation` override for its execution timeout.
+Set `Operation: &api.AgentTurnOperationPolicy{TimeoutSeconds: &seconds}`
 in Go, `operation=mobius.AgentTurnOperationPolicy(timeout_seconds=90)` in
 Python, or `operation: { timeout_seconds: 90 }` in TypeScript. This policy
 applies only to the newly admitted turn, overrides the stored agent timeout,

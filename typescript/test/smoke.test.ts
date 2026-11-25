@@ -468,6 +468,32 @@ test("client: sendSessionInput reports direction for a running turn", async () =
   assert.equal(idempotencyHeader, "event_2");
 });
 
+test("client: sendSessionInput follows the new turn when direction finds no running turn", async () => {
+  let requestBody = "";
+  // No turn could absorb the direction, so the server started one.
+  const restore = installFakeFetch({
+    status: 202,
+    body: inputAck("sess_1", "turn_1", 7),
+    capture: (_input, init) => {
+      requestBody = String(init?.body ?? "");
+    },
+  });
+  try {
+    const client = new Client({ apiKey: "mbx_test" });
+    const result = await client.sendSessionInput("sess_1", {
+      content: [{ type: "text", text: "Use the shorter name" }],
+      delivery: "current_turn",
+    });
+    assert.equal(result.delivery, "new_turn");
+    assert.ok(result.turn);
+    assert.equal(result.turn.id, "turn_1");
+    assert.equal(result.turn.sessionId, "sess_1");
+  } finally {
+    restore();
+  }
+  assert.equal(JSON.parse(requestBody).delivery, "current_turn");
+});
+
 test("client: sendSessionInput omits a whitespace-only idempotency key", async () => {
   let idempotencyHeader: string | null = null;
   let requestBody = "";
