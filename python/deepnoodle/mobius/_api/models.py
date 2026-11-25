@@ -7420,6 +7420,16 @@ class Kind18(StrEnum):
     project = 'project'
 
 
+class ExternalAgentChannel(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    channel_id: str
+    channel_name: str
+    wake_policy: ExternalAgentWakePolicy
+    added_at: AwareDatetime
+
+
 class ProjectExternalAgent(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -7456,22 +7466,16 @@ class Code(StrEnum):
     channel_full = 'channel_full'
 
 
-class ProjectExternalAgentResult(BaseModel):
+class ProjectExternalAgentChannel(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    handle: str = Field(..., description='The handle as the list sent it.')
-    external_agent_id: str | None = Field(
-        None, description="The external agent's ID, when it is in the channel."
-    )
-    code: Code | None = Field(
+    channel_id: str
+    code: str | None = Field(
         None,
-        description='Why Mobius refused this entry, for the client. The agent is not in the channel. Read an unknown code as "refused": Mobius can add codes.\n\n- Choose another handle: `handle_invalid` (breaks the handle\nrule, or is reserved), `handle_taken` (a person or assistant\nin the organization has the name), `handle_in_use` (another\nlive external agent in the channel has it).\n- Send each handle once: `handle_repeated`.\n- Fix the client kind: `client_kind_invalid`.\n- Send the list again later: `channel_full` (the channel has\nits most members).',
+        description='Why the agent is not in this channel: `handle_in_use` or `channel_full`. Read an unknown code as "not in this channel".',
     )
-    refused: str | None = Field(
-        None,
-        description='Why Mobius refused this entry, as text for a person. Do not parse it: use `code`.',
-    )
+    refused: str | None = Field(None, description='The reason as text for a person.')
 
 
 class ExternalAgentState(StrEnum):
@@ -7660,7 +7664,7 @@ class ChannelReadState(BaseModel):
 
 class ChannelStreamFrameType(StrEnum):
     """
-    `channel.change`: one change-log row, with the message it names. `channel.typing`: a member is typing. `channel.read`: the caller's read position moved in another tab. `channel.membership`: the caller's channel set changed; refetch the channel list. `channel.resync`: frames were lost; refetch. `stream.ready`: the replay is done. `stream.end`: reconnect with the cursor. `external_agent.status`: an external agent in the channel reported a new state (`external_agent_id`, `state`); a person's stream only. `agent.interrupt` (an external agent's stream only): end the current turn, then echo `control_id` in the next status. `agent.answer` (an external agent's stream only): the owner's answer to the agent's open prompt `call_id`; `decision` is `allow` or `deny`. Echo `control_id` in the next status. Ignore a frame type you do not know.
+    `channel.change`: one change-log row, with the message it names. `channel.typing`: a member is typing. `channel.read`: the caller's read position moved in another tab. `channel.membership`: the caller's channel set changed; refetch the channel list. `channel.resync`: frames were lost; refetch. `stream.ready`: the replay is done. `stream.end`: reconnect with the cursor. `external_agent.status`: an external agent in the channel reported a new state (`external_agent_id`, `state`); a person's stream only. `agent.interrupt` (an external agent's stream only): end the current turn, then echo `control_id` in the next status. `agent.answer` (an external agent's stream only): the owner's answer to the agent's open prompt `call_id`; `decision` is `allow` or `deny`. Echo `control_id` in the next status. `external_agent.channels` (an external agent's stream only): the channels the agent is in changed, and the stream now carries the new set; refetch `getExternalAgent` for `channels`. Ignore a frame type you do not know.
     """
 
     channel_change = 'channel.change'
@@ -7673,6 +7677,7 @@ class ChannelStreamFrameType(StrEnum):
     external_agent_status = 'external_agent.status'
     agent_interrupt = 'agent.interrupt'
     agent_answer = 'agent.answer'
+    external_agent_channels = 'external_agent.channels'
 
 
 class ChannelChangeKind(StrEnum):
@@ -9533,7 +9538,14 @@ class ExternalAgent(BaseModel):
         extra='forbid',
     )
     id: str = Field(..., description='The external agent ID.')
-    channel_id: str = Field(..., description='The one channel the agent belongs to.')
+    channel_id: str = Field(
+        ...,
+        description="In a channel's list, that channel. Elsewhere, the agent's first channel that the caller can read. An agent can be in several channels: read `channels`.",
+    )
+    channels: list[ExternalAgentChannel] | None = Field(
+        None,
+        description="Each channel the agent is in that the caller can read, oldest first. The agent's own token and its owner see every channel.",
+    )
     handle: str = Field(..., description="The agent's handle, without the @.")
     client_kind: AgentClient
     wake_policy: ExternalAgentWakePolicy
@@ -9588,16 +9600,31 @@ class ReplaceChannelExternalAgentsRequest(BaseModel):
     )
     external_agents: list[ProjectExternalAgent] = Field(
         ...,
-        description='Every external agent of the project in this channel. An empty list removes them all.',
+        description='Every external agent of the project. The list applies to every channel the project is in. An empty list removes them all.',
         max_length=100,
     )
 
 
-class ProjectExternalAgentList(BaseModel):
+class ProjectExternalAgentResult(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    external_agents: list[ProjectExternalAgentResult]
+    handle: str = Field(..., description='The handle as the list sent it.')
+    external_agent_id: str | None = Field(
+        None, description="The external agent's ID, when it is in the channel."
+    )
+    code: Code | None = Field(
+        None,
+        description='Why Mobius refused this entry, for the client. The agent is not in the channel. Read an unknown code as "refused": Mobius can add codes.\n\n- Choose another handle: `handle_invalid` (breaks the handle\nrule, or is reserved), `handle_taken` (a person or assistant\nin the organization has the name), `handle_in_use` (another\nlive external agent in the channel has it).\n- Send each handle once: `handle_repeated`.\n- Fix the client kind: `client_kind_invalid`.\n- Send the list again later: `channel_full` (the channel has\nits most members).',
+    )
+    refused: str | None = Field(
+        None,
+        description='Why Mobius refused this entry, as text for a person. Do not parse it: use `code`.',
+    )
+    channels: list[ProjectExternalAgentChannel] | None = Field(
+        None,
+        description='One answer per channel the project is in. A channel without `code` holds the agent. `code` at the top is set only when the agent is in no channel.',
+    )
 
 
 class ExternalAgentStatusRequest(BaseModel):
@@ -10124,6 +10151,13 @@ class BlueprintResources(BaseModel):
     agents: list[BlueprintAgentInput] | None = None
     tables: list[BlueprintTableInput] | None = None
     routines: list[BlueprintRoutineInput] | None = None
+
+
+class ProjectExternalAgentList(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    external_agents: list[ProjectExternalAgentResult]
 
 
 class ApplyBlueprintRequest(BaseModel):

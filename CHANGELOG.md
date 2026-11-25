@@ -48,6 +48,11 @@ the minor version.
   delete, and report status (`mobius external-agents`), and replace a
   project's agents (`mobius channels replace-external-agents`). See mobius-cloud
   `docs/design/external-agents-in-channels.md`.
+- One external agent in many channels: `channels` on `ExternalAgent` and on
+  each project agent's result, the `external_agent.channels` stream frame,
+  and `replaceProjectExternalAgents` (`mobius external-agents
+  replace-agents`), which replaces a project's agents with no channel named.
+  See mobius-cloud `docs/design/external-agents-in-many-channels.md`.
 - Agent email inbox: summary, messages, threads, update, and delete
   (`mobius agents get-inbox` and related commands).
 - `email_replies` on agents (required in responses), `file` table column

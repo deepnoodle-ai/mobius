@@ -212,10 +212,10 @@ func registerChannelsCommands(app *cli.App) {
 		})
 
 	channelsGrp.Command("replace-external-agents").
-		Description("Replace a project connection's external agents in a channel").
+		Description("Replace a project connection's external agents, naming one of its channels").
 		AddArg(&cli.Arg{Name: "channel-id", Description: "Channel ID.", Required: true}).
 		Flags(
-			cli.String("external-agents", "").Help("[required] Every external agent of the project in this channel. An empty list removes them all. Accepts JSON, @file, or @-."),
+			cli.String("external-agents", "").Help("[required] Every external agent of the project. The list applies to every channel the project is in. An empty list removes them all. Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).

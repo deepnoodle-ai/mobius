@@ -1144,16 +1144,17 @@ func (e ChannelStreamFrameDecision) Valid() bool {
 
 // Defines values for ChannelStreamFrameType.
 const (
-	ChannelStreamFrameTypeAgentAnswer         ChannelStreamFrameType = "agent.answer"
-	ChannelStreamFrameTypeAgentInterrupt      ChannelStreamFrameType = "agent.interrupt"
-	ChannelStreamFrameTypeChannelChange       ChannelStreamFrameType = "channel.change"
-	ChannelStreamFrameTypeChannelMembership   ChannelStreamFrameType = "channel.membership"
-	ChannelStreamFrameTypeChannelRead         ChannelStreamFrameType = "channel.read"
-	ChannelStreamFrameTypeChannelResync       ChannelStreamFrameType = "channel.resync"
-	ChannelStreamFrameTypeChannelTyping       ChannelStreamFrameType = "channel.typing"
-	ChannelStreamFrameTypeExternalAgentStatus ChannelStreamFrameType = "external_agent.status"
-	ChannelStreamFrameTypeStreamEnd           ChannelStreamFrameType = "stream.end"
-	ChannelStreamFrameTypeStreamReady         ChannelStreamFrameType = "stream.ready"
+	ChannelStreamFrameTypeAgentAnswer           ChannelStreamFrameType = "agent.answer"
+	ChannelStreamFrameTypeAgentInterrupt        ChannelStreamFrameType = "agent.interrupt"
+	ChannelStreamFrameTypeChannelChange         ChannelStreamFrameType = "channel.change"
+	ChannelStreamFrameTypeChannelMembership     ChannelStreamFrameType = "channel.membership"
+	ChannelStreamFrameTypeChannelRead           ChannelStreamFrameType = "channel.read"
+	ChannelStreamFrameTypeChannelResync         ChannelStreamFrameType = "channel.resync"
+	ChannelStreamFrameTypeChannelTyping         ChannelStreamFrameType = "channel.typing"
+	ChannelStreamFrameTypeExternalAgentChannels ChannelStreamFrameType = "external_agent.channels"
+	ChannelStreamFrameTypeExternalAgentStatus   ChannelStreamFrameType = "external_agent.status"
+	ChannelStreamFrameTypeStreamEnd             ChannelStreamFrameType = "stream.end"
+	ChannelStreamFrameTypeStreamReady           ChannelStreamFrameType = "stream.ready"
 )
 
 // Valid indicates whether the value is a known member of the ChannelStreamFrameType enum.
@@ -1172,6 +1173,8 @@ func (e ChannelStreamFrameType) Valid() bool {
 	case ChannelStreamFrameTypeChannelResync:
 		return true
 	case ChannelStreamFrameTypeChannelTyping:
+		return true
+	case ChannelStreamFrameTypeExternalAgentChannels:
 		return true
 	case ChannelStreamFrameTypeExternalAgentStatus:
 		return true
@@ -6833,14 +6836,14 @@ type ChannelStreamFrame struct {
 	// State What an Online external agent is doing. `waiting`: it waits on its owner, such as for a permission prompt. `idle`: between turns.
 	State *ExternalAgentState `json:"state,omitempty"`
 
-	// Type `channel.change`: one change-log row, with the message it names. `channel.typing`: a member is typing. `channel.read`: the caller's read position moved in another tab. `channel.membership`: the caller's channel set changed; refetch the channel list. `channel.resync`: frames were lost; refetch. `stream.ready`: the replay is done. `stream.end`: reconnect with the cursor. `external_agent.status`: an external agent in the channel reported a new state (`external_agent_id`, `state`); a person's stream only. `agent.interrupt` (an external agent's stream only): end the current turn, then echo `control_id` in the next status. `agent.answer` (an external agent's stream only): the owner's answer to the agent's open prompt `call_id`; `decision` is `allow` or `deny`. Echo `control_id` in the next status. Ignore a frame type you do not know.
+	// Type `channel.change`: one change-log row, with the message it names. `channel.typing`: a member is typing. `channel.read`: the caller's read position moved in another tab. `channel.membership`: the caller's channel set changed; refetch the channel list. `channel.resync`: frames were lost; refetch. `stream.ready`: the replay is done. `stream.end`: reconnect with the cursor. `external_agent.status`: an external agent in the channel reported a new state (`external_agent_id`, `state`); a person's stream only. `agent.interrupt` (an external agent's stream only): end the current turn, then echo `control_id` in the next status. `agent.answer` (an external agent's stream only): the owner's answer to the agent's open prompt `call_id`; `decision` is `allow` or `deny`. Echo `control_id` in the next status. `external_agent.channels` (an external agent's stream only): the channels the agent is in changed, and the stream now carries the new set; refetch `getExternalAgent` for `channels`. Ignore a frame type you do not know.
 	Type ChannelStreamFrameType `json:"type"`
 }
 
 // ChannelStreamFrameDecision The owner's answer, on `agent.answer`.
 type ChannelStreamFrameDecision string
 
-// ChannelStreamFrameType `channel.change`: one change-log row, with the message it names. `channel.typing`: a member is typing. `channel.read`: the caller's read position moved in another tab. `channel.membership`: the caller's channel set changed; refetch the channel list. `channel.resync`: frames were lost; refetch. `stream.ready`: the replay is done. `stream.end`: reconnect with the cursor. `external_agent.status`: an external agent in the channel reported a new state (`external_agent_id`, `state`); a person's stream only. `agent.interrupt` (an external agent's stream only): end the current turn, then echo `control_id` in the next status. `agent.answer` (an external agent's stream only): the owner's answer to the agent's open prompt `call_id`; `decision` is `allow` or `deny`. Echo `control_id` in the next status. Ignore a frame type you do not know.
+// ChannelStreamFrameType `channel.change`: one change-log row, with the message it names. `channel.typing`: a member is typing. `channel.read`: the caller's read position moved in another tab. `channel.membership`: the caller's channel set changed; refetch the channel list. `channel.resync`: frames were lost; refetch. `stream.ready`: the replay is done. `stream.end`: reconnect with the cursor. `external_agent.status`: an external agent in the channel reported a new state (`external_agent_id`, `state`); a person's stream only. `agent.interrupt` (an external agent's stream only): end the current turn, then echo `control_id` in the next status. `agent.answer` (an external agent's stream only): the owner's answer to the agent's open prompt `call_id`; `decision` is `allow` or `deny`. Echo `control_id` in the next status. `external_agent.channels` (an external agent's stream only): the channels the agent is in changed, and the stream now carries the new set; refetch `getExternalAgent` for `channels`. Ignore a frame type you do not know.
 type ChannelStreamFrameType string
 
 // ChannelVisibility Chosen at creation and never changed.
@@ -7829,8 +7832,11 @@ type ExternalAgent struct {
 	// Ask The short form of what the agent asks. Only for the agent's owner.
 	Ask *string `json:"ask,omitempty"`
 
-	// ChannelId The one channel the agent belongs to.
+	// ChannelId In a channel's list, that channel. Elsewhere, the agent's first channel that the caller can read. An agent can be in several channels: read `channels`.
 	ChannelId string `json:"channel_id"`
+
+	// Channels Each channel the agent is in that the caller can read, oldest first. The agent's own token and its owner see every channel.
+	Channels *[]ExternalAgentChannel `json:"channels,omitempty"`
 
 	// ClientKind The client, as it reports itself, for example `claude_code`, `codex`, `antigravity`, or `other`. Any value of 1 to 32 lowercase letters, numbers, or underscores is accepted. It is not verified, and no rule reads it.
 	ClientKind AgentClient `json:"client_kind"`
@@ -7889,6 +7895,16 @@ type ExternalAgentAccessToken struct {
 
 	// ExpiresAt When the access token stops working.
 	ExpiresAt time.Time `json:"expires_at"`
+}
+
+// ExternalAgentChannel defines model for ExternalAgentChannel.
+type ExternalAgentChannel struct {
+	AddedAt     time.Time `json:"added_at"`
+	ChannelId   string    `json:"channel_id"`
+	ChannelName string    `json:"channel_name"`
+
+	// WakePolicy Whose @mention wakes the external agent. `owner_only`, the default, admits only its owner. `channel_members` admits every member.
+	WakePolicy ExternalAgentWakePolicy `json:"wake_policy"`
 }
 
 // ExternalAgentConnection defines model for ExternalAgentConnection.
@@ -9270,6 +9286,17 @@ type ProjectExternalAgent struct {
 	Handle string `json:"handle"`
 }
 
+// ProjectExternalAgentChannel defines model for ProjectExternalAgentChannel.
+type ProjectExternalAgentChannel struct {
+	ChannelId string `json:"channel_id"`
+
+	// Code Why the agent is not in this channel: `handle_in_use` or `channel_full`. Read an unknown code as "not in this channel".
+	Code *string `json:"code,omitempty"`
+
+	// Refused The reason as text for a person.
+	Refused *string `json:"refused,omitempty"`
+}
+
 // ProjectExternalAgentList defines model for ProjectExternalAgentList.
 type ProjectExternalAgentList struct {
 	ExternalAgents []ProjectExternalAgentResult `json:"external_agents"`
@@ -9277,6 +9304,9 @@ type ProjectExternalAgentList struct {
 
 // ProjectExternalAgentResult defines model for ProjectExternalAgentResult.
 type ProjectExternalAgentResult struct {
+	// Channels One answer per channel the project is in. A channel without `code` holds the agent. `code` at the top is set only when the agent is in no channel.
+	Channels *[]ProjectExternalAgentChannel `json:"channels,omitempty"`
+
 	// Code Why Mobius refused this entry, for the client. The agent is not in the channel. Read an unknown code as "refused": Mobius can add codes.
 	//
 	// - Choose another handle: `handle_invalid` (breaks the handle
@@ -9358,7 +9388,7 @@ type QueryRowsRequestSortOrder string
 
 // ReplaceChannelExternalAgentsRequest defines model for ReplaceChannelExternalAgentsRequest.
 type ReplaceChannelExternalAgentsRequest struct {
-	// ExternalAgents Every external agent of the project in this channel. An empty list removes them all.
+	// ExternalAgents Every external agent of the project. The list applies to every channel the project is in. An empty list removes them all.
 	ExternalAgents []ProjectExternalAgent `json:"external_agents"`
 }
 
@@ -13169,6 +13199,9 @@ type ConnectExternalAgentJSONRequestBody = ConnectExternalAgentRequest
 
 // ExchangeExternalAgentTokenJSONRequestBody defines body for ExchangeExternalAgentToken for application/json ContentType.
 type ExchangeExternalAgentTokenJSONRequestBody = ExchangeExternalAgentTokenRequest
+
+// ReplaceProjectExternalAgentsJSONRequestBody defines body for ReplaceProjectExternalAgents for application/json ContentType.
+type ReplaceProjectExternalAgentsJSONRequestBody = ReplaceChannelExternalAgentsRequest
 
 // SetExternalAgentStatusJSONRequestBody defines body for SetExternalAgentStatus for application/json ContentType.
 type SetExternalAgentStatusJSONRequestBody = ExternalAgentStatusRequest
@@ -18588,6 +18621,11 @@ type ClientInterface interface {
 	// GetExternalAgent request
 	GetExternalAgent(ctx context.Context, externalAgentId ExternalAgentID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ReplaceProjectExternalAgentsWithBody request with any body
+	ReplaceProjectExternalAgentsWithBody(ctx context.Context, externalAgentId ExternalAgentID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ReplaceProjectExternalAgents(ctx context.Context, externalAgentId ExternalAgentID, body ReplaceProjectExternalAgentsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// SetExternalAgentStatusWithBody request with any body
 	SetExternalAgentStatusWithBody(ctx context.Context, externalAgentId ExternalAgentID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -20272,6 +20310,30 @@ func (c *Client) DeleteExternalAgent(ctx context.Context, externalAgentId Extern
 
 func (c *Client) GetExternalAgent(ctx context.Context, externalAgentId ExternalAgentID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetExternalAgentRequest(c.Server, externalAgentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReplaceProjectExternalAgentsWithBody(ctx context.Context, externalAgentId ExternalAgentID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceProjectExternalAgentsRequestWithBody(c.Server, externalAgentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReplaceProjectExternalAgents(ctx context.Context, externalAgentId ExternalAgentID, body ReplaceProjectExternalAgentsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceProjectExternalAgentsRequest(c.Server, externalAgentId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -26521,6 +26583,53 @@ func NewGetExternalAgentRequest(server string, externalAgentId ExternalAgentID) 
 	return req, nil
 }
 
+// NewReplaceProjectExternalAgentsRequest calls the generic ReplaceProjectExternalAgents builder with application/json body
+func NewReplaceProjectExternalAgentsRequest(server string, externalAgentId ExternalAgentID, body ReplaceProjectExternalAgentsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewReplaceProjectExternalAgentsRequestWithBody(server, externalAgentId, "application/json", bodyReader)
+}
+
+// NewReplaceProjectExternalAgentsRequestWithBody generates requests for ReplaceProjectExternalAgents with any type of body
+func NewReplaceProjectExternalAgentsRequestWithBody(server string, externalAgentId ExternalAgentID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "external_agent_id", externalAgentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/external-agents/%s/agents", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewSetExternalAgentStatusRequest calls the generic SetExternalAgentStatus builder with application/json body
 func NewSetExternalAgentStatusRequest(server string, externalAgentId ExternalAgentID, body SetExternalAgentStatusJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -32388,6 +32497,11 @@ type ClientWithResponsesInterface interface {
 	// GetExternalAgentWithResponse request
 	GetExternalAgentWithResponse(ctx context.Context, externalAgentId ExternalAgentID, reqEditors ...RequestEditorFn) (*GetExternalAgentResponse, error)
 
+	// ReplaceProjectExternalAgentsWithBodyWithResponse request with any body
+	ReplaceProjectExternalAgentsWithBodyWithResponse(ctx context.Context, externalAgentId ExternalAgentID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceProjectExternalAgentsResponse, error)
+
+	ReplaceProjectExternalAgentsWithResponse(ctx context.Context, externalAgentId ExternalAgentID, body ReplaceProjectExternalAgentsJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceProjectExternalAgentsResponse, error)
+
 	// SetExternalAgentStatusWithBodyWithResponse request with any body
 	SetExternalAgentStatusWithBodyWithResponse(ctx context.Context, externalAgentId ExternalAgentID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetExternalAgentStatusResponse, error)
 
@@ -35503,6 +35617,41 @@ func (r GetExternalAgentResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetExternalAgentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ReplaceProjectExternalAgentsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ProjectExternalAgentList
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON429      *TooManyRequests
+}
+
+// Status returns HTTPResponse.Status
+func (r ReplaceProjectExternalAgentsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReplaceProjectExternalAgentsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ReplaceProjectExternalAgentsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -40176,6 +40325,23 @@ func (c *ClientWithResponses) GetExternalAgentWithResponse(ctx context.Context, 
 		return nil, err
 	}
 	return ParseGetExternalAgentResponse(rsp)
+}
+
+// ReplaceProjectExternalAgentsWithBodyWithResponse request with arbitrary body returning *ReplaceProjectExternalAgentsResponse
+func (c *ClientWithResponses) ReplaceProjectExternalAgentsWithBodyWithResponse(ctx context.Context, externalAgentId ExternalAgentID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceProjectExternalAgentsResponse, error) {
+	rsp, err := c.ReplaceProjectExternalAgentsWithBody(ctx, externalAgentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReplaceProjectExternalAgentsResponse(rsp)
+}
+
+func (c *ClientWithResponses) ReplaceProjectExternalAgentsWithResponse(ctx context.Context, externalAgentId ExternalAgentID, body ReplaceProjectExternalAgentsJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceProjectExternalAgentsResponse, error) {
+	rsp, err := c.ReplaceProjectExternalAgents(ctx, externalAgentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReplaceProjectExternalAgentsResponse(rsp)
 }
 
 // SetExternalAgentStatusWithBodyWithResponse request with arbitrary body returning *SetExternalAgentStatusResponse
@@ -45732,6 +45898,67 @@ func ParseGetExternalAgentResponse(rsp *http.Response) (*GetExternalAgentRespons
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReplaceProjectExternalAgentsResponse parses an HTTP response from a ReplaceProjectExternalAgentsWithResponse call
+func ParseReplaceProjectExternalAgentsResponse(rsp *http.Response) (*ReplaceProjectExternalAgentsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReplaceProjectExternalAgentsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ProjectExternalAgentList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
 
 	}
 

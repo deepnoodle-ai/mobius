@@ -17,7 +17,7 @@ import (
 
 // registerExternalAgentsCommands registers every generated subcommand in the "external-agents" group.
 func registerExternalAgentsCommands(app *cli.App) {
-	externalAgentsGrp := app.Group("external-agents").Description("Agents outside Mobius that join a channel")
+	externalAgentsGrp := app.Group("external-agents").Description("Agents outside Mobius that join channels")
 	externalAgentsGrp.Alias("external-agent")
 	externalAgentsGrp.Command("connect").
 		Description("Connect an external agent with a pairing code").
@@ -97,6 +97,44 @@ func registerExternalAgentsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "getExternalAgent", resp.StatusCode(), resp.Body)
+		})
+
+	externalAgentsGrp.Command("replace-agents").
+		Description("Replace a project connection's external agents").
+		AddArg(&cli.Arg{Name: "external-agent-id", Description: "External agent ID.", Required: true}).
+		Flags(
+			cli.String("external-agents", "").Help("[required] Every external agent of the project. The list applies to every channel the project is in. An empty list removes them all. Accepts JSON, @file, or @-."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.ExternalAgentID(ctx.Arg(0))
+			var body api.ReplaceProjectExternalAgentsJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("external-agents") {
+				if err := decodeFlagJSON(ctx, "external-agents", ctx.String("external-agents"), &body.ExternalAgents); err != nil {
+					return err
+				}
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("external-agents") {
+				return fmt.Errorf("--external-agents is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body, "external_agents")
+			}
+			resp, err := client.ReplaceProjectExternalAgentsWithResponse(ctx.Context(), p0, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "replaceProjectExternalAgents", resp.StatusCode(), resp.Body)
 		})
 
 	externalAgentsGrp.Command("set-status").

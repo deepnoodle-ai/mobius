@@ -177,6 +177,7 @@ var overrides = map[string]Override{
 	"getExternalAgent":             {Group: "external-agents", Command: "get"},
 	"deleteExternalAgent":          {Group: "external-agents", Command: "delete"},
 	"setExternalAgentStatus":       {Group: "external-agents", Command: "set-status"},
+	"replaceProjectExternalAgents": {Group: "external-agents", Command: "replace-agents"},
 	"replaceChannelExternalAgents": {Command: "replace-external-agents"},
 	"findChannelMessages":          {Command: "find-messages"},
 	// The generated command reads the whole SSE body before printing, so a
@@ -200,7 +201,7 @@ var groupDescriptions = map[string]string{
 	"blueprints":      "Org blueprint application and bindings",
 	"catalog":         "Available actions, events, and models",
 	"channels":        "Shared channels, messages, and members",
-	"external-agents": "Agents outside Mobius that join a channel",
+	"external-agents": "Agents outside Mobius that join channels",
 	"interactions":    "Information, approval, and review requests between users and agents",
 	"organizations":   "Organization settings and control plane",
 	"permissions":     "Assignable org permission catalog",

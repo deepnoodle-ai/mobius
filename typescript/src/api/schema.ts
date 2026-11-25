@@ -2767,10 +2767,30 @@ export interface paths {
         };
         get?: never;
         /**
-         * Replace a project connection's external agents in a channel
-         * @description Only a project connection's token calls this, on its own channel. Send the whole list of the project's external agents, every time. Mobius changes only this project's external agents: it creates each named agent that is not live, keeps each live one that is named, and removes each live one that is not named. Removing an agent writes no line. The first agent that joins writes the project's line in the channel. The same owner, channel, and handle are always the same agent and author. A handle is 1 to 32 lowercase letters, numbers, hyphens, or underscores, starting with a letter or number. It cannot be a reserved word or the name of a person or assistant in the organization, and a handle that another live external agent holds in the channel is refused. The answer has one entry per entry of the list, in order: the external agent's ID, or a refusal `code` and its `refused` text. Use the ID with `exchangeExternalAgentToken`. A project connection may send its list 12 times a minute. Past that, the answer is `429` `rate_limit_exceeded` with `Retry-After`, and nothing changes.
+         * Replace a project connection's external agents, naming one of its channels
+         * @description The same operation as `replaceProjectExternalAgents`, for a client that names a channel. `channel_id` must be one of the project's channels. The list applies to every channel the project is in. Only a project connection's token calls this. Send the whole list of the project's external agents, every time. Mobius changes only this project's external agents: it creates each named agent that is not live, keeps each live one that is named, and removes each live one that is not named. Removing an agent writes no line. The first agent that joins writes the project's line in the channel. The same project and handle are always the same agent and author. A handle is 1 to 32 lowercase letters, numbers, hyphens, or underscores, starting with a letter or number. It cannot be a reserved word or the name of a person or assistant in the organization, and a handle that another live external agent holds in a channel keeps the agent out of that channel. The answer has one entry per entry of the list, in order: the external agent's ID, or a refusal `code` and its `refused` text, and one answer per channel in `channels`. Use the ID with `exchangeExternalAgentToken`. A project connection may send its list 12 times a minute. Past that, the answer is `429` `rate_limit_exceeded` with `Retry-After`, and nothing changes.
          */
         put: operations["replaceChannelExternalAgents"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/external-agents/{external_agent_id}/agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Replace a project connection's external agents
+         * @description Only a project connection's token calls this, on itself. It takes the same list and gives the same answer as `replaceChannelExternalAgents`, for every channel the project is in, with no channel named.
+         */
+        put: operations["replaceProjectExternalAgents"];
         post?: never;
         delete?: never;
         options?: never;
@@ -2787,14 +2807,14 @@ export interface paths {
         };
         /**
          * Get an external agent
-         * @description Returns one external agent, connected or waiting for its pairing code, to anyone who can read its channel. An external agent's access token reads only its own external agent. A disconnected agent is not found.
+         * @description Returns one external agent, connected or waiting for its pairing code, to anyone who can read one of its channels. `channels` lists the channels the caller can read. An external agent's access token reads only its own external agent, with all its channels. A disconnected agent is not found.
          */
         get: operations["getExternalAgent"];
         put?: never;
         post?: never;
         /**
          * Delete an external agent
-         * @description Disconnects one external agent. Its owner, a channel admin, an organization Owner or Admin, or the external agent itself with its access token may do this. The agent leaves the channel at once, and the channel shows a line. Disconnecting an agent that is already disconnected changes nothing. On a project connection (also with its own project token) or on one of its external agents, the whole project ends: every external agent of the project leaves, and the channel shows one line.
+         * @description Disconnects one external agent in every channel it is in. Its owner, an organization Owner or Admin, or the external agent itself with its access token may do this. A channel admin removes it from their channel with `removeChannelExternalAgent` instead. The agent leaves each channel at once, and each channel shows a line. Disconnecting an agent that is already disconnected changes nothing. On a project connection (also with its own project token) or on one of its external agents, the whole project ends: every external agent of the project leaves, and each channel shows one line.
          */
         delete: operations["deleteExternalAgent"];
         options?: never;
@@ -9201,8 +9221,10 @@ export interface components {
         ExternalAgent: {
             /** @description The external agent ID. */
             id: string;
-            /** @description The one channel the agent belongs to. */
+            /** @description In a channel's list, that channel. Elsewhere, the agent's first channel that the caller can read. An agent can be in several channels: read `channels`. */
             channel_id: string;
+            /** @description Each channel the agent is in that the caller can read, oldest first. The agent's own token and its owner see every channel. */
+            channels?: components["schemas"]["ExternalAgentChannel"][];
             /** @description The agent's handle, without the @. */
             handle: string;
             client_kind: components["schemas"]["AgentClient"];
@@ -9244,8 +9266,15 @@ export interface components {
             /** @description The agent's open prompt request. Only for the agent's owner. */
             request_id?: string;
         };
+        ExternalAgentChannel: {
+            channel_id: string;
+            channel_name: string;
+            wake_policy: components["schemas"]["ExternalAgentWakePolicy"];
+            /** Format: date-time */
+            added_at: string;
+        };
         ReplaceChannelExternalAgentsRequest: {
-            /** @description Every external agent of the project in this channel. An empty list removes them all. */
+            /** @description Every external agent of the project. The list applies to every channel the project is in. An empty list removes them all. */
             external_agents: components["schemas"]["ProjectExternalAgent"][];
         };
         ProjectExternalAgent: {
@@ -9277,6 +9306,15 @@ export interface components {
              */
             code?: "handle_invalid" | "handle_repeated" | "handle_taken" | "handle_in_use" | "client_kind_invalid" | "channel_full";
             /** @description Why Mobius refused this entry, as text for a person. Do not parse it: use `code`. */
+            refused?: string;
+            /** @description One answer per channel the project is in. A channel without `code` holds the agent. `code` at the top is set only when the agent is in no channel. */
+            channels?: components["schemas"]["ProjectExternalAgentChannel"][];
+        };
+        ProjectExternalAgentChannel: {
+            channel_id: string;
+            /** @description Why the agent is not in this channel: `handle_in_use` or `channel_full`. Read an unknown code as "not in this channel". */
+            code?: string;
+            /** @description The reason as text for a person. */
             refused?: string;
         };
         /**
@@ -9453,10 +9491,10 @@ export interface components {
             mention_count: number;
         };
         /**
-         * @description `channel.change`: one change-log row, with the message it names. `channel.typing`: a member is typing. `channel.read`: the caller's read position moved in another tab. `channel.membership`: the caller's channel set changed; refetch the channel list. `channel.resync`: frames were lost; refetch. `stream.ready`: the replay is done. `stream.end`: reconnect with the cursor. `external_agent.status`: an external agent in the channel reported a new state (`external_agent_id`, `state`); a person's stream only. `agent.interrupt` (an external agent's stream only): end the current turn, then echo `control_id` in the next status. `agent.answer` (an external agent's stream only): the owner's answer to the agent's open prompt `call_id`; `decision` is `allow` or `deny`. Echo `control_id` in the next status. Ignore a frame type you do not know.
+         * @description `channel.change`: one change-log row, with the message it names. `channel.typing`: a member is typing. `channel.read`: the caller's read position moved in another tab. `channel.membership`: the caller's channel set changed; refetch the channel list. `channel.resync`: frames were lost; refetch. `stream.ready`: the replay is done. `stream.end`: reconnect with the cursor. `external_agent.status`: an external agent in the channel reported a new state (`external_agent_id`, `state`); a person's stream only. `agent.interrupt` (an external agent's stream only): end the current turn, then echo `control_id` in the next status. `agent.answer` (an external agent's stream only): the owner's answer to the agent's open prompt `call_id`; `decision` is `allow` or `deny`. Echo `control_id` in the next status. `external_agent.channels` (an external agent's stream only): the channels the agent is in changed, and the stream now carries the new set; refetch `getExternalAgent` for `channels`. Ignore a frame type you do not know.
          * @enum {string}
          */
-        ChannelStreamFrameType: "channel.change" | "channel.typing" | "channel.read" | "channel.membership" | "channel.resync" | "stream.ready" | "stream.end" | "external_agent.status" | "agent.interrupt" | "agent.answer";
+        ChannelStreamFrameType: "channel.change" | "channel.typing" | "channel.read" | "channel.membership" | "channel.resync" | "stream.ready" | "stream.end" | "external_agent.status" | "agent.interrupt" | "agent.answer" | "external_agent.channels";
         /**
          * @description What changed in the channel. `assistant.working`: an assistant started or stopped working in the thread of the frame's message.
          * @enum {string}
@@ -16038,6 +16076,38 @@ export interface operations {
             path: {
                 /** @description Channel ID. */
                 channel_id: components["parameters"]["ChannelID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplaceChannelExternalAgentsRequest"];
+            };
+        };
+        responses: {
+            /** @description One result per external agent in the list, in order. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectExternalAgentList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    replaceProjectExternalAgents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description External agent ID. */
+                external_agent_id: components["parameters"]["ExternalAgentID"];
             };
             cookie?: never;
         };
