@@ -140,10 +140,6 @@ func registerSkillsCommands(app *cli.App) {
 
 	skillsGrp.Command("list").
 		Description("List skills").
-		Flags(
-			cli.Bool("include-system", "").Help("Include read-only system skill templates."),
-			cli.Bool("no-include-system", "").Help("Turn off --include-system, which the server applies by default."),
-		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -151,15 +147,7 @@ func registerSkillsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			params := &api.ListSkillsParams{}
-			if ctx.Bool("no-include-system") {
-				v := false
-				params.IncludeSystem = &v
-			} else if ctx.IsSet("include-system") {
-				v := ctx.Bool("include-system")
-				params.IncludeSystem = &v
-			}
-			resp, err := client.ListSkillsWithResponse(ctx.Context(), params)
+			resp, err := client.ListSkillsWithResponse(ctx.Context())
 			if err != nil {
 				return err
 			}

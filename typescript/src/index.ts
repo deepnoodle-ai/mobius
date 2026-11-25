@@ -41,7 +41,6 @@ export type {
   ListSessionNudgesOptions,
   ListSessionTurnsOptions,
   ListSessionsOptions,
-  ListSkillsOptions,
   NudgeSessionOptions,
   SessionStreamEvent,
   StartTurnOptions,

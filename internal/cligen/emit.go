@@ -20,6 +20,7 @@ type PlannedCommand struct {
 	Group       string // subcommand group (e.g. "loops"); empty for root-level
 	Command     string // leaf command name (e.g. "list")
 	Description string
+	NoAuth      bool // the operation takes no credential (`security: []`)
 
 	Method     *Method     // source method on *ClientWithResponses
 	PathParams []PathArg   // in signature order
@@ -118,6 +119,7 @@ func buildPlan(client *ClientInfo, spec map[string]*SpecOp, overrides map[string
 			Group:       firstNonEmpty(ov.Group, groupFromSpec(op)),
 			Command:     firstNonEmpty(ov.Command, commandLeaf(opID)),
 			Description: firstNonEmpty(ov.Description, op.Summary),
+			NoAuth:      op.NoAuth,
 		}
 		if pc.Group == "" {
 			warns = append(warns, fmt.Sprintf("skip %s: no tag or derivable group", name))
@@ -829,7 +831,9 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 		fmt.Fprintf(b, "\t\t).\n")
 	}
 
-	fmt.Fprintf(b, "\t\tUse(requireAuth()).\n")
+	if !c.NoAuth {
+		fmt.Fprintf(b, "\t\tUse(requireAuth()).\n")
+	}
 	fmt.Fprintf(b, "\t\tRun(func(ctx *cli.Context) error {\n")
 	fmt.Fprintf(b, "\t\t\tmc, err := clientFromContext(ctx)\n")
 	fmt.Fprintf(b, "\t\t\tif err != nil { return err }\n")

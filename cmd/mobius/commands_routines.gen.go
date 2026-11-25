@@ -82,7 +82,6 @@ func registerRoutinesCommands(app *cli.App) {
 			cli.Strings("follower-principal-ids", "").Help("People to share the routine with, replacing the proposed list. An empty list shares it with nobody. Naming anyone requires confirm_audience_expansion."),
 			cli.String("instructions", "").Help("instructions Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
 			cli.String("name", "").Help("name"),
-			cli.String("output-folder", "").Help("Ignored. An assistant chooses a folder for each file it saves. Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set"),
 			cli.Int("per-occurrence-ceiling-milli", "").Help("per-occurrence-ceiling-milli"),
 			cli.String("schedule", "").Help("Exactly one of at, interval, or cron is required. Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -128,10 +127,6 @@ func registerRoutinesCommands(app *cli.App) {
 				v := ctx.String("name")
 				body.Name = &v
 			}
-			if ctx.IsSet("output-folder") {
-				v := ctx.String("output-folder")
-				body.OutputFolder = &v
-			}
 			if ctx.IsSet("per-occurrence-ceiling-milli") {
 				v := int64(ctx.Int("per-occurrence-ceiling-milli"))
 				body.PerOccurrenceCeilingMilli = &v
@@ -170,7 +165,6 @@ func registerRoutinesCommands(app *cli.App) {
 			cli.Int("max-turns-per-thread", "").Help("Turn allowance per thread. Only a human can raise it."),
 			cli.String("model-override", "").Help("Model every run uses instead of the assistant's. Omit to use the assistant's model. Whether the organization may run it is checked when each run starts. Rejected for a worker-routed assistant."),
 			cli.String("name", "").Help("name"),
-			cli.String("output-folder", "").Help("Ignored. An assistant chooses a folder for each file it saves. Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set"),
 			cli.String("owner-kind", "").Help("Defaults to `person`. `team` requires organization administration."),
 			cli.Int("per-occurrence-ceiling-milli", "").Help("[required] per-occurrence-ceiling-milli"),
 			cli.Strings("responsible-principal-ids", "").Help("The people the routine waits on. Required and non-empty when `owner_kind` is `team`; rejected otherwise. Each must be a person."),
@@ -257,10 +251,6 @@ func registerRoutinesCommands(app *cli.App) {
 			if ctx.IsSet("name") {
 				v := ctx.String("name")
 				body.Name = &v
-			}
-			if ctx.IsSet("output-folder") {
-				v := ctx.String("output-folder")
-				body.OutputFolder = &v
 			}
 			if ctx.IsSet("owner-kind") {
 				v := api.RoutineOwnerKind(ctx.String("owner-kind"))
@@ -804,7 +794,6 @@ func registerRoutinesCommands(app *cli.App) {
 			cli.Int("max-turns-per-thread", "").Help("Turn allowance per thread. Only a human can raise it."),
 			cli.String("model-override", "").Help("Replacement model for every run. Omit to leave it unchanged; send an empty string to return to the assistant's model."),
 			cli.String("name", "").Help("name"),
-			cli.String("output-folder", "").Help("Ignored. An assistant chooses a folder for each file it saves. Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set"),
 			cli.Int("per-occurrence-ceiling-milli", "").Help("A person may move this either way. An agent may only lower it, so no agent widens the budget it runs under; raising it as an agent receives 403."),
 			cli.String("schedule", "").Help("Makes this a scheduled routine, dropping any event trigger it had. Rejected together with `event`. Accepts JSON, @file, or @-."),
 			cli.String("thinking-effort", "").Help("Replacement reasoning effort for every run. Omit to leave it unchanged; send `inherit` to return to the assistant's."),
@@ -876,10 +865,6 @@ func registerRoutinesCommands(app *cli.App) {
 				v := ctx.String("name")
 				body.Name = &v
 			}
-			if ctx.IsSet("output-folder") {
-				v := ctx.String("output-folder")
-				body.OutputFolder = &v
-			}
 			if ctx.IsSet("per-occurrence-ceiling-milli") {
 				v := int64(ctx.Int("per-occurrence-ceiling-milli"))
 				body.PerOccurrenceCeilingMilli = &v
@@ -893,7 +878,7 @@ func registerRoutinesCommands(app *cli.App) {
 				v := api.ThinkingEffort(ctx.String("thinking-effort"))
 				body.ThinkingEffort = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("concurrency") && !ctx.IsSet("connection-bindings") && !ctx.IsSet("daily-ceiling-milli") && !ctx.IsSet("event") && !ctx.IsSet("follow-key") && !ctx.IsSet("follow-target") && !ctx.IsSet("idle-after") && !ctx.IsSet("instructions") && !ctx.IsSet("managed-by") && !ctx.IsSet("max-turns-per-thread") && !ctx.IsSet("model-override") && !ctx.IsSet("name") && !ctx.IsSet("output-folder") && !ctx.IsSet("per-occurrence-ceiling-milli") && !ctx.IsSet("schedule") && !ctx.IsSet("thinking-effort") {
+			if ctx.String("file") == "" && !ctx.IsSet("concurrency") && !ctx.IsSet("connection-bindings") && !ctx.IsSet("daily-ceiling-milli") && !ctx.IsSet("event") && !ctx.IsSet("follow-key") && !ctx.IsSet("follow-target") && !ctx.IsSet("idle-after") && !ctx.IsSet("instructions") && !ctx.IsSet("managed-by") && !ctx.IsSet("max-turns-per-thread") && !ctx.IsSet("model-override") && !ctx.IsSet("name") && !ctx.IsSet("per-occurrence-ceiling-milli") && !ctx.IsSet("schedule") && !ctx.IsSet("thinking-effort") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

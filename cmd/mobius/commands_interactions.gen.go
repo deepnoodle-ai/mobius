@@ -61,11 +61,11 @@ func registerInteractionsCommands(app *cli.App) {
 			cli.String("delivery", "").Help("Optional per-interaction delivery override. When absent, each participant is notified via the app inbox only. Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Optional longer responder-facing detail or instructions."),
 			cli.String("expires-at", "").Help("Timestamp after which this interaction expires if not responded to. Accepts JSON, @file, or @-."),
-			cli.String("kind", "").Help("[required] Protocol kind of the interaction: * `request_information` — a data-collection protocol with structured or free-form input * `request_approval` — a decision protocol (yes/no, optionally yes/no/defer) * `request_review` — a judgment protocol that evaluates supplied material * `assign_work` — assigned work performed by a user or agent, which submits the result. Pair it with `resolution_policy.review` when the result must be accepted before the interaction resolves. * `request_takeover` — an assistant asks a person to take over a Computer's screen and finish a step only a person can do. Only Mobius creates it; `computer_takeover` carries the card. A person answers only by dismissing it — calling `respondToInteraction` with `answers: [{question_id: \"outcome\", value: \"declined\"}]` and no other answer; Mobius records how the takeover ended."),
+			cli.String("kind", "").Help("[required] Protocol kind of the interaction: * `request_information` — a data-collection protocol with structured or free-form input * `request_approval` — a decision protocol (yes/no, optionally yes/no/defer) * `request_review` — a judgment protocol that evaluates supplied material * `request_takeover` — an assistant asks a person to take over a Computer's screen and finish a step only a person can do. Only Mobius creates it; `computer_takeover` carries the card. A person answers only by dismissing it — calling `respondToInteraction` with `answers: [{question_id: \"outcome\", value: \"declined\"}]` and no other answer; Mobius records how the takeover ended."),
 			cli.String("properties", "").Help("Free-form structured metadata to attach to the interaction. Accepts JSON, @file, or @-."),
 			cli.String("references", "").Help("Supporting links and related entities. Accepts JSON, @file, or @-."),
 			cli.Bool("require-all", "").Help("When true, all target users must respond before the interaction is considered complete. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code."),
-			cli.String("resolution-policy", "").Help("Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome, and whether that outcome needs acceptance before it is final. Accepts JSON, @file, or @-."),
+			cli.String("resolution-policy", "").Help("Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome. Accepts JSON, @file, or @-."),
 			cli.String("spec", "").Help("The set of questions one responder answers atomically. Group related questions into a single interaction rather than opening several: each interaction is a separate item in someone's inbox and a separate interruption. Accepts JSON, @file, or @-."),
 			cli.String("subject", "").Help("Pointer to the work item, artifact, external ticket, or Mobius entity this interaction is about. Accepts JSON, @file, or @-."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
@@ -284,7 +284,7 @@ func registerInteractionsCommands(app *cli.App) {
 			cli.String("action", "").Help("Operation to perform through the canonical response endpoint. `submit` answers the interaction."),
 			cli.String("answers", "").Help("[required] The responder's complete answer set. Required for `submit`. Every required question must be answered; there is no partial submit. Accepts JSON, @file, or @-."),
 			cli.String("comment", "").Help("Optional free-text comment accompanying the action. Available on every interaction kind and never gated by the spec; the responder may always attach reasoning, caveats, or follow-up notes alongside their answers. It is one note per response, not per question."),
-			cli.Bool("held-card-seen", "").Help("Send true only from a view that shows the full details of the held tool calls. An approval Mobius opened for held tool calls refuses every answer without it."),
+			cli.Bool("held-card-seen", "").Help("Send true only from a view that shows the full details of the held tool calls. An approval Mobius opened for held tool calls refuses every answer without it. An external agent's permission prompt refuses an approval without it, and accepts a denial."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -328,47 +328,6 @@ func registerInteractionsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "respondToInteraction", resp.StatusCode(), resp.Body)
-		})
-
-	interactionsGrp.Command("review").
-		Description("Accept or send back submitted work").
-		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
-		Flags(
-			cli.String("action", "").Help("[required] `accept` resolves the interaction and resumes any waiting consumer. `request_changes` returns it to `pending` for another round."),
-			cli.String("comment", "").Help("The reviewer's reasoning. Required for `request_changes` — work sent back without a reason gives the assignee nothing to act on. Optional for `accept`, where it is recorded as an acceptance note."),
-			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
-			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := api.IDParam(ctx.Arg(0))
-			var body api.ReviewInteractionJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
-				return err
-			}
-			if ctx.IsSet("action") {
-				body.Action = api.ReviewInteractionRequestAction(ctx.String("action"))
-			}
-			if ctx.IsSet("comment") {
-				v := ctx.String("comment")
-				body.Comment = &v
-			}
-			if body.Action == "" {
-				return fmt.Errorf("--action is required (or supply it via --file)")
-			}
-			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
-			}
-			resp, err := client.ReviewInteractionWithResponse(ctx.Context(), p0, body)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "reviewInteraction", resp.StatusCode(), resp.Body)
 		})
 
 }

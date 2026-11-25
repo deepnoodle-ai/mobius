@@ -76,6 +76,12 @@ tags:
 - name: tables
   x-displayName: Tables
   description: Agent-readable and -writable org tables.
+- name: channels
+  x-displayName: Channels
+  description: Channels API operations.
+- name: external-agent
+  x-displayName: External Agent
+  description: How an external agent pairs and gets its access token.
 - name: artifacts
   x-displayName: Artifacts
   description: Files produced by agents during loop runs and stored for later inspection.
@@ -1781,65 +1787,16 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /v1/interactions/{resource_id}/review:
-    post:
-      operationId: reviewInteraction
-      tags:
-      - interactions
-      summary: Accept or send back submitted work
-      description: |-
-        Records an acceptance decision on an interaction in `in_review`.
-
-        `accept` resolves the interaction with the outcome that was submitted and resumes any waiting consumer — for a reviewed interaction, this is the moment the workflow moves on. `request_changes` returns the interaction to `pending` under a new review round with the reviewer's feedback attached, and the consumer keeps waiting; a send-back is not a workflow outcome. The retracted submission stays in `responses` for audit, tagged with the round it belonged to.
-
-        Only a principal named by `resolution_policy.review.reviewer_user_ids` may call this, or the interaction's creator when that list is empty. Assignees cannot accept their own work.
-      parameters:
-      - $ref: '#/components/parameters/IDParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ReviewInteractionRequest'
-            examples:
-              accept:
-                summary: Accept submitted work
-                value:
-                  action: accept
-                  comment: Findings check out; ticket closed.
-              request_changes:
-                summary: Send work back
-                value:
-                  action: request_changes
-                  comment: The import log for 2026-04-19 is missing — please attach it.
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Interaction'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
   /v1/interactions/{resource_id}/cancel:
     post:
       operationId: cancelInteraction
       tags:
       - interactions
       summary: Cancel open interaction
-      description: 'Cancels an open interaction — `pending` or `in_review` — recording who
-        cancelled and an optional reason. Work awaiting acceptance is cancellable too: a requester
-        who no longer needs the result should not have to accept it first. Whatever was waiting
-        on the interaction is told it was cancelled so it can route to a fallback. Only humans
-        may cancel by default — agents must request cancellation through an interaction.'
+      description: Cancels a `pending` interaction, recording who cancelled and an optional
+        reason. Whatever was waiting on the interaction is told it was cancelled so it can
+        route to a fallback. Only humans may cancel by default — agents must request cancellation
+        through an interaction.
       parameters:
       - $ref: '#/components/parameters/IDParam'
       requestBody:
@@ -2285,6 +2242,28 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
   /v1/agents/{resource_id}/inbox:
+    get:
+      operationId: getAgentInbox
+      tags:
+      - agents
+      summary: Get agent inbox summary
+      description: Returns the agent's provisioned email inbox address (when enabled) and
+        its unread message count.
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentEmailInboxSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
     post:
       operationId: provisionAgentInbox
       tags:
@@ -2310,6 +2289,226 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /v1/agents/{resource_id}/inbox/messages:
+    get:
+      operationId: listAgentInboxMessages
+      tags:
+      - agents
+      summary: List agent inbox messages
+      description: Lists or searches persisted inbound and outbound emails in the agent's
+        dedicated inbox, newest first. Returns compact envelopes without full bodies; fetch
+        a message or thread for full text.
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      - name: status
+        in: query
+        description: Filter by triage status (`unread`, `read`, `archived`, or `all`). Omit
+          to return active messages (`unread` and `read`, excluding `archived`).
+        schema:
+          type: string
+          enum:
+          - unread
+          - read
+          - archived
+          - all
+      - name: direction
+        in: query
+        description: Filter by message direction (`inbound` or `outbound`).
+        schema:
+          $ref: '#/components/schemas/AgentEmailDirection'
+      - name: gate
+        in: query
+        description: Select gate-accepted emails (`accepted`, default), gate-suppressed emails
+          (`filtered`), or both (`all`).
+        schema:
+          $ref: '#/components/schemas/AgentEmailGateFilter'
+      - name: from
+        in: query
+        description: Filter by sender address or display name substring.
+        schema:
+          type: string
+      - name: label
+        in: query
+        description: Filter by exact triage label (case-insensitive).
+        schema:
+          type: string
+      - name: query
+        in: query
+        description: Optional keyword search matched across subject, sender, plain-text body,
+          and triage notes.
+        schema:
+          type: string
+      - name: limit
+        in: query
+        description: Maximum number of messages to return (1–50, default 20).
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+      - name: cursor
+        in: query
+        description: Opaque pagination cursor returned as `next_cursor` from the previous
+          page.
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentEmailMessageListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/agents/{resource_id}/inbox/messages/{message_id}:
+    get:
+      operationId: getAgentInboxMessage
+      tags:
+      - agents
+      summary: Get an agent inbox message
+      description: Returns one persisted email message in the agent's inbox, including its
+        plain-text body, attachment metadata, sender authentication and security signals,
+        and triage fields.
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      - name: message_id
+        in: path
+        required: true
+        description: Identifier of the inbox email message.
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentEmailMessage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateAgentInboxMessage
+      tags:
+      - agents
+      summary: Update an agent inbox message
+      description: Updates mutable triage fields (`status`, `labels`, or `notes`) on one persisted
+        email in the agent's inbox. Original email headers and body content are immutable.
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      - name: message_id
+        in: path
+        required: true
+        description: Identifier of the inbox email message.
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAgentEmailMessageRequest'
+            example:
+              status: read
+              labels:
+              - billing
+              - q4
+              notes: Reviewed with finance.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentEmailMessage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteAgentInboxMessage
+      tags:
+      - agents
+      summary: Delete an agent inbox message
+      description: Permanently removes one persisted email message from the agent's inbox.
+        Only users who can manage the agent (its owner, group managers, or org admins) may
+        permanently delete messages.
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      - name: message_id
+        in: path
+        required: true
+        description: Identifier of the inbox email message.
+        schema:
+          type: string
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/agents/{resource_id}/inbox/threads/{thread_key}:
+    get:
+      operationId: getAgentInboxThread
+      tags:
+      - agents
+      summary: Get an agent inbox thread
+      description: Returns all messages belonging to one email conversation thread in chronological
+        order (oldest first), combining inbound emails and outbound agent replies.
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      - name: thread_key
+        in: path
+        required: true
+        description: Stable conversation thread key for the email thread.
+        schema:
+          type: string
+      - name: gate
+        in: query
+        description: Select gate-accepted emails (`accepted`, default), gate-suppressed emails
+          (`filtered`), or both (`all`).
+        schema:
+          $ref: '#/components/schemas/AgentEmailGateFilter'
+      - name: limit
+        in: query
+        description: Maximum number of thread messages to return (1–100, default 50).
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentEmailThreadResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/agents/{resource_id}/messaging-bindings:
     get:
       operationId: listAgentMessagingBindings
@@ -3827,31 +4026,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/sessions/{session_id}/turns/{turn_id}/live:
-    get:
-      operationId: getSessionTurnLive
-      tags:
-      - sessions
-      summary: Get live session turn snapshot
-      description: 'Deprecated and being retired. Returns the highest `live_sequence` recorded
-        for an in-flight turn. `frames` is always empty: the server no longer keeps live frames.
-        Reconnecting clients recover an in-flight turn from the transcript stream instead.'
-      parameters:
-      - $ref: '#/components/parameters/SessionIdParam'
-      - $ref: '#/components/parameters/TurnIdParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SessionLiveSnapshot'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
   /v1/sessions/{session_id}/turns/{turn_id}/cancel:
     post:
       operationId: cancelTurn
@@ -4753,15 +4927,7 @@ paths:
       tags:
       - skills
       summary: List skills
-      description: Returns organization-owned and system skills visible to the caller's organization
-        by default.
-      parameters:
-      - name: include_system
-        in: query
-        description: Include read-only system skill templates.
-        schema:
-          type: boolean
-          default: true
+      description: Returns the organization's skills that the caller can see.
       responses:
         '200':
           description: OK
@@ -5946,6 +6112,569 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /v1/channels/stream:
+    get:
+      operationId: streamChannels
+      x-public: true
+      x-external-agent: true
+      tags:
+      - channels
+      summary: Stream channel activity
+      description: |-
+        One long-lived Server-Sent Events stream per person, carrying every channel they are in plus up to five public channels named in `watch`. Each frame's `id:` is the resume cursor; reconnect with `cursor` or `Last-Event-ID` to replay what was missed.
+
+        An external agent's stream carries its own channel only. `watch` is a 400. `cursor` and `Last-Event-ID` are ignored. The stream first replays, from the agent's read position up to the channel's newest change, only the `message.posted` changes that woke this agent. Then it sends `stream.ready`. Then it sends every change after that head. So for an external agent, `stream.ready` comes after the wake replay and before the live changes. For a person it comes after the whole catch-up. Dedupe by `seq`. An external agent has one stream: a newer stream ends the older one with `replaced`. No `channel.typing` frames are sent to an external agent.
+      parameters:
+      - name: watch
+        in: query
+        description: Public channels to follow without joining, comma separated.
+        schema:
+          type: string
+      - name: cursor
+        in: query
+        description: Resume cursor from the last frame's id.
+        schema:
+          type: string
+      - name: Last-Event-ID
+        in: header
+        description: Resume cursor from the last frame's id.
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Channel activity frames.
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/ChannelStreamFrame'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/channels/{channel_id}:
+    get:
+      operationId: getChannel
+      x-public: true
+      x-external-agent: true
+      tags:
+      - channels
+      summary: Get a channel
+      description: 'Returns a channel the caller can read: any public channel in the organization,
+        or a private channel they are in. A private channel the caller is not in answers 404,
+        the same as one that does not exist.'
+      parameters:
+      - $ref: '#/components/parameters/ChannelID'
+      responses:
+        '200':
+          description: The channel.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Channel'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/channels/{channel_id}/members:
+    get:
+      operationId: listChannelMembers
+      x-public: true
+      x-external-agent: true
+      tags:
+      - channels
+      summary: List channel members
+      description: Returns everyone in a channel the caller can read, in the order they joined.
+        Private channels answer 404 to non-members.
+      parameters:
+      - $ref: '#/components/parameters/ChannelID'
+      responses:
+        '200':
+          description: The members.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelMemberListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/channels/{channel_id}/find:
+    get:
+      operationId: findChannelMessages
+      x-public: true
+      x-external-agent: true
+      tags:
+      - channels
+      summary: Find messages and active threads in a channel
+      description: With a query, returns matching messages and thread replies, newest first.
+        Without a query, returns thread roots by most recent reply. Only messages in this
+        readable channel are eligible.
+      parameters:
+      - $ref: '#/components/parameters/ChannelID'
+      - name: query
+        in: query
+        description: Words to find in the message body.
+        schema:
+          type: string
+          maxLength: 200
+      - name: before
+        in: query
+        description: The previous finder page's `next_cursor`. It is a message sequence written
+          as a decimal string; send it as this integer.
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        '200':
+          description: A page of matches or active thread roots.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelMessageListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/channels/{channel_id}/messages:
+    get:
+      operationId: listChannelMessages
+      x-public: true
+      x-external-agent: true
+      tags:
+      - channels
+      summary: List channel messages
+      description: Returns top-level messages, or the replies of one thread with `thread_root_id`,
+        oldest first. Without a position it returns the newest page; `cursor` pages back and
+        `after_sequence` catches up. A thread page also returns its root, including when it
+        has no replies.
+      parameters:
+      - $ref: '#/components/parameters/ChannelID'
+      - name: thread_root_id
+        in: query
+        description: List the replies of this thread instead of top-level messages.
+        schema:
+          type: string
+      - name: cursor
+        in: query
+        description: next_cursor from the previous page, for older messages.
+        schema:
+          type: string
+      - name: after_sequence
+        in: query
+        description: Return messages after this sequence number, oldest first.
+        schema:
+          type: integer
+          format: int64
+          minimum: 0
+      - name: limit
+        in: query
+        description: Most messages to return.
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 50
+      responses:
+        '200':
+          description: One page of messages.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelMessageListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: createChannelMessage
+      x-public: true
+      x-external-agent: true
+      tags:
+      - channels
+      summary: Create a channel message
+      description: 'Posts a Markdown message, or a thread reply with `thread_root_id`. Only
+        members post. `mentions` lists the people and assistants the composer mentioned. An
+        external agent''s post with `mentions` is a 400. The server reads only external agents''
+        `@handles` out of the text: the answer says which agents the post woke (`agent_wakes`)
+        and which `@handles` name no connected external agent (`unresolved_mentions`).'
+      parameters:
+      - $ref: '#/components/parameters/ChannelID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateChannelMessageRequest'
+      responses:
+        '201':
+          description: The new message.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelMessage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/channels/{channel_id}/messages/{message_id}/reactions:
+    post:
+      operationId: addChannelReaction
+      x-public: true
+      x-external-agent: true
+      tags:
+      - channels
+      summary: Add a channel reaction
+      description: Adds the caller's emoji to a message. Adding the same emoji twice changes
+        nothing. A message holds at most 50 different emoji, and a person adds at most 20
+        to one message.
+      parameters:
+      - $ref: '#/components/parameters/ChannelID'
+      - $ref: '#/components/parameters/ChannelMessageID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChannelReactionRequest'
+      responses:
+        '200':
+          description: The message with its reactions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelMessage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/channels/{channel_id}/read-state:
+    patch:
+      operationId: updateChannelReadState
+      x-public: true
+      x-external-agent: true
+      tags:
+      - channels
+      summary: Update channel read state
+      description: |-
+        Moves the caller's read position forward to a message, or to the newest change when `message_id` is empty. It never moves backwards. Returns the stored position and the counts that follow.
+
+        For an external agent the read position is its ack: its next stream replays the wakes after it. An external agent must send `message_id`. Without it the answer is 400 and the position does not move.
+      parameters:
+      - $ref: '#/components/parameters/ChannelID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateChannelReadStateRequest'
+      responses:
+        '200':
+          description: The read state after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelReadState'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/channels/{channel_id}/external-agents:
+    put:
+      operationId: replaceChannelExternalAgents
+      x-public: true
+      x-external-agent: true
+      tags:
+      - channels
+      summary: Replace a project connection's external agents, naming one of its channels
+      description: 'The same operation as `replaceProjectExternalAgents`, for a client that
+        names a channel. `channel_id` must be one of the project''s channels. The list applies
+        to every channel the project is in. Only a project connection''s token calls this.
+        Send the whole list of the project''s external agents, every time. Mobius changes
+        only this project''s external agents: it creates each named agent that is not live,
+        keeps each live one that is named, and removes each live one that is not named. Removing
+        an agent writes no line. The first agent that joins writes the project''s line in
+        the channel. The same project and handle are always the same agent and author. A handle
+        is 1 to 32 lowercase letters, numbers, hyphens, or underscores, starting with a letter
+        or number. It cannot be a reserved word or the name of a person or assistant in the
+        organization, and a handle that another live external agent holds in a channel keeps
+        the agent out of that channel. The answer has one entry per entry of the list, in
+        order: the external agent''s ID, or a refusal `code` and its `refused` text, and one
+        answer per channel in `channels`. Use the ID with `exchangeExternalAgentToken`. A
+        project connection may send its list 12 times a minute. Past that, the answer is `429`
+        `rate_limit_exceeded` with `Retry-After`, and nothing changes.'
+      parameters:
+      - $ref: '#/components/parameters/ChannelID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplaceChannelExternalAgentsRequest'
+      responses:
+        '200':
+          description: One result per external agent in the list, in order.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectExternalAgentList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/external-agents/{external_agent_id}/agents:
+    put:
+      operationId: replaceProjectExternalAgents
+      x-public: true
+      x-external-agent: true
+      tags:
+      - channels
+      summary: Replace a project connection's external agents
+      description: Only a project connection's token calls this, on itself. It takes the same
+        list and gives the same answer as `replaceChannelExternalAgents`, for every channel
+        the project is in, with no channel named.
+      parameters:
+      - $ref: '#/components/parameters/ExternalAgentID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplaceChannelExternalAgentsRequest'
+      responses:
+        '200':
+          description: One result per external agent in the list, in order.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectExternalAgentList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/external-agents/{external_agent_id}:
+    get:
+      operationId: getExternalAgent
+      x-public: true
+      x-external-agent: true
+      tags:
+      - channels
+      summary: Get an external agent
+      description: Returns one external agent, connected or waiting for its pairing code,
+        to anyone who can read one of its channels. `channels` lists the channels the caller
+        can read. An external agent's access token reads only its own external agent, with
+        all its channels. A disconnected agent is not found.
+      parameters:
+      - $ref: '#/components/parameters/ExternalAgentID'
+      responses:
+        '200':
+          description: The external agent.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalAgent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteExternalAgent
+      x-public: true
+      x-external-agent: true
+      tags:
+      - channels
+      summary: Delete an external agent
+      description: 'Disconnects one external agent in every channel it is in. Its owner, an
+        organization Owner or Admin, or the external agent itself with its access token may
+        do this. A channel admin removes it from their channel with `removeChannelExternalAgent`
+        instead. The agent leaves each channel at once, and each channel shows a line. Disconnecting
+        an agent that is already disconnected changes nothing. On a project connection (also
+        with its own project token) or on one of its external agents, the whole project ends:
+        every external agent of the project leaves, and each channel shows one line.'
+      parameters:
+      - $ref: '#/components/parameters/ExternalAgentID'
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/external-agents/{external_agent_id}/status:
+    put:
+      operationId: setExternalAgentStatus
+      x-public: true
+      x-external-agent: true
+      tags:
+      - channels
+      summary: Report an external agent's status
+      description: |-
+        An external agent reports what it is doing now, with its own access token, on itself. Any external agent may: one paired alone, or one that a project connection brings. Send the whole status each time. It allows 60 a minute (else `429` `rate_limit_exceeded` with `Retry-After`). The status lasts while the stream is open. The channel's people see the state. Only the owner sees `ask`. Without status reports, the agent shows only Online or Offline. `prompt` asks the owner about one held call, and `settled` closes that request. Request logs never hold the body.
+
+        Each refusal has its own `error.code`. Act on the code, never on the message:
+
+        - `409 not_online`: the agent's stream is not open. Open the
+        stream, then send the status again.
+        - `409 prompt_open`: the agent has an open request for a different
+        call, or `prompt` names the open `call_id` with a different
+        `tool` or `input`. Nothing changed. Settle the open request, or
+        send the status without `prompt`. Do not send the same body
+        again.
+        - `503 prompts_unavailable`: this server has no store for prompts,
+        and the status was not stored. Send the status without `prompt`,
+        and answer the call on the machine.
+
+        A new stream for an agent with no live stream closes the agent's open request (reason `no_longer_open`) and clears its status. After each new stream, send the current status again, with `prompt` if the call still waits. A stream that replaces a live one keeps both.
+      parameters:
+      - $ref: '#/components/parameters/ExternalAgentID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExternalAgentStatusRequest'
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /v1/external-agents/connect:
+    post:
+      operationId: connectExternalAgent
+      x-external-agent: true
+      tags:
+      - external-agent
+      summary: Connect an external agent with a pairing code
+      description: 'Exchanges a pairing code (`mbp_`) for the agent''s credential (`mba_`).
+        A code works once, for 10 minutes. The agent joins the channel, and the channel shows
+        a line. A project code pairs a project connection: nothing joins and no line shows
+        until the first `replaceChannelExternalAgents`. The response names the organization,
+        owner, channel, handle, and wake policy, so the client can ask the owner before it
+        stores the credential. If the owner declines, the client exchanges the credential
+        (`exchangeExternalAgentToken`), then deletes the external agent (`deleteExternalAgent`).
+        The credential is shown only here. Every code that does not work gets the same `401
+        unauthorized`.'
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectExternalAgentRequest'
+      responses:
+        '200':
+          description: The agent is connected. Store the credential.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalAgentConnection'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/external-agents/token:
+    post:
+      operationId: exchangeExternalAgentToken
+      x-external-agent: true
+      tags:
+      - external-agent
+      summary: Exchange a credential for an access token
+      description: |-
+        Exchanges the agent's credential (`mba_`) for an access token (`mbat_`) that works for one hour. A project connection's credential gets the project token, or, with `external_agent_id`, the token of one of its external agents. The credential works until the external agent is disconnected; it does not expire when unused. A credential that does not work (disconnected or unknown) gets `401 grant_revoked`: stop, and connect again with a new pairing code. A `403` means the agent cannot act now (for example, external agents are off for the organization); retry later.
+
+        The access token works only on the operations an external agent may call, on its own channel and on itself. Every such operation answers `401 token_expired` for a missing, altered, or expired token (exchange the credential again), `401 grant_revoked` when the connection has ended (stop), `403` when the agent cannot act now (retry later), and `404` for another channel or external agent. Any other operation answers `403`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExchangeExternalAgentTokenRequest'
+      responses:
+        '200':
+          description: The access token and when it expires.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalAgentAccessToken'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/artifacts:
     get:
       operationId: listArtifacts
@@ -6401,6 +7130,10 @@ components:
         one org. Send the raw `mbx_...` secret.
         - **CLI credentials** — prefix `mbc_`. Issued by the device-auth
         flow on behalf of a user, org-scoped, sent as the raw token.
+        - **External agent access tokens** — prefix `mbat_`. Issued by
+        `exchangeExternalAgentToken` for one hour. Only the operations an
+        external agent may call accept them, on its own channel and on
+        itself; every other operation answers `403`.
   parameters:
     IDParam:
       name: resource_id
@@ -6681,6 +7414,27 @@ components:
         maxLength: 64
       description: Filter tables by name. Table names are unique within an org; use this as
         a discovery filter and use the returned table `id` for follow-up operations.
+    ChannelID:
+      name: channel_id
+      in: path
+      required: true
+      description: Channel ID.
+      schema:
+        type: string
+    ExternalAgentID:
+      name: external_agent_id
+      in: path
+      required: true
+      description: External agent ID.
+      schema:
+        type: string
+    ChannelMessageID:
+      name: message_id
+      in: path
+      required: true
+      description: Channel message ID.
+      schema:
+        type: string
     ArtifactFolderIdParam:
       name: folder_id
       in: path
@@ -7066,6 +7820,36 @@ components:
           deprecated: true
           description: Ignored. Every session is summarized by the same platform model. Accepted
             until web clients that send it are gone; never returned.
+        effective_threshold_tokens:
+          type: integer
+          format: int64
+          readOnly: true
+          description: Effective compaction threshold in estimated tokens for the resolved
+            policy and model, after applying any long-context price-tier ceiling. Present
+            when `strategy` is `auto`.
+        ceiling_applied:
+          type: boolean
+          readOnly: true
+          description: True when the model's long-context price-tier ceiling capped `effective_threshold_tokens`
+            below the configured preset or exact `threshold_tokens`.
+        compaction_ceiling_tokens:
+          type: integer
+          format: int64
+          readOnly: true
+          description: Maximum compaction threshold in tokens under the model's long-context
+            price tier. Omitted when the model has no tier.
+        long_context_threshold_tokens:
+          type: integer
+          format: int64
+          readOnly: true
+          description: Input token count at which the model enters its long-context price
+            tier. Omitted when the model has no tier.
+        context_window_tokens:
+          type: integer
+          format: int64
+          readOnly: true
+          description: Model input context window in tokens used to resolve model-relative
+            compaction presets.
       example:
         strategy: auto
         threshold: sm
@@ -7137,6 +7921,19 @@ components:
         Visibility is not a permission: what a member may DO with an agent stays governed by their org role. A principal outside an agent's audience gets `404` from every path — list, read, session, invoke, memory — so an agent's existence never leaks through a status code.
 
         Because agent memory is keyed by `(org, agent, user, key)` and every read is scoped to one agent, narrowing who can reach an agent narrows its shared memory layer by construction. Group memory needs no separate store.
+    AgentEmailReplies:
+      type: string
+      enum:
+      - 'off'
+      - audience
+      - anyone
+      description: Whose mail to `email_address` the agent answers by email, from that address.
+        Every message is stored whatever this says, and replies go only to a sender address
+        the receiving mail server authenticated. Mailing lists and no-reply senders never
+        get a reply. `off` answers no one. `audience` answers the people who can use the agent,
+        matched by their verified email; it is the default. `anyone` also answers people outside
+        that audience; those conversations run without company accounts and cannot send email,
+        call webhooks, or take destructive actions.
     Agent:
       type: object
       additionalProperties: false
@@ -7153,6 +7950,7 @@ components:
       - created_at
       - updated_at
       - memory_enabled
+      - email_replies
       - tool_approval_mode
       - can_edit
       properties:
@@ -7273,6 +8071,8 @@ components:
             a successful provisioning call. Use this address to add the agent as a member
             on external platforms (Linear, GitHub, Slack, etc.) so the platform can deliver
             notifications to the agent.
+        email_replies:
+          $ref: '#/components/schemas/AgentEmailReplies'
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Free-form labels used for filtering, ownership, or automation.
@@ -8869,6 +9669,18 @@ components:
           format: int64
           minimum: 1
           description: Maximum input context used to resolve model-relative compaction presets.
+        long_context_threshold_tokens:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Input token count at which this model enters its long-context price
+            tier. Omitted when the model has no tier.
+        compaction_ceiling_tokens:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Maximum compaction threshold in tokens under this model's long-context
+            price tier. Omitted when the model has no tier.
         recommended:
           type: boolean
           description: Whether this is the suggested default for its provider.
@@ -9813,6 +10625,9 @@ components:
         status:
           $ref: '#/components/schemas/IntegrationStatus'
           description: 'Current integration lifecycle state: `active`, `inactive`, or `expired`.'
+        status_reason:
+          type: string
+          description: Human-readable reason when `status` is `expired` (needs reconnect).
         credentials_unreadable:
           type: boolean
           description: True when the stored credential cannot be decrypted by the running
@@ -10548,6 +11363,7 @@ components:
       - kind
       - id
       - name
+      - private
       - reason
       properties:
         kind:
@@ -10560,7 +11376,11 @@ components:
           type: string
         name:
           type: string
-          description: Empty for a file.
+          description: Empty for a file and for a private skill.
+        private:
+          type: boolean
+          description: True for a skill private to its custodian. Its name is left out, so
+            an administrator offboarding the custodian never reads it.
         reason:
           type: string
           enum:
@@ -10702,7 +11522,6 @@ components:
         question** — single-question is what makes an approval auditable
         * `request_review` → `select`, `input`
         * `request_information` → `select`, `multi_select`, `input`
-        * `assign_work` → `select`, `multi_select`, `input`
       properties:
         questions:
           type: array
@@ -10754,7 +11573,6 @@ components:
       - request_information
       - request_approval
       - request_review
-      - assign_work
       - request_takeover
       description: |-
         Protocol kind of the interaction:
@@ -10764,9 +11582,6 @@ components:
         yes/no/defer)
         * `request_review` — a judgment protocol that evaluates supplied
         material
-        * `assign_work` — assigned work performed by a user or agent, which
-        submits the result. Pair it with `resolution_policy.review` when the
-        result must be accepted before the interaction resolves.
         * `request_takeover` — an assistant asks a person to take over a
         Computer's screen and finish a step only a person can do. Only
         Mobius creates it; `computer_takeover` carries the card. A person
@@ -10774,26 +11589,20 @@ components:
         `answers: [{question_id: "outcome", value: "declined"}]` and no
         other answer; Mobius records how the takeover ended.
 
-        The first three are *answered*; `assign_work` is *worked*. Kind does not by itself decide when an interaction closes — the resolution policy does.
+        Kind does not by itself decide when an interaction closes — the resolution policy does.
     InteractionStatus:
       type: string
       enum:
       - pending
-      - in_review
       - completed
       - expired
       - cancelled
       description: |-
         Lifecycle state of the interaction.
         * `pending` — open; the assigned users still need to act.
-        * `in_review` — a result was submitted and an acceptance reviewer must
-        accept it or send it back. Only interactions whose resolution policy
-        carries a `review` block enter this state.
         * `completed` — resolved; the outcome is final.
         * `expired` — the deadline passed before resolution.
         * `cancelled` — deliberately stopped.
-
-        `pending` and `in_review` are the *open* states: some actor still owes an action and any waiting consumer has not been resumed.
     InteractionValue:
       description: Free-form JSON payload. Used both for responder-supplied values and for
         policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each
@@ -10915,6 +11724,9 @@ components:
           - http_subscriber
           - none
           - mcp_server_approval
+          - external_agent_prompt
+          description: '`external_agent_prompt`: an external agent''s permission prompt for
+            one call it holds, named to its owner.'
         agent_tool:
           type: object
           allOf:
@@ -11184,43 +11996,19 @@ components:
           type: string
           format: date-time
           description: Timestamp when this response was submitted.
-        attempt:
-          type: integer
-          nullable: true
-          description: Review round this response was submitted under, matching the interaction's
-            `review_round` at submission time. Null or absent for the first round. Only responses
-            whose `attempt` equals the interaction's current `review_round` count toward resolution;
-            earlier rounds are retained as audit history.
         created_at:
           type: string
           format: date-time
         updated_at:
           type: string
           format: date-time
-    ReviewPolicy:
-      type: object
-      additionalProperties: false
-      description: |-
-        Optional acceptance gate on a resolution policy. Its presence — not the interaction's kind — is what makes an interaction reviewable, so the gate stays opt-in and ordinary approvals and input requests are unaffected.
-
-        With a review block, satisfying the resolution rule moves the interaction to `in_review` instead of resolving it, and any waiting consumer stays suspended. A reviewer then calls the review endpoint to accept (resolve and resume) or request changes (return to `pending` under a new review round, consumer still waiting).
-      properties:
-        reviewer_user_ids:
-          type: array
-          items:
-            type: string
-          description: Principals who may accept or send back submitted work. When omitted
-            or empty, the interaction's creator is the reviewer. Assignees are never implied
-            reviewers — self-acceptance would make the gate decorative. Required when the
-            interaction has no creator.
     ResolutionPolicy:
       type: object
       additionalProperties: false
       required:
       - type
       description: Declarative resolution rule attached to an Interaction. Determines how
-        participant responses become a final outcome, and whether that outcome needs acceptance
-        before it is final.
+        participant responses become a final outcome.
       properties:
         type:
           type: string
@@ -11237,13 +12025,6 @@ components:
           description: Required when `type` is `quorum`. Number of distinct eligible participants
             that must respond before the interaction resolves. Must be `>= 1` and `<=` the
             participant count.
-        review:
-          type: object
-          allOf:
-          - $ref: '#/components/schemas/ReviewPolicy'
-          nullable: true
-          description: Optional acceptance gate. Null (the default) means responses resolve
-            the interaction directly.
     InteractionLifecycleEvent:
       type: object
       additionalProperties: false
@@ -11266,9 +12047,6 @@ components:
           type: string
           enum:
           - created
-          - submitted_for_review
-          - accepted
-          - changes_requested
           - resolved
           - cancelled
           - expired
@@ -11281,12 +12059,7 @@ components:
         comment:
           type: string
           nullable: true
-          description: Reviewer feedback, cancel reason, or responder comment, depending on
-            `action`.
-        round:
-          type: integer
-          nullable: true
-          description: Review round the transition belongs to. Zero for the first pass.
+          description: Cancel reason or responder comment, depending on `action`.
     Interaction:
       type: object
       additionalProperties: false
@@ -11330,8 +12103,8 @@ components:
           $ref: '#/components/schemas/ResourceControls'
           description: 'What the caller may do to this interaction. `can_edit` means the caller
             may cancel (dismiss) it and `can_delete` that they may delete it once it is closed:
-            whoever asked, the person the asking turn ran for, a recipient, a reviewer, or
-            an administrator. Present on responses to a person''s request.'
+            whoever asked, the person the asking turn ran for, a recipient, or an administrator.
+            Present on responses to a person''s request.'
         kind:
           $ref: '#/components/schemas/InteractionKind'
           description: Protocol kind of the interaction.
@@ -11492,31 +12265,6 @@ components:
           type: string
           nullable: true
           description: Reason recorded when the interaction was cancelled.
-        review_round:
-          type: integer
-          nullable: true
-          description: Number of completed send-backs. Zero on the first pass. Responses record
-            the round they answered in their `attempt` field, and only the current round's
-            responses count toward resolution.
-        submitted_at:
-          type: string
-          format: date-time
-          nullable: true
-          description: When the interaction most recently entered `in_review`. Null for interactions
-            that have never been submitted for acceptance.
-        review_feedback:
-          type: string
-          nullable: true
-          description: The reviewer's most recent send-back note. Survives the return to `pending`
-            so the assignee can see why the work came back.
-        reviewer:
-          type: object
-          allOf:
-          - $ref: '#/components/schemas/InteractionResponder'
-          nullable: true
-          description: Principal whose accept or send-back was recorded last; null until a
-            review decision is made. Distinct from `responder`, which names whoever submitted
-            the work.
         lifecycle:
           type: array
           items:
@@ -11641,26 +12389,8 @@ components:
           type: boolean
           description: Send true only from a view that shows the full details of the held
             tool calls. An approval Mobius opened for held tool calls refuses every answer
-            without it.
-    ReviewInteractionRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - action
-      description: Acceptance decision on submitted work.
-      properties:
-        action:
-          type: string
-          enum:
-          - accept
-          - request_changes
-          description: '`accept` resolves the interaction and resumes any waiting consumer.
-            `request_changes` returns it to `pending` for another round.'
-        comment:
-          type: string
-          description: The reviewer's reasoning. Required for `request_changes` — work sent
-            back without a reason gives the assignee nothing to act on. Optional for `accept`,
-            where it is recorded as an acceptance note.
+            without it. An external agent's permission prompt refuses an approval without
+            it, and accepts a denial.
     CancelInteractionRequest:
       type: object
       additionalProperties: false
@@ -11789,29 +12519,6 @@ components:
           items:
             type: string
           maxItems: 200
-    AgentAudienceResourceDisposition:
-      type: object
-      additionalProperties: false
-      required:
-      - resource_type
-      - resource_id
-      - action
-      properties:
-        resource_type:
-          type: string
-          enum:
-          - artifact
-          - session
-          - skill
-          - table
-        resource_id:
-          type: string
-        action:
-          type: string
-          enum:
-          - revoke
-          - make_private
-          - keep_and_widen
     PromoteAgentMemoryEntryRequest:
       type: object
       additionalProperties: false
@@ -12312,24 +13019,15 @@ components:
         thinking_effort:
           $ref: '#/components/schemas/ThinkingEffort'
           description: Default reasoning-effort level new sessions inherit from this agent.
-        output_folder:
-          type: string
-          nullable: true
-          maxLength: 256
-          deprecated: true
-          description: Ignored. An assistant chooses a folder for each file it saves.
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Initial labels used for filtering, ownership, or automation.
-        owner:
-          $ref: '#/components/schemas/ResourceOwner'
-          deprecated: true
-          description: 'Ignored. Custody follows from `visibility`: a `private` agent is in
-            its one member''s custody, a `restricted` or `organization` agent in the team''s.'
         visibility:
           $ref: '#/components/schemas/AgentVisibility'
           description: 'Who this agent is for: its kind, which cannot change after create.
-            Omit for `private` on the employee API.'
+            Custody follows from it: a `private` agent is in its one member''s custody, a
+            `restricted` or `organization` agent in the team''s. Omit for `private` on the
+            employee API.'
         members:
           type: array
           description: |-
@@ -12359,7 +13057,9 @@ components:
           format: date-time
           description: The agent's `updated_at` as the caller last read it. When set, the
             update saves only if the agent is unchanged since then, compared to the microsecond;
-            otherwise it returns 409 with code `agent_changed` and saves nothing.
+            otherwise it returns 409 with code `agent_changed` and saves nothing. Required
+            when the request replaces `system_prompt` or `action_selectors`; without it those
+            requests return 400 with code `agent_version_required`.
         name:
           type: string
           description: Free-form human-readable label, 1-63 characters; must be unique within
@@ -12425,6 +13125,9 @@ components:
           type: boolean
           description: Replacement runtime memory hard gate. It cannot be overridden at invocation
             time.
+        email_replies:
+          $ref: '#/components/schemas/AgentEmailReplies'
+          description: Replacement setting for whose mail the agent answers by email.
         memory_context:
           $ref: '#/components/schemas/UpdateMemoryContextPolicy'
         tool_approval_mode:
@@ -12434,48 +13137,9 @@ components:
           $ref: '#/components/schemas/ThinkingEffort'
           description: Replacement default reasoning-effort level. Send `inherit` to clear
             the default and leave the provider default in place.
-        output_folder:
-          type: string
-          nullable: true
-          maxLength: 256
-          deprecated: true
-          description: Ignored. An assistant chooses a folder for each file it saves.
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Replacement labels; send an empty object to clear all tags.
-        visibility:
-          $ref: '#/components/schemas/AgentVisibility'
-          deprecated: true
-          description: The agent's kind is set when it is created. The current value is accepted
-            and changes nothing; any other value returns `409`.
-        members:
-          type: array
-          deprecated: true
-          description: 'Replacement members for a `restricted` or `private` agent: the exact
-            set after this call. Omit to leave membership unchanged. An empty set is refused,
-            and a `private` agent''s one member is the person it belongs to. Use the members
-            endpoints instead.'
-          items:
-            type: string
-          maxItems: 200
-        confirm_visibility_change:
-          type: boolean
-          default: false
-          deprecated: true
-          description: Ignored.
-        affected_resource_dispositions:
-          type: array
-          deprecated: true
-          description: Ignored.
-          items:
-            $ref: '#/components/schemas/AgentAudienceResourceDisposition'
-        stranded_disposition:
-          type: string
-          enum:
-          - retain
-          - delete
-          deprecated: true
-          description: Ignored.
     MemoryKind:
       type: string
       enum:
@@ -12728,6 +13392,355 @@ components:
         pinned:
           type: boolean
           description: Pin to exempt this memory from compaction.
+    AgentEmailDirection:
+      type: string
+      enum:
+      - inbound
+      - outbound
+      description: Whether the email was received by the agent (`inbound`) or sent from the
+        agent's inbox (`outbound`).
+    AgentEmailStatus:
+      type: string
+      enum:
+      - unread
+      - read
+      - archived
+      description: Mutable triage status of a stored agent email message.
+    AgentEmailGateFilter:
+      type: string
+      enum:
+      - accepted
+      - filtered
+      - all
+      description: Selects gate-accepted messages (`accepted`), gate-suppressed messages (`filtered`),
+        or both (`all`).
+    AgentEmailInboxSummary:
+      type: object
+      additionalProperties: false
+      description: Summary of an agent's dedicated persistent email inbox.
+      required:
+      - agent_id
+      - provisioned
+      - unread_count
+      properties:
+        agent_id:
+          type: string
+          description: Identifier of the agent that owns this inbox.
+        email_address:
+          type: string
+          description: Provisioned inbound email address, when enabled.
+        provisioned:
+          type: boolean
+          description: Whether the agent currently has a provisioned inbox email address.
+        unread_count:
+          type: integer
+          description: Number of unread gate-accepted messages in the inbox.
+        latest_received_at:
+          type: string
+          format: date-time
+          description: Timestamp of the most recent gate-accepted message, when the inbox
+            is non-empty.
+    AgentEmailAttachment:
+      type: object
+      additionalProperties: false
+      description: Metadata for one email attachment stored alongside a persisted agent email.
+      properties:
+        filename:
+          type: string
+          description: Sanitized attachment filename.
+        content_type:
+          type: string
+          description: MIME media type of the attachment.
+        size_bytes:
+          type: integer
+          format: int64
+          description: Attachment size in bytes.
+        artifact_id:
+          type: string
+          description: Optional Library artifact identifier when the attachment has been ingested.
+    AgentEmailMessageSummary:
+      type: object
+      additionalProperties: false
+      description: Compact envelope view of one persisted email in an agent's inbox (omits
+        full bodies).
+      required:
+      - id
+      - agent_id
+      - direction
+      - thread_key
+      - has_attachments
+      - sender_authenticated
+      - gate_decision
+      - status
+      - labels
+      - received_at
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the persisted email message (`aem_...`).
+        agent_id:
+          type: string
+          description: Agent that owns this inbox message.
+        direction:
+          $ref: '#/components/schemas/AgentEmailDirection'
+        thread_key:
+          type: string
+          description: Stable key grouping inbound and outbound messages in one conversation
+            thread.
+        from_address:
+          type: string
+          description: Normalized sender email address.
+        from_name:
+          type: string
+          description: Sender display name, when provided.
+        to_addresses:
+          type: array
+          items:
+            type: string
+          description: Recipient email addresses.
+        subject:
+          type: string
+          description: Email subject line.
+        snippet:
+          type: string
+          description: Short plain-text preview of the email body.
+        has_attachments:
+          type: boolean
+          description: Whether the email carried one or more attachments.
+        sender_authenticated:
+          type: boolean
+          description: Whether the receiving mail provider authenticated the sender (SPF/DKIM/DMARC
+            alignment).
+        injection_signals:
+          type: array
+          items:
+            type: string
+          description: Prompt-injection warning signals detected on inbound content, if any.
+        gate_decision:
+          type: string
+          description: Decision recorded by the inbound email safety gate (`accepted`, `loop_suppressed`,
+            `replayed`, `rate_limited`, etc.).
+        gate_reason:
+          type: string
+          description: Short reason explaining the gate decision.
+        status:
+          $ref: '#/components/schemas/AgentEmailStatus'
+        labels:
+          type: array
+          items:
+            type: string
+          description: Mutable triage labels applied to this message.
+        notes:
+          type: string
+          description: Mutable plain-text triage notes.
+        received_at:
+          type: string
+          format: date-time
+          description: When the email was received or sent.
+        created_at:
+          type: string
+          format: date-time
+          description: When this record was stored.
+        updated_at:
+          type: string
+          format: date-time
+          description: When triage metadata was last updated.
+    AgentEmailMessage:
+      type: object
+      additionalProperties: false
+      description: Full persisted email message in an agent's dedicated inbox (plain text
+        only; raw HTML is omitted from API responses).
+      required:
+      - id
+      - agent_id
+      - direction
+      - thread_key
+      - has_attachments
+      - sender_authenticated
+      - gate_decision
+      - status
+      - labels
+      - received_at
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the persisted email message (`aem_...`).
+        agent_id:
+          type: string
+          description: Agent that owns this inbox message.
+        direction:
+          $ref: '#/components/schemas/AgentEmailDirection'
+        thread_key:
+          type: string
+          description: Stable key grouping inbound and outbound messages in one conversation
+            thread.
+        message_id:
+          type: string
+          description: RFC 5322 Message-ID header, when present.
+        in_reply_to:
+          type: string
+          description: RFC 5322 In-Reply-To header, when present.
+        references:
+          type: array
+          items:
+            type: string
+          description: RFC 5322 References header chain.
+        from_address:
+          type: string
+          description: Normalized sender email address.
+        from_name:
+          type: string
+          description: Sender display name, when provided.
+        header_from:
+          type: string
+          description: Raw From header value.
+        reply_to:
+          type: string
+          description: Reply-To header address, when present.
+        to_addresses:
+          type: array
+          items:
+            type: string
+          description: Recipient email addresses.
+        cc_addresses:
+          type: array
+          items:
+            type: string
+          description: Carbon-copy recipient email addresses.
+        subject:
+          type: string
+          description: Email subject line.
+        snippet:
+          type: string
+          description: Short plain-text preview of the email body.
+        text_body:
+          type: string
+          description: Plain-text body of the email, when supplied.
+        html_text:
+          type: string
+          description: Extracted visible plain text derived from an HTML body.
+        text:
+          type: string
+          description: Effective plain-text body (`text_body`, falling back to `html_text`).
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentEmailAttachment'
+          description: Attachment metadata list.
+        has_attachments:
+          type: boolean
+          description: Whether the email carried one or more attachments.
+        sender_authenticated:
+          type: boolean
+          description: Whether the receiving mail provider authenticated the sender.
+        auth_facts:
+          type: object
+          additionalProperties: true
+          description: Authentication verification facts (SPF, DKIM, DMARC, aligned domain).
+        loop_facts:
+          type: object
+          additionalProperties: true
+          description: Loop and auto-reply detection signals.
+        injection_signals:
+          type: array
+          items:
+            type: string
+          description: Prompt-injection warning signals detected on inbound content, if any.
+        gate_decision:
+          type: string
+          description: Decision recorded by the inbound email safety gate.
+        gate_reason:
+          type: string
+          description: Short reason explaining the gate decision.
+        source_event_id:
+          type: string
+          description: Source event identifier for inbound messages, when linked.
+        channel_exchange_id:
+          type: string
+          description: Channel exchange identifier for outbound replies, when linked.
+        session_id:
+          type: string
+          description: Conversation session identifier linked to this reply, when present.
+        status:
+          $ref: '#/components/schemas/AgentEmailStatus'
+        labels:
+          type: array
+          items:
+            type: string
+          description: Mutable triage labels applied to this message.
+        notes:
+          type: string
+          description: Mutable plain-text triage notes.
+        received_at:
+          type: string
+          format: date-time
+          description: When the email was received or sent.
+        created_at:
+          type: string
+          format: date-time
+          description: When this record was stored.
+        updated_at:
+          type: string
+          format: date-time
+          description: When triage metadata was last updated.
+    AgentEmailMessageListResponse:
+      type: object
+      additionalProperties: false
+      description: Paginated list of compact email envelopes in an agent's inbox.
+      required:
+      - items
+      - has_more
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentEmailMessageSummary'
+          description: Page of inbox messages, newest first.
+        has_more:
+          type: boolean
+          description: Whether additional messages follow this page.
+        next_cursor:
+          type: string
+          description: Opaque cursor to pass as `cursor` on the next request when `has_more`
+            is true.
+    AgentEmailThreadResponse:
+      type: object
+      additionalProperties: false
+      description: Chronological list of messages belonging to one email conversation thread.
+      required:
+      - thread_key
+      - items
+      properties:
+        thread_key:
+          type: string
+          description: Stable thread identifier.
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentEmailMessage'
+          description: Messages in this thread ordered oldest first.
+    UpdateAgentEmailMessageRequest:
+      type: object
+      additionalProperties: false
+      description: Partial update to mutable triage fields on one stored agent email message.
+      properties:
+        status:
+          $ref: '#/components/schemas/AgentEmailStatus'
+        labels:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            maxLength: 64
+          description: Replacement list of up to 20 short triage labels.
+        notes:
+          type: string
+          maxLength: 8000
+          description: Plain-text triage notes (up to 8,000 characters).
     Skill:
       type: object
       additionalProperties: false
@@ -12757,10 +13770,9 @@ components:
         source:
           type: string
           enum:
-          - system
           - custom
-          description: Ownership and mutability of the Skill. `system` is built-in and `custom`
-            is user-managed.
+          description: Where the skill comes from. Every stored skill is `custom`, managed
+            by the organization.
         instructions:
           type: string
           description: Markdown instructions loaded when the skill is active.
@@ -12895,6 +13907,11 @@ components:
         error_message:
           type: string
           description: Human-readable failure detail when the turn failed.
+        stop_reason:
+          type: string
+          description: Why a terminal turn stopped (for example `end_turn`, `iteration_limit`,
+            `output_limit`, `context_limit`, or `cancelled`). Absent on non-terminal turns
+            and historical rows without a recorded reason.
         error_scope:
           $ref: '#/components/schemas/AgentTurnErrorScope'
         output:
@@ -13172,6 +14189,9 @@ components:
           type: string
         error_message:
           type: string
+        stop_reason:
+          type: string
+          description: Why a terminal turn stopped.
         usage:
           $ref: '#/components/schemas/AgentTurnUsage'
           description: Token usage recorded when the turn completed or failed. On a failed
@@ -13188,6 +14208,8 @@ components:
           description: Where `output` came from (`tool` or `text`).
         wait:
           $ref: '#/components/schemas/SessionTranscriptWait'
+        action_await:
+          $ref: '#/components/schemas/SessionTranscriptActionAwait'
         created_at:
           type: string
           format: date-time
@@ -13618,36 +14640,6 @@ components:
           type: string
           format: date-time
           description: Server timestamp when this live preview frame was emitted.
-    SessionLiveSnapshot:
-      type: object
-      additionalProperties: false
-      required:
-      - session_id
-      - turn_id
-      - frames
-      - last_live_sequence
-      - updated_at
-      description: Ephemeral live transcript snapshot for an in-flight turn. Deployments with
-        shared cache support make it available across backend replicas.
-      properties:
-        session_id:
-          type: string
-        turn_id:
-          type: string
-        frames:
-          type: array
-          description: Always empty. Kept for the response shape while the endpoint is retired.
-          items:
-            type: object
-            additionalProperties: true
-        last_live_sequence:
-          type: integer
-          format: int64
-          description: Highest live_sequence recorded for the turn, or 0 when none is known.
-        updated_at:
-          type: string
-          format: date-time
-          description: Server timestamp when the snapshot was last updated.
     SessionResyncFrame:
       type: object
       additionalProperties: false
@@ -13655,8 +14647,8 @@ components:
       - event_type
       - session_id
       - reason
-      description: Live-only marker asking the client to reconcile the active turn from the
-        live snapshot endpoint.
+      description: 'Live-only marker: the client missed live frames. Read the transcript again
+        with `getSessionTranscript` to reconcile the active turn.'
       properties:
         event_type:
           type: string
@@ -13914,6 +14906,33 @@ components:
         expires_at:
           type: string
           format: date-time
+    SessionTranscriptActionAwait:
+      type: object
+      additionalProperties: false
+      description: The slow tool call a waiting turn is paused on, such as a scraper run.
+        Present only while the turn is `waiting` on such a call.
+      required:
+      - tool_call_id
+      properties:
+        tool_call_id:
+          type: string
+          description: The paused tool call.
+        reason:
+          type: string
+          description: Short machine label for the wait, such as `running_scraper`. Unknown
+            values must be preserved.
+        label:
+          type: string
+          description: What is being waited on, for people, such as a scraper's name.
+        expectation:
+          type: string
+          description: One plain sentence on how long the wait usually takes, such as "Scraper
+            runs usually take 1–10 minutes."
+        paused_at:
+          type: string
+          format: date-time
+          description: When the call paused. The chat's timer for the wait counts from here,
+            not from the start of the turn.
     TurnCompletedPayload:
       type: object
       additionalProperties: true
@@ -15355,6 +16374,12 @@ components:
           minimum: 0
           description: Reserved, not-yet-injected event inputs. The subscription stops visibly
             at 256.
+        funding_hold_reason:
+          type: string
+          description: 'Set while a pending delivery is ready but waits because the turn it
+            needs cannot be funded, for example when the person''s monthly credit cap is reached.
+            A full sentence the person reads: why it is held and what releases it. The delivery
+            retries on its own.'
         coverage_cutoff_at:
           type: string
           format: date-time
@@ -15935,12 +16960,6 @@ components:
             with `error_code` `stale`. `event_type` may be omitted when `follow_target` names
             a provider target, which derives the subscription; the `event`, `routine`, and
             `custom` follow targets require an explicit event type.
-        output_folder:
-          type: string
-          nullable: true
-          maxLength: 256
-          deprecated: true
-          description: Ignored. An assistant chooses a folder for each file it saves.
         model_override:
           type: string
           maxLength: 200
@@ -16021,12 +17040,6 @@ components:
           type: string
         instructions:
           type: string
-        output_folder:
-          type: string
-          nullable: true
-          maxLength: 256
-          deprecated: true
-          description: Ignored. An assistant chooses a folder for each file it saves.
         model_override:
           type: string
           maxLength: 200
@@ -16522,11 +17535,6 @@ components:
           minLength: 1
         schedule:
           $ref: '#/components/schemas/RoutineSchedule'
-        output_folder:
-          type: string
-          maxLength: 256
-          deprecated: true
-          description: Ignored. An assistant chooses a folder for each file it saves.
         per_occurrence_ceiling_milli:
           type: integer
           format: int64
@@ -17170,10 +18178,16 @@ components:
       - rollup
       - select
       - multi_select
+      - file
       description: 'Column value type: `string`, `number`, `boolean`, `date`, `object`, `array`,
         or `any`. `link` stores one row of another table and reads as `{id, name}`. `lookup`
         and `rollup` are computed on read and cannot be written. `select` holds one of the
-        column''s `choices`; `multi_select` holds an array of them.'
+        column''s `choices`; `multi_select` holds an array of them. `file` stores one Library
+        file: write its artifact ID (or a Library file ID, which stores its current version).
+        The writer must be able to read the file, and everyone who can see the table must
+        be able to see the file. It reads as `{id, name, content_type, size}`, never the content,
+        or `{id, missing: true}` when the file was deleted or the reader cannot open it. Deleting
+        the row never deletes the file.'
     ColumnLink:
       type: object
       additionalProperties: false
@@ -17585,8 +18599,6 @@ components:
           $ref: '#/components/schemas/ResourceOwner'
         visibility:
           $ref: '#/components/schemas/ResourceVisibility'
-        container:
-          $ref: '#/components/schemas/ResourceContainer'
         posture:
           $ref: '#/components/schemas/ResourcePosture'
         controls:
@@ -18033,6 +19045,940 @@ components:
         created:
           type: boolean
           description: True when a new row was inserted; false when an existing row was updated.
+    ChannelVisibility:
+      type: string
+      enum:
+      - public
+      - private
+      description: Chosen at creation and never changed.
+    ChannelAccess:
+      type: string
+      enum:
+      - read
+      - member
+      - admin
+      description: 'What the caller may do. `read`: a public channel they have not joined.
+        `member`: post and react. `admin`: also add and remove people, change the topic, and
+        archive.'
+    ChannelRole:
+      type: string
+      enum:
+      - member
+      - admin
+      description: A member's role in the channel.
+    Channel:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - name
+      - topic
+      - visibility
+      - access
+      - last_seq
+      - unread_count
+      - mention_count
+      - created_at
+      properties:
+        id:
+          type: string
+          description: Channel ID.
+        name:
+          type: string
+          description: Lowercase slug, unique in the organization. Never changes.
+        topic:
+          type: string
+          description: One line describing the channel. May be empty.
+        instructions:
+          type: string
+          description: Standing instructions added to every assistant's instructions in this
+            channel. Set on single-channel reads. Empty when none.
+        max_instruction_chars:
+          type: integer
+          description: The most characters the instructions may hold. Set on single-channel
+            reads.
+        visibility:
+          $ref: '#/components/schemas/ChannelVisibility'
+        access:
+          $ref: '#/components/schemas/ChannelAccess'
+        last_seq:
+          type: integer
+          format: int64
+          description: The newest sequence number in the channel.
+        member_count:
+          type: integer
+          description: How many members the channel has. Set on single-channel reads.
+        unread_count:
+          type: integer
+          description: Top-level messages from others after the caller's read position. Zero
+            for non-members.
+        mention_count:
+          type: integer
+          description: Messages from others after the caller's read position that mention
+            them.
+        current_member:
+          $ref: '#/components/schemas/ChannelCurrentMember'
+        archived_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the channel was archived. Null while it is active.
+        created_at:
+          type: string
+          format: date-time
+          description: When the channel was created.
+    ChannelCurrentMember:
+      type: object
+      additionalProperties: false
+      nullable: true
+      description: The caller's membership. Null when the caller is not a member.
+      required:
+      - role
+      - last_read_seq
+      - joined_at
+      properties:
+        role:
+          $ref: '#/components/schemas/ChannelRole'
+        last_read_seq:
+          type: integer
+          format: int64
+          description: The caller's read position.
+        joined_at:
+          type: string
+          format: date-time
+          description: When the caller joined.
+    ChannelMember:
+      type: object
+      additionalProperties: false
+      required:
+      - principal_id
+      - kind
+      - display_name
+      - role
+      - joined_at
+      properties:
+        principal_id:
+          type: string
+          description: The member's principal ID.
+        kind:
+          $ref: '#/components/schemas/ChannelAuthorKind'
+        display_name:
+          type: string
+          description: The member's name.
+        email:
+          type: string
+          description: The member's email, for people.
+        avatar_url:
+          type: string
+          description: The member's picture, when they have one.
+        role:
+          $ref: '#/components/schemas/ChannelRole'
+        joined_at:
+          type: string
+          format: date-time
+          description: When they joined.
+        online:
+          type: boolean
+          description: 'For an external agent: whether it has a live stream now. Absent for
+            everyone else.'
+        handle:
+          type: string
+          description: An external agent's handle, without the @. Only on external agents.
+    AgentClient:
+      type: string
+      pattern: ^[a-z0-9_]{1,32}$
+      maxLength: 32
+      description: The client, as it reports itself, for example `claude_code`, `codex`, `antigravity`,
+        or `other`. Any value of 1 to 32 lowercase letters, numbers, or underscores is accepted.
+        It is not verified, and no rule reads it.
+    ExternalAgentWakePolicy:
+      type: string
+      enum:
+      - owner_only
+      - channel_members
+      description: Whose @mention wakes the external agent. `owner_only`, the default, admits
+        only its owner. `channel_members` admits every member.
+    ExternalAgent:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - channel_id
+      - handle
+      - client_kind
+      - wake_policy
+      - owner_principal_id
+      - connected
+      - created_at
+      properties:
+        id:
+          type: string
+          description: The external agent ID.
+        channel_id:
+          type: string
+          description: 'In a channel''s list, that channel. Elsewhere, the agent''s first
+            channel that the caller can read. An agent can be in several channels: read `channels`.'
+        channels:
+          type: array
+          description: Each channel the agent is in that the caller can read, oldest first.
+            The agent's own token and its owner see every channel.
+          items:
+            $ref: '#/components/schemas/ExternalAgentChannel'
+        handle:
+          type: string
+          description: The agent's handle, without the @.
+        client_kind:
+          $ref: '#/components/schemas/AgentClient'
+        wake_policy:
+          $ref: '#/components/schemas/ExternalAgentWakePolicy'
+        owner_principal_id:
+          type: string
+          description: The person who connected the agent.
+        agent_principal_id:
+          type: string
+          description: The agent's principal, once it is connected.
+        connected:
+          type: boolean
+          description: False while the agent waits for its pairing code.
+        pairing_expires_at:
+          type: string
+          format: date-time
+          description: When an unused pairing code stops working.
+        last_used_at:
+          type: string
+          format: date-time
+          description: When the agent last signed in.
+        online:
+          type: boolean
+          description: Whether the agent has a live stream now.
+        created_at:
+          type: string
+          format: date-time
+        kind:
+          type: string
+          enum:
+          - agent
+          - project
+          description: '`project` for a project connection, which brings the external agents
+            whose `project_id` is its ID. Absent means `agent`.'
+        project_id:
+          type: string
+          description: The project connection that brings this external agent, if any.
+        project:
+          type: string
+          description: The project's display name, on a project connection and on each of
+            its external agents.
+        state:
+          $ref: '#/components/schemas/ExternalAgentState'
+        ask:
+          type: string
+          description: The short form of what the agent asks. Only for the agent's owner.
+        control_id:
+          type: string
+          description: The last control the client applied. Only for the agent's owner. Compare
+            it with the `control_id` an interrupt returned.
+        request_id:
+          type: string
+          description: The agent's open prompt request. Only for the agent's owner.
+    ExternalAgentChannel:
+      type: object
+      additionalProperties: false
+      required:
+      - channel_id
+      - channel_name
+      - wake_policy
+      - added_at
+      properties:
+        channel_id:
+          type: string
+        channel_name:
+          type: string
+        wake_policy:
+          $ref: '#/components/schemas/ExternalAgentWakePolicy'
+        added_at:
+          type: string
+          format: date-time
+    ReplaceChannelExternalAgentsRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - external_agents
+      properties:
+        external_agents:
+          type: array
+          maxItems: 100
+          description: Every external agent of the project. The list applies to every channel
+            the project is in. An empty list removes them all.
+          items:
+            $ref: '#/components/schemas/ProjectExternalAgent'
+    ProjectExternalAgent:
+      type: object
+      additionalProperties: false
+      required:
+      - handle
+      - client_kind
+      properties:
+        handle:
+          type: string
+          maxLength: 64
+          description: The agent's handle, without the @.
+        client_kind:
+          type: string
+          maxLength: 64
+          description: 'The client, such as `claude_code`: 1 to 32 lowercase letters, numbers,
+            or underscores. A bad value refuses only this entry.'
+    ProjectExternalAgentList:
+      type: object
+      additionalProperties: false
+      required:
+      - external_agents
+      properties:
+        external_agents:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectExternalAgentResult'
+    ProjectExternalAgentResult:
+      type: object
+      additionalProperties: false
+      required:
+      - handle
+      properties:
+        handle:
+          type: string
+          description: The handle as the list sent it.
+        external_agent_id:
+          type: string
+          description: The external agent's ID, when it is in the channel.
+        code:
+          type: string
+          enum:
+          - handle_invalid
+          - handle_repeated
+          - handle_taken
+          - handle_in_use
+          - client_kind_invalid
+          - channel_full
+          description: |-
+            Why Mobius refused this entry, for the client. The agent is not in the channel. Read an unknown code as "refused": Mobius can add codes.
+
+            - Choose another handle: `handle_invalid` (breaks the handle
+            rule, or is reserved), `handle_taken` (a person or assistant
+            in the organization has the name), `handle_in_use` (another
+            live external agent in the channel has it).
+            - Send each handle once: `handle_repeated`.
+            - Fix the client kind: `client_kind_invalid`.
+            - Send the list again later: `channel_full` (the channel has
+            its most members).
+        refused:
+          type: string
+          description: 'Why Mobius refused this entry, as text for a person. Do not parse
+            it: use `code`.'
+        channels:
+          type: array
+          description: One answer per channel the project is in. A channel without `code`
+            holds the agent. `code` at the top is set only when the agent is in no channel.
+          items:
+            $ref: '#/components/schemas/ProjectExternalAgentChannel'
+    ProjectExternalAgentChannel:
+      type: object
+      additionalProperties: false
+      required:
+      - channel_id
+      properties:
+        channel_id:
+          type: string
+        code:
+          type: string
+          description: 'Why the agent is not in this channel: `handle_in_use` or `channel_full`.
+            Read an unknown code as "not in this channel".'
+        refused:
+          type: string
+          description: The reason as text for a person.
+    ExternalAgentState:
+      type: string
+      enum:
+      - working
+      - waiting
+      - idle
+      - unknown
+      description: 'What an Online external agent is doing. `waiting`: it waits on its owner,
+        such as for a permission prompt. `idle`: between turns.'
+    ExternalAgentStatusRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - state
+      properties:
+        state:
+          $ref: '#/components/schemas/ExternalAgentState'
+        ask:
+          type: string
+          maxLength: 80
+          description: The short form of what the agent asks, such as "Run go test". At most
+            80 bytes. Only the owner sees it.
+        control_id:
+          type: string
+          maxLength: 64
+          description: The `control_id` of the last control frame the client applied (`agent.interrupt`
+            or `agent.answer`). The echo of an interrupt closes the open request with reason
+            `interrupted`.
+        prompt:
+          $ref: '#/components/schemas/ExternalAgentPrompt'
+        settled:
+          $ref: '#/components/schemas/ExternalAgentPromptSettled'
+    ExternalAgentPrompt:
+      type: object
+      additionalProperties: false
+      required:
+      - call_id
+      - tool
+      - input
+      - expires_in_s
+      description: Asks the owner to approve or deny one call that the agent holds. Mobius
+        opens a request named to the owner only. One request is open per agent. A prompt with
+        the open `call_id`, the same `tool`, and the same `input` bytes is a resend and changes
+        nothing. Any other prompt while one is open is `409 prompt_open`, and the open request
+        stays as it is. A prompt for a call that is over (the owner answered it, the client
+        settled it, it expired, or an interrupt closed it) opens nothing, and the status succeeds.
+        The owner's answer arrives as an `agent.answer` frame for this `call_id`.
+      properties:
+        call_id:
+          type: string
+          maxLength: 128
+          description: A random ID for the held call. It exists only while the client holds
+            the call.
+        tool:
+          type: string
+          minLength: 1
+          maxLength: 128
+          pattern: ^[A-Za-z0-9_.:-]{1,128}$
+          description: 'The tool the call uses, such as `Bash`: 1 to 128 letters, digits,
+            or the characters `_ - . :`. Else `400`.'
+        input:
+          type: object
+          additionalProperties: true
+          description: 'The call''s input exactly as the agent sent it, with known secrets
+            removed: a JSON object of at most 16 KB, measured on the bytes sent. Mobius keeps
+            those bytes. The request shows them as a string in `context.input`, so numbers
+            and key order do not change.'
+        expires_in_s:
+          type: integer
+          minimum: 1
+          maximum: 3540
+          description: The seconds the client will still wait for an answer. The request ends
+            then, by Mobius's clock.
+    ExternalAgentPromptSettled:
+      type: object
+      additionalProperties: false
+      required:
+      - call_id
+      - outcome
+      description: Closes the open request when the call ended without a remote answer.
+      properties:
+        call_id:
+          type: string
+          maxLength: 128
+        outcome:
+          type: string
+          enum:
+          - answered_locally
+          - expired
+          description: '`answered_locally`: someone answered on the machine. `expired`: the
+            call''s time ran out.'
+    ChannelMemberListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - has_more
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChannelMember'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+          nullable: true
+    ChannelAuthorKind:
+      type: string
+      enum:
+      - human
+      - agent
+      - routine
+      - workflow
+      - external_agent
+      description: What kind of principal wrote a message or holds a membership. An `external_agent`
+        is an agent that a person runs outside Mobius, connected to the channel.
+    ChannelAuthor:
+      type: object
+      additionalProperties: false
+      required:
+      - principal_id
+      - kind
+      - display_name
+      properties:
+        principal_id:
+          type: string
+          description: The author's principal ID.
+        kind:
+          $ref: '#/components/schemas/ChannelAuthorKind'
+        display_name:
+          type: string
+          description: The author's name when the message was read.
+        avatar_url:
+          type: string
+          description: The author's picture, when they have one.
+    ChannelReactionSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - emoji
+      - count
+      - principal_ids
+      - reacted_by_me
+      properties:
+        emoji:
+          type: string
+          description: One emoji.
+        count:
+          type: integer
+          description: How many people added it.
+        principal_ids:
+          type: array
+          description: Who added it, oldest first.
+          items:
+            type: string
+        reacted_by_me:
+          type: boolean
+          description: Whether the caller added it.
+    ChannelMessage:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - channel_id
+      - seq
+      - reply_count
+      - author
+      - body
+      - mentions
+      - deleted
+      - reactions
+      - created_at
+      properties:
+        id:
+          type: string
+          description: Message ID.
+        channel_id:
+          type: string
+          description: Channel ID.
+        seq:
+          type: integer
+          format: int64
+          description: The message's sequence number in the channel.
+        thread_root_id:
+          type: string
+          nullable: true
+          description: The thread's first message, for a reply. Null for a top-level message.
+        reply_count:
+          type: integer
+          description: Replies in this message's thread.
+        last_reply_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the newest reply was posted. Null without replies.
+        author:
+          $ref: '#/components/schemas/ChannelAuthor'
+        body:
+          type: string
+          description: Markdown text. Empty for a deleted message.
+        mentions:
+          type: array
+          description: Principal IDs the message mentions.
+          items:
+            type: string
+        deleted:
+          type: boolean
+          description: Whether the message was deleted.
+        edited_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the text last changed. Null if never edited.
+        reactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChannelReactionSummary'
+        created_at:
+          type: string
+          format: date-time
+          description: When the message was posted.
+        session_id:
+          type: string
+          nullable: true
+          description: 'For an assistant''s reply, notice, or approval card: the working conversation
+            it came from. Open it with getChannelConversation.'
+        turn_id:
+          type: string
+          nullable: true
+          description: 'For an assistant''s reply or notice: the turn that produced it. A
+            follow-up''s created_turn_id matches the reply that confirmed it.'
+        interaction_id:
+          type: string
+          nullable: true
+          description: For an approval card, the held-call approval it shows.
+        working_agent_ids:
+          type: array
+          description: 'For a thread''s first message: the principals of the assistants working
+            in the thread now.'
+          items:
+            type: string
+        agent_wakes:
+          type: array
+          description: One entry for each external agent the text names, in the order named,
+            with whether the post woke it. Absent when the text names no external agent. Decided
+            when the message is posted; an edit never changes it.
+          items:
+            $ref: '#/components/schemas/ExternalAgentWake'
+        unresolved_mentions:
+          type: array
+          description: 'Only in the answer to create: the `@handles` in the text that name
+            no connected external agent, without the @, in the order named. Empty when every
+            `@handle` names one.'
+          items:
+            type: string
+        reply_thread_root_id:
+          type: string
+          description: 'The thread a reply to this message goes in: `thread_root_id` for a
+            reply, else the message''s own ID. Always set.'
+        system_kind:
+          type: string
+          description: Set on a line the system wrote, for example `agent_connected` or `agent_disconnected`.
+            Nobody can edit or delete such a line. Absent on every other message.
+        trust_level:
+          type: string
+          enum:
+          - owner
+          - same_owner_agent
+          - other
+          description: 'Only for an external agent caller: how far the agent may trust the
+            author. `owner` is the person who owns the agent. `same_owner_agent` is another
+            external agent of that person whose wake policy is `owner_only`. `other` is everyone
+            else, and always a line with `system_kind`. The server sets it from the author,
+            never from the text.'
+    ExternalAgentWake:
+      type: object
+      additionalProperties: false
+      required:
+      - agent_id
+      - handle
+      - woken
+      properties:
+        agent_id:
+          type: string
+          description: The external agent's principal ID, the same as its member row.
+        handle:
+          type: string
+          description: The handle the text named, without the @.
+        woken:
+          type: boolean
+          description: Whether the post woke the agent.
+        reason:
+          type: string
+          enum:
+          - policy
+          - wake_cap
+          - thread_budget
+          - offline
+          description: 'Why the agent was not woken: `policy` (its wake policy does not admit
+            the sender), `wake_cap` (an agent''s post wakes at most 2 agents), or `thread_budget`
+            (6 agent posts have followed the last person''s post). `offline` marks a woken
+            agent with no live connection.'
+    ChannelMessageListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - has_more
+      properties:
+        root:
+          description: The original message when listing a thread.
+          allOf:
+          - $ref: '#/components/schemas/ChannelMessage'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChannelMessage'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+          nullable: true
+    CreateChannelMessageRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - body
+      properties:
+        body:
+          type: string
+          description: Markdown, up to 40,000 characters.
+        thread_root_id:
+          type: string
+          description: Reply in this message's thread.
+        mentions:
+          type: array
+          maxItems: 50
+          description: 'People and assistants the message mentions. A mentioned assistant
+            must be a member of the channel; it answers in the thread. An external agent must
+            not send this field: it names others with `@handles` in the text.'
+          items:
+            type: string
+    ChannelReactionRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - emoji
+      properties:
+        emoji:
+          type: string
+          description: One emoji.
+    UpdateChannelReadStateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        message_id:
+          type: string
+          description: Read up to this message. Empty means everything, except for an external
+            agent, which must send it.
+    ChannelReadState:
+      type: object
+      additionalProperties: false
+      required:
+      - channel_id
+      - last_read_seq
+      - unread_count
+      - mention_count
+      properties:
+        channel_id:
+          type: string
+          description: Channel ID.
+        last_read_seq:
+          type: integer
+          format: int64
+          description: The stored read position.
+        unread_count:
+          type: integer
+          description: Unread top-level messages after the change.
+        mention_count:
+          type: integer
+          description: Unread mentions after the change.
+    ChannelStreamFrameType:
+      type: string
+      enum:
+      - channel.change
+      - channel.typing
+      - channel.read
+      - channel.membership
+      - channel.resync
+      - stream.ready
+      - stream.end
+      - external_agent.status
+      - agent.interrupt
+      - agent.answer
+      - external_agent.channels
+      description: '`channel.change`: one change-log row, with the message it names. `channel.typing`:
+        a member is typing. `channel.read`: the caller''s read position moved in another tab.
+        `channel.membership`: the caller''s channel set changed; refetch the channel list.
+        `channel.resync`: frames were lost; refetch. `stream.ready`: the replay is done. `stream.end`:
+        reconnect with the cursor. `external_agent.status`: an external agent in the channel
+        reported a new state (`external_agent_id`, `state`); a person''s stream only. `agent.interrupt`
+        (an external agent''s stream only): end the current turn, then echo `control_id` in
+        the next status. `agent.answer` (an external agent''s stream only): the owner''s answer
+        to the agent''s open prompt `call_id`; `decision` is `allow` or `deny`. Echo `control_id`
+        in the next status. `external_agent.channels` (an external agent''s stream only):
+        the channels the agent is in changed, and the stream now carries the new set; refetch
+        `getExternalAgent` for `channels`. Ignore a frame type you do not know.'
+    ChannelChangeKind:
+      type: string
+      enum:
+      - message.posted
+      - message.edited
+      - message.deleted
+      - reaction.added
+      - reaction.removed
+      - member.joined
+      - member.left
+      - channel.updated
+      - channel.archived
+      - assistant.working
+      description: 'What changed in the channel. `assistant.working`: an assistant started
+        or stopped working in the thread of the frame''s message.'
+    ChannelStreamFrame:
+      type: object
+      additionalProperties: false
+      required:
+      - type
+      properties:
+        type:
+          $ref: '#/components/schemas/ChannelStreamFrameType'
+        channel_id:
+          type: string
+          description: The channel the frame is about.
+        seq:
+          type: integer
+          format: int64
+          description: The change's sequence number.
+        kind:
+          $ref: '#/components/schemas/ChannelChangeKind'
+        message:
+          $ref: '#/components/schemas/ChannelMessage'
+        actor_principal_id:
+          type: string
+          description: Who made the change, or who is typing.
+        last_read_seq:
+          type: integer
+          format: int64
+          description: The caller's new read position, on `channel.read`.
+        reason:
+          type: string
+          description: 'Why the stream ended, on `stream.end`. `rotate`: reconnect now. `unavailable`:
+            reconnect later. Only for an external agent: `replaced` (a newer stream of the
+            same agent took over; do not reconnect) and `revoked` (the agent is disconnected;
+            stop). Ignore a reason you do not know and reconnect later.'
+        addressed_to_you:
+          type: boolean
+          description: Only for an external agent, on the `message.posted` change of a message
+            that woke it. Absent on every other frame.
+        external_agent_id:
+          type: string
+          description: The external agent an `external_agent.status` frame is about.
+        state:
+          $ref: '#/components/schemas/ExternalAgentState'
+        control_id:
+          type: string
+          description: The control's ID, on `agent.interrupt` and `agent.answer`.
+        call_id:
+          type: string
+          description: The prompt's call, on `agent.answer`.
+        decision:
+          type: string
+          enum:
+          - allow
+          - deny
+          description: The owner's answer, on `agent.answer`.
+    ConnectExternalAgentRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - pairing_code
+      properties:
+        pairing_code:
+          type: string
+          maxLength: 256
+          description: The `mbp_` pairing code from the web app.
+        client_kind:
+          type: string
+          pattern: ^[a-z0-9_]{1,32}$
+          maxLength: 32
+          description: The client's own kind, such as `claude_code`. When it is sent, it replaces
+            the value set when the code was made. It is not verified, and no rule reads it.
+        metadata:
+          type: object
+          description: What the client reports about itself, such as its version. At most
+            8 keys of up to 32 bytes, and values of up to 128 bytes. For a project connection,
+            `project` is the project's display name.
+          additionalProperties:
+            type: string
+    ExternalAgentConnection:
+      type: object
+      additionalProperties: false
+      required:
+      - credential
+      - external_agent_id
+      - handle
+      - client_kind
+      - wake_policy
+      - org_name
+      - channel_id
+      - channel_name
+      - owner_name
+      properties:
+        credential:
+          type: string
+          description: The `mba_` credential. Shown once. Keep it where only the owner can
+            read it.
+        external_agent_id:
+          type: string
+          description: The external agent's ID, for `getExternalAgent` and `deleteExternalAgent`.
+        handle:
+          type: string
+          description: The agent's handle in the channel, without the `@`.
+        client_kind:
+          type: string
+          description: The client, such as `claude_code`.
+        wake_policy:
+          type: string
+          description: Whose mentions wake the agent, `owner_only` or `channel_members`.
+        org_name:
+          type: string
+          description: The display name of the organization the channel is in.
+        channel_id:
+          type: string
+          description: The channel the agent joined.
+        channel_name:
+          type: string
+          description: The channel's name.
+        owner_name:
+          type: string
+          description: The first name of the person who connected the agent.
+        kind:
+          type: string
+          enum:
+          - agent
+          - project
+          description: '`project` for a project connection: the credential pairs the project,
+            which sends its external agents with `replaceChannelExternalAgents`. The owner
+            can approve the commands of those agents that send a prompt. Absent means `agent`.'
+        project:
+          type: string
+          description: The project's display name (metadata `project`), for a project connection.
+    ExchangeExternalAgentTokenRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - credential
+      properties:
+        credential:
+          type: string
+          maxLength: 256
+          description: The `mba_` credential from `connectExternalAgent`.
+        external_agent_id:
+          type: string
+          maxLength: 64
+          description: 'Only with a project connection''s credential: the external agent to
+            get a token for. It must be a live external agent of this project connection,
+            else `404 not_found` (the agent was removed). Without it, a project credential
+            gets the project token, which reaches only `replaceChannelExternalAgents` on its
+            own channel and `deleteExternalAgent` on itself. Every other operation answers
+            the project token `403 project_token`.'
+    ExternalAgentAccessToken:
+      type: object
+      additionalProperties: false
+      required:
+      - access_token
+      - expires_at
+      properties:
+        access_token:
+          type: string
+          description: 'The `mbat_` access token. Send it as `Authorization: Bearer <token>`.'
+        expires_at:
+          type: string
+          format: date-time
+          description: When the access token stops working.
     UpdateArtifactRequest:
       type: object
       additionalProperties: false
@@ -18367,6 +20313,12 @@ x-tagGroups:
 - name: Tables
   tags:
   - tables
+- name: Mobius Channels API
+  tags:
+  - channels
+- name: External agent
+  tags:
+  - external-agent
 - name: Artifacts
   tags:
   - artifacts

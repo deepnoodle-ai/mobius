@@ -35,6 +35,8 @@ func registerGeneratedCommands(app *cli.App) {
 	registerBillingCommands(app)
 	registerBlueprintsCommands(app)
 	registerCatalogCommands(app)
+	registerChannelsCommands(app)
+	registerExternalAgentsCommands(app)
 	registerIntegrationsCommands(app)
 	registerInteractionsCommands(app)
 	registerOrganizationsCommands(app)

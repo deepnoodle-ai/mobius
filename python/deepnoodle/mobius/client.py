@@ -819,19 +819,9 @@ class Client:
         )
         return ActionInvocationListResponse.model_validate(resp.json())
 
-    def list_skills(self, *, include_system: bool | None = None) -> SkillListResponse:
-        """List org-owned, organization-shared, and system skills.
-
-        System skill templates are included by default; pass
-        ``include_system=False`` to omit them. Organization skills are
-        read-only through these mutation routes.
-        """
-        params: dict[str, Any] = {}
-        if include_system is not None:
-            params["include_system"] = "true" if include_system else "false"
-        resp = self._request(
-            "GET", "/v1/skills", params=params or None
-        )
+    def list_skills(self) -> SkillListResponse:
+        """List the skills visible to the caller."""
+        resp = self._request("GET", "/v1/skills")
         return SkillListResponse.model_validate(resp.json())
 
     def create_skill(self, request: SkillRequest) -> Skill:
@@ -853,7 +843,7 @@ class Client:
         return Skill.model_validate(resp.json())
 
     def get_skill(self, skill_id: str) -> Skill:
-        """Return a single org-owned, organization-shared, or system skill."""
+        """Return a single skill by ID."""
         resp = self._request(
             "GET", f"/v1/skills/{quote(skill_id, safe='')}"
         )

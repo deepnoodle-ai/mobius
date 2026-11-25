@@ -623,14 +623,6 @@ export interface ListActionInvocationsOptions {
   limit?: number;
 }
 
-export interface ListSkillsOptions {
-  /**
-   * Include read-only system skill templates. The server includes them by
-   * default; pass false to omit them.
-   */
-  includeSystem?: boolean;
-}
-
 export interface ImportSkillOptions {
   /** Override the skill name derived from the document. */
   name?: string;
@@ -968,17 +960,9 @@ export class Client {
     );
   }
 
-  /**
-   * Lists org-owned, organization-shared, and system skills. System
-   * skill templates are included by default; pass includeSystem: false to
-   * omit them. Organization skills are read-only through these mutation
-   * routes.
-   */
-  async listSkills(opts: ListSkillsOptions = {}): Promise<SkillListResponse> {
-    const path = withQuery("/v1/skills", {
-      include_system: opts.includeSystem,
-    });
-    const resp = await this.request(path, { method: "GET" });
+  /** Lists the skills visible to the caller. */
+  async listSkills(): Promise<SkillListResponse> {
+    const resp = await this.request("/v1/skills", { method: "GET" });
     return (await resp.json()) as SkillListResponse;
   }
 
@@ -1009,10 +993,7 @@ export class Client {
     return (await resp.json()) as Skill;
   }
 
-  /**
-   * Returns a single org-owned, organization-shared, or system skill by
-   * ID.
-   */
+  /** Returns a single skill by ID. */
   async getSkill(skillId: string): Promise<Skill> {
     const resp = await this.request(
       `/v1/skills/${encodeURIComponent(skillId)}`,

@@ -64,13 +64,13 @@ test("client: skill lifecycle hits the documented routes", async () => {
         return Response.json(skill());
       }
       if (url.pathname === "/v1/skills") {
-        assert.equal(url.searchParams.get("include_system"), "false");
+        assert.equal(url.search, "");
         return Response.json({ items: [skill()] });
       }
       return Response.json(skill());
     },
     async (client) => {
-      const page = await client.listSkills({ includeSystem: false });
+      const page = await client.listSkills();
       assert.equal(page.items[0]?.id, "skill_1");
       const req = {
         name: "Pull request review",

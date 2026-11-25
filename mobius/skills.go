@@ -8,21 +8,9 @@ import (
 	"github.com/deepnoodle-ai/mobius/mobius/api"
 )
 
-// ListSkillsOptions filters the org's skill catalog.
-type ListSkillsOptions struct {
-	// ExcludeSystem omits the read-only system skill templates that the
-	// server includes by default.
-	ExcludeSystem bool
-}
-
-// ListSkills lists custom and system skills visible to the caller.
-func (c *Client) ListSkills(ctx context.Context, opts *ListSkillsOptions) (*api.SkillListResponse, error) {
-	params := &api.ListSkillsParams{}
-	if opts != nil && opts.ExcludeSystem {
-		includeSystem := false
-		params.IncludeSystem = &includeSystem
-	}
-	resp, err := c.ac.ListSkillsWithResponse(ctx, params)
+// ListSkills lists the skills visible to the caller.
+func (c *Client) ListSkills(ctx context.Context) (*api.SkillListResponse, error) {
+	resp, err := c.ac.ListSkillsWithResponse(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: list skills: %w", err)
 	}

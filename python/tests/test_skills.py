@@ -54,7 +54,7 @@ def test_skill_lifecycle_routes() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         seen.append((request.method, request.url.path))
         if request.method == "GET" and request.url.path == "/v1/skills":
-            assert request.url.params["include_system"] == "false"
+            assert "include_system" not in request.url.params
             return httpx.Response(200, json={"items": [_skill()]})
         if request.method == "POST":
             assert json.loads(request.content)["name"] == "Pull request review"
@@ -68,7 +68,7 @@ def test_skill_lifecycle_routes() -> None:
         return httpx.Response(200, json=_skill())
 
     client = _client_with(handler)
-    page = client.list_skills(include_system=False)
+    page = client.list_skills()
     assert page.items[0].id == "skill_1"
     req = SkillRequest(
         name="Pull request review",

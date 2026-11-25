@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"os"
 	"strings"
 	"testing"
 
@@ -215,4 +216,53 @@ func TestSummarizeHelpKeepsFirstParagraph(t *testing.T) {
 	long := strings.Repeat("Words that explain the flag. ", 12) + "`writes` asks before any write."
 	assert.Equal(t, long, summarizeHelp(long+"\n\nDetail for the docs only."))
 	assert.Equal(t, "one line", summarizeHelp("  one\n   line  "))
+}
+
+func TestNoAuthOperationsSkipRequireAuth(t *testing.T) {
+	render := func(noAuth bool) string {
+		var b bytes.Buffer
+		err := renderCommand(&b, "external-agents", PlannedCommand{
+			OperationID: "connectExternalAgent",
+			Command:     "connect",
+			Description: "Connect an external agent with a pairing code",
+			NoAuth:      noAuth,
+			Method:      &Method{},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return b.String()
+	}
+	if strings.Contains(render(true), "requireAuth()") {
+		t.Fatal("a `security: []` operation must not require a stored login")
+	}
+	if !strings.Contains(render(false), "requireAuth()") {
+		t.Fatal("an authenticated operation must require a login")
+	}
+}
+
+func TestParseSpecReadsEmptySecurityAsNoAuth(t *testing.T) {
+	path := t.TempDir() + "/openapi.yaml"
+	spec := `paths:
+  /v1/external-agents/connect:
+    post:
+      operationId: connectExternalAgent
+      security: []
+  /v1/channels/{channel_id}:
+    get:
+      operationId: getChannel
+`
+	if err := os.WriteFile(path, []byte(spec), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	ops, err := parseSpec(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ops["connectExternalAgent"].NoAuth {
+		t.Fatal("security: [] should parse as NoAuth")
+	}
+	if ops["getChannel"].NoAuth {
+		t.Fatal("an operation without security should keep the default auth")
+	}
 }
