@@ -10,6 +10,8 @@ the minor version.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-25
+
 Breaking: syncs the API reshape in mobius-cloud
 ([#2627](https://github.com/deepnoodle-ai/mobius-cloud/issues/2627)). The
 previous CLI calls routes that no longer exist in production.
@@ -29,6 +31,11 @@ previous CLI calls routes that no longer exist in production.
 - Org-scoped routes moved to `/v1/orgs/{org_id}/…`. `organizations get-context`,
   `replace-context` and `get-oauth-return-origins` take an `ORG_ID` argument
   (`current` for the active org). The SDK helpers use `current`.
+- `environment.bash` no longer sets `MOBIUS_JOB_LEASE_TOKEN`. The Git
+  credential socket finds the caller's job from its parent processes, and
+  ignores any lease the caller sends.
+- Git credentials and action calls in a job work only on Linux and macOS,
+  where the worker can tell which process is calling.
 
 ### Added
 
@@ -38,6 +45,11 @@ previous CLI calls routes that no longer exist in production.
   resolves the session first. See [docs/sdk-helpers.md](./docs/sdk-helpers.md).
 - `viewer_actions` (`ViewerActions`: `view`, `work_with`, `manage`, `stop`) on
   more resource responses, so clients can gate actions on the caller's access.
+- Workflow script steps can call the actions they declare: `mobius actions
+  run`, `mobius actions describe`, and `from mobius import actions` in a
+  managed computer, through a new worker socket (`MOBIUS_ACTION_SOCKET`).
+  See SECURITY.md for what this does and does not protect.
+- `Client.CreateScriptCall` and `Client.DescribeScriptAction`.
 
 ## [0.8.0] - 2026-11-25
 
@@ -65,11 +77,6 @@ previous CLI calls routes that no longer exist in production.
 - `request_takeover` interaction kind with a `computer_takeover` card
   (`ComputerTakeoverRequest`), created only by Mobius.
 - `workflow_step` on catalog actions.
-- Workflow script steps can call the actions they declare: `mobius actions
-  run`, `mobius actions describe`, and `from mobius import actions` in a
-  managed computer, through a new worker socket (`MOBIUS_ACTION_SOCKET`).
-  See SECURITY.md for what this does and does not protect.
-- `Client.CreateScriptCall` and `Client.DescribeScriptAction`.
 - `created_by` filter on `listArtifacts` (`mobius artifacts list --created-by`).
 - `monday` agent messaging provider.
 - `$contains` table query operator for `array` and `multi_select` columns.
@@ -100,11 +107,6 @@ previous CLI calls routes that no longer exist in production.
 
 - Getting a session or routine no longer writes a read mark; post to
   read-mark instead (the `X-Mobius-Safe-Read` header is gone).
-- `environment.bash` no longer sets `MOBIUS_JOB_LEASE_TOKEN`. The Git
-  credential socket finds the caller's job from its parent processes, and
-  ignores any lease the caller sends.
-- Git credentials and action calls in a job work only on Linux and macOS,
-  where the worker can tell which process is calling.
 - `listRoutines` without `status` now returns only active and paused
   routines; name `completed` or `cancelled` to see those.
 
