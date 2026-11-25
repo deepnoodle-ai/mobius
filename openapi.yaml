@@ -663,6 +663,29 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/catalog/providers:
+    get:
+      operationId: listCatalogProviders
+      tags:
+      - catalog
+      summary: List providers
+      description: 'Returns every integration provider available to this org: its presentation,
+        how it connects, the fields `createIntegration` takes for it, its event types and
+        actions, and the org''s connections to it. The integrations UI, trigger wizard, and
+        public docs use this response as their provider catalog. Provider-level setup that
+        needs no integration yet (Slack setup URLs and manifests, the Teams app package) lives
+        under `/v1/catalog/providers/{provider}/…`.'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrationProvidersResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /v1/workers/socket:
     get:
       operationId: openWorkerSocket
@@ -1083,63 +1106,6 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /v1/orgs/{org_id}/oauth-return-origins:
-    parameters:
-    - $ref: '#/components/parameters/OrgPathParam'
-    get:
-      operationId: getOAuthReturnOrigins
-      tags:
-      - organizations
-      x-public: true
-      summary: Get the org's OAuth return-origin allowlist
-      description: |-
-        Returns the active organization's allowlist of exact HTTPS origins that an embedded partner may name as a `return_url` when starting a provider connection. An empty list means embedded return is disabled for the organization. Requires `Admin` or `Owner` membership.
-
-        Embedded return is currently disabled for every organization, so this list has no effect: connect requests carrying `return_url` fail with `400 embedded_return_disabled`, and connections finish in Mobius for the person who started them.
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OAuthReturnOrigins'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    put:
-      operationId: replaceOAuthReturnOrigins
-      tags:
-      - organizations
-      x-public: true
-      summary: Replace the org's OAuth return-origin allowlist
-      description: |-
-        Full-replace of the active organization's OAuth return-origin allowlist. Each entry must be an exact HTTPS origin (scheme, host, and optional non-default port); it is normalized to lowercase host with default ports stripped, and duplicates are collapsed. At most 20 origins are accepted. Sending an empty list disables embedded return. Requires `Admin` or `Owner` membership.
-
-        Embedded return is currently disabled for every organization, so the stored list has no effect: connect requests carrying `return_url` fail with `400 embedded_return_disabled`.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PutOAuthReturnOriginsRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OAuthReturnOrigins'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
   /v1/orgs/{org_id}/context:
     parameters:
     - $ref: '#/components/parameters/OrgPathParam'
@@ -1204,10 +1170,10 @@ paths:
       tags:
       - interactions
       summary: Create interaction
-      description: Creates an interaction. `consumer` names what is waiting on its resolution;
-        omit it for a standalone request that records the response and nothing more. An `agent_tool`
-        consumer is reserved for interactions created by the agent runtime and is rejected
-        on this API operation.
+      description: 'Creates a standalone interaction: a request that records the responses
+        and its outcome, and publishes `interaction.resolved` when it closes. Nothing waits
+        on it unless a routine or wait subscribes to that event. Interactions that resume
+        an assistant''s turn are created by Mobius itself, not through this operation.'
       requestBody:
         required: true
         content:
@@ -3392,71 +3358,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-    post:
-      operationId: createSessionEventSubscription
-      tags:
-      - sessions
-      summary: Create a session event subscription
-      description: 'Creates a long-lived public-event subscription for this conversation.
-        It returns immediately; matching occurrences are queued durably and reach a live turn
-        only at safe model-input boundaries, or start a new ordinary session turn when idle.
-        `idempotency_key` is session-scoped: an identical retry returns the original registration,
-        while changed arguments conflict. Routine-origin sessions cannot subscribe.'
-      parameters:
-      - $ref: '#/components/parameters/SessionIdParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateSessionEventSubscriptionRequest'
-      responses:
-        '200':
-          description: Existing idempotent subscription returned.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SessionEventSubscriptionCreateResponse'
-        '201':
-          description: Subscription created.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SessionEventSubscriptionCreateResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-  /v1/sessions/{session_id}/event-subscriptions/{subscription_id}:
-    get:
-      operationId: getSessionEventSubscription
-      tags:
-      - sessions
-      summary: Get a session event subscription
-      description: Returns one durable subscription, including its activation boundary and
-        server-recorded authority scope.
-      parameters:
-      - $ref: '#/components/parameters/SessionIdParam'
-      - $ref: '#/components/parameters/SessionEventSubscriptionIdParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SessionEventSubscription'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
   /v1/sessions/{session_id}/event-subscriptions/{subscription_id}/unsubscribe:
     post:
       operationId: unsubscribeSessionEventSubscription
@@ -3496,45 +3397,6 @@ paths:
       responses:
         '204':
           description: Subscriptions stopped.
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/sessions/{session_id}/event-subscriptions/{subscription_id}/deliveries:
-    get:
-      operationId: listSessionEventDeliveries
-      tags:
-      - sessions
-      summary: List public-event deliveries
-      description: Returns this subscription's durable intake records. Event and metadata
-        values are the public envelope, not raw provider input. Their combined persisted/model-visible
-        representation is capped at 64 KiB; larger or non-serializable values use an explicit
-        bounded representation with a delivery diagnostic.
-      parameters:
-      - $ref: '#/components/parameters/SessionIdParam'
-      - $ref: '#/components/parameters/SessionEventSubscriptionIdParam'
-      - name: status
-        in: query
-        schema:
-          type: array
-          items:
-            $ref: '#/components/schemas/SessionEventDeliveryStatus'
-        style: form
-        explode: true
-      - $ref: '#/components/parameters/OrderParam'
-      - $ref: '#/components/parameters/CursorParam'
-      - $ref: '#/components/parameters/LimitParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SessionEventDeliveryListResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -6330,48 +6192,16 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-    patch:
-      operationId: updateArtifact
-      tags:
-      - artifacts
-      summary: Update artifact name
-      description: |-
-        Changes the artifact's `name`. The name is a relative virtual path, so this is how a file moves between folders as well as how it is renamed. Every version in the file's lineage is renamed together, so its history never straddles two folders and a later edit saves under the new name.
-
-        The ID, version lineage, custody, visibility, metadata, stored bytes, and session references are unchanged. Authorization is the delete authorization: whoever may remove the file may move it. A name another file in the same place already holds is refused with 409.
-      parameters:
-      - $ref: '#/components/parameters/ArtifactIdParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateArtifactRequest'
-      responses:
-        '200':
-          description: Updated artifact
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Artifact'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
     delete:
       operationId: deleteArtifact
       tags:
       - artifacts
       summary: Delete artifact
-      description: Deletes the artifact and removes any Mobius-managed content before reporting
-        success. Deleted artifacts are removed from public API visibility, and their content
-        no longer counts toward artifact quota.
+      description: Deletes this one version and removes any Mobius-managed content before
+        reporting success. Deleted artifacts are removed from public API visibility, and their
+        content no longer counts toward artifact quota. Deleting the latest version of a filed
+        lineage leaves the prior one as what readers get; deleting a whole Library file is
+        the Library's operation, not this one.
       parameters:
       - $ref: '#/components/parameters/ArtifactIdParam'
       responses:
@@ -9277,6 +9107,358 @@ components:
             type: string
           description: Event-type patterns for which a new routine that names no follow_target
             follows this target.
+    IntegrationCategory:
+      type: string
+      description: Stable integration directory grouping.
+      enum:
+      - Code and DevOps
+      - Sales & CRM
+      - Issue Tracking
+      - Productivity
+      - Messaging
+      - Social Media
+      - Email
+      - Actions
+      - Web and Data
+      - Storage
+      - Environments
+      - Model Providers
+      - Built in
+    IntegrationAccountModel:
+      type: string
+      enum:
+      - personal
+      - workspace
+      - capability
+      description: |-
+        What one connection to a provider represents.
+
+        `personal` — one human's own account, and acting through it acts as that person (Gmail, Google Calendar, X). `workspace` — a shared external workspace the whole org acts within (Slack, Jira, GitHub). `capability` — a keyed service with no account identity behind it (Firecrawl, a model provider, a database).
+
+        It decides the default owner of a new connection and whether the connection is offered to an agent by default.
+    IntegrationStatus:
+      type: string
+      enum:
+      - active
+      - inactive
+      - expired
+      - confirmation_required
+      description: '`active` — integration is enabled and usable by agents. `inactive` — manually
+        disabled; no automatic expiry behavior. `expired` — token/credential has expired (e.g.,
+        OAuth token not refreshed).'
+    ConnectionController:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      description: Lifecycle and grant authority. Control does not authorize organization-provider
+        content or agent execution.
+      properties:
+        kind:
+          type: string
+          enum:
+          - person
+          - organization
+        principal_id:
+          type: string
+          description: Human controller ID, present only for person control.
+        display_name:
+          type: string
+          description: Human controller display name, when available.
+    IntegrationConnection:
+      type: object
+      additionalProperties: false
+      required:
+      - integration_id
+      - name
+      - status
+      - controller
+      description: One connection to a provider, as the catalog presents it.
+      properties:
+        integration_id:
+          type: string
+        name:
+          type: string
+          description: The name whoever connected it chose. Unique per owner.
+        status:
+          $ref: '#/components/schemas/IntegrationStatus'
+        status_reason:
+          type: string
+          description: Human-readable reason when `status` is `expired` (needs reconnect).
+        controller:
+          $ref: '#/components/schemas/ConnectionController'
+        identity_label:
+          type: string
+          description: The external account this connection reaches, when the provider declares
+            one — a mailbox address, a Slack team id, a Jira site. This is what tells two
+            connections apart when their names do not.
+        updated_at:
+          type: string
+          format: date-time
+    IntegrationProviderConnection:
+      type: object
+      additionalProperties: false
+      required:
+      - readiness
+      - connections
+      - platform_available
+      - credential_source
+      description: Org-local connection summary for a provider. A provider may hold several
+        connections at once — two mailboxes, a personal account beside an org-shared one —
+        so the rows live in `connections` and the provider-level fields describe the provider,
+        not any single row.
+      properties:
+        readiness:
+          $ref: '#/components/schemas/CapabilityReadiness'
+          description: Whether this provider is configured and usable in the org right now.
+            `ready` when an active integration exists and the provider runtime is available,
+            or when Mobius can serve the provider through a built-in platform credential;
+            otherwise `needs_setup`.
+        readiness_reason:
+          $ref: '#/components/schemas/CapabilityReadinessReason'
+          description: Why the provider is `needs_setup`. `not_configured` when no integration
+            exists; `inactive`/`expired` from the integration lifecycle; `provider_unavailable`
+            when the provider runtime is down. Omitted when `readiness` is `ready`.
+        connections:
+          type: array
+          description: Every connection to this provider the caller may see, newest first.
+            Empty when the org has none.
+          items:
+            $ref: '#/components/schemas/IntegrationConnection'
+        platform_available:
+          type: boolean
+          description: True when Mobius can supply a built-in platform credential for this
+            provider, so the org can use it without connecting its own key. Keyless public
+            providers (e.g. Reddit, Hacker News) are always available; key-based platform
+            integrations are available only when the platform credential is configured.
+        credential_source:
+          type: string
+          enum:
+          - byok
+          - platform
+          - none
+          description: 'Which credential the org will actually use right now: `byok` when
+            the org has connected its own key, `platform` when it falls back to the Mobius-provided
+            credential, or `none` when neither is available. Always `platform` for a ready
+            `platform_billed` provider.'
+        platform_billed:
+          type: boolean
+          description: True when every call through this provider runs on Mobius's own app
+            with the provider and spends Mobius credits, even through a connected account
+            (X). Connecting an account picks who acts, not who pays. Omitted otherwise.
+    IntegrationProviderEventType:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - schema_version
+      - runtime_state
+      properties:
+        name:
+          type: string
+          description: Dotted event-type identifier (`github.pull_request.opened`).
+        schema_version:
+          type: integer
+          description: Integer schema version. Bumps are additive-only by convention.
+        runtime_state:
+          type: string
+          enum:
+          - active
+          - planned
+          - deprecated
+          description: Whether the event type is backed by current ingest. Planned events
+            are catalog/documentation-only and should not be offered for new triggers or `wait`
+            / `react` event-subject steps.
+        description:
+          type: string
+        payload_schema:
+          type: object
+          additionalProperties: true
+          description: JSON Schema for the event payload. Absent when the registered Go type
+            cannot be reflected meaningfully (for example, `map[string]any` aliases of raw
+            upstream payloads).
+    IntegrationProviderWebhookEndpoint:
+      type: object
+      additionalProperties: false
+      required:
+      - path_suffix
+      - url
+      - delivery
+      - status
+      properties:
+        path_suffix:
+          type: string
+          description: Provider webhook path suffix under `/v1/provider/{provider}/webhook`.
+        url:
+          type: string
+          format: uri
+          description: Fully-qualified endpoint URL for upstream provider setup.
+        delivery:
+          type: string
+          enum:
+          - webhook
+        signature_mode:
+          type: string
+          description: Framework signature verification mode.
+        status:
+          type: string
+          enum:
+          - configured
+          - missing_secret
+          - legacy_route
+          - unavailable
+        notes:
+          type: string
+    IntegrationProviderAction:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          description: Callable action name (`github.issue.create_comment`).
+        title:
+          type: string
+        description:
+          type: string
+        input_schema:
+          type: object
+          additionalProperties: true
+          description: JSON Schema for the action's parameters object.
+        output_schema:
+          type: object
+          additionalProperties: true
+          description: JSON Schema for the action's result object.
+    IntegrationProviderTriggerPattern:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - label
+      description: Catalog descriptor for creating a trigger from a provider-owned event pattern.
+        The array is currently empty for all providers; this schema reserves the response
+        shape for the trigger-pattern rollout.
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        description:
+          type: string
+        event_type:
+          type: string
+        category:
+          type: string
+    IntegrationProvider:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - display_name
+      - auth_kind
+      - account_model
+      - capabilities
+      - connection
+      - events
+      - actions
+      - trigger_patterns
+      properties:
+        name:
+          type: string
+          description: Stable provider identifier (`github`, `slack`, …).
+        display_name:
+          type: string
+        description:
+          type: string
+          description: Human-readable provider summary for directory and detail surfaces.
+        category:
+          allOf:
+          - $ref: '#/components/schemas/IntegrationCategory'
+          description: Human-readable grouping label for directory surfaces.
+        icon:
+          type: string
+          description: Stable icon key that clients may map to their own icon set.
+        auth_kind:
+          type: string
+          enum:
+          - api_key
+          - client_credentials
+          - github_app_install
+          - none
+          - oauth2_user
+          description: 'Authentication mechanism the provider uses: `api_key` for org-supplied
+            API keys, `oauth2_user` for user OAuth grants, `github_app_install` for GitHub
+            App installs, `client_credentials` for OAuth client credentials, or `none` for
+            built-in/keyless public providers that do not require org credentials.'
+        account_model:
+          allOf:
+          - $ref: '#/components/schemas/IntegrationAccountModel'
+          description: 'What one connection to this provider represents. Crosses `auth_kind`
+            rather than restating it: `oauth2_user` covers both Gmail (`personal`) and Slack
+            (`workspace`), and `api_key` covers both Firecrawl (`capability`) and Jira (`workspace`).'
+        docs_url:
+          type: string
+          description: Link to upstream provider docs, when known.
+        oauth_callback_url:
+          type: string
+          description: Absolute redirect URI this provider's OAuth authorization returns to.
+            Present for `oauth2_user` providers that support connect, and for the `mcp` provider
+            when MCP OAuth is configured. When the org supplies its own OAuth app or client
+            (rather than using a built-in Mobius credential or Dynamic Client Registration),
+            this is the exact callback URL that must be registered with the upstream provider,
+            or the authorization redirect is rejected.
+        detail_path:
+          type: string
+          description: Optional client route segment(s) for this provider's detail page, relative
+            to the app's Settings root (`/app/settings/`), so `mcp/{id}` resolves to `/app/settings/mcp/{id}`.
+            When omitted, clients navigate to the provider's default page under the integrations
+            directory (`/app/settings/integrations/{name}`). Set for providers whose detail
+            page does not live at that default route — e.g. a connected MCP server, whose
+            per-server page is `mcp/{integration_id}`. Lets clients render the provider directory
+            and action groups without special-casing any particular provider kind.
+        capabilities:
+          type: object
+          additionalProperties:
+            type: boolean
+          description: 'Boolean capability flags reflecting which framework interfaces the
+            provider implements (`connect`, `sync`, `live_status`, etc.). `application_connect`
+            marks a provider that also connects on an application plane — a connection the
+            business owns, granted once by a tenant administrator and run on the application''s
+            own credential — selected with `auth_mode: "application"` on that provider''s
+            connect body.'
+        connection:
+          $ref: '#/components/schemas/IntegrationProviderConnection'
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/IntegrationProviderEventType'
+        webhook_endpoints:
+          type: array
+          description: Provider-owned inbound webhook endpoints and setup status.
+          items:
+            $ref: '#/components/schemas/IntegrationProviderWebhookEndpoint'
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/IntegrationProviderAction'
+        trigger_patterns:
+          type: array
+          description: Provider-owned trigger authoring presets. Empty until trigger patterns
+            are registered for this provider.
+          items:
+            $ref: '#/components/schemas/IntegrationProviderTriggerPattern'
+    IntegrationProvidersResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      description: Integration providers and capabilities available to an org.
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/IntegrationProvider'
     WorkerSocketModelCapability:
       type: object
       additionalProperties: false
@@ -10450,38 +10632,6 @@ components:
         failure_reason:
           type: string
           description: Stable step code when status is failed; omitted otherwise.
-    OAuthReturnOrigins:
-      type: object
-      additionalProperties: false
-      description: The organization's allowlist of exact HTTPS origins an embedded partner
-        may name as an OAuth connect `return_url`. Origins are stored normalized (lowercase
-        host, default ports stripped). An empty list disables embedded return for the organization.
-        Embedded return is currently disabled for every organization, so the list has no effect.
-      required:
-      - origins
-      properties:
-        origins:
-          type: array
-          maxItems: 20
-          description: Normalized exact HTTPS return origins (for example `https://app.partner.example`).
-          items:
-            type: string
-    PutOAuthReturnOriginsRequest:
-      type: object
-      additionalProperties: false
-      description: Full-replace body for the organization's OAuth return-origin allowlist.
-        Each entry must be an exact HTTPS origin; entries are normalized and de-duplicated.
-        At most 20 origins are accepted.
-      required:
-      - origins
-      properties:
-        origins:
-          type: array
-          maxItems: 20
-          description: Exact HTTPS return origins to allow. An empty array disables embedded
-            return.
-          items:
-            type: string
     OrgContext:
       type: object
       additionalProperties: false
@@ -10868,22 +11018,13 @@ components:
       additionalProperties: false
       required:
       - kind
-      description: 'Polymorphic identifier of what is waiting on this interaction''s resolution.
-        `http_subscriber` requires `secret_ref` and enqueues a durable callback dispatch to
-        `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}`
-        is signed with HMAC-SHA256 against the resolved org signing key and the signed dispatch
-        carries `X-Mobius-Signature`, `X-Mobius-Secret-Version` and `X-Mobius-Timestamp`.
-        Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch
-        also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`;
-        retries reuse the same value. Verifiers should recompute the signature over the exact
-        raw body, reject stale timestamps (for example, older than five minutes), deduplicate
-        by delivery id, and check the signing headers.'
+      description: Polymorphic identifier of what is waiting on this interaction's resolution.
+        Every consumer is created by Mobius itself; a caller cannot attach one.
       properties:
         kind:
           type: string
           enum:
           - agent_tool
-          - http_subscriber
           - none
           - mcp_server_approval
           - external_agent_prompt
@@ -10896,13 +11037,6 @@ components:
           nullable: true
           description: Agent tool continuation target when `kind=agent_tool`; null for other
             consumer kinds.
-        http_subscriber:
-          type: object
-          allOf:
-          - $ref: '#/components/schemas/HttpSubscriberConsumer'
-          nullable: true
-          description: HTTP callback target when `kind=http_subscriber`; null for other consumer
-            kinds.
     InteractionSourceConversation:
       type: object
       additionalProperties: false
@@ -11062,52 +11196,6 @@ components:
           type: string
         subject:
           type: string
-    HttpSubscriberConsumer:
-      type: object
-      additionalProperties: false
-      required:
-      - callback_url
-      properties:
-        callback_url:
-          type: string
-          format: uri
-          description: Absolute http(s) URL the server POSTs to when the interaction resolves.
-            The body is a JSON object with the interaction id, kind, status, outcome value,
-            comment, responder, and `resolved_by`. Delivery is enqueued as a `source_events`
-            dispatch so the worker can retry failed attempts instead of dropping them inline
-            with interaction resolution.
-    ConsumerInput:
-      type: object
-      additionalProperties: false
-      required:
-      - kind
-      description: A caller may attach an HTTP subscriber or no consumer. Agent-tool consumers
-        are runtime-only.
-      properties:
-        kind:
-          type: string
-          enum:
-          - http_subscriber
-          - none
-        http_subscriber:
-          $ref: '#/components/schemas/HttpSubscriberConsumerInput'
-    HttpSubscriberConsumerInput:
-      type: object
-      additionalProperties: false
-      required:
-      - callback_url
-      - signing_secret
-      properties:
-        callback_url:
-          type: string
-          format: uri
-          description: Absolute public http(s) callback URL.
-        signing_secret:
-          type: string
-          writeOnly: true
-          minLength: 1
-          description: HMAC signing secret stored in the interaction-owned vault and never
-            returned.
     InteractionResponse:
       type: object
       additionalProperties: false
@@ -11510,10 +11598,6 @@ components:
           $ref: '#/components/schemas/ResolutionPolicy'
           description: Declarative resolution rule. When supplied the policy evaluator drives
             completion.
-        consumer:
-          $ref: '#/components/schemas/ConsumerInput'
-          description: Caller-provided continuation target, if any. The agent runtime creates
-            agent-tool continuations internally.
         delivery:
           $ref: '#/components/schemas/Delivery'
           description: Optional per-interaction delivery override.
@@ -14844,36 +14928,6 @@ components:
           type: string
           maxLength: 4096
           description: Optional Boolean expression over `event` and `meta`. Errors fail closed.
-    CreateSessionEventSubscriptionRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - filters
-      properties:
-        filters:
-          type: array
-          minItems: 1
-          maxItems: 16
-          description: ORed public-event filter branches.
-          items:
-            $ref: '#/components/schemas/SessionEventSubscriptionFilter'
-        expires_at:
-          type: string
-          format: date-time
-          nullable: true
-          description: Optional future stop time.
-        idempotency_key:
-          type: string
-          maxLength: 255
-          description: Retry key scoped to this session.
-        once:
-          type: boolean
-          default: false
-          description: When true, the subscription ends after its first matching event. That
-            event is still delivered to the conversation, and the subscription stops with
-            `stop_reason` `delivered_once` in the same step, so no later event can match it.
-            When false, the subscription keeps delivering until it is unsubscribed, stopped,
-            or expires. Retrying with the same `idempotency_key` must repeat the same value.
     SessionEventSubscriptionStatus:
       type: string
       enum:
@@ -14969,17 +15023,6 @@ components:
         updated_at:
           type: string
           format: date-time
-    SessionEventSubscriptionCreateResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - subscription
-      - deduped
-      properties:
-        subscription:
-          $ref: '#/components/schemas/SessionEventSubscription'
-        deduped:
-          type: boolean
     SessionEventSubscriptionListResponse:
       type: object
       additionalProperties: false
@@ -14991,89 +15034,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SessionEventSubscription'
-        has_more:
-          type: boolean
-        next_cursor:
-          type: string
-          nullable: true
-    SessionEventDeliveryStatus:
-      type: string
-      enum:
-      - pending
-      - delivered
-      - cancelled
-      - failed
-    SessionEventDelivery:
-      type: object
-      additionalProperties: false
-      required:
-      - id
-      - subscription_id
-      - session_id
-      - source_event_id
-      - event_type
-      - source_id
-      - event
-      - meta
-      - status
-      - created_at
-      - updated_at
-      properties:
-        id:
-          type: string
-        subscription_id:
-          type: string
-        session_id:
-          type: string
-        source_event_id:
-          type: string
-        event_type:
-          type: string
-        source_id:
-          type: string
-        event:
-          type: object
-          additionalProperties: true
-        meta:
-          type: object
-          additionalProperties: true
-        target_turn_id:
-          type: string
-        message_id:
-          type: string
-        status:
-          $ref: '#/components/schemas/SessionEventDeliveryStatus'
-        diagnostic:
-          type: string
-          description: 'Machine-readable note about this delivery, such as `payload_truncated_at_65536_bytes`.
-            `superseded_by_event_wait` means an agent wait in the same conversation already
-            received this event, so it was not added a second time: the status is `delivered`
-            and `target_turn_id` is the turn that received it.'
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-        delivered_at:
-          type: string
-          format: date-time
-          nullable: true
-        cancelled_at:
-          type: string
-          format: date-time
-          nullable: true
-    SessionEventDeliveryListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      - has_more
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/SessionEventDelivery'
         has_more:
           type: boolean
         next_cursor:
@@ -15229,6 +15189,13 @@ components:
           type: string
           description: First artifact ID in this version chain. Always returned by current
             servers.
+        file_id:
+          type: string
+          readOnly: true
+          description: The Library file (`file_...`) this version's lineage is filed as. Rename,
+            move, and whole-file deletion address that file, not a version. Returned by artifact
+            reads and listings; absent when the lineage is not filed, such as a file attached
+            to a chat message.
         previous_id:
           type: string
           description: Exact parent artifact ID; empty for version one. May point to a deleted
@@ -18545,20 +18512,6 @@ components:
           type: string
           format: date-time
           description: When the access token stops working.
-    UpdateArtifactRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - name
-      properties:
-        name:
-          type: string
-          maxLength: 256
-          description: 'New name for the file, as a relative virtual path. A leading folder
-            moves the file: `reports/2026/weekly.md` places it in `reports/2026`, a bare `weekly.md`
-            places it at the root.'
-      example:
-        name: reports/2026/weekly.md
     ArtifactFolder:
       type: object
       additionalProperties: false

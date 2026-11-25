@@ -235,6 +235,30 @@ def test_send_session_input_current_turn_returns_nudge_without_turn() -> None:
     }
 
 
+def test_send_session_input_current_turn_on_idle_session_starts_turn() -> None:
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["body"] = json.loads(request.read())
+        # No turn could absorb the direction, so the server started one.
+        return httpx.Response(202, json=_turn_ack_body("sess_1", "turn_1", 7))
+
+    client = _client_with(handler)
+    result = client.send_session_input(
+        "sess_1",
+        SendSessionInputOptions(
+            content=[{"type": "text", "text": "Use the shorter name"}],
+            delivery="current_turn",
+        ),
+    )
+
+    assert seen["body"]["delivery"] == "current_turn"
+    assert result.delivery == "new_turn"
+    assert result.turn is not None
+    assert result.turn.id == "turn_1"
+    assert result.turn.session_id == "sess_1"
+
+
 def test_list_session_messages_can_include_runtime_context() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path.endswith("/sessions/sess_1/messages")

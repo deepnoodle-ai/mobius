@@ -8,7 +8,6 @@ common integration tasks:
 - creating (or safely re-creating) agents with create-or-adopt semantics
   keyed on `external_ref`
 - managing org blueprints, principals, roles, and role assignments
-- managing the organization OAuth return-origin allowlist
 - managing organization Actions and their signing-secret lifecycle
 - publishing org artifacts with metadata and safe retry keys, and attaching
   documents and images to a session
@@ -134,35 +133,6 @@ without an explicit secret sink, so the one-time reveal is never burned by
 accident: `--secret-file PATH` writes the key to a `0600` file and masks it
 in the printed response; `--show-secret` prints the full response for
 existing scripts.
-
-## Organization OAuth Return Origins
-
-`GetOAuthReturnOrigins` / `get_oauth_return_origins` /
-`getOAuthReturnOrigins` and the matching `Replace…` methods manage the
-organization's allowlist of exact HTTPS origins an embedded partner may name
-as an OAuth connect `return_url`. Both require Admin or Owner membership:
-
-```go
-origins, err := client.ReplaceOAuthReturnOrigins(ctx, []string{"https://app.partner.example"})
-```
-
-```python
-origins = client.replace_oauth_return_origins(["https://app.partner.example"])
-```
-
-```ts
-const origins = await client.replaceOAuthReturnOrigins([
-  "https://app.partner.example",
-]);
-```
-
-The wrappers are deliberately dumb: the server normalizes each entry
-(lowercase host, default ports stripped, duplicates collapsed) and rejects
-invalid origins — nothing is validated client-side. Replace is a full
-replacement over PUT, so it is already idempotent and retried like any other
-idempotent request. Passing an empty list disables embedded return for the
-organization; from the CLI that state is explicit:
-`mobius organizations replace-oauth-return-origins --clear`.
 
 ## Action Invocation Audit
 
@@ -529,8 +499,8 @@ if (turn.error) throw turn.error;
 To follow a started turn yourself instead, open the transcript stream from
 the turn's resume cursor; the send request has no inline stream.
 
-A new turn accepts a one-shot execution
-timeout. Set `Operation: &api.AgentTurnOperationPolicy{TimeoutSeconds: &seconds}`
+A new turn accepts a one-shot `operation` override for its execution timeout.
+Set `Operation: &api.AgentTurnOperationPolicy{TimeoutSeconds: &seconds}`
 in Go, `operation=mobius.AgentTurnOperationPolicy(timeout_seconds=90)` in
 Python, or `operation: { timeout_seconds: 90 }` in TypeScript. This policy
 applies only to the newly admitted turn, overrides the stored agent timeout,

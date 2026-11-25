@@ -80,15 +80,6 @@ var overrides = map[string]Override{
 	"deleteAPIKey": {Command: "delete"},
 
 	// --- organizations ------------------------------------------------------
-	// "OAuth" (capital O+A only, not a fully-uppercase initialism like "API")
-	// defeats the word-splitting heuristics: the auto-derive lands on
-	// `get-auth-return-origins` (drops the "o"). Spell it out lowercase to
-	// match the `oauth-return-origins` path segment.
-	"getOAuthReturnOrigins": {Command: "get-oauth-return-origins"},
-	// Hand-written (organizations.go): the generated body assembly rejects an
-	// empty origins list, but an empty list is the documented way to disable
-	// embedded return — the hand-written command adds --clear for it.
-	"replaceOAuthReturnOrigins": {Skip: true},
 	// Pairs with `get-context`, which derives cleanly.
 	"replaceOrgContext": {Command: "replace-context"},
 	// Pairs with `get-deletion` / `cancel-deletion`, which derive cleanly.
@@ -109,12 +100,9 @@ var overrides = map[string]Override{
 	// commands read as their filesystem counterparts. Each is hand-written in
 	// artifact_folders.go for a positional argument the generated body/params
 	// shape cannot express:
-	//   - `artifacts move ID NEW-NAME` instead of `update ID --name`, because
-	//     the new name is the whole point of the call.
 	//   - `artifacts mkdir PATH` instead of `create-folder --path`.
 	//   - `artifacts rmdir ID-OR-PATH`, which resolves a path to a folder ID
 	//     and explains a `folder_not_empty` refusal.
-	"updateArtifact":       {Skip: true},
 	"createArtifactFolder": {Skip: true},
 	"deleteArtifactFolder": {Skip: true},
 	"listArtifactFolders":  {Command: "folders"},

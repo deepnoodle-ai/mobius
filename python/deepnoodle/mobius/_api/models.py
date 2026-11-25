@@ -1761,6 +1761,312 @@ class RoutineFollowTarget(BaseModel):
     )
 
 
+class IntegrationCategory(StrEnum):
+    """
+    Stable integration directory grouping.
+    """
+
+    Code_and_DevOps = 'Code and DevOps'
+    Sales___CRM = 'Sales & CRM'
+    Issue_Tracking = 'Issue Tracking'
+    Productivity = 'Productivity'
+    Messaging = 'Messaging'
+    Social_Media = 'Social Media'
+    Email = 'Email'
+    Actions = 'Actions'
+    Web_and_Data = 'Web and Data'
+    Storage = 'Storage'
+    Environments = 'Environments'
+    Model_Providers = 'Model Providers'
+    Built_in = 'Built in'
+
+
+class IntegrationAccountModel(StrEnum):
+    """
+    What one connection to a provider represents.
+
+    `personal` — one human's own account, and acting through it acts as that person (Gmail, Google Calendar, X). `workspace` — a shared external workspace the whole org acts within (Slack, Jira, GitHub). `capability` — a keyed service with no account identity behind it (Firecrawl, a model provider, a database).
+
+    It decides the default owner of a new connection and whether the connection is offered to an agent by default.
+    """
+
+    personal = 'personal'
+    workspace = 'workspace'
+    capability = 'capability'
+
+
+class IntegrationStatus(StrEnum):
+    """
+    `active` — integration is enabled and usable by agents. `inactive` — manually disabled; no automatic expiry behavior. `expired` — token/credential has expired (e.g., OAuth token not refreshed).
+    """
+
+    active = 'active'
+    inactive = 'inactive'
+    expired = 'expired'
+    confirmation_required = 'confirmation_required'
+
+
+class Kind5(StrEnum):
+    person = 'person'
+    organization = 'organization'
+
+
+class ConnectionController(BaseModel):
+    """
+    Lifecycle and grant authority. Control does not authorize organization-provider content or agent execution.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Kind5
+    principal_id: str | None = Field(
+        None, description='Human controller ID, present only for person control.'
+    )
+    display_name: str | None = Field(
+        None, description='Human controller display name, when available.'
+    )
+
+
+class IntegrationConnection(BaseModel):
+    """
+    One connection to a provider, as the catalog presents it.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    integration_id: str
+    name: str = Field(
+        ..., description='The name whoever connected it chose. Unique per owner.'
+    )
+    status: IntegrationStatus
+    status_reason: str | None = Field(
+        None,
+        description='Human-readable reason when `status` is `expired` (needs reconnect).',
+    )
+    controller: ConnectionController
+    identity_label: str | None = Field(
+        None,
+        description='The external account this connection reaches, when the provider declares one — a mailbox address, a Slack team id, a Jira site. This is what tells two connections apart when their names do not.',
+    )
+    updated_at: AwareDatetime | None = None
+
+
+class CredentialSource(StrEnum):
+    """
+    Which credential the org will actually use right now: `byok` when the org has connected its own key, `platform` when it falls back to the Mobius-provided credential, or `none` when neither is available. Always `platform` for a ready `platform_billed` provider.
+    """
+
+    byok = 'byok'
+    platform = 'platform'
+    none = 'none'
+
+
+class IntegrationProviderConnection(BaseModel):
+    """
+    Org-local connection summary for a provider. A provider may hold several connections at once — two mailboxes, a personal account beside an org-shared one — so the rows live in `connections` and the provider-level fields describe the provider, not any single row.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    readiness: CapabilityReadiness = Field(
+        ...,
+        description='Whether this provider is configured and usable in the org right now. `ready` when an active integration exists and the provider runtime is available, or when Mobius can serve the provider through a built-in platform credential; otherwise `needs_setup`.',
+    )
+    readiness_reason: CapabilityReadinessReason | None = Field(
+        None,
+        description='Why the provider is `needs_setup`. `not_configured` when no integration exists; `inactive`/`expired` from the integration lifecycle; `provider_unavailable` when the provider runtime is down. Omitted when `readiness` is `ready`.',
+    )
+    connections: list[IntegrationConnection] = Field(
+        ...,
+        description='Every connection to this provider the caller may see, newest first. Empty when the org has none.',
+    )
+    platform_available: bool = Field(
+        ...,
+        description='True when Mobius can supply a built-in platform credential for this provider, so the org can use it without connecting its own key. Keyless public providers (e.g. Reddit, Hacker News) are always available; key-based platform integrations are available only when the platform credential is configured.',
+    )
+    credential_source: CredentialSource = Field(
+        ...,
+        description='Which credential the org will actually use right now: `byok` when the org has connected its own key, `platform` when it falls back to the Mobius-provided credential, or `none` when neither is available. Always `platform` for a ready `platform_billed` provider.',
+    )
+    platform_billed: bool | None = Field(
+        None,
+        description="True when every call through this provider runs on Mobius's own app with the provider and spends Mobius credits, even through a connected account (X). Connecting an account picks who acts, not who pays. Omitted otherwise.",
+    )
+
+
+class RuntimeState(StrEnum):
+    """
+    Whether the event type is backed by current ingest. Planned events are catalog/documentation-only and should not be offered for new triggers or `wait` / `react` event-subject steps.
+    """
+
+    active = 'active'
+    planned = 'planned'
+    deprecated = 'deprecated'
+
+
+class IntegrationProviderEventType(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ..., description='Dotted event-type identifier (`github.pull_request.opened`).'
+    )
+    schema_version: int = Field(
+        ...,
+        description='Integer schema version. Bumps are additive-only by convention.',
+    )
+    runtime_state: RuntimeState = Field(
+        ...,
+        description='Whether the event type is backed by current ingest. Planned events are catalog/documentation-only and should not be offered for new triggers or `wait` / `react` event-subject steps.',
+    )
+    description: str | None = None
+    payload_schema: dict[str, Any] | None = Field(
+        None,
+        description='JSON Schema for the event payload. Absent when the registered Go type cannot be reflected meaningfully (for example, `map[string]any` aliases of raw upstream payloads).',
+    )
+
+
+class Delivery(StrEnum):
+    webhook = 'webhook'
+
+
+class Status1(StrEnum):
+    configured = 'configured'
+    missing_secret = 'missing_secret'
+    legacy_route = 'legacy_route'
+    unavailable = 'unavailable'
+
+
+class IntegrationProviderWebhookEndpoint(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    path_suffix: str = Field(
+        ...,
+        description='Provider webhook path suffix under `/v1/provider/{provider}/webhook`.',
+    )
+    url: AnyUrl = Field(
+        ..., description='Fully-qualified endpoint URL for upstream provider setup.'
+    )
+    delivery: Delivery
+    signature_mode: str | None = Field(
+        None, description='Framework signature verification mode.'
+    )
+    status: Status1
+    notes: str | None = None
+
+
+class IntegrationProviderAction(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ..., description='Callable action name (`github.issue.create_comment`).'
+    )
+    title: str | None = None
+    description: str | None = None
+    input_schema: dict[str, Any] | None = Field(
+        None, description="JSON Schema for the action's parameters object."
+    )
+    output_schema: dict[str, Any] | None = Field(
+        None, description="JSON Schema for the action's result object."
+    )
+
+
+class IntegrationProviderTriggerPattern(BaseModel):
+    """
+    Catalog descriptor for creating a trigger from a provider-owned event pattern. The array is currently empty for all providers; this schema reserves the response shape for the trigger-pattern rollout.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    label: str
+    description: str | None = None
+    event_type: str | None = None
+    category: str | None = None
+
+
+class AuthKind(StrEnum):
+    """
+    Authentication mechanism the provider uses: `api_key` for org-supplied API keys, `oauth2_user` for user OAuth grants, `github_app_install` for GitHub App installs, `client_credentials` for OAuth client credentials, or `none` for built-in/keyless public providers that do not require org credentials.
+    """
+
+    api_key = 'api_key'
+    client_credentials = 'client_credentials'
+    github_app_install = 'github_app_install'
+    none = 'none'
+    oauth2_user = 'oauth2_user'
+
+
+class IntegrationProvider(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ..., description='Stable provider identifier (`github`, `slack`, …).'
+    )
+    display_name: str
+    description: str | None = Field(
+        None,
+        description='Human-readable provider summary for directory and detail surfaces.',
+    )
+    category: IntegrationCategory | None = Field(
+        None, description='Human-readable grouping label for directory surfaces.'
+    )
+    icon: str | None = Field(
+        None, description='Stable icon key that clients may map to their own icon set.'
+    )
+    auth_kind: AuthKind = Field(
+        ...,
+        description='Authentication mechanism the provider uses: `api_key` for org-supplied API keys, `oauth2_user` for user OAuth grants, `github_app_install` for GitHub App installs, `client_credentials` for OAuth client credentials, or `none` for built-in/keyless public providers that do not require org credentials.',
+    )
+    account_model: IntegrationAccountModel = Field(
+        ...,
+        description='What one connection to this provider represents. Crosses `auth_kind` rather than restating it: `oauth2_user` covers both Gmail (`personal`) and Slack (`workspace`), and `api_key` covers both Firecrawl (`capability`) and Jira (`workspace`).',
+    )
+    docs_url: str | None = Field(
+        None, description='Link to upstream provider docs, when known.'
+    )
+    oauth_callback_url: str | None = Field(
+        None,
+        description="Absolute redirect URI this provider's OAuth authorization returns to. Present for `oauth2_user` providers that support connect, and for the `mcp` provider when MCP OAuth is configured. When the org supplies its own OAuth app or client (rather than using a built-in Mobius credential or Dynamic Client Registration), this is the exact callback URL that must be registered with the upstream provider, or the authorization redirect is rejected.",
+    )
+    detail_path: str | None = Field(
+        None,
+        description="Optional client route segment(s) for this provider's detail page, relative to the app's Settings root (`/app/settings/`), so `mcp/{id}` resolves to `/app/settings/mcp/{id}`. When omitted, clients navigate to the provider's default page under the integrations directory (`/app/settings/integrations/{name}`). Set for providers whose detail page does not live at that default route — e.g. a connected MCP server, whose per-server page is `mcp/{integration_id}`. Lets clients render the provider directory and action groups without special-casing any particular provider kind.",
+    )
+    capabilities: dict[str, bool] = Field(
+        ...,
+        description='Boolean capability flags reflecting which framework interfaces the provider implements (`connect`, `sync`, `live_status`, etc.). `application_connect` marks a provider that also connects on an application plane — a connection the business owns, granted once by a tenant administrator and run on the application\'s own credential — selected with `auth_mode: "application"` on that provider\'s connect body.',
+    )
+    connection: IntegrationProviderConnection
+    events: list[IntegrationProviderEventType]
+    webhook_endpoints: list[IntegrationProviderWebhookEndpoint] | None = Field(
+        None, description='Provider-owned inbound webhook endpoints and setup status.'
+    )
+    actions: list[IntegrationProviderAction]
+    trigger_patterns: list[IntegrationProviderTriggerPattern] = Field(
+        ...,
+        description='Provider-owned trigger authoring presets. Empty until trigger patterns are registered for this provider.',
+    )
+
+
+class IntegrationProvidersResponse(BaseModel):
+    """
+    Integration providers and capabilities available to an org.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[IntegrationProvider]
+
+
 class WorkerSocketModelCapability(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -1905,7 +2211,7 @@ class WorkerSocketJobsClaimFrame(BaseModel):
     models: list[WorkerSocketModelCapability] | None = None
 
 
-class Kind5(StrEnum):
+class Kind6(StrEnum):
     action_execution = 'action_execution'
     llm_generation = 'llm_generation'
 
@@ -1930,7 +2236,7 @@ class WorkerSocketClaimedJob(BaseModel):
         extra='forbid',
     )
     id: str = Field(..., description='Job ID.')
-    kind: Kind5
+    kind: Kind6
     origin: Origin
     executor_kind: ExecutorKind
     queue: str
@@ -2016,7 +2322,7 @@ class Type8(StrEnum):
     job_report = 'job.report'
 
 
-class Status1(StrEnum):
+class Status2(StrEnum):
     completed = 'completed'
     failed = 'failed'
     cancelled = 'cancelled'
@@ -2032,7 +2338,7 @@ class WorkerSocketJobReportFrame(BaseModel):
     lease_token: str = Field(
         ..., description='Opaque per-job lease fence returned by claim.'
     )
-    status: Status1 = 'completed'
+    status: Status2 = 'completed'
     result: dict[str, Any] | None = Field(
         None,
         description='Terminal result payload. For `llm_generation` jobs, this object must follow `WorkerSocketLLMGenerationResult`; plain text fallback results are not accepted.',
@@ -2623,7 +2929,7 @@ class OrgDeletionRequest(BaseModel):
     confirmation_name: str = Field(..., min_length=1)
 
 
-class Status2(StrEnum):
+class Status3(StrEnum):
     pending_purge = 'pending_purge'
     purging = 'purging'
     completed = 'completed'
@@ -2636,43 +2942,13 @@ class OrgDeletion(BaseModel):
         extra='forbid',
     )
     org_id: str
-    status: Status2
+    status: Status3
     purge_after: AwareDatetime
     requested_at: AwareDatetime
     completed_at: AwareDatetime | None = None
     cancelled_at: AwareDatetime | None = None
     failure_reason: str | None = Field(
         None, description='Stable step code when status is failed; omitted otherwise.'
-    )
-
-
-class OAuthReturnOrigins(BaseModel):
-    """
-    The organization's allowlist of exact HTTPS origins an embedded partner may name as an OAuth connect `return_url`. Origins are stored normalized (lowercase host, default ports stripped). An empty list disables embedded return for the organization. Embedded return is currently disabled for every organization, so the list has no effect.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    origins: list[str] = Field(
-        ...,
-        description='Normalized exact HTTPS return origins (for example `https://app.partner.example`).',
-        max_length=20,
-    )
-
-
-class PutOAuthReturnOriginsRequest(BaseModel):
-    """
-    Full-replace body for the organization's OAuth return-origin allowlist. Each entry must be an exact HTTPS origin; entries are normalized and de-duplicated. At most 20 origins are accepted.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    origins: list[str] = Field(
-        ...,
-        description='Exact HTTPS return origins to allow. An empty array disables embedded return.',
-        max_length=20,
     )
 
 
@@ -2713,7 +2989,7 @@ class PutOrgContextRequest(BaseModel):
     )
 
 
-class Kind6(StrEnum):
+class Kind7(StrEnum):
     skill = 'skill'
     connection = 'connection'
     file = 'file'
@@ -2733,7 +3009,7 @@ class AgentCopyLeftOut(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind6
+    kind: Kind7
     id: str
     name: str = Field(..., description='Empty for a file and for a private skill.')
     private: bool = Field(
@@ -2988,7 +3264,7 @@ class InteractionResponder(BaseModel):
     user_id: str = Field(..., description='Responder user ID.')
 
 
-class Kind7(StrEnum):
+class Kind8(StrEnum):
     external_url = 'external_url'
     mobius_entity = 'mobius_entity'
 
@@ -3001,7 +3277,7 @@ class InteractionReference(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind7
+    kind: Kind8
     url: AnyUrl | None = Field(
         None, description='Required when kind is `external_url`.'
     )
@@ -3017,7 +3293,7 @@ class InteractionReference(BaseModel):
     label: str | None = Field(None, description='User-facing label for display.')
 
 
-class Kind8(StrEnum):
+class Kind9(StrEnum):
     inbox_only = 'inbox_only'
     email = 'email'
 
@@ -3029,13 +3305,12 @@ class EmailDelivery(BaseModel):
     to: list[EmailStr] = Field(..., min_length=1)
 
 
-class Kind9(StrEnum):
+class Kind10(StrEnum):
     """
     `external_agent_prompt`: an external agent's permission prompt for one call it holds, named to its owner.
     """
 
     agent_tool = 'agent_tool'
-    http_subscriber = 'http_subscriber'
     none = 'none'
     mcp_server_approval = 'mcp_server_approval'
     external_agent_prompt = 'external_agent_prompt'
@@ -3113,35 +3388,6 @@ class HeldItemView(BaseModel):
     )
     from_: str | None = Field(None, alias='from')
     subject: str | None = None
-
-
-class HttpSubscriberConsumer(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    callback_url: AnyUrl = Field(
-        ...,
-        description='Absolute http(s) URL the server POSTs to when the interaction resolves. The body is a JSON object with the interaction id, kind, status, outcome value, comment, responder, and `resolved_by`. Delivery is enqueued as a `source_events` dispatch so the worker can retry failed attempts instead of dropping them inline with interaction resolution.',
-    )
-
-
-class Kind10(StrEnum):
-    http_subscriber = 'http_subscriber'
-    none = 'none'
-
-
-class HttpSubscriberConsumerInput(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    callback_url: AnyUrl = Field(
-        ..., description='Absolute public http(s) callback URL.'
-    )
-    signing_secret: str = Field(
-        ...,
-        description='HMAC signing secret stored in the interaction-owned vault and never returned.',
-        min_length=1,
-    )
 
 
 class ResponseKind(StrEnum):
@@ -3711,7 +3957,7 @@ class CreateAgentRequest(BaseModel):
     )
 
 
-class Status3(StrEnum):
+class Status4(StrEnum):
     """
     Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent.
     """
@@ -3776,7 +4022,7 @@ class UpdateAgentRequest(BaseModel):
         description="Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (1800s / 30 minutes); a request's `operation.timeout_seconds` overrides it for that turn.",
         ge=0,
     )
-    status: Status3 | None = Field(
+    status: Status4 | None = Field(
         None,
         description='Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent.',
     )
@@ -4481,7 +4727,7 @@ class UpdateSessionRequest(BaseModel):
     )
 
 
-class Status4(StrEnum):
+class Status5(StrEnum):
     running = 'running'
     done = 'done'
     failed = 'failed'
@@ -4498,7 +4744,7 @@ class SessionHelperStep(BaseModel):
     phrase: str = Field(
         ..., description='For example "Saving a row in support_hire_onboarding…".'
     )
-    status: Status4
+    status: Status5
     reason: str | None = Field(
         None,
         description='Short, person-actionable cause when status is failed and the failure matches a known cause (for example "Out of credits"). Never raw provider payloads or private content.',
@@ -5299,28 +5545,6 @@ class SessionEventSubscriptionFilter(BaseModel):
     )
 
 
-class CreateSessionEventSubscriptionRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    filters: list[SessionEventSubscriptionFilter] = Field(
-        ...,
-        description='ORed public-event filter branches.',
-        max_length=16,
-        min_length=1,
-    )
-    expires_at: AwareDatetime | None = Field(
-        None, description='Optional future stop time.'
-    )
-    idempotency_key: str | None = Field(
-        None, description='Retry key scoped to this session.', max_length=255
-    )
-    once: bool = Field(
-        False,
-        description='When true, the subscription ends after its first matching event. That event is still delivered to the conversation, and the subscription stops with `stop_reason` `delivered_once` in the same step, so no later event can match it. When false, the subscription keeps delivering until it is unsubscribed, stopped, or expires. Retrying with the same `idempotency_key` must repeat the same value.',
-    )
-
-
 class SessionEventSubscriptionStatus(StrEnum):
     active = 'active'
     funding_paused = 'funding_paused'
@@ -5374,60 +5598,11 @@ class SessionEventSubscription(BaseModel):
     updated_at: AwareDatetime
 
 
-class SessionEventSubscriptionCreateResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    subscription: SessionEventSubscription
-    deduped: bool
-
-
 class SessionEventSubscriptionListResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
     items: list[SessionEventSubscription]
-    has_more: bool
-    next_cursor: str | None = None
-
-
-class SessionEventDeliveryStatus(StrEnum):
-    pending = 'pending'
-    delivered = 'delivered'
-    cancelled = 'cancelled'
-    failed = 'failed'
-
-
-class SessionEventDelivery(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str
-    subscription_id: str
-    session_id: str
-    source_event_id: str
-    event_type: str
-    source_id: str
-    event: dict[str, Any]
-    meta: dict[str, Any]
-    target_turn_id: str | None = None
-    message_id: str | None = None
-    status: SessionEventDeliveryStatus
-    diagnostic: str | None = Field(
-        None,
-        description='Machine-readable note about this delivery, such as `payload_truncated_at_65536_bytes`. `superseded_by_event_wait` means an agent wait in the same conversation already received this event, so it was not added a second time: the status is `delivered` and `target_turn_id` is the turn that received it.',
-    )
-    created_at: AwareDatetime
-    updated_at: AwareDatetime
-    delivered_at: AwareDatetime | None = None
-    cancelled_at: AwareDatetime | None = None
-
-
-class SessionEventDeliveryListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[SessionEventDelivery]
     has_more: bool
     next_cursor: str | None = None
 
@@ -5524,6 +5699,10 @@ class Artifact(BaseModel):
     root_id: str | None = Field(
         None,
         description='First artifact ID in this version chain. Always returned by current servers.',
+    )
+    file_id: str | None = Field(
+        None,
+        description="The Library file (`file_...`) this version's lineage is filed as. Rename, move, and whole-file deletion address that file, not a version. Returned by artifact reads and listings; absent when the lineage is not filed, such as a file attached to a chat message.",
     )
     previous_id: str | None = Field(
         None,
@@ -5737,7 +5916,7 @@ class Trigger(StrEnum):
     event = 'event'
 
 
-class Status5(StrEnum):
+class Status6(StrEnum):
     """
     `blocked` is a run that ended without doing its work: the assistant reported it (`error_code` `agent_reported`), or the conversation's files could not be opened (`workspace_unavailable`). `error_message` says why. A pending run with `next_attempt_at` is waiting to be tried again after an attempt that stopped.
     """
@@ -5763,7 +5942,7 @@ class Changes(BaseModel):
     after: dict[str, Any] | None = None
 
 
-class Status6(StrEnum):
+class Status7(StrEnum):
     success = 'success'
     failure = 'failure'
 
@@ -5798,7 +5977,7 @@ class RoutineChange(BaseModel):
         None,
         description='The values before and after. Withheld fields read as `<redacted>` rather than disappearing.',
     )
-    status: Status6
+    status: Status7
     error_type: str | None = None
     created_at: AwareDatetime
 
@@ -5812,7 +5991,7 @@ class RoutineChangeList(BaseModel):
     next_cursor: str | None = None
 
 
-class Status7(StrEnum):
+class Status8(StrEnum):
     pending = 'pending'
     approved = 'approved'
     dismissed = 'dismissed'
@@ -5827,7 +6006,7 @@ class RoutineProposal(BaseModel):
     session_id: str
     agent_id: str
     proposed_to: str
-    status: Status7
+    status: Status8
     routine_id: str | None = None
     expires_at: AwareDatetime
     payload: dict[str, Any] = Field(..., description='What the agent proposed.')
@@ -6066,7 +6245,7 @@ class BlueprintSkillInput(BaseModel):
     tags: TagMap | None = None
 
 
-class Status8(StrEnum):
+class Status9(StrEnum):
     """
     `applied` for a mutating apply, `previewed` for a preview.
     """
@@ -6121,7 +6300,7 @@ class SetBlueprintProtectionRequest(BaseModel):
     protected: bool
 
 
-class Status9(StrEnum):
+class Status10(StrEnum):
     deleted = 'deleted'
 
 
@@ -6129,7 +6308,7 @@ class BlueprintDeleteResult(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    status: Status9
+    status: Status10
     namespace: str | None = None
     blueprint_key: str
     deleted: list[BlueprintBinding] = Field(
@@ -7353,17 +7532,6 @@ class ExternalAgentAccessToken(BaseModel):
     )
 
 
-class UpdateArtifactRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str = Field(
-        ...,
-        description='New name for the file, as a relative virtual path. A leading folder moves the file: `reports/2026/weekly.md` places it in `reports/2026`, a bare `weekly.md` places it at the root.',
-        max_length=256,
-    )
-
-
 class ArtifactFolder(BaseModel):
     """
     A declared Library folder.
@@ -7840,7 +8008,7 @@ class DeliveryChannel(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind8
+    kind: Kind9
     email: EmailDelivery | None = Field(
         None,
         description='Email delivery payload when `kind=email`; null for inbox-only delivery.',
@@ -7849,23 +8017,19 @@ class DeliveryChannel(BaseModel):
 
 class Consumer(BaseModel):
     """
-    Polymorphic identifier of what is waiting on this interaction's resolution. `http_subscriber` requires `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved org signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Version` and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers.
+    Polymorphic identifier of what is waiting on this interaction's resolution. Every consumer is created by Mobius itself; a caller cannot attach one.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind9 = Field(
+    kind: Kind10 = Field(
         ...,
         description="`external_agent_prompt`: an external agent's permission prompt for one call it holds, named to its owner.",
     )
     agent_tool: AgentToolConsumer | None = Field(
         None,
         description='Agent tool continuation target when `kind=agent_tool`; null for other consumer kinds.',
-    )
-    http_subscriber: HttpSubscriberConsumer | None = Field(
-        None,
-        description='HTTP callback target when `kind=http_subscriber`; null for other consumer kinds.',
     )
 
 
@@ -7905,18 +8069,6 @@ class HeldCallView(BaseModel):
         None,
         description="The call's other arguments, as plain text, sorted by name. Every argument the layout above does not show appears here.",
     )
-
-
-class ConsumerInput(BaseModel):
-    """
-    A caller may attach an HTTP subscriber or no consumer. Agent-tool consumers are runtime-only.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    kind: Kind10
-    http_subscriber: HttpSubscriberConsumerInput | None = None
 
 
 class DeletedAgent(BaseModel):
@@ -8668,7 +8820,7 @@ class RoutineOccurrence(BaseModel):
         None,
         description='The concrete event type that arrived (`github.issues.opened`), not the pattern the routine subscribed to. Present only when `trigger` is `event`.',
     )
-    status: Status5 = Field(
+    status: Status6 = Field(
         ...,
         description="`blocked` is a run that ended without doing its work: the assistant reported it (`error_code` `agent_reported`), or the conversation's files could not be opened (`workspace_unavailable`). `error_message` says why. A pending run with `next_attempt_at` is waiting to be tried again after an attempt that stopped.",
     )
@@ -8841,7 +8993,7 @@ class BlueprintApplyResult(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    status: Status8 = Field(
+    status: Status9 = Field(
         ..., description='`applied` for a mutating apply, `previewed` for a preview.'
     )
     namespace: str | None = None
@@ -9215,7 +9367,7 @@ class WorkerModelCatalogListResponse(BaseModel):
     items: list[WorkerModelCatalogItem]
 
 
-class Delivery(BaseModel):
+class Delivery1(BaseModel):
     """
     Optional per-interaction delivery override. When absent, each participant is notified via the app inbox only.
     """
@@ -9362,7 +9514,7 @@ class Interaction(BaseModel):
         None,
         description='The conversation whose assistant asked this question. A caller who can read that conversation gets it on get and list reads whenever an assistant asked from one. Null for questions no conversation asked. Omitted for a person this interaction asks who cannot use the conversation (see asker_name).',
     )
-    delivery: Delivery | None = Field(
+    delivery: Delivery1 | None = Field(
         None,
         description='Optional per-interaction delivery override. When absent, the dispatcher delivers to the app inbox only.',
     )
@@ -9445,11 +9597,7 @@ class CreateInteractionRequest(BaseModel):
         None,
         description='Declarative resolution rule. When supplied the policy evaluator drives completion.',
     )
-    consumer: ConsumerInput | None = Field(
-        None,
-        description='Caller-provided continuation target, if any. The agent runtime creates agent-tool continuations internally.',
-    )
-    delivery: Delivery | None = Field(
+    delivery: Delivery1 | None = Field(
         None, description='Optional per-interaction delivery override.'
     )
     expires_at: AwareDatetime | None = Field(

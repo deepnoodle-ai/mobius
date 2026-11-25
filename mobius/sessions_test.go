@@ -247,6 +247,32 @@ func TestSendSessionInput_CurrentTurn(t *testing.T) {
 	assert.Equal(t, body["wake"], true)
 }
 
+func TestSendSessionInput_CurrentTurnOnIdleSessionStartsNewTurn(t *testing.T) {
+	var body map[string]interface{}
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, r.URL.Path, "/v1/sessions/sess_1/inputs")
+		raw, _ := io.ReadAll(r.Body)
+		assert.NoError(t, json.Unmarshal(raw, &body))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusAccepted)
+		// No turn could absorb the direction, so the server started one.
+		_, _ = io.WriteString(w, turnAckJSON("sess_1", "turn_1", 7))
+	})
+	c, srv := newTestClient(t, h)
+	defer srv.Close()
+
+	in, err := c.SendSessionInput(context.Background(), "sess_1", SendSessionInputOptions{
+		Content:  []map[string]interface{}{{"type": "text", "text": "Use the shorter name"}},
+		Delivery: DeliverCurrentTurn,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, body["delivery"], "current_turn")
+	assert.Equal(t, in.Delivery, DeliverNewTurn)
+	assert.True(t, in.Turn != nil)
+	assert.Equal(t, in.Turn.ID(), "turn_1")
+	assert.Equal(t, in.Turn.SessionID(), "sess_1")
+}
+
 func TestSessionNudgeLifecycle_HighLevelClient(t *testing.T) {
 	const queued = `{"id":"nudge_1","status":"pending","delivery":"current_turn","content":"Use the shorter name","turn":{"id":"turn_1","status":"waiting"},"sender_principal_id":"principal_1","created_at":"2026-07-14T12:00:00Z"}`
 	const cancelled = `{"id":"nudge_1","status":"cancelled","delivery":"current_turn","content":"Use the shorter name","turn":{"id":"turn_1","status":"waiting"},"sender_principal_id":"principal_1","created_at":"2026-07-14T12:00:00Z","cancelled_at":"2026-07-14T12:01:00Z"}`

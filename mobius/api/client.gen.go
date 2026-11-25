@@ -1406,11 +1406,28 @@ func (e ColumnType) Valid() bool {
 	}
 }
 
+// Defines values for ConnectionControllerKind.
+const (
+	ConnectionControllerKindOrganization ConnectionControllerKind = "organization"
+	ConnectionControllerKindPerson       ConnectionControllerKind = "person"
+)
+
+// Valid indicates whether the value is a known member of the ConnectionControllerKind enum.
+func (e ConnectionControllerKind) Valid() bool {
+	switch e {
+	case ConnectionControllerKindOrganization:
+		return true
+	case ConnectionControllerKindPerson:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ConsumerKind.
 const (
 	ConsumerKindAgentTool           ConsumerKind = "agent_tool"
 	ConsumerKindExternalAgentPrompt ConsumerKind = "external_agent_prompt"
-	ConsumerKindHttpSubscriber      ConsumerKind = "http_subscriber"
 	ConsumerKindMcpServerApproval   ConsumerKind = "mcp_server_approval"
 	ConsumerKindNone                ConsumerKind = "none"
 )
@@ -1422,29 +1439,9 @@ func (e ConsumerKind) Valid() bool {
 		return true
 	case ConsumerKindExternalAgentPrompt:
 		return true
-	case ConsumerKindHttpSubscriber:
-		return true
 	case ConsumerKindMcpServerApproval:
 		return true
 	case ConsumerKindNone:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ConsumerInputKind.
-const (
-	ConsumerInputKindHttpSubscriber ConsumerInputKind = "http_subscriber"
-	ConsumerInputKindNone           ConsumerInputKind = "none"
-)
-
-// Valid indicates whether the value is a known member of the ConsumerInputKind enum.
-func (e ConsumerInputKind) Valid() bool {
-	switch e {
-	case ConsumerInputKindHttpSubscriber:
-		return true
-	case ConsumerInputKindNone:
 		return true
 	default:
 		return false
@@ -1775,6 +1772,210 @@ func (e IfExists) Valid() bool {
 	case IfExistsAdopt:
 		return true
 	case IfExistsError:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IntegrationAccountModel.
+const (
+	IntegrationAccountModelCapability IntegrationAccountModel = "capability"
+	IntegrationAccountModelPersonal   IntegrationAccountModel = "personal"
+	IntegrationAccountModelWorkspace  IntegrationAccountModel = "workspace"
+)
+
+// Valid indicates whether the value is a known member of the IntegrationAccountModel enum.
+func (e IntegrationAccountModel) Valid() bool {
+	switch e {
+	case IntegrationAccountModelCapability:
+		return true
+	case IntegrationAccountModelPersonal:
+		return true
+	case IntegrationAccountModelWorkspace:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IntegrationCategory.
+const (
+	IntegrationCategoryActions        IntegrationCategory = "Actions"
+	IntegrationCategoryBuiltIn        IntegrationCategory = "Built in"
+	IntegrationCategoryCodeAndDevOps  IntegrationCategory = "Code and DevOps"
+	IntegrationCategoryEmail          IntegrationCategory = "Email"
+	IntegrationCategoryEnvironments   IntegrationCategory = "Environments"
+	IntegrationCategoryIssueTracking  IntegrationCategory = "Issue Tracking"
+	IntegrationCategoryMessaging      IntegrationCategory = "Messaging"
+	IntegrationCategoryModelProviders IntegrationCategory = "Model Providers"
+	IntegrationCategoryProductivity   IntegrationCategory = "Productivity"
+	IntegrationCategorySalesCRM       IntegrationCategory = "Sales & CRM"
+	IntegrationCategorySocialMedia    IntegrationCategory = "Social Media"
+	IntegrationCategoryStorage        IntegrationCategory = "Storage"
+	IntegrationCategoryWebAndData     IntegrationCategory = "Web and Data"
+)
+
+// Valid indicates whether the value is a known member of the IntegrationCategory enum.
+func (e IntegrationCategory) Valid() bool {
+	switch e {
+	case IntegrationCategoryActions:
+		return true
+	case IntegrationCategoryBuiltIn:
+		return true
+	case IntegrationCategoryCodeAndDevOps:
+		return true
+	case IntegrationCategoryEmail:
+		return true
+	case IntegrationCategoryEnvironments:
+		return true
+	case IntegrationCategoryIssueTracking:
+		return true
+	case IntegrationCategoryMessaging:
+		return true
+	case IntegrationCategoryModelProviders:
+		return true
+	case IntegrationCategoryProductivity:
+		return true
+	case IntegrationCategorySalesCRM:
+		return true
+	case IntegrationCategorySocialMedia:
+		return true
+	case IntegrationCategoryStorage:
+		return true
+	case IntegrationCategoryWebAndData:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IntegrationProviderAuthKind.
+const (
+	IntegrationProviderAuthKindApiKey            IntegrationProviderAuthKind = "api_key"
+	IntegrationProviderAuthKindClientCredentials IntegrationProviderAuthKind = "client_credentials"
+	IntegrationProviderAuthKindGithubAppInstall  IntegrationProviderAuthKind = "github_app_install"
+	IntegrationProviderAuthKindNone              IntegrationProviderAuthKind = "none"
+	IntegrationProviderAuthKindOauth2User        IntegrationProviderAuthKind = "oauth2_user"
+)
+
+// Valid indicates whether the value is a known member of the IntegrationProviderAuthKind enum.
+func (e IntegrationProviderAuthKind) Valid() bool {
+	switch e {
+	case IntegrationProviderAuthKindApiKey:
+		return true
+	case IntegrationProviderAuthKindClientCredentials:
+		return true
+	case IntegrationProviderAuthKindGithubAppInstall:
+		return true
+	case IntegrationProviderAuthKindNone:
+		return true
+	case IntegrationProviderAuthKindOauth2User:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IntegrationProviderConnectionCredentialSource.
+const (
+	IntegrationProviderConnectionCredentialSourceByok     IntegrationProviderConnectionCredentialSource = "byok"
+	IntegrationProviderConnectionCredentialSourceNone     IntegrationProviderConnectionCredentialSource = "none"
+	IntegrationProviderConnectionCredentialSourcePlatform IntegrationProviderConnectionCredentialSource = "platform"
+)
+
+// Valid indicates whether the value is a known member of the IntegrationProviderConnectionCredentialSource enum.
+func (e IntegrationProviderConnectionCredentialSource) Valid() bool {
+	switch e {
+	case IntegrationProviderConnectionCredentialSourceByok:
+		return true
+	case IntegrationProviderConnectionCredentialSourceNone:
+		return true
+	case IntegrationProviderConnectionCredentialSourcePlatform:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IntegrationProviderEventTypeRuntimeState.
+const (
+	IntegrationProviderEventTypeRuntimeStateActive     IntegrationProviderEventTypeRuntimeState = "active"
+	IntegrationProviderEventTypeRuntimeStateDeprecated IntegrationProviderEventTypeRuntimeState = "deprecated"
+	IntegrationProviderEventTypeRuntimeStatePlanned    IntegrationProviderEventTypeRuntimeState = "planned"
+)
+
+// Valid indicates whether the value is a known member of the IntegrationProviderEventTypeRuntimeState enum.
+func (e IntegrationProviderEventTypeRuntimeState) Valid() bool {
+	switch e {
+	case IntegrationProviderEventTypeRuntimeStateActive:
+		return true
+	case IntegrationProviderEventTypeRuntimeStateDeprecated:
+		return true
+	case IntegrationProviderEventTypeRuntimeStatePlanned:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IntegrationProviderWebhookEndpointDelivery.
+const (
+	IntegrationProviderWebhookEndpointDeliveryWebhook IntegrationProviderWebhookEndpointDelivery = "webhook"
+)
+
+// Valid indicates whether the value is a known member of the IntegrationProviderWebhookEndpointDelivery enum.
+func (e IntegrationProviderWebhookEndpointDelivery) Valid() bool {
+	switch e {
+	case IntegrationProviderWebhookEndpointDeliveryWebhook:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IntegrationProviderWebhookEndpointStatus.
+const (
+	IntegrationProviderWebhookEndpointStatusConfigured    IntegrationProviderWebhookEndpointStatus = "configured"
+	IntegrationProviderWebhookEndpointStatusLegacyRoute   IntegrationProviderWebhookEndpointStatus = "legacy_route"
+	IntegrationProviderWebhookEndpointStatusMissingSecret IntegrationProviderWebhookEndpointStatus = "missing_secret"
+	IntegrationProviderWebhookEndpointStatusUnavailable   IntegrationProviderWebhookEndpointStatus = "unavailable"
+)
+
+// Valid indicates whether the value is a known member of the IntegrationProviderWebhookEndpointStatus enum.
+func (e IntegrationProviderWebhookEndpointStatus) Valid() bool {
+	switch e {
+	case IntegrationProviderWebhookEndpointStatusConfigured:
+		return true
+	case IntegrationProviderWebhookEndpointStatusLegacyRoute:
+		return true
+	case IntegrationProviderWebhookEndpointStatusMissingSecret:
+		return true
+	case IntegrationProviderWebhookEndpointStatusUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IntegrationStatus.
+const (
+	IntegrationStatusActive               IntegrationStatus = "active"
+	IntegrationStatusConfirmationRequired IntegrationStatus = "confirmation_required"
+	IntegrationStatusExpired              IntegrationStatus = "expired"
+	IntegrationStatusInactive             IntegrationStatus = "inactive"
+)
+
+// Valid indicates whether the value is a known member of the IntegrationStatus enum.
+func (e IntegrationStatus) Valid() bool {
+	switch e {
+	case IntegrationStatusActive:
+		return true
+	case IntegrationStatusConfirmationRequired:
+		return true
+	case IntegrationStatusExpired:
+		return true
+	case IntegrationStatusInactive:
 		return true
 	default:
 		return false
@@ -2969,30 +3170,6 @@ func (e SessionDocumentSourceType) Valid() bool {
 	case SessionDocumentSourceTypeText:
 		return true
 	case SessionDocumentSourceTypeUrl:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for SessionEventDeliveryStatus.
-const (
-	SessionEventDeliveryStatusCancelled SessionEventDeliveryStatus = "cancelled"
-	SessionEventDeliveryStatusDelivered SessionEventDeliveryStatus = "delivered"
-	SessionEventDeliveryStatusFailed    SessionEventDeliveryStatus = "failed"
-	SessionEventDeliveryStatusPending   SessionEventDeliveryStatus = "pending"
-)
-
-// Valid indicates whether the value is a known member of the SessionEventDeliveryStatus enum.
-func (e SessionEventDeliveryStatus) Valid() bool {
-	switch e {
-	case SessionEventDeliveryStatusCancelled:
-		return true
-	case SessionEventDeliveryStatusDelivered:
-		return true
-	case SessionEventDeliveryStatusFailed:
-		return true
-	case SessionEventDeliveryStatusPending:
 		return true
 	default:
 		return false
@@ -4217,24 +4394,6 @@ func (e ListSessionEventSubscriptionsParamsOrder) Valid() bool {
 	case ListSessionEventSubscriptionsParamsOrderAsc:
 		return true
 	case ListSessionEventSubscriptionsParamsOrderDesc:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ListSessionEventDeliveriesParamsOrder.
-const (
-	ListSessionEventDeliveriesParamsOrderAsc  ListSessionEventDeliveriesParamsOrder = "asc"
-	ListSessionEventDeliveriesParamsOrderDesc ListSessionEventDeliveriesParamsOrder = "desc"
-)
-
-// Valid indicates whether the value is a known member of the ListSessionEventDeliveriesParamsOrder enum.
-func (e ListSessionEventDeliveriesParamsOrder) Valid() bool {
-	switch e {
-	case ListSessionEventDeliveriesParamsOrderAsc:
-		return true
-	case ListSessionEventDeliveriesParamsOrderDesc:
 		return true
 	default:
 		return false
@@ -5692,6 +5851,9 @@ type Artifact struct {
 	// DeliveredTo The newest successful publish destinations, in chronological order.
 	DeliveredTo *[]ArtifactDelivery `json:"delivered_to,omitempty"`
 
+	// FileId The Library file (`file_...`) this version's lineage is filed as. Rename, move, and whole-file deletion address that file, not a version. Returned by artifact reads and listings; absent when the lineage is not filed, such as a file attached to a chat message.
+	FileId *string `json:"file_id,omitempty"`
+
 	// Id Unique artifact identifier.
 	Id string `json:"id"`
 
@@ -6717,13 +6879,23 @@ type ConnectionBinding struct {
 // ConnectionBindings Exact accounts available to routine actions, keyed by provider. Each call selects one account and revalidates its live grant. Event watches are separate.
 type ConnectionBindings map[string][]ConnectionBinding
 
-// Consumer Polymorphic identifier of what is waiting on this interaction's resolution. `http_subscriber` requires `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved org signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Version` and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers.
+// ConnectionController Lifecycle and grant authority. Control does not authorize organization-provider content or agent execution.
+type ConnectionController struct {
+	// DisplayName Human controller display name, when available.
+	DisplayName *string                  `json:"display_name,omitempty"`
+	Kind        ConnectionControllerKind `json:"kind"`
+
+	// PrincipalId Human controller ID, present only for person control.
+	PrincipalId *string `json:"principal_id,omitempty"`
+}
+
+// ConnectionControllerKind defines model for ConnectionController.Kind.
+type ConnectionControllerKind string
+
+// Consumer Polymorphic identifier of what is waiting on this interaction's resolution. Every consumer is created by Mobius itself; a caller cannot attach one.
 type Consumer struct {
 	// AgentTool Agent tool continuation target when `kind=agent_tool`; null for other consumer kinds.
 	AgentTool *AgentToolConsumer `json:"agent_tool,omitempty"`
-
-	// HttpSubscriber HTTP callback target when `kind=http_subscriber`; null for other consumer kinds.
-	HttpSubscriber *HttpSubscriberConsumer `json:"http_subscriber,omitempty"`
 
 	// Kind `external_agent_prompt`: an external agent's permission prompt for one call it holds, named to its owner.
 	Kind ConsumerKind `json:"kind"`
@@ -6731,15 +6903,6 @@ type Consumer struct {
 
 // ConsumerKind `external_agent_prompt`: an external agent's permission prompt for one call it holds, named to its owner.
 type ConsumerKind string
-
-// ConsumerInput A caller may attach an HTTP subscriber or no consumer. Agent-tool consumers are runtime-only.
-type ConsumerInput struct {
-	HttpSubscriber *HttpSubscriberConsumerInput `json:"http_subscriber,omitempty"`
-	Kind           ConsumerInputKind            `json:"kind"`
-}
-
-// ConsumerInputKind defines model for ConsumerInput.Kind.
-type ConsumerInputKind string
 
 // ContextIncludeParam defines model for ContextIncludeParam.
 type ContextIncludeParam string
@@ -6959,9 +7122,6 @@ type CreateChannelMessageRequest struct {
 
 // CreateInteractionRequest Creates an interaction. `consumer` names what is waiting on its resolution; when omitted, completion records the response and nothing else acts on it.
 type CreateInteractionRequest struct {
-	// Consumer A caller may attach an HTTP subscriber or no consumer. Agent-tool consumers are runtime-only.
-	Consumer *ConsumerInput `json:"consumer,omitempty"`
-
 	// Context Additional key-value context surfaced in the UI alongside the title and description.
 	Context *map[string]interface{} `json:"context,omitempty"`
 
@@ -7101,21 +7261,6 @@ type CreateSessionAttachmentRequest struct {
 
 	// SizeBytes Optional declared byte size; when supplied it must match the uploaded bytes.
 	SizeBytes *int64 `json:"size_bytes,omitempty"`
-}
-
-// CreateSessionEventSubscriptionRequest defines model for CreateSessionEventSubscriptionRequest.
-type CreateSessionEventSubscriptionRequest struct {
-	// ExpiresAt Optional future stop time.
-	ExpiresAt *time.Time `json:"expires_at,omitempty"`
-
-	// Filters ORed public-event filter branches.
-	Filters []SessionEventSubscriptionFilter `json:"filters"`
-
-	// IdempotencyKey Retry key scoped to this session.
-	IdempotencyKey *string `json:"idempotency_key,omitempty"`
-
-	// Once When true, the subscription ends after its first matching event. That event is still delivered to the conversation, and the subscription stops with `stop_reason` `delivered_once` in the same step, so no later event can match it. When false, the subscription keeps delivering until it is unsubscribed, stopped, or expires. Retrying with the same `idempotency_key` must repeat the same value.
-	Once *bool `json:"once,omitempty"`
 }
 
 // CreateSessionRequest Resolve-or-create policy for a session.
@@ -7663,21 +7808,6 @@ type HelperUpsertFrameEventType string
 // HelperUpsertFrameState waiting: queued for a free slot. working: running. finished, unfinished (it ended without a result), and stopped are ends.
 type HelperUpsertFrameState string
 
-// HttpSubscriberConsumer defines model for HttpSubscriberConsumer.
-type HttpSubscriberConsumer struct {
-	// CallbackUrl Absolute http(s) URL the server POSTs to when the interaction resolves. The body is a JSON object with the interaction id, kind, status, outcome value, comment, responder, and `resolved_by`. Delivery is enqueued as a `source_events` dispatch so the worker can retry failed attempts instead of dropping them inline with interaction resolution.
-	CallbackUrl string `json:"callback_url"`
-}
-
-// HttpSubscriberConsumerInput defines model for HttpSubscriberConsumerInput.
-type HttpSubscriberConsumerInput struct {
-	// CallbackUrl Absolute public http(s) callback URL.
-	CallbackUrl string `json:"callback_url"`
-
-	// SigningSecret HMAC signing secret stored in the interaction-owned vault and never returned.
-	SigningSecret *string `json:"signing_secret,omitempty"`
-}
-
 // IfExists Create-or-adopt behavior when a request's `external_ref` matches an existing resource. `error` (the default) rejects the request with 409. `adopt` returns the existing resource unchanged instead — mutable fields in the request are ignored, since no write happens — and requires `external_ref` to be set; omitting it returns 400.
 type IfExists string
 
@@ -7704,6 +7834,182 @@ type InsertRowRequest struct {
 	// Data JSON object keyed by table column name.
 	Data map[string]interface{} `json:"data"`
 }
+
+// IntegrationAccountModel What one connection to a provider represents.
+//
+// `personal` — one human's own account, and acting through it acts as that person (Gmail, Google Calendar, X). `workspace` — a shared external workspace the whole org acts within (Slack, Jira, GitHub). `capability` — a keyed service with no account identity behind it (Firecrawl, a model provider, a database).
+//
+// It decides the default owner of a new connection and whether the connection is offered to an agent by default.
+type IntegrationAccountModel string
+
+// IntegrationCategory Stable integration directory grouping.
+type IntegrationCategory string
+
+// IntegrationConnection One connection to a provider, as the catalog presents it.
+type IntegrationConnection struct {
+	// Controller Lifecycle and grant authority. Control does not authorize organization-provider content or agent execution.
+	Controller ConnectionController `json:"controller"`
+
+	// IdentityLabel The external account this connection reaches, when the provider declares one — a mailbox address, a Slack team id, a Jira site. This is what tells two connections apart when their names do not.
+	IdentityLabel *string `json:"identity_label,omitempty"`
+	IntegrationId string  `json:"integration_id"`
+
+	// Name The name whoever connected it chose. Unique per owner.
+	Name string `json:"name"`
+
+	// Status `active` — integration is enabled and usable by agents. `inactive` — manually disabled; no automatic expiry behavior. `expired` — token/credential has expired (e.g., OAuth token not refreshed).
+	Status IntegrationStatus `json:"status"`
+
+	// StatusReason Human-readable reason when `status` is `expired` (needs reconnect).
+	StatusReason *string    `json:"status_reason,omitempty"`
+	UpdatedAt    *time.Time `json:"updated_at,omitempty"`
+}
+
+// IntegrationProvider defines model for IntegrationProvider.
+type IntegrationProvider struct {
+	// AccountModel What one connection to this provider represents. Crosses `auth_kind` rather than restating it: `oauth2_user` covers both Gmail (`personal`) and Slack (`workspace`), and `api_key` covers both Firecrawl (`capability`) and Jira (`workspace`).
+	AccountModel IntegrationAccountModel     `json:"account_model"`
+	Actions      []IntegrationProviderAction `json:"actions"`
+
+	// AuthKind Authentication mechanism the provider uses: `api_key` for org-supplied API keys, `oauth2_user` for user OAuth grants, `github_app_install` for GitHub App installs, `client_credentials` for OAuth client credentials, or `none` for built-in/keyless public providers that do not require org credentials.
+	AuthKind IntegrationProviderAuthKind `json:"auth_kind"`
+
+	// Capabilities Boolean capability flags reflecting which framework interfaces the provider implements (`connect`, `sync`, `live_status`, etc.). `application_connect` marks a provider that also connects on an application plane — a connection the business owns, granted once by a tenant administrator and run on the application's own credential — selected with `auth_mode: "application"` on that provider's connect body.
+	Capabilities map[string]bool `json:"capabilities"`
+
+	// Category Human-readable grouping label for directory surfaces.
+	Category *IntegrationCategory `json:"category,omitempty"`
+
+	// Connection Org-local connection summary for a provider. A provider may hold several connections at once — two mailboxes, a personal account beside an org-shared one — so the rows live in `connections` and the provider-level fields describe the provider, not any single row.
+	Connection IntegrationProviderConnection `json:"connection"`
+
+	// Description Human-readable provider summary for directory and detail surfaces.
+	Description *string `json:"description,omitempty"`
+
+	// DetailPath Optional client route segment(s) for this provider's detail page, relative to the app's Settings root (`/app/settings/`), so `mcp/{id}` resolves to `/app/settings/mcp/{id}`. When omitted, clients navigate to the provider's default page under the integrations directory (`/app/settings/integrations/{name}`). Set for providers whose detail page does not live at that default route — e.g. a connected MCP server, whose per-server page is `mcp/{integration_id}`. Lets clients render the provider directory and action groups without special-casing any particular provider kind.
+	DetailPath  *string `json:"detail_path,omitempty"`
+	DisplayName string  `json:"display_name"`
+
+	// DocsUrl Link to upstream provider docs, when known.
+	DocsUrl *string                        `json:"docs_url,omitempty"`
+	Events  []IntegrationProviderEventType `json:"events"`
+
+	// Icon Stable icon key that clients may map to their own icon set.
+	Icon *string `json:"icon,omitempty"`
+
+	// Name Stable provider identifier (`github`, `slack`, …).
+	Name string `json:"name"`
+
+	// OauthCallbackUrl Absolute redirect URI this provider's OAuth authorization returns to. Present for `oauth2_user` providers that support connect, and for the `mcp` provider when MCP OAuth is configured. When the org supplies its own OAuth app or client (rather than using a built-in Mobius credential or Dynamic Client Registration), this is the exact callback URL that must be registered with the upstream provider, or the authorization redirect is rejected.
+	OauthCallbackUrl *string `json:"oauth_callback_url,omitempty"`
+
+	// TriggerPatterns Provider-owned trigger authoring presets. Empty until trigger patterns are registered for this provider.
+	TriggerPatterns []IntegrationProviderTriggerPattern `json:"trigger_patterns"`
+
+	// WebhookEndpoints Provider-owned inbound webhook endpoints and setup status.
+	WebhookEndpoints *[]IntegrationProviderWebhookEndpoint `json:"webhook_endpoints,omitempty"`
+}
+
+// IntegrationProviderAuthKind Authentication mechanism the provider uses: `api_key` for org-supplied API keys, `oauth2_user` for user OAuth grants, `github_app_install` for GitHub App installs, `client_credentials` for OAuth client credentials, or `none` for built-in/keyless public providers that do not require org credentials.
+type IntegrationProviderAuthKind string
+
+// IntegrationProviderAction defines model for IntegrationProviderAction.
+type IntegrationProviderAction struct {
+	Description *string `json:"description,omitempty"`
+
+	// InputSchema JSON Schema for the action's parameters object.
+	InputSchema *map[string]interface{} `json:"input_schema,omitempty"`
+
+	// Name Callable action name (`github.issue.create_comment`).
+	Name string `json:"name"`
+
+	// OutputSchema JSON Schema for the action's result object.
+	OutputSchema *map[string]interface{} `json:"output_schema,omitempty"`
+	Title        *string                 `json:"title,omitempty"`
+}
+
+// IntegrationProviderConnection Org-local connection summary for a provider. A provider may hold several connections at once — two mailboxes, a personal account beside an org-shared one — so the rows live in `connections` and the provider-level fields describe the provider, not any single row.
+type IntegrationProviderConnection struct {
+	// Connections Every connection to this provider the caller may see, newest first. Empty when the org has none.
+	Connections []IntegrationConnection `json:"connections"`
+
+	// CredentialSource Which credential the org will actually use right now: `byok` when the org has connected its own key, `platform` when it falls back to the Mobius-provided credential, or `none` when neither is available. Always `platform` for a ready `platform_billed` provider.
+	CredentialSource IntegrationProviderConnectionCredentialSource `json:"credential_source"`
+
+	// PlatformAvailable True when Mobius can supply a built-in platform credential for this provider, so the org can use it without connecting its own key. Keyless public providers (e.g. Reddit, Hacker News) are always available; key-based platform integrations are available only when the platform credential is configured.
+	PlatformAvailable bool `json:"platform_available"`
+
+	// PlatformBilled True when every call through this provider runs on Mobius's own app with the provider and spends Mobius credits, even through a connected account (X). Connecting an account picks who acts, not who pays. Omitted otherwise.
+	PlatformBilled *bool `json:"platform_billed,omitempty"`
+
+	// Readiness Whether a catalog capability — an action, an event source, or an integration provider — is usable right now. `ready` means it can be used as-is; `needs_setup` means it is known and supported but blocked by configuration, credentials, permissions, provider runtime availability, or implementation status. This is catalog *readiness*, and is deliberately separate from a resource's lifecycle state (such as integration `status` or artifact lifecycle).
+	Readiness CapabilityReadiness `json:"readiness"`
+
+	// ReadinessReason Why a capability is `needs_setup`. Present only when readiness is `needs_setup`. `not_configured` — no integration or credential is connected yet. `inactive` — the backing integration is manually disabled. `expired` — the backing credential has expired. `provider_unavailable` — the provider runtime is not currently available. `permission_missing` — the caller lacks permission to use it. `not_implemented` — a placeholder for a capability that is not yet available. `credentials_unreadable` — the stored credential cannot be decrypted by the running platform; reconnect the integration.
+	ReadinessReason *CapabilityReadinessReason `json:"readiness_reason,omitempty"`
+}
+
+// IntegrationProviderConnectionCredentialSource Which credential the org will actually use right now: `byok` when the org has connected its own key, `platform` when it falls back to the Mobius-provided credential, or `none` when neither is available. Always `platform` for a ready `platform_billed` provider.
+type IntegrationProviderConnectionCredentialSource string
+
+// IntegrationProviderEventType defines model for IntegrationProviderEventType.
+type IntegrationProviderEventType struct {
+	Description *string `json:"description,omitempty"`
+
+	// Name Dotted event-type identifier (`github.pull_request.opened`).
+	Name string `json:"name"`
+
+	// PayloadSchema JSON Schema for the event payload. Absent when the registered Go type cannot be reflected meaningfully (for example, `map[string]any` aliases of raw upstream payloads).
+	PayloadSchema *map[string]interface{} `json:"payload_schema,omitempty"`
+
+	// RuntimeState Whether the event type is backed by current ingest. Planned events are catalog/documentation-only and should not be offered for new triggers or `wait` / `react` event-subject steps.
+	RuntimeState IntegrationProviderEventTypeRuntimeState `json:"runtime_state"`
+
+	// SchemaVersion Integer schema version. Bumps are additive-only by convention.
+	SchemaVersion int `json:"schema_version"`
+}
+
+// IntegrationProviderEventTypeRuntimeState Whether the event type is backed by current ingest. Planned events are catalog/documentation-only and should not be offered for new triggers or `wait` / `react` event-subject steps.
+type IntegrationProviderEventTypeRuntimeState string
+
+// IntegrationProviderTriggerPattern Catalog descriptor for creating a trigger from a provider-owned event pattern. The array is currently empty for all providers; this schema reserves the response shape for the trigger-pattern rollout.
+type IntegrationProviderTriggerPattern struct {
+	Category    *string `json:"category,omitempty"`
+	Description *string `json:"description,omitempty"`
+	EventType   *string `json:"event_type,omitempty"`
+	Id          string  `json:"id"`
+	Label       string  `json:"label"`
+}
+
+// IntegrationProviderWebhookEndpoint defines model for IntegrationProviderWebhookEndpoint.
+type IntegrationProviderWebhookEndpoint struct {
+	Delivery IntegrationProviderWebhookEndpointDelivery `json:"delivery"`
+	Notes    *string                                    `json:"notes,omitempty"`
+
+	// PathSuffix Provider webhook path suffix under `/v1/provider/{provider}/webhook`.
+	PathSuffix string `json:"path_suffix"`
+
+	// SignatureMode Framework signature verification mode.
+	SignatureMode *string                                  `json:"signature_mode,omitempty"`
+	Status        IntegrationProviderWebhookEndpointStatus `json:"status"`
+
+	// Url Fully-qualified endpoint URL for upstream provider setup.
+	Url string `json:"url"`
+}
+
+// IntegrationProviderWebhookEndpointDelivery defines model for IntegrationProviderWebhookEndpoint.Delivery.
+type IntegrationProviderWebhookEndpointDelivery string
+
+// IntegrationProviderWebhookEndpointStatus defines model for IntegrationProviderWebhookEndpoint.Status.
+type IntegrationProviderWebhookEndpointStatus string
+
+// IntegrationProvidersResponse Integration providers and capabilities available to an org.
+type IntegrationProvidersResponse struct {
+	Items []IntegrationProvider `json:"items"`
+}
+
+// IntegrationStatus `active` — integration is enabled and usable by agents. `inactive` — manually disabled; no automatic expiry behavior. `expired` — token/credential has expired (e.g., OAuth token not refreshed).
+type IntegrationStatus string
 
 // Interaction Human or agent interaction request and its current response state.
 type Interaction struct {
@@ -8486,12 +8792,6 @@ type NotRestoredItemCredentialKind string
 // NotRestoredItemKind What kind of thing it is. A `routine` came back but stays paused.
 type NotRestoredItemKind string
 
-// OAuthReturnOrigins The organization's allowlist of exact HTTPS origins an embedded partner may name as an OAuth connect `return_url`. Origins are stored normalized (lowercase host, default ports stripped). An empty list disables embedded return for the organization. Embedded return is currently disabled for every organization, so the list has no effect.
-type OAuthReturnOrigins struct {
-	// Origins Normalized exact HTTPS return origins (for example `https://app.partner.example`).
-	Origins []string `json:"origins"`
-}
-
 // OrgContext The organization's shared context: background on the business that every agent in the organization carries in its system prompt. It belongs to the organization rather than to any one agent or person — administrators write it, every member can read it, and every agent receives it on every turn.
 type OrgContext struct {
 	// Content The context as stored, in Markdown. Empty when the organization has not written one.
@@ -8699,12 +8999,6 @@ type PromoteAgentMemoryEntryRequest struct {
 
 	// UserId The private partition the entry is copied out of. Required: promotion always has an owner, and the shared layer is not a source.
 	UserId string `json:"user_id"`
-}
-
-// PutOAuthReturnOriginsRequest Full-replace body for the organization's OAuth return-origin allowlist. Each entry must be an exact HTTPS origin; entries are normalized and de-duplicated. At most 20 origins are accepted.
-type PutOAuthReturnOriginsRequest struct {
-	// Origins Exact HTTPS return origins to allow. An empty array disables embedded return.
-	Origins []string `json:"origins"`
 }
 
 // PutOrgContextRequest Full-replace body for the organization context. An empty string clears it.
@@ -9729,38 +10023,6 @@ type SessionDocumentSource struct {
 // SessionDocumentSourceType Source discriminator; known values are base64, url, text, file, and artifact.
 type SessionDocumentSourceType string
 
-// SessionEventDelivery defines model for SessionEventDelivery.
-type SessionEventDelivery struct {
-	CancelledAt *time.Time `json:"cancelled_at,omitempty"`
-	CreatedAt   time.Time  `json:"created_at"`
-	DeliveredAt *time.Time `json:"delivered_at,omitempty"`
-
-	// Diagnostic Machine-readable note about this delivery, such as `payload_truncated_at_65536_bytes`. `superseded_by_event_wait` means an agent wait in the same conversation already received this event, so it was not added a second time: the status is `delivered` and `target_turn_id` is the turn that received it.
-	Diagnostic     *string                    `json:"diagnostic,omitempty"`
-	Event          map[string]interface{}     `json:"event"`
-	EventType      string                     `json:"event_type"`
-	Id             string                     `json:"id"`
-	MessageId      *string                    `json:"message_id,omitempty"`
-	Meta           map[string]interface{}     `json:"meta"`
-	SessionId      string                     `json:"session_id"`
-	SourceEventId  string                     `json:"source_event_id"`
-	SourceId       string                     `json:"source_id"`
-	Status         SessionEventDeliveryStatus `json:"status"`
-	SubscriptionId string                     `json:"subscription_id"`
-	TargetTurnId   *string                    `json:"target_turn_id,omitempty"`
-	UpdatedAt      time.Time                  `json:"updated_at"`
-}
-
-// SessionEventDeliveryListResponse defines model for SessionEventDeliveryListResponse.
-type SessionEventDeliveryListResponse struct {
-	HasMore    bool                   `json:"has_more"`
-	Items      []SessionEventDelivery `json:"items"`
-	NextCursor *string                `json:"next_cursor,omitempty"`
-}
-
-// SessionEventDeliveryStatus defines model for SessionEventDeliveryStatus.
-type SessionEventDeliveryStatus string
-
 // SessionEventProjection Bounded, display-safe projection of the external event associated with a session message. The complete provider payload is deliberately absent.
 type SessionEventProjection struct {
 	// Attributes Small provider-selected facts; never arbitrary payload fields.
@@ -9842,12 +10104,6 @@ type SessionEventSubscription struct {
 	StopReason           *string                        `json:"stop_reason,omitempty"`
 	StoppedAt            *time.Time                     `json:"stopped_at,omitempty"`
 	UpdatedAt            time.Time                      `json:"updated_at"`
-}
-
-// SessionEventSubscriptionCreateResponse defines model for SessionEventSubscriptionCreateResponse.
-type SessionEventSubscriptionCreateResponse struct {
-	Deduped      bool                     `json:"deduped"`
-	Subscription SessionEventSubscription `json:"subscription"`
 }
 
 // SessionEventSubscriptionFilter One OR branch. All populated fields in this object match together.
@@ -11024,12 +11280,6 @@ type UpdateAgentRequest struct {
 
 // UpdateAgentRequestStatus Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent.
 type UpdateAgentRequestStatus string
-
-// UpdateArtifactRequest defines model for UpdateArtifactRequest.
-type UpdateArtifactRequest struct {
-	// Name New name for the file, as a relative virtual path. A leading folder moves the file: `reports/2026/weekly.md` places it in `reports/2026`, a bare `weekly.md` places it at the root.
-	Name string `json:"name"`
-}
 
 // UpdateChannelReadStateRequest defines model for UpdateChannelReadStateRequest.
 type UpdateChannelReadStateRequest struct {
@@ -12218,23 +12468,6 @@ type ListSessionEventSubscriptionsParams struct {
 // ListSessionEventSubscriptionsParamsOrder defines parameters for ListSessionEventSubscriptions.
 type ListSessionEventSubscriptionsParamsOrder string
 
-// ListSessionEventDeliveriesParams defines parameters for ListSessionEventDeliveries.
-type ListSessionEventDeliveriesParams struct {
-	Status *[]SessionEventDeliveryStatus `form:"status,omitempty" json:"status,omitempty"`
-
-	// Order Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first — the way to fetch the latest rows of a long list (the tail) in a single request. Items in the response are always ordered ascending regardless of this value; `order` only selects which end of the list the page is taken from.
-	Order *ListSessionEventDeliveriesParamsOrder `form:"order,omitempty" json:"order,omitempty"`
-
-	// Cursor Cursor for pagination (opaque string from previous response)
-	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
-
-	// Limit Maximum number of items to return
-	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
-}
-
-// ListSessionEventDeliveriesParamsOrder defines parameters for ListSessionEventDeliveries.
-type ListSessionEventDeliveriesParamsOrder string
-
 // ListSessionMessagesParams defines parameters for ListSessionMessages.
 type ListSessionMessagesParams struct {
 	// AfterSequence Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this value. Pass the `next_sequence` from the previous response to fetch the next page.
@@ -12382,9 +12615,6 @@ type CreateArtifactFolderJSONRequestBody = CreateArtifactFolderRequest
 // CreateArtifactMultipartRequestBody defines body for CreateArtifact for multipart/form-data ContentType.
 type CreateArtifactMultipartRequestBody = CreateArtifactRequest
 
-// UpdateArtifactJSONRequestBody defines body for UpdateArtifact for application/json ContentType.
-type UpdateArtifactJSONRequestBody = UpdateArtifactRequest
-
 // ApplyBlueprintJSONRequestBody defines body for ApplyBlueprint for application/json ContentType.
 type ApplyBlueprintJSONRequestBody = ApplyBlueprintRequest
 
@@ -12430,9 +12660,6 @@ type ScheduleOrgDeletionJSONRequestBody = OrgDeletionRequest
 // ReplaceOrgContextJSONRequestBody defines body for ReplaceOrgContext for application/json ContentType.
 type ReplaceOrgContextJSONRequestBody = PutOrgContextRequest
 
-// ReplaceOAuthReturnOriginsJSONRequestBody defines body for ReplaceOAuthReturnOrigins for application/json ContentType.
-type ReplaceOAuthReturnOriginsJSONRequestBody = PutOAuthReturnOriginsRequest
-
 // CreatePrincipalJSONRequestBody defines body for CreatePrincipal for application/json ContentType.
 type CreatePrincipalJSONRequestBody = CreatePrincipalRequest
 
@@ -12477,9 +12704,6 @@ type CompleteSessionPDFUploadJSONRequestBody = CompleteSessionPDFUploadRequest
 
 // CancelSessionJSONRequestBody defines body for CancelSession for application/json ContentType.
 type CancelSessionJSONRequestBody = CancelSessionRequest
-
-// CreateSessionEventSubscriptionJSONRequestBody defines body for CreateSessionEventSubscription for application/json ContentType.
-type CreateSessionEventSubscriptionJSONRequestBody = CreateSessionEventSubscriptionRequest
 
 // SendSessionInputJSONRequestBody defines body for SendSessionInput for application/json ContentType.
 type SendSessionInputJSONRequestBody = SessionInputRequest
@@ -15556,11 +15780,6 @@ type ClientInterface interface {
 	// GetArtifact request
 	GetArtifact(ctx context.Context, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateArtifactWithBody request with any body
-	UpdateArtifactWithBody(ctx context.Context, artifactId ArtifactIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateArtifact(ctx context.Context, artifactId ArtifactIdParam, body UpdateArtifactJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ListArtifactVersions request
 	ListArtifactVersions(ctx context.Context, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -15600,6 +15819,9 @@ type ClientInterface interface {
 
 	// ListCatalogModels request
 	ListCatalogModels(ctx context.Context, params *ListCatalogModelsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListCatalogProviders request
+	ListCatalogProviders(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListCatalogWorkerModels request
 	ListCatalogWorkerModels(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -15704,14 +15926,6 @@ type ClientInterface interface {
 
 	// GetOrgDeletion request
 	GetOrgDeletion(ctx context.Context, orgId OrgIDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetOAuthReturnOrigins request
-	GetOAuthReturnOrigins(ctx context.Context, orgId OrgPathParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ReplaceOAuthReturnOriginsWithBody request with any body
-	ReplaceOAuthReturnOriginsWithBody(ctx context.Context, orgId OrgPathParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	ReplaceOAuthReturnOrigins(ctx context.Context, orgId OrgPathParam, body ReplaceOAuthReturnOriginsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListOrgPermissions request
 	ListOrgPermissions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -15882,19 +16096,8 @@ type ClientInterface interface {
 	// ListSessionEventSubscriptions request
 	ListSessionEventSubscriptions(ctx context.Context, sessionId SessionIdParam, params *ListSessionEventSubscriptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateSessionEventSubscriptionWithBody request with any body
-	CreateSessionEventSubscriptionWithBody(ctx context.Context, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateSessionEventSubscription(ctx context.Context, sessionId SessionIdParam, body CreateSessionEventSubscriptionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// StopSessionEventSubscriptions request
 	StopSessionEventSubscriptions(ctx context.Context, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetSessionEventSubscription request
-	GetSessionEventSubscription(ctx context.Context, sessionId SessionIdParam, subscriptionId SessionEventSubscriptionIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListSessionEventDeliveries request
-	ListSessionEventDeliveries(ctx context.Context, sessionId SessionIdParam, subscriptionId SessionEventSubscriptionIdParam, params *ListSessionEventDeliveriesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UnsubscribeSessionEventSubscription request
 	UnsubscribeSessionEventSubscription(ctx context.Context, sessionId SessionIdParam, subscriptionId SessionEventSubscriptionIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -16799,30 +17002,6 @@ func (c *Client) GetArtifact(ctx context.Context, artifactId ArtifactIdParam, re
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateArtifactWithBody(ctx context.Context, artifactId ArtifactIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateArtifactRequestWithBody(c.Server, artifactId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateArtifact(ctx context.Context, artifactId ArtifactIdParam, body UpdateArtifactJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateArtifactRequest(c.Server, artifactId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) ListArtifactVersions(ctx context.Context, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListArtifactVersionsRequest(c.Server, artifactId)
 	if err != nil {
@@ -16981,6 +17160,18 @@ func (c *Client) ListCatalogEvents(ctx context.Context, reqEditors ...RequestEdi
 
 func (c *Client) ListCatalogModels(ctx context.Context, params *ListCatalogModelsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListCatalogModelsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListCatalogProviders(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListCatalogProvidersRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -17449,42 +17640,6 @@ func (c *Client) CancelOrgDeletion(ctx context.Context, orgId OrgIDParam, reqEdi
 
 func (c *Client) GetOrgDeletion(ctx context.Context, orgId OrgIDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetOrgDeletionRequest(c.Server, orgId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetOAuthReturnOrigins(ctx context.Context, orgId OrgPathParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetOAuthReturnOriginsRequest(c.Server, orgId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ReplaceOAuthReturnOriginsWithBody(ctx context.Context, orgId OrgPathParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewReplaceOAuthReturnOriginsRequestWithBody(c.Server, orgId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ReplaceOAuthReturnOrigins(ctx context.Context, orgId OrgPathParam, body ReplaceOAuthReturnOriginsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewReplaceOAuthReturnOriginsRequest(c.Server, orgId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -18227,56 +18382,8 @@ func (c *Client) ListSessionEventSubscriptions(ctx context.Context, sessionId Se
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateSessionEventSubscriptionWithBody(ctx context.Context, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateSessionEventSubscriptionRequestWithBody(c.Server, sessionId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateSessionEventSubscription(ctx context.Context, sessionId SessionIdParam, body CreateSessionEventSubscriptionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateSessionEventSubscriptionRequest(c.Server, sessionId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) StopSessionEventSubscriptions(ctx context.Context, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewStopSessionEventSubscriptionsRequest(c.Server, sessionId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetSessionEventSubscription(ctx context.Context, sessionId SessionIdParam, subscriptionId SessionEventSubscriptionIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetSessionEventSubscriptionRequest(c.Server, sessionId, subscriptionId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ListSessionEventDeliveries(ctx context.Context, sessionId SessionIdParam, subscriptionId SessionEventSubscriptionIdParam, params *ListSessionEventDeliveriesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListSessionEventDeliveriesRequest(c.Server, sessionId, subscriptionId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -21600,53 +21707,6 @@ func NewGetArtifactRequest(server string, artifactId ArtifactIdParam) (*http.Req
 	return req, nil
 }
 
-// NewUpdateArtifactRequest calls the generic UpdateArtifact builder with application/json body
-func NewUpdateArtifactRequest(server string, artifactId ArtifactIdParam, body UpdateArtifactJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateArtifactRequestWithBody(server, artifactId, "application/json", bodyReader)
-}
-
-// NewUpdateArtifactRequestWithBody generates requests for UpdateArtifact with any type of body
-func NewUpdateArtifactRequestWithBody(server string, artifactId ArtifactIdParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "artifact_id", artifactId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/artifacts/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
 // NewListArtifactVersionsRequest generates requests for ListArtifactVersions
 func NewListArtifactVersionsRequest(server string, artifactId ArtifactIdParam) (*http.Request, error) {
 	var err error
@@ -22362,6 +22422,33 @@ func NewListCatalogModelsRequest(server string, params *ListCatalogModelsParams)
 			rawQueryFragments = append(rawQueryFragments, encoded)
 		}
 		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListCatalogProvidersRequest generates requests for ListCatalogProviders
+func NewListCatalogProvidersRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/catalog/providers")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -23665,87 +23752,6 @@ func NewGetOrgDeletionRequest(server string, orgId OrgIDParam) (*http.Request, e
 	if err != nil {
 		return nil, err
 	}
-
-	return req, nil
-}
-
-// NewGetOAuthReturnOriginsRequest generates requests for GetOAuthReturnOrigins
-func NewGetOAuthReturnOriginsRequest(server string, orgId OrgPathParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "org_id", orgId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/orgs/%s/oauth-return-origins", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewReplaceOAuthReturnOriginsRequest calls the generic ReplaceOAuthReturnOrigins builder with application/json body
-func NewReplaceOAuthReturnOriginsRequest(server string, orgId OrgPathParam, body ReplaceOAuthReturnOriginsJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewReplaceOAuthReturnOriginsRequestWithBody(server, orgId, "application/json", bodyReader)
-}
-
-// NewReplaceOAuthReturnOriginsRequestWithBody generates requests for ReplaceOAuthReturnOrigins with any type of body
-func NewReplaceOAuthReturnOriginsRequestWithBody(server string, orgId OrgPathParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "org_id", orgId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/orgs/%s/oauth-return-origins", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -26193,53 +26199,6 @@ func NewListSessionEventSubscriptionsRequest(server string, sessionId SessionIdP
 	return req, nil
 }
 
-// NewCreateSessionEventSubscriptionRequest calls the generic CreateSessionEventSubscription builder with application/json body
-func NewCreateSessionEventSubscriptionRequest(server string, sessionId SessionIdParam, body CreateSessionEventSubscriptionJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateSessionEventSubscriptionRequestWithBody(server, sessionId, "application/json", bodyReader)
-}
-
-// NewCreateSessionEventSubscriptionRequestWithBody generates requests for CreateSessionEventSubscription with any type of body
-func NewCreateSessionEventSubscriptionRequestWithBody(server string, sessionId SessionIdParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/sessions/%s/event-subscriptions", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
 // NewStopSessionEventSubscriptionsRequest generates requests for StopSessionEventSubscriptions
 func NewStopSessionEventSubscriptionsRequest(server string, sessionId SessionIdParam) (*http.Request, error) {
 	var err error
@@ -26267,151 +26226,6 @@ func NewStopSessionEventSubscriptionsRequest(server string, sessionId SessionIdP
 	}
 
 	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetSessionEventSubscriptionRequest generates requests for GetSessionEventSubscription
-func NewGetSessionEventSubscriptionRequest(server string, sessionId SessionIdParam, subscriptionId SessionEventSubscriptionIdParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "subscription_id", subscriptionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/sessions/%s/event-subscriptions/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListSessionEventDeliveriesRequest generates requests for ListSessionEventDeliveries
-func NewListSessionEventDeliveriesRequest(server string, sessionId SessionIdParam, subscriptionId SessionEventSubscriptionIdParam, params *ListSessionEventDeliveriesParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "subscription_id", subscriptionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/sessions/%s/event-subscriptions/%s/deliveries", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Status != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Order != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "order", *params.Order, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Cursor != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Limit != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -28414,11 +28228,6 @@ type ClientWithResponsesInterface interface {
 	// GetArtifactWithResponse request
 	GetArtifactWithResponse(ctx context.Context, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*GetArtifactResponse, error)
 
-	// UpdateArtifactWithBodyWithResponse request with any body
-	UpdateArtifactWithBodyWithResponse(ctx context.Context, artifactId ArtifactIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateArtifactResponse, error)
-
-	UpdateArtifactWithResponse(ctx context.Context, artifactId ArtifactIdParam, body UpdateArtifactJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateArtifactResponse, error)
-
 	// ListArtifactVersionsWithResponse request
 	ListArtifactVersionsWithResponse(ctx context.Context, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*ListArtifactVersionsResponse, error)
 
@@ -28458,6 +28267,9 @@ type ClientWithResponsesInterface interface {
 
 	// ListCatalogModelsWithResponse request
 	ListCatalogModelsWithResponse(ctx context.Context, params *ListCatalogModelsParams, reqEditors ...RequestEditorFn) (*ListCatalogModelsResponse, error)
+
+	// ListCatalogProvidersWithResponse request
+	ListCatalogProvidersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListCatalogProvidersResponse, error)
 
 	// ListCatalogWorkerModelsWithResponse request
 	ListCatalogWorkerModelsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListCatalogWorkerModelsResponse, error)
@@ -28562,14 +28374,6 @@ type ClientWithResponsesInterface interface {
 
 	// GetOrgDeletionWithResponse request
 	GetOrgDeletionWithResponse(ctx context.Context, orgId OrgIDParam, reqEditors ...RequestEditorFn) (*GetOrgDeletionResponse, error)
-
-	// GetOAuthReturnOriginsWithResponse request
-	GetOAuthReturnOriginsWithResponse(ctx context.Context, orgId OrgPathParam, reqEditors ...RequestEditorFn) (*GetOAuthReturnOriginsResponse, error)
-
-	// ReplaceOAuthReturnOriginsWithBodyWithResponse request with any body
-	ReplaceOAuthReturnOriginsWithBodyWithResponse(ctx context.Context, orgId OrgPathParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceOAuthReturnOriginsResponse, error)
-
-	ReplaceOAuthReturnOriginsWithResponse(ctx context.Context, orgId OrgPathParam, body ReplaceOAuthReturnOriginsJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceOAuthReturnOriginsResponse, error)
 
 	// ListOrgPermissionsWithResponse request
 	ListOrgPermissionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListOrgPermissionsResponse, error)
@@ -28740,19 +28544,8 @@ type ClientWithResponsesInterface interface {
 	// ListSessionEventSubscriptionsWithResponse request
 	ListSessionEventSubscriptionsWithResponse(ctx context.Context, sessionId SessionIdParam, params *ListSessionEventSubscriptionsParams, reqEditors ...RequestEditorFn) (*ListSessionEventSubscriptionsResponse, error)
 
-	// CreateSessionEventSubscriptionWithBodyWithResponse request with any body
-	CreateSessionEventSubscriptionWithBodyWithResponse(ctx context.Context, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSessionEventSubscriptionResponse, error)
-
-	CreateSessionEventSubscriptionWithResponse(ctx context.Context, sessionId SessionIdParam, body CreateSessionEventSubscriptionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSessionEventSubscriptionResponse, error)
-
 	// StopSessionEventSubscriptionsWithResponse request
 	StopSessionEventSubscriptionsWithResponse(ctx context.Context, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*StopSessionEventSubscriptionsResponse, error)
-
-	// GetSessionEventSubscriptionWithResponse request
-	GetSessionEventSubscriptionWithResponse(ctx context.Context, sessionId SessionIdParam, subscriptionId SessionEventSubscriptionIdParam, reqEditors ...RequestEditorFn) (*GetSessionEventSubscriptionResponse, error)
-
-	// ListSessionEventDeliveriesWithResponse request
-	ListSessionEventDeliveriesWithResponse(ctx context.Context, sessionId SessionIdParam, subscriptionId SessionEventSubscriptionIdParam, params *ListSessionEventDeliveriesParams, reqEditors ...RequestEditorFn) (*ListSessionEventDeliveriesResponse, error)
 
 	// UnsubscribeSessionEventSubscriptionWithResponse request
 	UnsubscribeSessionEventSubscriptionWithResponse(ctx context.Context, sessionId SessionIdParam, subscriptionId SessionEventSubscriptionIdParam, reqEditors ...RequestEditorFn) (*UnsubscribeSessionEventSubscriptionResponse, error)
@@ -30519,41 +30312,6 @@ func (r GetArtifactResponse) ContentType() string {
 	return ""
 }
 
-type UpdateArtifactResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Artifact
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-	JSON409      *Conflict
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateArtifactResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateArtifactResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r UpdateArtifactResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 type ListArtifactVersionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -30955,6 +30713,38 @@ func (r ListCatalogModelsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListCatalogModelsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListCatalogProvidersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *IntegrationProvidersResponse
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ListCatalogProvidersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListCatalogProvidersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListCatalogProvidersResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -31836,73 +31626,6 @@ func (r GetOrgDeletionResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetOrgDeletionResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetOAuthReturnOriginsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *OAuthReturnOrigins
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r GetOAuthReturnOriginsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetOAuthReturnOriginsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetOAuthReturnOriginsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ReplaceOAuthReturnOriginsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *OAuthReturnOrigins
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r ReplaceOAuthReturnOriginsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ReplaceOAuthReturnOriginsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ReplaceOAuthReturnOriginsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -33488,42 +33211,6 @@ func (r ListSessionEventSubscriptionsResponse) ContentType() string {
 	return ""
 }
 
-type CreateSessionEventSubscriptionResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *SessionEventSubscriptionCreateResponse
-	JSON201      *SessionEventSubscriptionCreateResponse
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-	JSON409      *Conflict
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateSessionEventSubscriptionResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateSessionEventSubscriptionResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreateSessionEventSubscriptionResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 type StopSessionEventSubscriptionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -33550,73 +33237,6 @@ func (r StopSessionEventSubscriptionsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r StopSessionEventSubscriptionsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetSessionEventSubscriptionResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *SessionEventSubscription
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r GetSessionEventSubscriptionResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetSessionEventSubscriptionResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetSessionEventSubscriptionResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListSessionEventDeliveriesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *SessionEventDeliveryListResponse
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r ListSessionEventDeliveriesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListSessionEventDeliveriesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListSessionEventDeliveriesResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -35409,23 +35029,6 @@ func (c *ClientWithResponses) GetArtifactWithResponse(ctx context.Context, artif
 	return ParseGetArtifactResponse(rsp)
 }
 
-// UpdateArtifactWithBodyWithResponse request with arbitrary body returning *UpdateArtifactResponse
-func (c *ClientWithResponses) UpdateArtifactWithBodyWithResponse(ctx context.Context, artifactId ArtifactIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateArtifactResponse, error) {
-	rsp, err := c.UpdateArtifactWithBody(ctx, artifactId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateArtifactResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateArtifactWithResponse(ctx context.Context, artifactId ArtifactIdParam, body UpdateArtifactJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateArtifactResponse, error) {
-	rsp, err := c.UpdateArtifact(ctx, artifactId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateArtifactResponse(rsp)
-}
-
 // ListArtifactVersionsWithResponse request returning *ListArtifactVersionsResponse
 func (c *ClientWithResponses) ListArtifactVersionsWithResponse(ctx context.Context, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*ListArtifactVersionsResponse, error) {
 	rsp, err := c.ListArtifactVersions(ctx, artifactId, reqEditors...)
@@ -35548,6 +35151,15 @@ func (c *ClientWithResponses) ListCatalogModelsWithResponse(ctx context.Context,
 		return nil, err
 	}
 	return ParseListCatalogModelsResponse(rsp)
+}
+
+// ListCatalogProvidersWithResponse request returning *ListCatalogProvidersResponse
+func (c *ClientWithResponses) ListCatalogProvidersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListCatalogProvidersResponse, error) {
+	rsp, err := c.ListCatalogProviders(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListCatalogProvidersResponse(rsp)
 }
 
 // ListCatalogWorkerModelsWithResponse request returning *ListCatalogWorkerModelsResponse
@@ -35886,32 +35498,6 @@ func (c *ClientWithResponses) GetOrgDeletionWithResponse(ctx context.Context, or
 		return nil, err
 	}
 	return ParseGetOrgDeletionResponse(rsp)
-}
-
-// GetOAuthReturnOriginsWithResponse request returning *GetOAuthReturnOriginsResponse
-func (c *ClientWithResponses) GetOAuthReturnOriginsWithResponse(ctx context.Context, orgId OrgPathParam, reqEditors ...RequestEditorFn) (*GetOAuthReturnOriginsResponse, error) {
-	rsp, err := c.GetOAuthReturnOrigins(ctx, orgId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetOAuthReturnOriginsResponse(rsp)
-}
-
-// ReplaceOAuthReturnOriginsWithBodyWithResponse request with arbitrary body returning *ReplaceOAuthReturnOriginsResponse
-func (c *ClientWithResponses) ReplaceOAuthReturnOriginsWithBodyWithResponse(ctx context.Context, orgId OrgPathParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceOAuthReturnOriginsResponse, error) {
-	rsp, err := c.ReplaceOAuthReturnOriginsWithBody(ctx, orgId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseReplaceOAuthReturnOriginsResponse(rsp)
-}
-
-func (c *ClientWithResponses) ReplaceOAuthReturnOriginsWithResponse(ctx context.Context, orgId OrgPathParam, body ReplaceOAuthReturnOriginsJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceOAuthReturnOriginsResponse, error) {
-	rsp, err := c.ReplaceOAuthReturnOrigins(ctx, orgId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseReplaceOAuthReturnOriginsResponse(rsp)
 }
 
 // ListOrgPermissionsWithResponse request returning *ListOrgPermissionsResponse
@@ -36449,23 +36035,6 @@ func (c *ClientWithResponses) ListSessionEventSubscriptionsWithResponse(ctx cont
 	return ParseListSessionEventSubscriptionsResponse(rsp)
 }
 
-// CreateSessionEventSubscriptionWithBodyWithResponse request with arbitrary body returning *CreateSessionEventSubscriptionResponse
-func (c *ClientWithResponses) CreateSessionEventSubscriptionWithBodyWithResponse(ctx context.Context, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSessionEventSubscriptionResponse, error) {
-	rsp, err := c.CreateSessionEventSubscriptionWithBody(ctx, sessionId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateSessionEventSubscriptionResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateSessionEventSubscriptionWithResponse(ctx context.Context, sessionId SessionIdParam, body CreateSessionEventSubscriptionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSessionEventSubscriptionResponse, error) {
-	rsp, err := c.CreateSessionEventSubscription(ctx, sessionId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateSessionEventSubscriptionResponse(rsp)
-}
-
 // StopSessionEventSubscriptionsWithResponse request returning *StopSessionEventSubscriptionsResponse
 func (c *ClientWithResponses) StopSessionEventSubscriptionsWithResponse(ctx context.Context, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*StopSessionEventSubscriptionsResponse, error) {
 	rsp, err := c.StopSessionEventSubscriptions(ctx, sessionId, reqEditors...)
@@ -36473,24 +36042,6 @@ func (c *ClientWithResponses) StopSessionEventSubscriptionsWithResponse(ctx cont
 		return nil, err
 	}
 	return ParseStopSessionEventSubscriptionsResponse(rsp)
-}
-
-// GetSessionEventSubscriptionWithResponse request returning *GetSessionEventSubscriptionResponse
-func (c *ClientWithResponses) GetSessionEventSubscriptionWithResponse(ctx context.Context, sessionId SessionIdParam, subscriptionId SessionEventSubscriptionIdParam, reqEditors ...RequestEditorFn) (*GetSessionEventSubscriptionResponse, error) {
-	rsp, err := c.GetSessionEventSubscription(ctx, sessionId, subscriptionId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetSessionEventSubscriptionResponse(rsp)
-}
-
-// ListSessionEventDeliveriesWithResponse request returning *ListSessionEventDeliveriesResponse
-func (c *ClientWithResponses) ListSessionEventDeliveriesWithResponse(ctx context.Context, sessionId SessionIdParam, subscriptionId SessionEventSubscriptionIdParam, params *ListSessionEventDeliveriesParams, reqEditors ...RequestEditorFn) (*ListSessionEventDeliveriesResponse, error) {
-	rsp, err := c.ListSessionEventDeliveries(ctx, sessionId, subscriptionId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListSessionEventDeliveriesResponse(rsp)
 }
 
 // UnsubscribeSessionEventSubscriptionWithResponse request returning *UnsubscribeSessionEventSubscriptionResponse
@@ -39499,67 +39050,6 @@ func ParseGetArtifactResponse(rsp *http.Response) (*GetArtifactResponse, error) 
 	return response, nil
 }
 
-// ParseUpdateArtifactResponse parses an HTTP response from a UpdateArtifactWithResponse call
-func ParseUpdateArtifactResponse(rsp *http.Response) (*UpdateArtifactResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateArtifactResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Artifact
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseListArtifactVersionsResponse parses an HTTP response from a ListArtifactVersionsWithResponse call
 func ParseListArtifactVersionsResponse(rsp *http.Response) (*ListArtifactVersionsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -40195,6 +39685,46 @@ func ParseListCatalogModelsResponse(rsp *http.Response) (*ListCatalogModelsRespo
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListCatalogProvidersResponse parses an HTTP response from a ListCatalogProvidersWithResponse call
+func ParseListCatalogProvidersResponse(rsp *http.Response) (*ListCatalogProvidersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListCatalogProvidersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest IntegrationProvidersResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	}
 
@@ -41571,107 +41101,6 @@ func ParseGetOrgDeletionResponse(rsp *http.Response) (*GetOrgDeletionResponse, e
 			return nil, err
 		}
 		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetOAuthReturnOriginsResponse parses an HTTP response from a GetOAuthReturnOriginsWithResponse call
-func ParseGetOAuthReturnOriginsResponse(rsp *http.Response) (*GetOAuthReturnOriginsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetOAuthReturnOriginsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest OAuthReturnOrigins
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseReplaceOAuthReturnOriginsResponse parses an HTTP response from a ReplaceOAuthReturnOriginsWithResponse call
-func ParseReplaceOAuthReturnOriginsResponse(rsp *http.Response) (*ReplaceOAuthReturnOriginsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ReplaceOAuthReturnOriginsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest OAuthReturnOrigins
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
@@ -44090,74 +43519,6 @@ func ParseListSessionEventSubscriptionsResponse(rsp *http.Response) (*ListSessio
 	return response, nil
 }
 
-// ParseCreateSessionEventSubscriptionResponse parses an HTTP response from a CreateSessionEventSubscriptionWithResponse call
-func ParseCreateSessionEventSubscriptionResponse(rsp *http.Response) (*CreateSessionEventSubscriptionResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateSessionEventSubscriptionResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest SessionEventSubscriptionCreateResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest SessionEventSubscriptionCreateResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseStopSessionEventSubscriptionsResponse parses an HTTP response from a StopSessionEventSubscriptionsWithResponse call
 func ParseStopSessionEventSubscriptionsResponse(rsp *http.Response) (*StopSessionEventSubscriptionsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -44172,107 +43533,6 @@ func ParseStopSessionEventSubscriptionsResponse(rsp *http.Response) (*StopSessio
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetSessionEventSubscriptionResponse parses an HTTP response from a GetSessionEventSubscriptionWithResponse call
-func ParseGetSessionEventSubscriptionResponse(rsp *http.Response) (*GetSessionEventSubscriptionResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetSessionEventSubscriptionResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest SessionEventSubscription
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListSessionEventDeliveriesResponse parses an HTTP response from a ListSessionEventDeliveriesWithResponse call
-func ParseListSessionEventDeliveriesResponse(rsp *http.Response) (*ListSessionEventDeliveriesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListSessionEventDeliveriesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest SessionEventDeliveryListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {

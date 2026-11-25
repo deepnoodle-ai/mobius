@@ -11,32 +11,6 @@ import (
 	"github.com/deepnoodle-ai/wonton/cli"
 )
 
-func TestArtifactsMoveRenamesTheWholeLineage(t *testing.T) {
-	var method, path string
-	var body map[string]any
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		method, path = r.Method, r.URL.Path
-		raw, err := io.ReadAll(r.Body)
-		assert.NoError(t, err)
-		assert.NoError(t, json.Unmarshal(raw, &body))
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"id":"art_1","name":"reports/2026/weekly.md","mime_type":"text/markdown","size_bytes":9,"visibility":"organization","created_at":"2026-09-14T00:00:00Z"}`))
-	}))
-	defer srv.Close()
-
-	result := newApp().Test(t, cli.TestArgs(
-		"artifacts", "move", "art_1", "reports/2026/weekly.md",
-		"--api-url", srv.URL,
-		"--api-key", "mbx_test",
-		"--output", "json",
-	))
-	assert.True(t, result.Success(), "move failed: %v\nstderr: %s", result.Err, result.Stderr)
-	assert.Equal(t, http.MethodPatch, method)
-	assert.Equal(t, "/v1/artifacts/art_1", path)
-	assert.Equal(t, "reports/2026/weekly.md", body["name"])
-	assert.Contains(t, result.Stdout, `"name": "reports/2026/weekly.md"`)
-}
-
 func TestArtifactsListSendsFolderAndNoRecursive(t *testing.T) {
 	var query string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
