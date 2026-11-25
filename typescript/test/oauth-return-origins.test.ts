@@ -46,8 +46,8 @@ test("client: oauth return-origin allowlist hits the documented routes", async (
     },
   );
   assert.deepEqual(seen, [
-    "GET /v1/organization/oauth-return-origins",
-    "PUT /v1/organization/oauth-return-origins",
+    "GET /v1/orgs/current/oauth-return-origins",
+    "PUT /v1/orgs/current/oauth-return-origins",
   ]);
 });
 

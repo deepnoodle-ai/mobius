@@ -103,20 +103,11 @@ the SDK transport that replay is safe.
 | High-level operation | JSON field | When the header is sent |
 |---|---|---|
 | Start loop run | `idempotency_key` | Nonblank key supplied |
-| Invoke agent | `input.idempotency_key` | Nonblank key and session mode is not `new` |
-| Invoke agent inline stream | `input.idempotency_key` | Same as invoke agent, before response start only |
-| Start turn in an existing session | `idempotency_key` | Nonblank key supplied |
-| Nudge session | `idempotency_key` | Nonblank key supplied |
+| Send session input | `idempotency_key` | Nonblank key supplied |
 
 Keys are trimmed once and blank values are omitted, so the body and header
-cannot diverge. `invokeAgent` with `session.mode: new` intentionally keeps the
-body key but omits the header: each replay would create a fresh session before
-the server applies session-scoped turn deduplication.
-
-For inline SSE, the transport may retry a network failure before any response,
-or a retryable HTTP response. Once a successful stream response begins, it
-returns the response without pre-reading it and never invokes again. Later
-disconnects are handled by transcript cursor reconnection, not admission retry.
+cannot diverge. Creating a session is not marked replay-safe: resolve it with
+a `session_key` so a repeated call returns the same session.
 
 ## `RateLimitError` shape
 

@@ -17,7 +17,7 @@ func TestReplaceOAuthReturnOriginsClearSendsEmptyList(t *testing.T) {
 	var got []byte
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, http.MethodPut, r.Method)
-		assert.Equal(t, "/v1/organization/oauth-return-origins", r.URL.Path)
+		assert.Equal(t, "/v1/orgs/current/oauth-return-origins", r.URL.Path)
 		body, err := io.ReadAll(r.Body)
 		assert.NoError(t, err)
 		got = body

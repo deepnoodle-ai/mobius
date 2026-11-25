@@ -298,194 +298,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/integrations/governance": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List minimal connection governance metadata
-         * @description Organization administrators can identify and deactivate connections without seeing personal configuration, account labels, credentials, or provider content.
-         */
-        get: operations["listConnectionGovernance"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/integrations/governance/{integration_id}/deactivate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Deactivate a connection through organization governance
-         * @description Deactivates the connection, revokes grants and defaults, and suspends dependent routines. It never transfers control or exposes provider content.
-         */
-        post: operations["deactivateConnectionGovernance"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/integrations/connections/{integration_id}/team-management": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Start team management of an existing account
-         * @description Explicitly transfers management of the existing active connection to the organization. Only its current human manager with live local organization administrator authority may make this change. Preserves the connection ID, credentials, provider identity, label, grants and their audiences, defaults, and routine bindings. Does not start provider authorization or broaden assistant access. Repeating the request for an already team-managed account is an administrator-only no-op.
-         */
-        post: operations["startConnectionTeamManagement"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/integrations/connections/{integration_id}/confirm-replacement": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Confirm replacement using fresh provider authorization
-         * @description Consumes a short-lived candidate authorized by this human and atomically retires the former authority and its grants. The candidate receives no inherited grants.
-         */
-        post: operations["confirmConnectionReplacement"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/integrations/connections/{integration_id}/grants": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List agents with access to a controlled connection
-         * @description Returns live grants only to the connection controller or an authorized organization administrator.
-         */
-        get: operations["listConnectionGrants"];
-        put?: never;
-        /**
-         * Give explicitly selected current agents access
-         * @description Materializes grants for the submitted agent IDs. Identical active grants are replay-safe; changed constraints revoke the previous grant ID.
-         */
-        post: operations["materializeConnectionGrants"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/integrations/connections/{integration_id}/grants/{grant_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Revoke one grant and its context defaults
-         * @description Revokes the specified grant and removes only defaults bound to that grant. In-flight work must revalidate before its next dispatch.
-         */
-        delete: operations["revokeConnectionGrant"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/agents/{agent_id}/connection-grants": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List this viewer's operational connection grants for an agent
-         * @description Returns operational labels for grants the viewer controls or belongs to, after verifying the viewer can reach the agent. Credentials and connection configuration are omitted.
-         */
-        get: operations["listAgentConnectionGrants"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/agents/{agent_id}/connection-defaults": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List account preferences for one execution context
-         * @description Returns the union of saved and currently selectable provider preferences without exposing credentials or unavailable account identity.
-         */
-        get: operations["listAgentConnectionDefaults"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/agents/{agent_id}/connection-defaults/{provider}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Select a default for one execution context
-         * @description Changes only the authenticated human context or an administrator-authorized organization background context. The selected active grant must satisfy connection ownership and audience restrictions for that context.
-         */
-        put: operations["setAgentConnectionDefault"];
-        post?: never;
-        /**
-         * Clear a default for one execution context
-         * @description Clears only the exact context preference. Repeated clears succeed and do not revoke account access.
-         */
-        delete: operations["clearAgentConnectionDefault"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/billing/usage-events": {
         parameters: {
             query?: never;
@@ -666,11 +478,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/organization/oauth-return-origins": {
+    "/v1/orgs/{org_id}/oauth-return-origins": {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                /** @description Organization ID, or `current` for the caller's active organization. Any organization the caller may not act in answers 404. */
+                org_id: components["parameters"]["OrgPathParam"];
+            };
             cookie?: never;
         };
         /**
@@ -694,11 +509,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/organization/context": {
+    "/v1/orgs/{org_id}/context": {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                /** @description Organization ID, or `current` for the caller's active organization. Any organization the caller may not act in answers 404. */
+                org_id: components["parameters"]["OrgPathParam"];
+            };
             cookie?: never;
         };
         /**
@@ -756,11 +574,7 @@ export interface paths {
         get: operations["getInteraction"];
         put?: never;
         post?: never;
-        /**
-         * Delete interaction
-         * @description Deletes an interaction so it disappears from inbox and org listings. The row is retained for audit history. Only terminal interactions (`completed`, `cancelled`, `expired`) may be deleted; pending or in-review interactions must be cancelled first so anything waiting on them can route to a fallback.
-         */
-        delete: operations["deleteInteraction"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1252,32 +1066,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/agents/invoke": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Invoke an agent
-         * @description One compound runtime call for hosted apps: it resolves an agent, resolves or creates a session by `session_key`, appends the caller's input message, and starts an agent turn — collapsing the create-or-resolve-session plus start-turn sequence into a single retryable request. This is the entry point a product backend (an embedded app, a Slack handler, a Telegram bot) calls per inbound message; the lower-level session and turn APIs remain available for finer control.
-         *
-         *     Agents always run from their stored definition. A newly created session may set `session.model_override` to keep that conversation on one model. For a one-shot timeout override, send `operation.timeout_seconds` with a value of at least one; it applies only to the newly admitted turn.
-         *
-         *     By default it returns `202 Accepted` immediately with a durable `after_sequence` stream cursor; the turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection, identical to the `POST /v1/sessions/{session_id}/turns` stream. A repeated call with the same `input.idempotency_key` resolves the same session and returns the existing invocation without restarting it or writing new input, so a webhook handler can acknowledge fast and retry safely. Requires the `mobius.resource.use` permission (or the agent's own backing principal).
-         *
-         *     Only one direct invocation may be nonterminal in a session. A distinct input while a turn is queued, running, or waiting returns `409` with `error.code = session_turn_active` and `error.details = {turn_id, status}` before the new input is appended. Use the session nudge endpoint explicitly to steer a running or waiting turn; Mobius never converts a second send into a nudge implicitly.
-         */
-        post: operations["invokeAgent"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/sessions": {
         parameters: {
             query?: never;
@@ -1467,11 +1255,47 @@ export interface paths {
          */
         get: operations["listSessionMessages"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sessions/{session_id}/inputs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /**
-         * Append session messages
-         * @description Appends one or more messages to a durable session and returns the updated session. The service assigns sequence numbers atomically and may append an additional compaction summary when the session crosses its compaction threshold.
+         * Send input to a session
+         * @description The one way to put caller input into a session. `delivery` says where it goes:
+         *
+         *     - `new_turn` (the default) appends the input as a user message and
+         *     starts an agent turn to respond. A distinct send while a turn is
+         *     queued, running, or waiting returns `409 session_turn_active` before
+         *     anything is written; send it again with `delivery: current_turn` to
+         *     steer that turn instead.
+         *     - `current_turn` adds the input as direction to the newest turn that
+         *     can still absorb it. The agent receives it at the turn's next safe
+         *     boundary, after any in-flight provider request or tool call
+         *     finishes. The direction waits in the session's nudge queue
+         *     (`listSessionNudges`) until then and can be cancelled. When no turn
+         *     can take it (the session is idle), the input becomes a regular user
+         *     message carried by a fresh turn, and the acknowledgement reports
+         *     `delivery: new_turn`. When another person's turn is running, the
+         *     direction waits behind it and the acknowledgement reports
+         *     `delivery: queued`. Direction carries text only, so every content
+         *     block must be `text`, and the turn-only fields (`operation`,
+         *     `context`, `output`) are refused.
+         *
+         *     The response is always `202 Accepted` with JSON. When it reports `delivery: new_turn`, follow the turn on `GET .../transcript/stream?cursor=<resume_cursor>`; the turn keeps running if the caller disconnects. A repeated call with the same `idempotency_key` returns the original acknowledgement without writing new input. Requires the `mobius.resource.use` permission (or the agent's own backing principal).
          */
-        post: operations["appendSessionMessages"];
+        post: operations["sendSessionInput"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1491,13 +1315,7 @@ export interface paths {
          */
         get: operations["listSessionTurns"];
         put?: never;
-        /**
-         * Start an agent turn
-         * @description Appends one caller input message to the session and starts an agent turn to respond. By default returns `202 Accepted` immediately with a `resume_cursor`; open `GET .../transcript/stream?cursor=<resume_cursor>` to follow the turn. The turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection. The inline stream cannot be resumed; a client that loses it follows the turn on the transcript stream from `resume_cursor`. A repeated call with the same `idempotency_key` returns the existing invocation without restarting it or writing new input. A distinct send while a direct turn is queued, running, or waiting returns `409 session_turn_active` before appending the new input; use the nudge endpoint explicitly to steer an active turn. Requires the `mobius.resource.use` permission (or the agent's own backing principal).
-         *
-         *     Set `operation.timeout_seconds` to at least one for a one-shot timeout override on this turn. It takes precedence over the agent default and is not saved on the session.
-         */
-        post: operations["startTurn"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1547,11 +1365,7 @@ export interface paths {
          */
         get: operations["listSessionNudges"];
         put?: never;
-        /**
-         * Nudge a session
-         * @description Adds user direction to the newest turn that can still absorb it. The agent receives it as contextual runtime input at the turn's next safe boundary, after any in-flight provider request or tool call finishes — including one final boundary as the turn is about to complete. When no such turn exists (the session is idle), the input converts to a regular user message carried by a fresh direct-session turn, exactly as if it had been sent to the session; the acknowledgement then reports `delivery: new_turn` and `status: delivered`. The same conversion re-homes input whose target turn ends without absorbing it, so accepted input is never lost. Reusing an `idempotency_key` with identical content returns the original acknowledgement; reusing it with different content returns `409 Conflict`. Requires the `mobius.resource.use` permission (or the agent's own backing principal).
-         */
-        post: operations["nudgeSession"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1818,26 +1632,6 @@ export interface paths {
          * @description Lists followed items with live routine reach and keyset pagination by last activity.
          */
         get: operations["listRoutineThreads"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/routines/{routine_id}/threads/{key}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get a followed thread
-         * @description Returns a thread under the same custody and reach policy as its routine.
-         */
-        get: operations["getRoutineThread"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3087,7 +2881,7 @@ export interface components {
         ErrorResponse: {
             /** @description Error detail. */
             error: {
-                /** @description Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. A request that matches no API route returns 404 with `route_not_found`, distinct from the `not_found` an operation returns for a missing resource. When the request-wide rate limiter refuses a call, `rate_limit_exceeded` carries `scope` (`key`, `org`, or `browser`), `window`, `limit`, and `retry_after_seconds` in `details`; an endpoint's own cap returns the same code without them. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`; a send or nudge while a voice call is in progress in the chat uses `voice_call_active`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family. */
+                /** @description Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. A request that matches no API route returns 404 with `route_not_found`, distinct from the `not_found` an operation returns for a missing resource. When the request-wide rate limiter refuses a call, `rate_limit_exceeded` carries `scope` (`key`, `org`, or `browser`), `window`, `limit`, and `retry_after_seconds` in `details`; an endpoint's own cap returns the same code without them. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`; session input while a voice call is in progress in the chat uses `voice_call_active`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family. */
                 code: string;
                 /** @description Human-readable error message */
                 message: string;
@@ -3126,6 +2920,17 @@ export interface components {
             can_edit: boolean;
             /** @description Whether the caller may delete the resource. */
             can_delete: boolean;
+        };
+        /** @description The four access levels the current caller holds on this resource, answered by the shared access function. Clients show or enable actions from these fields rather than re-deriving them from ownership, visibility, or role. */
+        ViewerActions: {
+            /** @description Whether the caller may see this resource read-only. */
+            view: boolean;
+            /** @description Whether the caller may use this resource or change its content. */
+            work_with: boolean;
+            /** @description Whether the caller may change this resource's setup, rename it, or move it. */
+            manage: boolean;
+            /** @description Whether the caller may pause, archive, or delete this resource. */
+            stop: boolean;
         };
         /**
          * @description Whether a catalog capability — an action, an event source, or an integration provider — is usable right now. `ready` means it can be used as-is; `needs_setup` means it is known and supported but blocked by configuration, credentials, permissions, provider runtime availability, or implementation status. This is catalog *readiness*, and is deliberately separate from a resource's lifecycle state (such as integration `status` or artifact lifecycle).
@@ -3352,6 +3157,7 @@ export interface components {
             member_count?: number;
             /** @description Whether the caller may change this assistant's setup: exactly what `PATCH /v1/agents/{resource_id}` would allow. False on internal administration listings. */
             can_edit: boolean;
+            viewer_actions?: components["schemas"]["ViewerActions"];
             /** @description Number of distinct shared chats where this assistant was active in the past 7 days. Populated only for organization administrators; absent for other callers. Reveals no chat name, member, or message content. */
             active_chat_count?: number;
             /** @description Inbox address provisioned via POST /v1/agents/{resource_id}/inbox (opt-in; not created automatically at agent creation). The field is populated only after a successful provisioning call. Use this address to add the agent as a member on external platforms (Linear, GitHub, Slack, etc.) so the platform can deliver notifications to the agent. */
@@ -3489,6 +3295,7 @@ export interface components {
             visibility: components["schemas"]["ResourceVisibility"];
             posture: components["schemas"]["ResourcePosture"];
             controls: components["schemas"]["ResourceControls"];
+            viewer_actions?: components["schemas"]["ViewerActions"];
             /** @description Model selected for this session. Omitted when the session inherits the agent's model. */
             model_override?: string;
             /** @description Model the session most recently exchanged tokens with. */
@@ -3964,6 +3771,7 @@ export interface components {
             container?: components["schemas"]["ResourceContainer"];
             posture: components["schemas"]["ResourcePosture"];
             controls: components["schemas"]["ResourceControls"];
+            viewer_actions?: components["schemas"]["ViewerActions"];
             /** @description Stable identifier the action is called by. */
             name: string;
             /** @description Human-readable display title for the action. */
@@ -4088,6 +3896,8 @@ export interface components {
             posture?: components["schemas"]["ResourcePosture"];
             /** @description Present for an organization-authored custom action. */
             controls?: components["schemas"]["ResourceControls"];
+            /** @description Present for an organization-authored custom action. */
+            viewer_actions?: components["schemas"]["ViewerActions"];
         };
         /** @description Execution-location metadata surfaced to action pickers. */
         ActionExecutionMetadata: {
@@ -4615,17 +4425,6 @@ export interface components {
             message_id?: components["schemas"]["WorkerSocketMessageID"];
             error: components["schemas"]["WorkerSocketProtocolError"];
         };
-        ConnectionGovernance: {
-            id: string;
-            provider: string;
-            status: components["schemas"]["IntegrationStatus"];
-            controller: components["schemas"]["ConnectionController"];
-        };
-        ConnectionGovernanceListResponse: {
-            items: components["schemas"]["ConnectionGovernance"][];
-            has_more: boolean;
-            next_cursor?: string;
-        };
         /** @description Exact accounts available to routine actions, keyed by provider. Each call selects one account and revalidates its live grant. Event watches are separate. */
         ConnectionBindings: {
             [key: string]: components["schemas"]["ConnectionBinding"][];
@@ -4649,146 +4448,6 @@ export interface components {
              * @example event.repository.full_name == "acme/api"
              */
             condition?: string;
-        };
-        /** @enum {string} */
-        ConnectionExecutionMode: "authenticated_human" | "controller_background" | "organization_background";
-        ConnectionGrantAudience: {
-            organization: boolean;
-            principal_ids: string[];
-        };
-        /** @description Access for one assistant in conversations and routines, subject to connection ownership and result audience restrictions. */
-        ConnectionGrant: {
-            id: string;
-            connection_id: string;
-            agent_id: string;
-            audience: components["schemas"]["ConnectionGrantAudience"];
-            /** Format: date-time */
-            created_at: string;
-            connection_label: string;
-            provider: string;
-            controlled_by_organization: boolean;
-            represented_actor?: string;
-            /** @description The provider's short account identity, such as an email address. Presentation only. */
-            identity_label?: string;
-            can_manage: boolean;
-        };
-        ConnectionGrantListResponse: {
-            items: components["schemas"]["ConnectionGrant"][];
-        };
-        /** @description Grant current assistants access for both conversations and routines within the specified audience and connection ownership restrictions. Does not assign tools. */
-        MaterializeConnectionGrantsRequest: {
-            agent_ids: string[];
-            audience: components["schemas"]["ConnectionGrantAudience"];
-        };
-        SetConnectionDefaultRequest: {
-            connection_id: string;
-            grant_id: string;
-            execution_mode: components["schemas"]["ConnectionExecutionMode"];
-            context: components["schemas"]["ConnectionDefaultContext"];
-        };
-        /** @enum {string} */
-        ConnectionDefaultContext: "self" | "organization";
-        ConnectionDefaultChoice: {
-            connection_id: string;
-            grant_id: string;
-            connection_label: string;
-            represented_actor?: string;
-            controlled_by_organization: boolean;
-        };
-        ConnectionDefaultPreference: {
-            provider: string;
-            /** @enum {string} */
-            state: "unset" | "selected" | "unavailable";
-            selection?: components["schemas"]["ConnectionDefaultChoice"];
-            choices: components["schemas"]["ConnectionDefaultChoice"][];
-        };
-        ConnectionDefaultPreferenceListResponse: {
-            items: components["schemas"]["ConnectionDefaultPreference"][];
-        };
-        /**
-         * @description `active` — integration is enabled and usable by agents. `inactive` — manually disabled; no automatic expiry behavior. `expired` — token/credential has expired (e.g., OAuth token not refreshed).
-         * @enum {string}
-         */
-        IntegrationStatus: "active" | "inactive" | "expired" | "confirmation_required";
-        /** @description Server-evaluated eligibility for making this account team-managed in place. */
-        IntegrationTeamManagement: {
-            supported: boolean;
-            can_start: boolean;
-            unavailable_reason?: string;
-        };
-        /** @description Connection to an external provider such as Slack, GitHub, or a model service. Agents and actions use integrations to find provider configuration without embedding secrets in definitions. External identity is unique per (organization, owner, provider); the same external account may have distinct personal, agent, and business rows. */
-        Integration: {
-            team_management?: components["schemas"]["IntegrationTeamManagement"];
-            /** @description Immutable provider authorization mode. */
-            connection_mode?: string;
-            /** @description Verified actor represented by this connection. */
-            represented_actor?: string;
-            /**
-             * Format: date-time
-             * @description Deadline for confirming fresh replacement evidence, when required.
-             */
-            confirmation_expires_at?: string;
-            /** @description External account identity; safe metadata available in the governance view. */
-            identity_label?: string;
-            /** @description Unique identifier for this integration. */
-            id: string;
-            /** @description Human-readable name, chosen by whoever connected it. Unique per `(org, owner, provider)`: two people may each call their own mailbox "work", but two org-shared connections may not. */
-            name: string;
-            /** @description Free-form provider identifier (e.g. `openai`, `slack`, `github`). Immutable after creation. */
-            provider: string;
-            /** @description Provider-specific non-sensitive configuration stored as JSON. The shape is provider-defined. Sensitive credentials are never returned in this field. */
-            config?: {
-                [key: string]: unknown;
-            };
-            /** @description Current integration lifecycle state: `active`, `inactive`, or `expired`. */
-            status: components["schemas"]["IntegrationStatus"];
-            /** @description Human-readable reason when `status` is `expired` (needs reconnect). */
-            status_reason?: string;
-            /** @description True when the stored credential cannot be decrypted by the running platform. The connection still exists and its `status` is unchanged, but nothing that needs the credential will work until an admin reconnects the integration. Absent or `false` in the normal case. */
-            credentials_unreadable?: boolean;
-            /** @description Who this connection belongs to, and the only axis that decides who may use it. Absent means org-shared. */
-            controller: components["schemas"]["ConnectionController"];
-            /** @description The provider's account model, repeated here so a client can render a connection without also fetching the catalog. */
-            account_model?: components["schemas"]["IntegrationAccountModel"];
-            /** @description User ID of the org member who created this integration. */
-            created_by?: string;
-            tags?: components["schemas"]["TagMap"];
-            /**
-             * Format: date-time
-             * @description Timestamp when this integration was created.
-             */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description Timestamp when this integration was last updated.
-             */
-            updated_at: string;
-        };
-        /** @description Unified integration-framework connect response. Redirect-style providers return `kind=redirect` plus `redirect_url`; inline API-key and service-credential providers return `kind=complete` plus the persisted integration row. */
-        IntegrationConnectResponse: {
-            /** @enum {string} */
-            kind: "redirect" | "complete";
-            /** @description OAuth or install URL to visit when `kind=redirect`. */
-            redirect_url?: string;
-            integration?: components["schemas"]["Integration"];
-        };
-        /**
-         * @description What one connection to a provider represents.
-         *
-         *     `personal` — one human's own account, and acting through it acts as that person (Gmail, Google Calendar, X). `workspace` — a shared external workspace the whole org acts within (Slack, Jira, GitHub). `capability` — a keyed service with no account identity behind it (Firecrawl, a model provider, a database).
-         *
-         *     It decides the default owner of a new connection and whether the connection is offered to an agent by default.
-         * @enum {string}
-         */
-        IntegrationAccountModel: "personal" | "workspace" | "capability";
-        /** @description Lifecycle and grant authority. Control does not authorize organization-provider content or agent execution. */
-        ConnectionController: {
-            /** @enum {string} */
-            kind: "person" | "organization";
-            /** @description Human controller ID, present only for person control. */
-            principal_id?: string;
-            /** @description Human controller display name, when available. */
-            display_name?: string;
         };
         /**
          * @description Provider supported by built-in agent messaging: `slack`, `telegram`, `linear` (Linear agent sessions), `microsoft_teams` (Microsoft Teams chats in one linked tenant), or `monday` (a monday.com custom agent answering mentions and assignments on boards). A binding's provider must equal its integration's provider.
@@ -6317,6 +5976,7 @@ export interface components {
             container: components["schemas"]["ResourceContainer"];
             posture: components["schemas"]["ResourcePosture"];
             controls: components["schemas"]["ResourceControls"];
+            viewer_actions?: components["schemas"]["ViewerActions"];
             /**
              * @description Canonical action names, wildcard selectors, or group references naming the actions this skill needs. Uses the same selector vocabulary as agent action selections.
              *
@@ -6729,55 +6389,6 @@ export interface components {
             session_id: string;
             resume_cursor: string;
         };
-        /**
-         * @description JSON payload of a single `data:` line on a turn's SSE response, paired with an `event: <event type>` line. The streaming responses of `startTurn` and `invokeAgent` use it. The response first replays the transcript messages committed after the cursor, then tails the turn live, and closes once the session is idle.
-         *
-         *     The `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.
-         *
-         *     Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>`. That `id:` is not a resume cursor: the inline stream cannot be resumed, and a repeated POST starts another turn unless it reuses the same `idempotency_key`. A client that loses the inline stream follows the turn on `streamSessionTranscript` from the acknowledgement's `resume_cursor` (`?cursor=`). Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, `compaction.started`, `compaction.failed`, and the transcript preview frames (`message.upsert`, `message.block`, `message.block.patch`, `message.delta`) are live-only and carry no `id:`. Streamed text arrives as `message.delta`, coalesced per block. `stream.end` is the final envelope on every deliberate server-side close and also carries no `id:`.
-         */
-        SessionStreamFrame: components["schemas"]["SessionUserMessagePayload"] | components["schemas"]["AgentMessagePayload"] | components["schemas"]["CompactionStartedPayload"] | components["schemas"]["CompactionCreatedPayload"] | components["schemas"]["CompactionFailedPayload"] | components["schemas"]["TurnStartedPayload"] | components["schemas"]["TurnWaitingPayload"] | components["schemas"]["TurnCompletedPayload"] | components["schemas"]["TurnFailedPayload"] | components["schemas"]["TurnCancelledPayload"] | components["schemas"]["NudgeEventPayload"] | components["schemas"]["SessionMessagePreviewFrame"] | components["schemas"]["SessionResyncFrame"] | components["schemas"]["StreamEndFrame"] | components["schemas"]["ToolCallPayload"] | components["schemas"]["ToolResultPayload"] | components["schemas"]["MessageUpsertFrame"] | components["schemas"]["MessageBlockFrame"] | components["schemas"]["MessageBlockPatchFrame"] | components["schemas"]["MessageDeltaFrame"];
-        /** @description Live-only, SessionMessage-compatible transcript preview for an in-flight agent response segment. It carries no durable `seq`, transcript `sequence`, or stable `message_id`; the committed row later replaces it by `turn_id` plus `metadata.response_message_index`. */
-        SessionMessagePreviewFrame: {
-            /** @enum {string} */
-            event_type: "session.message.preview";
-            /** @description Provisional live id. Do not persist or use as the durable message id. */
-            id: string;
-            /** @description Session this preview belongs to. */
-            session_id: string;
-            /** @description Agent container executing the parent session, when known. */
-            agent_id?: string;
-            /** @description Agent turn that produced the preview. */
-            turn_id: string;
-            /**
-             * Format: int64
-             * @description Monotonic per-turn sequence across all live-only session frames; use to detect dropped live frames.
-             */
-            live_sequence?: number;
-            role: components["schemas"]["SessionMessageRole"];
-            entry_type: components["schemas"]["SessionMessageEntryType"];
-            /** @description Ordered content blocks using the same canonical block shape as SessionMessage. */
-            content: components["schemas"]["SessionContentBlock"][];
-            /** @description Must include `response_message_index`, the handoff key shared with the durable transcript row. */
-            metadata: {
-                [key: string]: unknown;
-            };
-            /**
-             * Format: date-time
-             * @description Server timestamp when this live preview frame was emitted.
-             */
-            emitted_at?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        /** @description Live-only marker: the client missed live frames. Read the transcript again with `getSessionTranscript` to reconcile the active turn. */
-        SessionResyncFrame: {
-            /** @enum {string} */
-            event_type: "session.resync";
-            session_id: string;
-            /** @description Machine-readable resync reason, e.g. `subscriber_overflow`. */
-            reason: string;
-        };
         /** @description Final envelope on a deliberate session-stream close. An idle close means no non-terminal turn remains; a rotate close asks the client to reconnect immediately with the same durable transcript cursor. An access_ended close means the caller can no longer read the conversation, for example because its owner stopped sharing it; the client should not reconnect. */
         StreamEndFrame: {
             /**
@@ -6820,98 +6431,6 @@ export interface components {
             /** Format: date-time */
             ended_at?: string;
         };
-        /** @description Payload of a `user.message` content event: the durable encoding of one non-assistant transcript message — caller input, or a user-role message carrying tool results. It mirrors the transcript row exactly, carrying the message identity (`message_id` + `sequence`) and full content. Replaying these events reconstructs the same view as reading the messages API. */
-        SessionUserMessagePayload: {
-            /** @description Id of the transcript message this event mirrors. */
-            message_id: string;
-            /**
-             * Format: int64
-             * @description The mirrored message's per-session transcript sequence.
-             */
-            sequence: number;
-            /** @description Transcript role of the message (e.g. `user`, `system`, or a user-role message carrying tool results); never `assistant`. */
-            role: components["schemas"]["SessionMessageRole"];
-            /** @description The message's full canonical content blocks (text, tool_result, …). */
-            content: components["schemas"]["SessionContentBlock"][];
-            /** @description The agent turn that produced this message, when applicable. */
-            turn_id?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        /** @description Payload of a `turn.started` event. Empty: the turn is identified by the envelope `turn_id`, so nothing is duplicated in the payload. */
-        TurnStartedPayload: {
-            [key: string]: unknown;
-        };
-        /** @description Payload of an `agent.message` content event: the durable encoding of one assistant transcript message. Carries the message's full structured content (text, thinking, tool_use) plus the message identity (`message_id` + `sequence`). Replaying these events reconstructs the same view as reading the messages API. */
-        AgentMessagePayload: {
-            /** @description Id of the transcript message this event mirrors. */
-            message_id: string;
-            /**
-             * Format: int64
-             * @description The mirrored message's per-session transcript sequence.
-             */
-            sequence: number;
-            /**
-             * @description Always `assistant`.
-             * @enum {string}
-             */
-            role: "assistant";
-            /** @description The assistant message's full canonical content blocks (text, thinking, tool_use). */
-            content: components["schemas"]["SessionContentBlock"][];
-            /** @description The agent turn that produced this message. */
-            turn_id?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        /** @description Payload of a live-only `tool.call` frame — an in-flight preview that a tool was invoked during the active turn. Never persisted and carries no sequence: the durable record of the call is the `tool_use` content block of the assistant message, delivered as an `agent.message` event when the turn commits. */
-        ToolCallPayload: {
-            tool_call_id?: string;
-            tool_name?: string;
-            input?: {
-                [key: string]: unknown;
-            };
-            /**
-             * Format: int64
-             * @description Monotonic per-turn sequence across all live-only session frames; use to detect dropped live frames.
-             */
-            live_sequence?: number;
-            /**
-             * Format: date-time
-             * @description Server timestamp when this live preview frame was emitted.
-             */
-            emitted_at?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        /** @description Payload of a live-only `tool.result` frame — an in-flight preview that a tool returned during the active turn. Never persisted and carries no sequence: the durable record is the `tool_result` content block of the following transcript message, delivered as a `user.message` event when the turn commits. */
-        ToolResultPayload: {
-            tool_call_id?: string;
-            tool_name?: string;
-            /** @description The tool result as canonical content blocks (e.g. `[{ "type": "text", "text": "…" }]`), the same `SessionContentBlock` shape as the `tool_result` content of the durable transcript message — so the live preview and the committed record read identically. In practice the server collapses the result to a single `text` block. */
-            content?: components["schemas"]["SessionContentBlock"][];
-            display?: string;
-            is_error?: boolean;
-            error?: string;
-            /**
-             * Format: int64
-             * @description Monotonic per-turn sequence across all live-only session frames; use to detect dropped live frames.
-             */
-            live_sequence?: number;
-            /**
-             * Format: date-time
-             * @description Server timestamp when this live preview frame was emitted.
-             */
-            emitted_at?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        TurnWaitingPayload: {
-            turn_id?: string;
-            reason?: string;
-            wait?: components["schemas"]["SessionTranscriptWait"];
-        } & {
-            [key: string]: unknown;
-        };
         SessionTranscriptWait: {
             /** @enum {string} */
             kind: "interaction";
@@ -6935,91 +6454,6 @@ export interface components {
              * @description When the call paused. The chat's timer for the wait counts from here, not from the start of the turn.
              */
             paused_at?: string;
-        };
-        /** @description Payload of a `turn.completed` event — the terminal idle marker carrying token usage. The assistant output is not duplicated here; it is delivered as `agent.message` content events when the transcript commits. The same usage is readable after the fact on the turn resource, so a consumer that missed the pulse never has to replay the stream for it. */
-        TurnCompletedPayload: {
-            /** @description Token usage of the completed turn. A failed turn emits `turn.failed`, which carries no usage; read a failed turn's usage from the turn resource. */
-            usage?: components["schemas"]["AgentTurnUsage"];
-        } & {
-            [key: string]: unknown;
-        };
-        TurnFailedPayload: {
-            error?: string;
-            error_type?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        TurnCancelledPayload: {
-            reason?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        /** @description Live reconciliation hint emitted for `nudge.queued`, `nudge.delivered`, and `nudge.cancelled`. Re-read the queue resource after receiving it; this pulse is not durable replay state. */
-        NudgeEventPayload: {
-            nudge_id: string;
-            turn_id: string;
-            delivery: components["schemas"]["SessionNudgeDelivery"];
-            status: components["schemas"]["SessionNudgeStatus"];
-        } & {
-            [key: string]: unknown;
-        };
-        /**
-         * @description What started a compaction pass. `auto` is the threshold-gated pass a turn runs before it loads its context; `manual` is a compaction turn queued by a compact request. `append` appears only on summaries written before compaction moved into turns.
-         * @enum {string}
-         */
-        CompactionTrigger: "auto" | "manual" | "append";
-        /** @description Payload of a `compaction.started` event, emitted immediately before the summarizer call and only once every gate has passed — so receiving it means a pass is really running. Live-only: it is not replayed on reconnect, so a client that connects mid-pass reads the session's `compaction` field instead. Every started pass is followed by exactly one `compaction.created` or `compaction.failed`. */
-        CompactionStartedPayload: {
-            trigger?: components["schemas"]["CompactionTrigger"];
-            /** @description Lowest transcript sequence this pass is summarizing. */
-            from_sequence?: number;
-            /** @description Highest transcript sequence this pass is summarizing. */
-            through_sequence?: number;
-            /** @description Number of transcript messages this pass is folding into the summary. */
-            message_count?: number;
-            /** @description Estimated token size of the window being summarized. */
-            estimated_tokens?: number;
-            /** @description Model that will produce the summary. */
-            summary_model?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        /** @description Payload of a `compaction.failed` event — the other terminal outcome of a started pass. It guarantees an indicator opened on `compaction.started` always comes down, instead of hanging on a pass that produced no summary. Live-only, like `compaction.started`: a failed pass appends nothing to the transcript, so there is no durable row to replay. The transcript is unchanged; the next pass recomputes from the same boundary. */
-        CompactionFailedPayload: {
-            trigger?: components["schemas"]["CompactionTrigger"];
-            /** @description Lowest transcript sequence the failed pass was summarizing. */
-            from_sequence?: number;
-            /** @description Highest transcript sequence the failed pass was summarizing. */
-            through_sequence?: number;
-            /** @description Machine-readable failure category. Currently `summarizer_error`, `timeout`, `empty_summary`, or `storage_error`. Treat it as an open string: new categories may be added, and a client that switches on it should fall through to a generic "compaction failed". */
-            error_type?: string;
-            /** @description Truncated failure detail. Diagnostics live in the server logs, not here. */
-            error_message?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        /** @description Payload of a `compaction.created` event, emitted when the session transcript is summarized. The event is non-terminal: it never closes the session stream, so a live consumer observes a compaction landing inline. */
-        CompactionCreatedPayload: {
-            trigger?: components["schemas"]["CompactionTrigger"];
-            /** @description Id of the compaction summary message appended to the transcript. */
-            message_id?: string;
-            /**
-             * Format: int64
-             * @description The summary message's per-session transcript sequence.
-             */
-            sequence?: number;
-            /** @description Transcript role of the summary entry. */
-            role?: string;
-            /** @description The summary's full canonical content blocks, so replaying the stream reconstructs the compaction entry exactly. */
-            content?: components["schemas"]["SessionContentBlock"][];
-            /** @description Highest message sequence the new summary covers — the before/after boundary. */
-            covers_through_sequence?: number;
-            /** @description Number of transcript messages folded into this summary. */
-            message_count?: number;
-            /** @description Model that produced the summary. */
-            summary_model?: string;
-        } & {
-            [key: string]: unknown;
         };
         /** @description One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, `image`, and `document`, plus host-managed `reminder` blocks when caller runtime context is explicitly included. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers. */
         SessionContentBlock: components["schemas"]["SessionTextBlock"] | components["schemas"]["SessionThinkingBlock"] | components["schemas"]["SessionToolUseBlock"] | components["schemas"]["SessionToolResultBlock"] | components["schemas"]["SessionImageBlock"] | components["schemas"]["SessionDocumentBlock"] | components["schemas"]["SessionReminderBlock"];
@@ -7380,50 +6814,6 @@ export interface components {
              */
             prev_sequence?: number;
         };
-        AppendSessionMessagesRequest: {
-            /** @description Messages to append to the session, in order. */
-            messages: components["schemas"]["AppendSessionMessage"][];
-            /** @description Fresh (uncached) input tokens to add to this session's lifetime total. */
-            token_input_total?: number;
-            /** @description Output tokens to add to this session's lifetime total. */
-            token_output_total?: number;
-            /** @description Prompt-cache-read input tokens to add to this session's lifetime total. */
-            cache_read_input_total?: number;
-            /** @description Prompt-cache-write input tokens to add to this session's lifetime total. */
-            cache_creation_input_total?: number;
-            /** @description Model that produced these messages. */
-            model?: string;
-            /** @description Provider for the supplied `model`. */
-            model_provider?: string;
-        };
-        /** @description Message payload to append to an existing durable session. */
-        AppendSessionMessage: {
-            /** @description Role to store for this appended message. */
-            role: components["schemas"]["SessionMessageRole"];
-            /** @description Ordered content blocks (text, tool calls, tool results, images). Blocks of type `reminder` are host-managed runtime context and are rejected on this surface. */
-            content: {
-                [key: string]: unknown;
-            }[];
-            /** @description Free-form caller metadata for this message. */
-            metadata?: {
-                [key: string]: unknown;
-            };
-            /**
-             * Format: date-time
-             * @description Caller-supplied creation timestamp. The server assigns one if absent.
-             */
-            created_at?: string;
-        };
-        /** @description A single compound invocation: which stored agent to run, how to resolve the session, the caller's input message, and optional channel routing context. `operation.timeout_seconds` must be at least one and takes precedence for this admitted turn. */
-        InvokeAgentRequest: {
-            agent_ref: components["schemas"]["AgentRef"];
-            session?: components["schemas"]["InvokeSessionSpec"];
-            operation?: components["schemas"]["AgentTurnOperationPolicy"];
-            input: components["schemas"]["InvokeInput"];
-            /** @description Optional structured-output contract for this turn. Read the validated value from the completed turn's `output`. */
-            output?: components["schemas"]["TurnOutputSpec"];
-            channel_context?: components["schemas"]["ChannelContext"];
-        };
         /** @description Operational policy for this newly admitted turn only. It is not saved on the session. Its timeout takes precedence over the agent default and must be at least one second. */
         AgentTurnOperationPolicy: {
             /**
@@ -7431,39 +6821,6 @@ export interface components {
              * @description Overall active-execution budget for this logical turn.
              */
             timeout_seconds?: number;
-        };
-        /** @description Reference to an agent in this org. Supply exactly one of `id` (the agent identifier) or `name` (the org-unique agent name). A blueprint-binding reference form is reserved for a later release and is not resolvable yet. */
-        AgentRef: {
-            /** @description Agent identifier. */
-            id?: string;
-            /** @description Org-unique agent name. */
-            name?: string;
-        };
-        /** @description How to resolve or create the session this invocation runs in. Mirrors the create-session policy: `mode` + `session_key` resolve a durable conversation for the agent, and the remaining fields seed a session that does not already exist (they are ignored when an existing session is resolved). Omit the whole object to use a single default session per agent in `continue_or_create` mode. */
-        InvokeSessionSpec: {
-            /**
-             * @description `continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.
-             * @enum {string}
-             */
-            mode?: "new" | "continue" | "continue_or_create";
-            /** @description Stable key identifying the conversation within the agent. */
-            session_key?: string;
-            /** @description Human-friendly title for a newly created session. */
-            title?: string;
-            owner?: components["schemas"]["ResourceOwner"];
-            visibility?: components["schemas"]["ResourceVisibility"];
-            /** @description Model to use for a newly created session. Overrides the stored agent's model and is ignored when an existing session is resolved. Creating a session for a worker-routed agent returns `400 invalid_argument` with `details.argument = model_override`. */
-            model_override?: string;
-            /** @description Per-session compaction overrides applied when the session is first created. Merged over the agent's default policy and server defaults. Ignored when an existing session is resolved. */
-            compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
-            /** @description Retention policy applied when the session is first created. Ignored when an existing session is resolved. */
-            retention?: components["schemas"]["SessionRetentionPolicy"];
-            /** @description Reasoning-effort override applied when the session is first created. Overrides the agent default. Ignored when an existing session is resolved. */
-            thinking_effort?: components["schemas"]["ThinkingEffort"];
-            /** @description Free-form caller metadata stored on a newly created session. */
-            metadata?: {
-                [key: string]: unknown;
-            };
         };
         /** @enum {string} */
         ContextIncludeParam: "context";
@@ -7485,31 +6842,6 @@ export interface components {
             schema: {
                 [key: string]: unknown;
             };
-        };
-        /** @description The caller input message that starts the agent turn. */
-        InvokeInput: {
-            /** @description Ordered content blocks for the input message. Canonical documents use `{ "type": "document", "source": { "type": "base64", "media_type": "application/pdf", "data": "..." }, "title": "report.pdf" }` or a URL source. Mobius also translates supported OpenAI `input_file` and Chat Completions `file` blocks at ingestion. */
-            content: {
-                [key: string]: unknown;
-            }[];
-            /** @description Dedup key scoped to the resolved session. A repeat call with the same key returns the existing invocation and writes nothing new; it never restarts a terminal turn. Derive it from the provider event id for Slack/Telegram webhook retries. Omitting it or sending a blank value disables retry deduplication. */
-            idempotency_key?: string;
-            context?: components["schemas"]["RuntimeContext"];
-            /** @description Free-form caller metadata attached to the input message. */
-            metadata?: {
-                [key: string]: unknown;
-            };
-        };
-        /** @description Optional messaging provider/channel routing context (Slack, Telegram, …). Persisted on the started turn's input-message metadata under a `channel_context` key so chat history and support views can trace a turn back to the provider thread it came from. */
-        ChannelContext: {
-            /** @description Messaging provider, e.g. `slack` or `telegram`. */
-            provider?: string;
-            /** @description Provider workspace/team identifier. */
-            workspace_id?: string;
-            /** @description Provider channel or chat identifier. */
-            channel_id?: string;
-            /** @description Provider thread identifier within the channel. */
-            thread_id?: string;
         };
         /** @description Resolve-or-create policy for a session. */
         CreateSessionRequest: {
@@ -7539,61 +6871,52 @@ export interface components {
                 [key: string]: unknown;
             };
         };
-        /** @description Caller input that starts an agent turn in a session. `operation.timeout_seconds` must be at least one and takes precedence for this admitted turn. */
-        StartTurnRequest: {
-            /**
-             * @description Role of the input message. A turn carries caller input, so only `user` is accepted; defaults to `user` when omitted.
-             * @default user
-             * @enum {string}
-             */
-            role?: "user";
-            /** @description Ordered content blocks for the input message. Canonical documents use `{ "type": "document", "source": { "type": "base64", "media_type": "application/pdf", "data": "..." }, "title": "report.pdf" }` or a URL source. Mobius also translates supported OpenAI `input_file` and Chat Completions `file` blocks at ingestion. */
+        /** @description Caller input for a session. `delivery` picks whether it starts a turn or steers the running one. `operation.timeout_seconds` must be at least one and takes precedence for the admitted turn. */
+        SessionInputRequest: {
+            /** @description Ordered content blocks for the input message. Canonical documents use `{ "type": "document", "source": { "type": "base64", "media_type": "application/pdf", "data": "..." }, "title": "report.pdf" }` or a URL source. Mobius also translates supported OpenAI `input_file` and Chat Completions `file` blocks at ingestion. With `delivery: current_turn`, every block must be `text`. */
             content: {
                 [key: string]: unknown;
             }[];
-            /** @description Dedup key scoped to the session. A repeat call with the same key returns the existing invocation and writes nothing new; it never restarts a terminal turn. Omitting it or sending a blank value disables retry deduplication. */
+            delivery?: components["schemas"]["SessionInputDelivery"];
+            /** @description Dedup key scoped to the session. A repeat call with the same key returns the original acknowledgement and writes nothing new; it never restarts a terminal turn. Direction reused with different content returns `409`. Omitting it or sending a blank value disables retry deduplication. */
             idempotency_key?: string;
             operation?: components["schemas"]["AgentTurnOperationPolicy"];
             context?: components["schemas"]["RuntimeContext"];
-            /** @description Optional structured-output contract for this turn. Read the validated value from the completed turn's `output`. */
+            /** @description Optional structured-output contract for this turn. Read the validated value from the completed turn's `output`. Only with `delivery: new_turn`. */
             output?: components["schemas"]["TurnOutputSpec"];
-            /** @description Free-form caller metadata attached to the input message. */
-            metadata?: {
-                [key: string]: unknown;
-            };
-        };
-        /** @description Acknowledgement that a turn started, with a stream cursor. */
-        TurnAck: {
-            session: components["schemas"]["Session"];
-            turn: components["schemas"]["AgentTurn"];
-            /** @description Durable caller row created for this turn. */
-            user_message?: components["schemas"]["SessionTranscriptMessage"];
-            /** @description Opaque stable v2 lower boundary for streaming and terminal settlement. It precedes every durable message owned by the returned turn and is safe for both fresh and deduplicated invocations. A deduplicated retry may replay already-observed frames. */
-            resume_cursor: string;
-            /**
-             * Format: int64
-             * @description The transcript message `sequence` this turn starts after. To follow the turn, pass `resume_cursor` to `GET .../transcript/stream`.
-             */
-            after_sequence: number;
-            /** @description True when a repeated idempotency key returned an existing turn without restarting it. */
-            deduped?: boolean;
-        };
-        NudgeSessionRequest: {
-            /** @description User direction to deliver at the next iteration boundary. */
-            content: string;
-            /** @description Dedup key scoped to the session. Reusing the key with identical content returns the original nudge request; different content conflicts. */
-            idempotency_key?: string;
-            /** @description Free-form caller metadata retained with the nudge request. */
+            /** @description Free-form caller metadata attached to the input. */
             metadata?: {
                 [key: string]: unknown;
             };
             /**
-             * @description When true and the target turn is waiting on an interruptible agent tool, resolve that tool call with `{ "interrupted": true, "reason": "user_direction" }` and resume the same turn. Running and newly queued turns ignore this field.
+             * @description Only with `delivery: current_turn`. When true and the target turn is waiting on an interruptible agent tool, resolve that tool call with `{ "interrupted": true, "reason": "user_direction" }` and resume the same turn. Running and newly queued turns ignore this field. Resend the same content and `idempotency_key` with `wake` to wake a turn for direction that is already queued.
              *
-             *     A turn waiting on the outcome of a question it asked with `mobius.interaction.create` (`mobius_event_wait` on `interaction.resolved`) is resumed by every nudge, with or without this field. The question stays open: the tool result also carries `interaction_id` and `interaction_status: "pending"`, and the question's outcome still arrives in the conversation as its own input.
+             *     A turn waiting on the outcome of a question it asked with `mobius.interaction.create` (`mobius_event_wait` on `interaction.resolved`) is resumed by every direction, with or without this field. The question stays open: the tool result also carries `interaction_id` and `interaction_status: "pending"`, and the question's outcome still arrives in the conversation as its own input.
              * @default false
              */
             wake?: boolean;
+        };
+        /** @description Acknowledgement of accepted input: where it went, the turn carrying it, and a cursor to follow that turn. */
+        SessionInputAck: {
+            delivery: components["schemas"]["SessionInputOutcome"];
+            session: components["schemas"]["Session"];
+            /** @description For `new_turn`, the turn that carries the input. For `current_turn`, the turn the direction is queued for. For `queued`, the running turn the direction waits behind. */
+            turn: components["schemas"]["AgentTurn"];
+            /** @description Durable caller row that carries the input. Present exactly when `delivery` is `new_turn`. */
+            user_message?: components["schemas"]["SessionTranscriptMessage"];
+            /** @description Present exactly when `delivery` is `new_turn`. Opaque stable v2 lower boundary for streaming and terminal settlement. It precedes every durable message owned by the returned turn and is safe for both fresh and deduplicated invocations. A deduplicated retry may replay already-observed frames. */
+            resume_cursor?: string;
+            /**
+             * Format: int64
+             * @description The transcript message `sequence` the turn follows from. To follow a started turn, pass `resume_cursor` to `GET .../transcript/stream`.
+             */
+            after_sequence: number;
+            /** @description True when a repeated idempotency key returned the original input without writing again. */
+            deduped: boolean;
+            /** @description True when `wake` interrupted a waiting tool and requeued the turn. */
+            woke_turn: boolean;
+            /** @description The nudge queue entry, present for a `delivery: current_turn` request. Follow queued direction through it, and cancel it with `cancelNudge` while it is `pending`. */
+            nudge?: components["schemas"]["SessionNudge"];
         };
         /**
          * @description Durable nudge queue lifecycle status.
@@ -7601,10 +6924,26 @@ export interface components {
          */
         SessionNudgeStatus: "pending" | "delivered" | "cancelled";
         /**
-         * @description `current_turn` means the input targets an existing turn and will reach the agent as contextual runtime input at that turn's next safe boundary. `new_turn` means the input was converted to a regular user message carried by a fresh direct-session turn (the same shape as a send); the nudge is `delivered` the moment that conversion commits. A nudge accepted as `current_turn` converts to `new_turn` if its target turn ends before absorbing it, so the durable record reflects how the input was ultimately routed — the acknowledgement reflects routing at admission time.
+         * @description `new_turn` starts a turn that carries the input as a regular user message. `current_turn` targets an existing turn: the input reaches the agent as direction at that turn's next safe boundary. Direction that no turn can absorb becomes a regular user message carried by a fresh turn, and its nudge is `delivered` the moment that conversion commits. A nudge accepted for a turn converts the same way if that turn ends before absorbing it, so the nudge record reflects how the input was finally routed.
+         * @default new_turn
          * @enum {string}
          */
-        SessionNudgeDelivery: "current_turn" | "new_turn";
+        SessionInputDelivery: "new_turn" | "current_turn";
+        /**
+         * @description What the input became when the request was answered.
+         *
+         *     - `new_turn`: the input is a user message on a turn. The
+         *     acknowledgement always carries `user_message` and `resume_cursor`;
+         *     follow the turn on the transcript stream.
+         *     - `current_turn`: the input is direction queued for the running turn,
+         *     which receives it at its next safe boundary.
+         *     - `queued`: the input is direction waiting behind a turn someone else
+         *     is running. It starts the next turn once that turn ends.
+         *
+         *     For `current_turn` and `queued`, follow the input through `nudge`.
+         * @enum {string}
+         */
+        SessionInputOutcome: "new_turn" | "current_turn" | "queued";
         SessionNudgeTurn: {
             id: string;
             status: components["schemas"]["AgentTurnStatus"];
@@ -7613,7 +6952,7 @@ export interface components {
             /** @description Stable nudge identifier. */
             id: string;
             status: components["schemas"]["SessionNudgeStatus"];
-            delivery: components["schemas"]["SessionNudgeDelivery"];
+            delivery: components["schemas"]["SessionInputDelivery"];
             /** @description Exact user direction supplied when the nudge was queued. */
             content: string;
             turn: components["schemas"]["SessionNudgeTurn"];
@@ -7631,23 +6970,6 @@ export interface components {
             has_more: boolean;
             /** @description Opaque continuation cursor, or null at the end. */
             next_cursor?: string | null;
-        };
-        SessionNudgeAck: {
-            /** @description Stable id of the durable nudge mailbox row. */
-            nudge_id: string;
-            status: components["schemas"]["SessionNudgeStatus"];
-            delivery: components["schemas"]["SessionNudgeDelivery"];
-            session: components["schemas"]["Session"];
-            turn: components["schemas"]["AgentTurn"];
-            /**
-             * Format: int64
-             * @description Current transcript sequence cursor for following the target turn.
-             */
-            after_sequence: number;
-            /** @description True when an existing idempotent nudge request was returned. */
-            deduped: boolean;
-            /** @description True when wake interrupted a waiting tool and requeued this turn. */
-            woke_turn: boolean;
         };
         /** @description One OR branch. All populated fields in this object match together. */
         SessionEventSubscriptionFilter: {
@@ -7873,6 +7195,7 @@ export interface components {
             visibility: components["schemas"]["ResourceVisibility"];
             container?: components["schemas"]["ResourceContainer"];
             posture: components["schemas"]["ResourcePosture"];
+            viewer_actions?: components["schemas"]["ViewerActions"];
             /** @description Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or organization-visible space. */
             name: string;
             /** @description MIME type recorded for the artifact content. */
@@ -8097,6 +7420,7 @@ export interface components {
             concurrency?: number;
             /** @description Actions permitted for this caller; the server rechecks each request. `edit` changes the name, schedule, model, and lowers limits. `configure` also changes the instructions, the watched event, the accounts it uses, and raises limits: on a person's routine only its owner may. */
             available_actions?: ("edit" | "configure" | "run" | "pause" | "resume" | "delete" | "invite")[];
+            viewer_actions?: components["schemas"]["ViewerActions"];
             posture?: components["schemas"]["ResourcePosture"];
             /** @enum {string} */
             audience?: "private" | "named" | "organization" | "team";
@@ -8828,6 +8152,7 @@ export interface components {
             visibility: components["schemas"]["ResourceVisibility"];
             posture: components["schemas"]["ResourcePosture"];
             controls: components["schemas"]["ResourceControls"];
+            viewer_actions?: components["schemas"]["ViewerActions"];
             /** @description Lowercase snake_case table name, unique within the org. */
             name: string;
             /** @description Human-readable table description. */
@@ -9153,6 +8478,7 @@ export interface components {
             max_instruction_chars?: number;
             visibility: components["schemas"]["ChannelVisibility"];
             access: components["schemas"]["ChannelAccess"];
+            viewer_actions?: components["schemas"]["ViewerActions"];
             /**
              * Format: int64
              * @description The newest sequence number in the channel.
@@ -9621,6 +8947,7 @@ export interface components {
             parent_path: string;
             owner: components["schemas"]["ResourceOwner"];
             visibility: components["schemas"]["ResourceVisibility"];
+            viewer_actions?: components["schemas"]["ViewerActions"];
             /** Format: date-time */
             created_at: string;
             /** @description Principal that declared the folder. */
@@ -9894,16 +9221,14 @@ export interface components {
         LeaseTokenHeader: string;
         /** @description Reference type name, such as `slack.channel` or `table.table`. */
         ReferenceTypeParam: string;
-        /** @description Exact integration connection this account-scoped operation acts on. Invalid, inaccessible, stale, or wrong-provider IDs never fall back to another connection. */
-        IntegrationIDQueryParam: string;
         /** @description Integration record ID. */
         IntegrationIDParam: string;
         /** @description Integration event receipt ID. */
         IntegrationEventIDParam: string;
-        /** @description Framework provider identifier from the integration provider catalog. */
-        IntegrationProviderParam: string;
         /** @description Stable caller-generated key. Reusing it returns the original operation. */
         IdempotencyKey: string;
+        /** @description Organization ID, or `current` for the caller's active organization. Any organization the caller may not act in answers 404. */
+        OrgPathParam: string;
         /** @description The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably addressable. */
         MemoryKeyParam: string;
         /** @description User principal ID for a private memory partition. It must identify a current human member of this organization. Omit for shared memory. */
@@ -10549,280 +9874,6 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    listConnectionGovernance: {
-        parameters: {
-            query?: {
-                provider?: string;
-                /** @description Maximum number of items to return */
-                limit?: components["parameters"]["LimitParam"];
-                /** @description Cursor for pagination (opaque string from previous response) */
-                cursor?: components["parameters"]["CursorParam"];
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Minimal governance metadata */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConnectionGovernanceListResponse"];
-                };
-            };
-            403: components["responses"]["Forbidden"];
-        };
-    };
-    deactivateConnectionGovernance: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                integration_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Connection deactivated */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    startConnectionTeamManagement: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                integration_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Completed management change with kind complete and the same active integration */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["IntegrationConnectResponse"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-        };
-    };
-    confirmConnectionReplacement: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                integration_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Replacement confirmed */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            404: components["responses"]["NotFound"];
-        };
-    };
-    listConnectionGrants: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                integration_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Controller-authorized grants */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConnectionGrantListResponse"];
-                };
-            };
-            404: components["responses"]["NotFound"];
-        };
-    };
-    materializeConnectionGrants: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                integration_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["MaterializeConnectionGrantsRequest"];
-            };
-        };
-        responses: {
-            /** @description Individual grants; replay preserves identical active grants */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConnectionGrantListResponse"];
-                };
-            };
-            404: components["responses"]["NotFound"];
-        };
-    };
-    revokeConnectionGrant: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                integration_id: string;
-                grant_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Grant revoked or already absent */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            404: components["responses"]["NotFound"];
-        };
-    };
-    listAgentConnectionGrants: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agent_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Authorized operational labels and grants */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConnectionGrantListResponse"];
-                };
-            };
-            404: components["responses"]["NotFound"];
-        };
-    };
-    listAgentConnectionDefaults: {
-        parameters: {
-            query: {
-                context: components["schemas"]["ConnectionDefaultContext"];
-                execution_mode: components["schemas"]["ConnectionExecutionMode"];
-            };
-            header?: never;
-            path: {
-                agent_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Saved state and selectable account choices by provider */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConnectionDefaultPreferenceListResponse"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    setAgentConnectionDefault: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agent_id: string;
-                provider: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SetConnectionDefaultRequest"];
-            };
-        };
-        responses: {
-            /** @description Context default selected */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            400: components["responses"]["BadRequest"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    clearAgentConnectionDefault: {
-        parameters: {
-            query: {
-                context: components["schemas"]["ConnectionDefaultContext"];
-                execution_mode: components["schemas"]["ConnectionExecutionMode"];
-            };
-            header?: never;
-            path: {
-                agent_id: string;
-                provider: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Context default cleared or already absent */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            400: components["responses"]["BadRequest"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
     listBillingUsageEvents: {
         parameters: {
             query?: {
@@ -11195,7 +10246,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                /** @description Organization ID, or `current` for the caller's active organization. Any organization the caller may not act in answers 404. */
+                org_id: components["parameters"]["OrgPathParam"];
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -11218,7 +10272,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                /** @description Organization ID, or `current` for the caller's active organization. Any organization the caller may not act in answers 404. */
+                org_id: components["parameters"]["OrgPathParam"];
+            };
             cookie?: never;
         };
         requestBody: {
@@ -11246,7 +10303,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                /** @description Organization ID, or `current` for the caller's active organization. Any organization the caller may not act in answers 404. */
+                org_id: components["parameters"]["OrgPathParam"];
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -11269,7 +10329,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                /** @description Organization ID, or `current` for the caller's active organization. Any organization the caller may not act in answers 404. */
+                org_id: components["parameters"]["OrgPathParam"];
+            };
             cookie?: never;
         };
         requestBody: {
@@ -11445,31 +10508,6 @@ export interface operations {
                     "application/json": components["schemas"]["Interaction"];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    deleteInteraction: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
@@ -12677,90 +11715,6 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    invokeAgent: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                /**
-                 * @example {
-                 *       "agent_ref": {
-                 *         "id": "agent_5n8p2q7m4x9r3v6t"
-                 *       },
-                 *       "session": {
-                 *         "mode": "continue_or_create",
-                 *         "session_key": "app:acct_123:user_456:slack:support:thread_789",
-                 *         "title": "Support in Slack",
-                 *         "model_override": "claude-sonnet-4-6",
-                 *         "metadata": {
-                 *           "account_id": "acct_123",
-                 *           "user_id": "user_456"
-                 *         }
-                 *       },
-                 *       "operation": {
-                 *         "timeout_seconds": 120
-                 *       },
-                 *       "input": {
-                 *         "content": [
-                 *           {
-                 *             "type": "text",
-                 *             "text": "Can you summarize my open tickets?"
-                 *           }
-                 *         ],
-                 *         "idempotency_key": "slack:evt_0a1b2c3d"
-                 *       },
-                 *       "channel_context": {
-                 *         "provider": "slack",
-                 *         "workspace_id": "T123",
-                 *         "channel_id": "C123",
-                 *         "thread_id": "1700000000.123"
-                 *       }
-                 *     }
-                 */
-                "application/json": components["schemas"]["InvokeAgentRequest"];
-            };
-        };
-        responses: {
-            /** @description Server-sent event stream of the turn's activity, returned when the request sets `Accept: text/event-stream`. `SessionStreamFrame` describes the framing. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/event-stream": components["schemas"]["SessionStreamFrame"];
-                };
-            };
-            /** @description The turn was accepted and is running. */
-            202: {
-                headers: {
-                    /** @description Pollable session turn. */
-                    Location?: string;
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TurnAck"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            /** @description A distinct direct invocation is already queued, running, or waiting. The `session_turn_active` error details contain its `turn_id` and `status`. While a voice call is in progress in the chat, a send returns `voice_call_active` with the message "A voice call is in progress in this chat." */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            429: components["responses"]["TooManyRequests"];
-        };
-    };
     listSessions: {
         parameters: {
             query?: {
@@ -13233,7 +12187,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    appendSessionMessages: {
+    sendSessionInput: {
         parameters: {
             query?: never;
             header?: never;
@@ -13245,23 +12199,34 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AppendSessionMessagesRequest"];
+                "application/json": components["schemas"]["SessionInputRequest"];
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description The input was accepted. */
+            202: {
                 headers: {
+                    /** @description The started turn, or the queued nudge when the input was added to a running turn. */
+                    Location?: string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Session"];
+                    "application/json": components["schemas"]["SessionInputAck"];
                 };
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description For `new_turn`, a distinct turn is already queued, running, or waiting (`session_turn_active`, with its `turn_id` and `status` in the error details). For `current_turn`, the session's nudge queue is full (`nudge_queue_full`), or an idempotency key was reused with different content. While a voice call is in progress in the chat, any input returns `voice_call_active` with the message "A voice call is in progress in this chat." */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             429: components["responses"]["TooManyRequests"];
         };
     };
@@ -13298,58 +12263,6 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-        };
-    };
-    startTurn: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Identifier of the conversation session. */
-                session_id: components["parameters"]["SessionIdParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["StartTurnRequest"];
-            };
-        };
-        responses: {
-            /** @description Server-sent event stream of the turn's activity, returned when the request sets `Accept: text/event-stream`. `SessionStreamFrame` describes the framing. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/event-stream": components["schemas"]["SessionStreamFrame"];
-                };
-            };
-            /** @description The turn was accepted and is running. */
-            202: {
-                headers: {
-                    /** @description Pollable session turn. */
-                    Location?: string;
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TurnAck"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            /** @description A distinct direct invocation is already queued, running, or waiting. The `session_turn_active` error details contain its `turn_id` and `status`. While a voice call is in progress in the chat, a send returns `voice_call_active` with the message "A voice call is in progress in this chat." */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            429: components["responses"]["TooManyRequests"];
         };
     };
     getSessionTurn: {
@@ -13450,41 +12363,6 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-        };
-    };
-    nudgeSession: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Identifier of the conversation session. */
-                session_id: components["parameters"]["SessionIdParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NudgeSessionRequest"];
-            };
-        };
-        responses: {
-            /** @description The nudge input was accepted for delivery. */
-            202: {
-                headers: {
-                    /** @description Pollable session nudge. */
-                    Location?: string;
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SessionNudgeAck"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            429: components["responses"]["TooManyRequests"];
         };
     };
     getSessionNudge: {
@@ -13919,32 +12797,6 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    getRoutineThread: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                routine_id: components["parameters"]["RoutineID"];
-                key: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Thread record. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RoutineThread"];
-                };
-            };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];

@@ -27,7 +27,7 @@ class Error(BaseModel):
     )
     code: str = Field(
         ...,
-        description="Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. A request that matches no API route returns 404 with `route_not_found`, distinct from the `not_found` an operation returns for a missing resource. When the request-wide rate limiter refuses a call, `rate_limit_exceeded` carries `scope` (`key`, `org`, or `browser`), `window`, `limit`, and `retry_after_seconds` in `details`; an endpoint's own cap returns the same code without them. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`; a send or nudge while a voice call is in progress in the chat uses `voice_call_active`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family.",
+        description="Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. A request that matches no API route returns 404 with `route_not_found`, distinct from the `not_found` an operation returns for a missing resource. When the request-wide rate limiter refuses a call, `rate_limit_exceeded` carries `scope` (`key`, `org`, or `browser`), `window`, `limit`, and `retry_after_seconds` in `details`; an endpoint's own cap returns the same code without them. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`; session input while a voice call is in progress in the chat uses `voice_call_active`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family.",
     )
     message: str = Field(..., description='Human-readable error message')
     details: dict[str, Any] | None = Field(
@@ -117,6 +117,31 @@ class ResourceControls(BaseModel):
     )
     can_delete: bool = Field(
         ..., description='Whether the caller may delete the resource.'
+    )
+
+
+class ViewerActions(BaseModel):
+    """
+    The four access levels the current caller holds on this resource, answered by the shared access function. Clients show or enable actions from these fields rather than re-deriving them from ownership, visibility, or role.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    view: bool = Field(
+        ..., description='Whether the caller may see this resource read-only.'
+    )
+    work_with: bool = Field(
+        ...,
+        description='Whether the caller may use this resource or change its content.',
+    )
+    manage: bool = Field(
+        ...,
+        description="Whether the caller may change this resource's setup, rename it, or move it.",
+    )
+    stop: bool = Field(
+        ...,
+        description='Whether the caller may pause, archive, or delete this resource.',
     )
 
 
@@ -483,6 +508,7 @@ class Agent(BaseModel):
         ...,
         description="Whether the caller may change this assistant's setup: exactly what `PATCH /v1/agents/{resource_id}` would allow. False on internal administration listings.",
     )
+    viewer_actions: ViewerActions | None = None
     active_chat_count: int | None = Field(
         None,
         description='Number of distinct shared chats where this assistant was active in the past 7 days. Populated only for organization administrators; absent for other callers. Reveals no chat name, member, or message content.',
@@ -698,6 +724,7 @@ class Session(BaseModel):
     visibility: ResourceVisibility
     posture: ResourcePosture
     controls: ResourceControls
+    viewer_actions: ViewerActions | None = None
     model_override: str | None = Field(
         None,
         description="Model selected for this session. Omitted when the session inherits the agent's model.",
@@ -1168,6 +1195,7 @@ class Action(BaseModel):
     container: ResourceContainer | None = None
     posture: ResourcePosture
     controls: ResourceControls
+    viewer_actions: ViewerActions | None = None
     name: str = Field(..., description='Stable identifier the action is called by.')
     title: str | None = Field(
         None, description='Human-readable display title for the action.'
@@ -2181,167 +2209,6 @@ class EventTrigger(BaseModel):
     )
 
 
-class ConnectionExecutionMode(StrEnum):
-    authenticated_human = 'authenticated_human'
-    controller_background = 'controller_background'
-    organization_background = 'organization_background'
-
-
-class ConnectionGrantAudience(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    organization: bool
-    principal_ids: list[str]
-
-
-class ConnectionGrant(BaseModel):
-    """
-    Access for one assistant in conversations and routines, subject to connection ownership and result audience restrictions.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str
-    connection_id: str
-    agent_id: str
-    audience: ConnectionGrantAudience
-    created_at: AwareDatetime
-    connection_label: str
-    provider: str
-    controlled_by_organization: bool
-    represented_actor: str | None = None
-    identity_label: str | None = Field(
-        None,
-        description="The provider's short account identity, such as an email address. Presentation only.",
-    )
-    can_manage: bool
-
-
-class ConnectionGrantListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[ConnectionGrant]
-
-
-class MaterializeConnectionGrantsRequest(BaseModel):
-    """
-    Grant current assistants access for both conversations and routines within the specified audience and connection ownership restrictions. Does not assign tools.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    agent_ids: list[str] = Field(..., max_length=500, min_length=1)
-    audience: ConnectionGrantAudience
-
-
-class ConnectionDefaultContext(StrEnum):
-    self = 'self'
-    organization = 'organization'
-
-
-class ConnectionDefaultChoice(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    connection_id: str
-    grant_id: str
-    connection_label: str
-    represented_actor: str | None = None
-    controlled_by_organization: bool
-
-
-class State(StrEnum):
-    unset = 'unset'
-    selected = 'selected'
-    unavailable = 'unavailable'
-
-
-class ConnectionDefaultPreference(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    provider: str
-    state: State
-    selection: ConnectionDefaultChoice | None = None
-    choices: list[ConnectionDefaultChoice]
-
-
-class ConnectionDefaultPreferenceListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[ConnectionDefaultPreference]
-
-
-class IntegrationStatus(StrEnum):
-    """
-    `active` — integration is enabled and usable by agents. `inactive` — manually disabled; no automatic expiry behavior. `expired` — token/credential has expired (e.g., OAuth token not refreshed).
-    """
-
-    active = 'active'
-    inactive = 'inactive'
-    expired = 'expired'
-    confirmation_required = 'confirmation_required'
-
-
-class IntegrationTeamManagement(BaseModel):
-    """
-    Server-evaluated eligibility for making this account team-managed in place.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    supported: bool
-    can_start: bool
-    unavailable_reason: str | None = None
-
-
-class Kind6(StrEnum):
-    redirect = 'redirect'
-    complete = 'complete'
-
-
-class IntegrationAccountModel(StrEnum):
-    """
-    What one connection to a provider represents.
-
-    `personal` — one human's own account, and acting through it acts as that person (Gmail, Google Calendar, X). `workspace` — a shared external workspace the whole org acts within (Slack, Jira, GitHub). `capability` — a keyed service with no account identity behind it (Firecrawl, a model provider, a database).
-
-    It decides the default owner of a new connection and whether the connection is offered to an agent by default.
-    """
-
-    personal = 'personal'
-    workspace = 'workspace'
-    capability = 'capability'
-
-
-class Kind7(StrEnum):
-    person = 'person'
-    organization = 'organization'
-
-
-class ConnectionController(BaseModel):
-    """
-    Lifecycle and grant authority. Control does not authorize organization-provider content or agent execution.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    kind: Kind7
-    principal_id: str | None = Field(
-        None, description='Human controller ID, present only for person control.'
-    )
-    display_name: str | None = Field(
-        None, description='Human controller display name, when available.'
-    )
-
-
 class AgentMessagingProvider(StrEnum):
     """
     Provider supported by built-in agent messaging: `slack`, `telegram`, `linear` (Linear agent sessions), `microsoft_teams` (Microsoft Teams chats in one linked tenant), or `monday` (a monday.com custom agent answering mentions and assignments on boards). A binding's provider must equal its integration's provider.
@@ -2846,7 +2713,7 @@ class PutOrgContextRequest(BaseModel):
     )
 
 
-class Kind8(StrEnum):
+class Kind6(StrEnum):
     skill = 'skill'
     connection = 'connection'
     file = 'file'
@@ -2866,7 +2733,7 @@ class AgentCopyLeftOut(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind8
+    kind: Kind6
     id: str
     name: str = Field(..., description='Empty for a file and for a private skill.')
     private: bool = Field(
@@ -3121,7 +2988,7 @@ class InteractionResponder(BaseModel):
     user_id: str = Field(..., description='Responder user ID.')
 
 
-class Kind9(StrEnum):
+class Kind7(StrEnum):
     external_url = 'external_url'
     mobius_entity = 'mobius_entity'
 
@@ -3134,7 +3001,7 @@ class InteractionReference(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind9
+    kind: Kind7
     url: AnyUrl | None = Field(
         None, description='Required when kind is `external_url`.'
     )
@@ -3150,7 +3017,7 @@ class InteractionReference(BaseModel):
     label: str | None = Field(None, description='User-facing label for display.')
 
 
-class Kind10(StrEnum):
+class Kind8(StrEnum):
     inbox_only = 'inbox_only'
     email = 'email'
 
@@ -3162,7 +3029,7 @@ class EmailDelivery(BaseModel):
     to: list[EmailStr] = Field(..., min_length=1)
 
 
-class Kind11(StrEnum):
+class Kind9(StrEnum):
     """
     `external_agent_prompt`: an external agent's permission prompt for one call it holds, named to its owner.
     """
@@ -3258,7 +3125,7 @@ class HttpSubscriberConsumer(BaseModel):
     )
 
 
-class Kind12(StrEnum):
+class Kind10(StrEnum):
     http_subscriber = 'http_subscriber'
     none = 'none'
 
@@ -3285,7 +3152,7 @@ class ResponseKind(StrEnum):
     response = 'response'
 
 
-class State1(StrEnum):
+class State(StrEnum):
     """
     Lifecycle state for this response row.
     """
@@ -3306,7 +3173,7 @@ class InteractionResponse(BaseModel):
         ..., description='ID of the interaction this response belongs to.'
     )
     response_kind: ResponseKind = Field(..., description='Answer response.')
-    state: State1 = Field(..., description='Lifecycle state for this response row.')
+    state: State = Field(..., description='Lifecycle state for this response row.')
     responder_user_id: str = Field(
         ..., description='User ID that submitted this response.'
     )
@@ -3432,7 +3299,7 @@ class CancelInteractionRequest(BaseModel):
     )
 
 
-class Kind13(StrEnum):
+class Kind11(StrEnum):
     """
     Principal kind, so a picker can distinguish a person from a coordinator agent.
     """
@@ -3457,7 +3324,7 @@ class AgentMember(BaseModel):
     principal_id: str = Field(
         ..., description="The human or agent principal in this agent's audience."
     )
-    kind: Kind13 = Field(
+    kind: Kind11 = Field(
         ...,
         description='Principal kind, so a picker can distinguish a person from a coordinator agent.',
     )
@@ -3593,7 +3460,7 @@ class RestoreAgentRequest(BaseModel):
     )
 
 
-class Kind14(StrEnum):
+class Kind12(StrEnum):
     """
     What kind of thing it is. A `routine` came back but stays paused.
     """
@@ -3622,7 +3489,7 @@ class NotRestoredItem(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind14 = Field(
+    kind: Kind12 = Field(
         ...,
         description='What kind of thing it is. A `routine` came back but stays paused.',
     )
@@ -4482,6 +4349,7 @@ class Skill(BaseModel):
     container: ResourceContainer | None
     posture: ResourcePosture
     controls: ResourceControls
+    viewer_actions: ViewerActions | None = None
     allowed_actions: list[str] | None = Field(
         None,
         description="Canonical action names, wildcard selectors, or group references naming the actions this skill needs. Uses the same selector vocabulary as agent action selections.\n\nThe constraint takes effect when an agent invokes the skill and lasts for the rest of that turn. Assigning a skill narrows nothing on its own, and an empty list declares nothing and narrows nothing. Lists from skills invoked in the same turn compose as a union, then intersect with the agent's selected actions. No catalog action is exempt, and a skill can never widen an agent's selection.",
@@ -4637,7 +4505,7 @@ class SessionHelperStep(BaseModel):
     )
 
 
-class State2(StrEnum):
+class State1(StrEnum):
     """
     waiting: queued for a free slot. working: running. finished, unfinished (it ended without a result), and stopped are ends.
     """
@@ -4666,7 +4534,7 @@ class SessionHelper(BaseModel):
     title: str = Field(
         ..., description='A short plain title for the person, such as "Welcome email".'
     )
-    state: State2 = Field(
+    state: State1 = Field(
         ...,
         description='waiting: queued for a free slot. working: running. finished, unfinished (it ended without a result), and stopped are ends.',
     )
@@ -4767,29 +4635,6 @@ class StreamReadyFrame(BaseModel):
 
 
 class EventType8(StrEnum):
-    session_message_preview = 'session.message.preview'
-
-
-class EventType9(StrEnum):
-    session_resync = 'session.resync'
-
-
-class SessionResyncFrame(BaseModel):
-    """
-    Live-only marker: the client missed live frames. Read the transcript again with `getSessionTranscript` to reconcile the active turn.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    event_type: EventType9
-    session_id: str
-    reason: str = Field(
-        ..., description='Machine-readable resync reason, e.g. `subscriber_overflow`.'
-    )
-
-
-class EventType10(StrEnum):
     stream_end = 'stream.end'
 
 
@@ -4812,7 +4657,7 @@ class StreamEndFrame(BaseModel):
     reason: Reason2
 
 
-class EventType11(StrEnum):
+class EventType9(StrEnum):
     voice_call_started = 'voice_call.started'
 
 
@@ -4829,7 +4674,7 @@ class VoiceCallFrameCall(BaseModel):
     principal_id: str
 
 
-class EventType12(StrEnum):
+class EventType10(StrEnum):
     voice_call_ended = 'voice_call.ended'
 
 
@@ -4851,45 +4696,7 @@ class VoiceCallEndedFrame(BaseModel):
     ended_at: AwareDatetime | None = None
 
 
-class TurnStartedPayload(BaseModel):
-    """
-    Payload of a `turn.started` event. Empty: the turn is identified by the envelope `turn_id`, so nothing is duplicated in the payload.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-
-
-class Role2(StrEnum):
-    """
-    Always `assistant`.
-    """
-
-    assistant = 'assistant'
-
-
-class ToolCallPayload(BaseModel):
-    """
-    Payload of a live-only `tool.call` frame — an in-flight preview that a tool was invoked during the active turn. Never persisted and carries no sequence: the durable record of the call is the `tool_use` content block of the assistant message, delivered as an `agent.message` event when the turn commits.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    tool_call_id: str | None = None
-    tool_name: str | None = None
-    input: dict[str, Any] | None = None
-    live_sequence: int | None = Field(
-        None,
-        description='Monotonic per-turn sequence across all live-only session frames; use to detect dropped live frames.',
-    )
-    emitted_at: AwareDatetime | None = Field(
-        None, description='Server timestamp when this live preview frame was emitted.'
-    )
-
-
-class Kind15(StrEnum):
+class Kind13(StrEnum):
     interaction = 'interaction'
 
 
@@ -4897,7 +4704,7 @@ class SessionTranscriptWait(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind15
+    kind: Kind13
     interaction_id: str
     tool_call_id: str
     expires_at: AwareDatetime | None = None
@@ -4927,97 +4734,6 @@ class SessionTranscriptActionAwait(BaseModel):
     paused_at: AwareDatetime | None = Field(
         None,
         description="When the call paused. The chat's timer for the wait counts from here, not from the start of the turn.",
-    )
-
-
-class TurnCompletedPayload(BaseModel):
-    """
-    Payload of a `turn.completed` event — the terminal idle marker carrying token usage. The assistant output is not duplicated here; it is delivered as `agent.message` content events when the transcript commits. The same usage is readable after the fact on the turn resource, so a consumer that missed the pulse never has to replay the stream for it.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    usage: AgentTurnUsage | None = Field(
-        None,
-        description="Token usage of the completed turn. A failed turn emits `turn.failed`, which carries no usage; read a failed turn's usage from the turn resource.",
-    )
-
-
-class TurnFailedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    error: str | None = None
-    error_type: str | None = None
-
-
-class TurnCancelledPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    reason: str | None = None
-
-
-class CompactionTrigger(StrEnum):
-    """
-    What started a compaction pass. `auto` is the threshold-gated pass a turn runs before it loads its context; `manual` is a compaction turn queued by a compact request. `append` appears only on summaries written before compaction moved into turns.
-    """
-
-    auto = 'auto'
-    manual = 'manual'
-    append = 'append'
-
-
-class CompactionStartedPayload(BaseModel):
-    """
-    Payload of a `compaction.started` event, emitted immediately before the summarizer call and only once every gate has passed — so receiving it means a pass is really running. Live-only: it is not replayed on reconnect, so a client that connects mid-pass reads the session's `compaction` field instead. Every started pass is followed by exactly one `compaction.created` or `compaction.failed`.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    trigger: CompactionTrigger | None = None
-    from_sequence: int | None = Field(
-        None, description='Lowest transcript sequence this pass is summarizing.'
-    )
-    through_sequence: int | None = Field(
-        None, description='Highest transcript sequence this pass is summarizing.'
-    )
-    message_count: int | None = Field(
-        None,
-        description='Number of transcript messages this pass is folding into the summary.',
-    )
-    estimated_tokens: int | None = Field(
-        None, description='Estimated token size of the window being summarized.'
-    )
-    summary_model: str | None = Field(
-        None, description='Model that will produce the summary.'
-    )
-
-
-class CompactionFailedPayload(BaseModel):
-    """
-    Payload of a `compaction.failed` event — the other terminal outcome of a started pass. It guarantees an indicator opened on `compaction.started` always comes down, instead of hanging on a pass that produced no summary. Live-only, like `compaction.started`: a failed pass appends nothing to the transcript, so there is no durable row to replay. The transcript is unchanged; the next pass recomputes from the same boundary.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    trigger: CompactionTrigger | None = None
-    from_sequence: int | None = Field(
-        None, description='Lowest transcript sequence the failed pass was summarizing.'
-    )
-    through_sequence: int | None = Field(
-        None, description='Highest transcript sequence the failed pass was summarizing.'
-    )
-    error_type: str | None = Field(
-        None,
-        description='Machine-readable failure category. Currently `summarizer_error`, `timeout`, `empty_summary`, or `storage_error`. Treat it as an open string: new categories may be added, and a client that switches on it should fall through to a generic "compaction failed".',
-    )
-    error_message: str | None = Field(
-        None,
-        description='Truncated failure detail. Diagnostics live in the server logs, not here.',
     )
 
 
@@ -5317,7 +5033,7 @@ class SessionEventProjection(BaseModel):
     )
 
 
-class Kind16(StrEnum):
+class Kind14(StrEnum):
     """
     The principal's kind, resolved from the principal record. `external` is a person in a chat app, who is not a Mobius principal.
     """
@@ -5341,7 +5057,7 @@ class SessionMessageAuthor(BaseModel):
         ...,
         description='Principal id of the author. For an `external` author, a stable id for that person in that chat app account; it is not a principal.',
     )
-    kind: Kind16 = Field(
+    kind: Kind14 = Field(
         ...,
         description="The principal's kind, resolved from the principal record. `external` is a person in a chat app, who is not a Mobius principal.",
     )
@@ -5359,30 +5075,6 @@ class SessionMessageAuthor(BaseModel):
     )
 
 
-class AppendSessionMessage(BaseModel):
-    """
-    Message payload to append to an existing durable session.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    role: SessionMessageRole = Field(
-        ..., description='Role to store for this appended message.'
-    )
-    content: list[dict[str, Any]] = Field(
-        ...,
-        description='Ordered content blocks (text, tool calls, tool results, images). Blocks of type `reminder` are host-managed runtime context and are rejected on this surface.',
-    )
-    metadata: dict[str, Any] | None = Field(
-        None, description='Free-form caller metadata for this message.'
-    )
-    created_at: AwareDatetime | None = Field(
-        None,
-        description='Caller-supplied creation timestamp. The server assigns one if absent.',
-    )
-
-
 class AgentTurnOperationPolicy(BaseModel):
     """
     Operational policy for this newly admitted turn only. It is not saved on the session. Its timeout takes precedence over the agent default and must be at least one second.
@@ -5393,69 +5085,6 @@ class AgentTurnOperationPolicy(BaseModel):
     )
     timeout_seconds: int | None = Field(
         None, description='Overall active-execution budget for this logical turn.', ge=1
-    )
-
-
-class AgentRef(BaseModel):
-    """
-    Reference to an agent in this org. Supply exactly one of `id` (the agent identifier) or `name` (the org-unique agent name). A blueprint-binding reference form is reserved for a later release and is not resolvable yet.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str | None = Field(None, description='Agent identifier.')
-    name: str | None = Field(None, description='Org-unique agent name.')
-
-
-class Mode2(StrEnum):
-    """
-    `continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.
-    """
-
-    new = 'new'
-    continue_ = 'continue'
-    continue_or_create = 'continue_or_create'
-
-
-class InvokeSessionSpec(BaseModel):
-    """
-    How to resolve or create the session this invocation runs in. Mirrors the create-session policy: `mode` + `session_key` resolve a durable conversation for the agent, and the remaining fields seed a session that does not already exist (they are ignored when an existing session is resolved). Omit the whole object to use a single default session per agent in `continue_or_create` mode.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    mode: Mode2 | None = Field(
-        None,
-        description='`continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.',
-    )
-    session_key: str | None = Field(
-        None, description='Stable key identifying the conversation within the agent.'
-    )
-    title: str | None = Field(
-        None, description='Human-friendly title for a newly created session.'
-    )
-    owner: ResourceOwner | None = None
-    visibility: ResourceVisibility | None = None
-    model_override: str | None = Field(
-        None,
-        description="Model to use for a newly created session. Overrides the stored agent's model and is ignored when an existing session is resolved. Creating a session for a worker-routed agent returns `400 invalid_argument` with `details.argument = model_override`.",
-    )
-    compaction_policy: SessionCompactionPolicy | None = Field(
-        None,
-        description="Per-session compaction overrides applied when the session is first created. Merged over the agent's default policy and server defaults. Ignored when an existing session is resolved.",
-    )
-    retention: SessionRetentionPolicy | None = Field(
-        None,
-        description='Retention policy applied when the session is first created. Ignored when an existing session is resolved.',
-    )
-    thinking_effort: ThinkingEffort | None = Field(
-        None,
-        description='Reasoning-effort override applied when the session is first created. Overrides the agent default. Ignored when an existing session is resolved.',
-    )
-    metadata: dict[str, Any] | None = Field(
-        None, description='Free-form caller metadata stored on a newly created session.'
     )
 
 
@@ -5510,49 +5139,14 @@ class TurnOutputSpec(BaseModel):
     )
 
 
-class InvokeInput(BaseModel):
+class Mode2(StrEnum):
     """
-    The caller input message that starts the agent turn.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    content: list[dict[str, Any]] = Field(
-        ...,
-        description='Ordered content blocks for the input message. Canonical documents use `{ "type": "document", "source": { "type": "base64", "media_type": "application/pdf", "data": "..." }, "title": "report.pdf" }` or a URL source. Mobius also translates supported OpenAI `input_file` and Chat Completions `file` blocks at ingestion.',
-        min_length=1,
-    )
-    idempotency_key: str | None = Field(
-        None,
-        description='Dedup key scoped to the resolved session. A repeat call with the same key returns the existing invocation and writes nothing new; it never restarts a terminal turn. Derive it from the provider event id for Slack/Telegram webhook retries. Omitting it or sending a blank value disables retry deduplication.',
-    )
-    context: RuntimeContext | None = None
-    metadata: dict[str, Any] | None = Field(
-        None, description='Free-form caller metadata attached to the input message.'
-    )
-
-
-class ChannelContext(BaseModel):
-    """
-    Optional messaging provider/channel routing context (Slack, Telegram, …). Persisted on the started turn's input-message metadata under a `channel_context` key so chat history and support views can trace a turn back to the provider thread it came from.
+    `continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.
     """
 
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    provider: str | None = Field(
-        None, description='Messaging provider, e.g. `slack` or `telegram`.'
-    )
-    workspace_id: str | None = Field(
-        None, description='Provider workspace/team identifier.'
-    )
-    channel_id: str | None = Field(
-        None, description='Provider channel or chat identifier.'
-    )
-    thread_id: str | None = Field(
-        None, description='Provider thread identifier within the channel.'
-    )
+    new = 'new'
+    continue_ = 'continue'
+    continue_or_create = 'continue_or_create'
 
 
 class CreateSessionRequest(BaseModel):
@@ -5598,70 +5192,6 @@ class CreateSessionRequest(BaseModel):
     )
 
 
-class Role3(StrEnum):
-    """
-    Role of the input message. A turn carries caller input, so only `user` is accepted; defaults to `user` when omitted.
-    """
-
-    user = 'user'
-
-
-class StartTurnRequest(BaseModel):
-    """
-    Caller input that starts an agent turn in a session. `operation.timeout_seconds` must be at least one and takes precedence for this admitted turn.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    role: Role3 = Field(
-        'user',
-        description='Role of the input message. A turn carries caller input, so only `user` is accepted; defaults to `user` when omitted.',
-    )
-    content: list[dict[str, Any]] = Field(
-        ...,
-        description='Ordered content blocks for the input message. Canonical documents use `{ "type": "document", "source": { "type": "base64", "media_type": "application/pdf", "data": "..." }, "title": "report.pdf" }` or a URL source. Mobius also translates supported OpenAI `input_file` and Chat Completions `file` blocks at ingestion.',
-        min_length=1,
-    )
-    idempotency_key: str | None = Field(
-        None,
-        description='Dedup key scoped to the session. A repeat call with the same key returns the existing invocation and writes nothing new; it never restarts a terminal turn. Omitting it or sending a blank value disables retry deduplication.',
-    )
-    operation: AgentTurnOperationPolicy | None = None
-    context: RuntimeContext | None = None
-    output: TurnOutputSpec | None = Field(
-        None,
-        description="Optional structured-output contract for this turn. Read the validated value from the completed turn's `output`.",
-    )
-    metadata: dict[str, Any] | None = Field(
-        None, description='Free-form caller metadata attached to the input message.'
-    )
-
-
-class NudgeSessionRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    content: str = Field(
-        ...,
-        description='User direction to deliver at the next iteration boundary.',
-        max_length=32768,
-        min_length=1,
-    )
-    idempotency_key: str | None = Field(
-        None,
-        description='Dedup key scoped to the session. Reusing the key with identical content returns the original nudge request; different content conflicts.',
-        max_length=255,
-    )
-    metadata: dict[str, Any] | None = Field(
-        None, description='Free-form caller metadata retained with the nudge request.'
-    )
-    wake: bool = Field(
-        False,
-        description='When true and the target turn is waiting on an interruptible agent tool, resolve that tool call with `{ "interrupted": true, "reason": "user_direction" }` and resume the same turn. Running and newly queued turns ignore this field.\n\nA turn waiting on the outcome of a question it asked with `mobius.interaction.create` (`mobius_event_wait` on `interaction.resolved`) is resumed by every nudge, with or without this field. The question stays open: the tool result also carries `interaction_id` and `interaction_status: "pending"`, and the question\'s outcome still arrives in the conversation as its own input.',
-    )
-
-
 class SessionNudgeStatus(StrEnum):
     """
     Durable nudge queue lifecycle status.
@@ -5672,13 +5202,33 @@ class SessionNudgeStatus(StrEnum):
     cancelled = 'cancelled'
 
 
-class SessionNudgeDelivery(StrEnum):
+class SessionInputDelivery(StrEnum):
     """
-    `current_turn` means the input targets an existing turn and will reach the agent as contextual runtime input at that turn's next safe boundary. `new_turn` means the input was converted to a regular user message carried by a fresh direct-session turn (the same shape as a send); the nudge is `delivered` the moment that conversion commits. A nudge accepted as `current_turn` converts to `new_turn` if its target turn ends before absorbing it, so the durable record reflects how the input was ultimately routed — the acknowledgement reflects routing at admission time.
+    `new_turn` starts a turn that carries the input as a regular user message. `current_turn` targets an existing turn: the input reaches the agent as direction at that turn's next safe boundary. Direction that no turn can absorb becomes a regular user message carried by a fresh turn, and its nudge is `delivered` the moment that conversion commits. A nudge accepted for a turn converts the same way if that turn ends before absorbing it, so the nudge record reflects how the input was finally routed.
     """
 
-    current_turn = 'current_turn'
     new_turn = 'new_turn'
+    current_turn = 'current_turn'
+
+
+class SessionInputOutcome(StrEnum):
+    """
+    What the input became when the request was answered.
+
+    - `new_turn`: the input is a user message on a turn. The
+    acknowledgement always carries `user_message` and `resume_cursor`;
+    follow the turn on the transcript stream.
+    - `current_turn`: the input is direction queued for the running turn,
+    which receives it at its next safe boundary.
+    - `queued`: the input is direction waiting behind a turn someone else
+    is running. It starts the next turn once that turn ends.
+
+    For `current_turn` and `queued`, follow the input through `nudge`.
+    """
+
+    new_turn = 'new_turn'
+    current_turn = 'current_turn'
+    queued = 'queued'
 
 
 class SessionNudgeTurn(BaseModel):
@@ -5695,7 +5245,7 @@ class SessionNudge(BaseModel):
     )
     id: str = Field(..., description='Stable nudge identifier.')
     status: SessionNudgeStatus
-    delivery: SessionNudgeDelivery
+    delivery: SessionInputDelivery
     content: str = Field(
         ..., description='Exact user direction supplied when the nudge was queued.'
     )
@@ -5882,7 +5432,7 @@ class SessionEventDeliveryListResponse(BaseModel):
     next_cursor: str | None = None
 
 
-class State3(StrEnum):
+class State2(StrEnum):
     converting = 'converting'
     ready = 'ready'
     failed = 'failed'
@@ -5896,7 +5446,7 @@ class ArtifactConversionSummary(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    state: State3
+    state: State2
     error: str | None = Field(None, description='Failure reason when state is failed.')
 
 
@@ -5988,6 +5538,7 @@ class Artifact(BaseModel):
     visibility: ResourceVisibility
     container: ResourceContainer | None = None
     posture: ResourcePosture
+    viewer_actions: ViewerActions | None = None
     name: str = Field(
         ...,
         description='Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or organization-visible space.',
@@ -6079,7 +5630,7 @@ class RoutineFollowLevel(StrEnum):
     failures_only = 'failures_only'
 
 
-class Kind17(StrEnum):
+class Kind15(StrEnum):
     """
     The principal's kind, resolved from the principal record.
     """
@@ -6097,7 +5648,7 @@ class RoutinePrincipal(BaseModel):
     principal_id: str
     relationship: RoutineRelationship
     level: RoutineFollowLevel | None = None
-    kind: Kind17 = Field(
+    kind: Kind15 = Field(
         ..., description="The principal's kind, resolved from the principal record."
     )
     display_name: str | None = None
@@ -6286,7 +5837,7 @@ class RoutineProposal(BaseModel):
     )
 
 
-class State4(StrEnum):
+class State3(StrEnum):
     open = 'open'
     idle = 'idle'
     closed = 'closed'
@@ -6299,7 +5850,7 @@ class RoutineThread(BaseModel):
     key: str = Field(..., description='Opaque stable URL-safe thread key.')
     routine_id: str
     session_id: str | None = None
-    state: State4
+    state: State3
     outcome: str | None = None
     title: str
     url: str | None = None
@@ -7006,6 +6557,7 @@ class Table(BaseModel):
     visibility: ResourceVisibility
     posture: ResourcePosture
     controls: ResourceControls
+    viewer_actions: ViewerActions | None = None
     name: str = Field(
         ...,
         description='Lowercase snake_case table name, unique within the org.',
@@ -7247,7 +6799,7 @@ class TableRowQueryListResponse(BaseModel):
     )
 
 
-class Mode4(StrEnum):
+class Mode3(StrEnum):
     """
     Search mode. `keyword` matches words with the keyword syntax, `semantic` uses similarity over indexed row text, and `hybrid` combines both and drops rows that hold an excluded term.
     """
@@ -7266,7 +6818,7 @@ class SearchRowsRequest(BaseModel):
         description='Search query. In keyword and hybrid mode it uses the keyword syntax: words are all required, `"quoted words"` are a phrase, `OR` between two terms accepts either, and `-term` excludes. Punctuation splits words. See the operation description.',
         min_length=1,
     )
-    mode: Mode4 = Field(
+    mode: Mode3 = Field(
         'keyword',
         description='Search mode. `keyword` matches words with the keyword syntax, `semantic` uses similarity over indexed row text, and `hybrid` combines both and drops rows that hold an excluded term.',
     )
@@ -7411,7 +6963,7 @@ class ExternalAgentWakePolicy(StrEnum):
     channel_members = 'channel_members'
 
 
-class Kind18(StrEnum):
+class Kind16(StrEnum):
     """
     `project` for a project connection, which brings the external agents whose `project_id` is its ID. Absent means `agent`.
     """
@@ -7725,7 +7277,7 @@ class ConnectExternalAgentRequest(BaseModel):
     )
 
 
-class Kind19(StrEnum):
+class Kind17(StrEnum):
     """
     `project` for a project connection: the credential pairs the project, which sends its external agents with `replaceChannelExternalAgents`. The owner can approve the commands of those agents that send a prompt. Absent means `agent`.
     """
@@ -7762,7 +7314,7 @@ class ExternalAgentConnection(BaseModel):
     owner_name: str = Field(
         ..., description='The first name of the person who connected the agent.'
     )
-    kind: Kind19 | None = Field(
+    kind: Kind17 | None = Field(
         None,
         description='`project` for a project connection: the credential pairs the project, which sends its external agents with `replaceChannelExternalAgents`. The owner can approve the commands of those agents that send a prompt. Absent means `agent`.',
     )
@@ -7830,6 +7382,7 @@ class ArtifactFolder(BaseModel):
     )
     owner: ResourceOwner
     visibility: ResourceVisibility
+    viewer_actions: ViewerActions | None = None
     created_at: AwareDatetime
     created_by: str | None = Field(
         None, description='Principal that declared the folder.'
@@ -8119,6 +7672,9 @@ class ActionCatalogEntry(BaseModel):
     controls: ResourceControls | None = Field(
         None, description='Present for an organization-authored custom action.'
     )
+    viewer_actions: ViewerActions | None = Field(
+        None, description='Present for an organization-authored custom action.'
+    )
 
 
 class ActionCatalogListResponse(BaseModel):
@@ -8268,124 +7824,12 @@ class WorkerSocketFrame(
     )
 
 
-class ConnectionGovernance(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str
-    provider: str
-    status: IntegrationStatus
-    controller: ConnectionController
-
-
-class ConnectionGovernanceListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[ConnectionGovernance]
-    has_more: bool
-    next_cursor: str | None = None
-
-
 class ConnectionBindings(RootModel[dict[str, list[ConnectionBinding]]]):
     """
     Exact accounts available to routine actions, keyed by provider. Each call selects one account and revalidates its live grant. Event watches are separate.
     """
 
     root: dict[str, list[ConnectionBinding]] = Field(..., max_length=20, min_length=1)
-
-
-class SetConnectionDefaultRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    connection_id: str
-    grant_id: str
-    execution_mode: ConnectionExecutionMode
-    context: ConnectionDefaultContext
-
-
-class Integration(BaseModel):
-    """
-    Connection to an external provider such as Slack, GitHub, or a model service. Agents and actions use integrations to find provider configuration without embedding secrets in definitions. External identity is unique per (organization, owner, provider); the same external account may have distinct personal, agent, and business rows.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    team_management: IntegrationTeamManagement | None = None
-    connection_mode: str | None = Field(
-        None, description='Immutable provider authorization mode.'
-    )
-    represented_actor: str | None = Field(
-        None, description='Verified actor represented by this connection.'
-    )
-    confirmation_expires_at: AwareDatetime | None = Field(
-        None,
-        description='Deadline for confirming fresh replacement evidence, when required.',
-    )
-    identity_label: str | None = Field(
-        None,
-        description='External account identity; safe metadata available in the governance view.',
-    )
-    id: str = Field(..., description='Unique identifier for this integration.')
-    name: str = Field(
-        ...,
-        description='Human-readable name, chosen by whoever connected it. Unique per `(org, owner, provider)`: two people may each call their own mailbox "work", but two org-shared connections may not.',
-    )
-    provider: str = Field(
-        ...,
-        description='Free-form provider identifier (e.g. `openai`, `slack`, `github`). Immutable after creation.',
-    )
-    config: dict[str, Any] | None = Field(
-        None,
-        description='Provider-specific non-sensitive configuration stored as JSON. The shape is provider-defined. Sensitive credentials are never returned in this field.',
-    )
-    status: IntegrationStatus = Field(
-        ...,
-        description='Current integration lifecycle state: `active`, `inactive`, or `expired`.',
-    )
-    status_reason: str | None = Field(
-        None,
-        description='Human-readable reason when `status` is `expired` (needs reconnect).',
-    )
-    credentials_unreadable: bool | None = Field(
-        None,
-        description='True when the stored credential cannot be decrypted by the running platform. The connection still exists and its `status` is unchanged, but nothing that needs the credential will work until an admin reconnects the integration. Absent or `false` in the normal case.',
-    )
-    controller: ConnectionController = Field(
-        ...,
-        description='Who this connection belongs to, and the only axis that decides who may use it. Absent means org-shared.',
-    )
-    account_model: IntegrationAccountModel | None = Field(
-        None,
-        description="The provider's account model, repeated here so a client can render a connection without also fetching the catalog.",
-    )
-    created_by: str | None = Field(
-        None, description='User ID of the org member who created this integration.'
-    )
-    tags: TagMap | None = None
-    created_at: AwareDatetime = Field(
-        ..., description='Timestamp when this integration was created.'
-    )
-    updated_at: AwareDatetime = Field(
-        ..., description='Timestamp when this integration was last updated.'
-    )
-
-
-class IntegrationConnectResponse(BaseModel):
-    """
-    Unified integration-framework connect response. Redirect-style providers return `kind=redirect` plus `redirect_url`; inline API-key and service-credential providers return `kind=complete` plus the persisted integration row.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    kind: Kind6
-    redirect_url: str | None = Field(
-        None, description='OAuth or install URL to visit when `kind=redirect`.'
-    )
-    integration: Integration | None = None
 
 
 class DeliveryChannel(BaseModel):
@@ -8396,7 +7840,7 @@ class DeliveryChannel(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind10
+    kind: Kind8
     email: EmailDelivery | None = Field(
         None,
         description='Email delivery payload when `kind=email`; null for inbox-only delivery.',
@@ -8411,7 +7855,7 @@ class Consumer(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind11 = Field(
+    kind: Kind9 = Field(
         ...,
         description="`external_agent_prompt`: an external agent's permission prompt for one call it holds, named to its owner.",
     )
@@ -8471,7 +7915,7 @@ class ConsumerInput(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind12
+    kind: Kind10
     http_subscriber: HttpSubscriberConsumerInput | None = None
 
 
@@ -8766,29 +8210,6 @@ class VoiceCallStartedFrame(BaseModel):
     voice_call: VoiceCallFrameCall
 
 
-class TurnWaitingPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    turn_id: str | None = None
-    reason: str | None = None
-    wait: SessionTranscriptWait | None = None
-
-
-class NudgeEventPayload(BaseModel):
-    """
-    Live reconciliation hint emitted for `nudge.queued`, `nudge.delivered`, and `nudge.cancelled`. Re-read the queue resource after receiving it; this pulse is not durable replay state.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    nudge_id: str
-    turn_id: str
-    delivery: SessionNudgeDelivery
-    status: SessionNudgeStatus
-
-
 class SessionToolDisplay(BaseModel):
     """
     Plain-language phrasing for a tool call, recorded when the call is made. Clients show these words instead of the tool name or its arguments.
@@ -8895,77 +8316,37 @@ class SessionDocumentBlock(BaseModel):
     )
 
 
-class AppendSessionMessagesRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    messages: list[AppendSessionMessage] = Field(
-        ..., description='Messages to append to the session, in order.', min_length=1
-    )
-    token_input_total: int | None = Field(
-        None,
-        description="Fresh (uncached) input tokens to add to this session's lifetime total.",
-        ge=0,
-    )
-    token_output_total: int | None = Field(
-        None, description="Output tokens to add to this session's lifetime total.", ge=0
-    )
-    cache_read_input_total: int | None = Field(
-        None,
-        description="Prompt-cache-read input tokens to add to this session's lifetime total.",
-        ge=0,
-    )
-    cache_creation_input_total: int | None = Field(
-        None,
-        description="Prompt-cache-write input tokens to add to this session's lifetime total.",
-        ge=0,
-    )
-    model: str | None = Field(None, description='Model that produced these messages.')
-    model_provider: str | None = Field(
-        None, description='Provider for the supplied `model`.'
-    )
-
-
-class InvokeAgentRequest(BaseModel):
+class SessionInputRequest(BaseModel):
     """
-    A single compound invocation: which stored agent to run, how to resolve the session, the caller's input message, and optional channel routing context. `operation.timeout_seconds` must be at least one and takes precedence for this admitted turn.
+    Caller input for a session. `delivery` picks whether it starts a turn or steers the running one. `operation.timeout_seconds` must be at least one and takes precedence for the admitted turn.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    agent_ref: AgentRef
-    session: InvokeSessionSpec | None = None
+    content: list[dict[str, Any]] = Field(
+        ...,
+        description='Ordered content blocks for the input message. Canonical documents use `{ "type": "document", "source": { "type": "base64", "media_type": "application/pdf", "data": "..." }, "title": "report.pdf" }` or a URL source. Mobius also translates supported OpenAI `input_file` and Chat Completions `file` blocks at ingestion. With `delivery: current_turn`, every block must be `text`.',
+        min_length=1,
+    )
+    delivery: SessionInputDelivery | None = 'new_turn'
+    idempotency_key: str | None = Field(
+        None,
+        description='Dedup key scoped to the session. A repeat call with the same key returns the original acknowledgement and writes nothing new; it never restarts a terminal turn. Direction reused with different content returns `409`. Omitting it or sending a blank value disables retry deduplication.',
+        max_length=255,
+    )
     operation: AgentTurnOperationPolicy | None = None
-    input: InvokeInput
+    context: RuntimeContext | None = None
     output: TurnOutputSpec | None = Field(
         None,
-        description="Optional structured-output contract for this turn. Read the validated value from the completed turn's `output`.",
+        description="Optional structured-output contract for this turn. Read the validated value from the completed turn's `output`. Only with `delivery: new_turn`.",
     )
-    channel_context: ChannelContext | None = None
-
-
-class SessionNudgeAck(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
+    metadata: dict[str, Any] | None = Field(
+        None, description='Free-form caller metadata attached to the input.'
     )
-    nudge_id: str = Field(
-        ..., description='Stable id of the durable nudge mailbox row.'
-    )
-    status: SessionNudgeStatus
-    delivery: SessionNudgeDelivery
-    session: Session
-    turn: AgentTurn
-    after_sequence: int = Field(
-        ...,
-        description='Current transcript sequence cursor for following the target turn.',
-    )
-    deduped: bool = Field(
-        ..., description='True when an existing idempotent nudge request was returned.'
-    )
-    woke_turn: bool = Field(
-        ...,
-        description='True when wake interrupted a waiting tool and requeued this turn.',
+    wake: bool = Field(
+        False,
+        description='Only with `delivery: current_turn`. When true and the target turn is waiting on an interruptible agent tool, resolve that tool call with `{ "interrupted": true, "reason": "user_direction" }` and resume the same turn. Running and newly queued turns ignore this field. Resend the same content and `idempotency_key` with `wake` to wake a turn for direction that is already queued.\n\nA turn waiting on the outcome of a question it asked with `mobius.interaction.create` (`mobius_event_wait` on `interaction.resolved`) is resumed by every direction, with or without this field. The question stays open: the tool result also carries `interaction_id` and `interaction_status: "pending"`, and the question\'s outcome still arrives in the conversation as its own input.',
     )
 
 
@@ -9152,6 +8533,7 @@ class Routine(BaseModel):
         None,
         description="Actions permitted for this caller; the server rechecks each request. `edit` changes the name, schedule, model, and lowers limits. `configure` also changes the instructions, the watched event, the accounts it uses, and raises limits: on a person's routine only its owner may.",
     )
+    viewer_actions: ViewerActions | None = None
     posture: ResourcePosture | None = None
     audience: Audience | None = None
     id: str
@@ -9490,6 +8872,7 @@ class Channel(BaseModel):
     )
     visibility: ChannelVisibility
     access: ChannelAccess
+    viewer_actions: ViewerActions | None = None
     last_seq: int = Field(..., description='The newest sequence number in the channel.')
     member_count: int | None = Field(
         None,
@@ -9568,7 +8951,7 @@ class ExternalAgent(BaseModel):
         None, description='Whether the agent has a live stream now.'
     )
     created_at: AwareDatetime
-    kind: Kind18 | None = Field(
+    kind: Kind16 | None = Field(
         None,
         description='`project` for a project connection, which brings the external agents whose `project_id` is its ID. Absent means `agent`.',
     )
@@ -10257,153 +9640,6 @@ class MessageBlockFrame(BaseModel):
     block: SessionContentBlock
 
 
-class SessionMessagePreviewFrame(BaseModel):
-    """
-    Live-only, SessionMessage-compatible transcript preview for an in-flight agent response segment. It carries no durable `seq`, transcript `sequence`, or stable `message_id`; the committed row later replaces it by `turn_id` plus `metadata.response_message_index`.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    event_type: EventType8
-    id: str = Field(
-        ...,
-        description='Provisional live id. Do not persist or use as the durable message id.',
-    )
-    session_id: str = Field(..., description='Session this preview belongs to.')
-    agent_id: str | None = Field(
-        None, description='Agent container executing the parent session, when known.'
-    )
-    turn_id: str = Field(..., description='Agent turn that produced the preview.')
-    live_sequence: int | None = Field(
-        None,
-        description='Monotonic per-turn sequence across all live-only session frames; use to detect dropped live frames.',
-    )
-    role: SessionMessageRole
-    entry_type: SessionMessageEntryType
-    content: list[SessionContentBlock] = Field(
-        ...,
-        description='Ordered content blocks using the same canonical block shape as SessionMessage.',
-    )
-    metadata: dict[str, Any] = Field(
-        ...,
-        description='Must include `response_message_index`, the handoff key shared with the durable transcript row.',
-    )
-    emitted_at: AwareDatetime | None = Field(
-        None, description='Server timestamp when this live preview frame was emitted.'
-    )
-
-
-class SessionUserMessagePayload(BaseModel):
-    """
-    Payload of a `user.message` content event: the durable encoding of one non-assistant transcript message — caller input, or a user-role message carrying tool results. It mirrors the transcript row exactly, carrying the message identity (`message_id` + `sequence`) and full content. Replaying these events reconstructs the same view as reading the messages API.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    message_id: str = Field(
-        ..., description='Id of the transcript message this event mirrors.'
-    )
-    sequence: int = Field(
-        ..., description="The mirrored message's per-session transcript sequence."
-    )
-    role: SessionMessageRole = Field(
-        ...,
-        description='Transcript role of the message (e.g. `user`, `system`, or a user-role message carrying tool results); never `assistant`.',
-    )
-    content: list[SessionContentBlock] = Field(
-        ...,
-        description="The message's full canonical content blocks (text, tool_result, …).",
-    )
-    turn_id: str | None = Field(
-        None, description='The agent turn that produced this message, when applicable.'
-    )
-
-
-class AgentMessagePayload(BaseModel):
-    """
-    Payload of an `agent.message` content event: the durable encoding of one assistant transcript message. Carries the message's full structured content (text, thinking, tool_use) plus the message identity (`message_id` + `sequence`). Replaying these events reconstructs the same view as reading the messages API.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    message_id: str = Field(
-        ..., description='Id of the transcript message this event mirrors.'
-    )
-    sequence: int = Field(
-        ..., description="The mirrored message's per-session transcript sequence."
-    )
-    role: Role2 = Field(..., description='Always `assistant`.')
-    content: list[SessionContentBlock] = Field(
-        ...,
-        description="The assistant message's full canonical content blocks (text, thinking, tool_use).",
-    )
-    turn_id: str | None = Field(
-        None, description='The agent turn that produced this message.'
-    )
-
-
-class ToolResultPayload(BaseModel):
-    """
-    Payload of a live-only `tool.result` frame — an in-flight preview that a tool returned during the active turn. Never persisted and carries no sequence: the durable record is the `tool_result` content block of the following transcript message, delivered as a `user.message` event when the turn commits.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    tool_call_id: str | None = None
-    tool_name: str | None = None
-    content: list[SessionContentBlock] | None = Field(
-        None,
-        description='The tool result as canonical content blocks (e.g. `[{ "type": "text", "text": "…" }]`), the same `SessionContentBlock` shape as the `tool_result` content of the durable transcript message — so the live preview and the committed record read identically. In practice the server collapses the result to a single `text` block.',
-    )
-    display: str | None = None
-    is_error: bool | None = None
-    error: str | None = None
-    live_sequence: int | None = Field(
-        None,
-        description='Monotonic per-turn sequence across all live-only session frames; use to detect dropped live frames.',
-    )
-    emitted_at: AwareDatetime | None = Field(
-        None, description='Server timestamp when this live preview frame was emitted.'
-    )
-
-
-class CompactionCreatedPayload(BaseModel):
-    """
-    Payload of a `compaction.created` event, emitted when the session transcript is summarized. The event is non-terminal: it never closes the session stream, so a live consumer observes a compaction landing inline.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    trigger: CompactionTrigger | None = None
-    message_id: str | None = Field(
-        None,
-        description='Id of the compaction summary message appended to the transcript.',
-    )
-    sequence: int | None = Field(
-        None, description="The summary message's per-session transcript sequence."
-    )
-    role: str | None = Field(None, description='Transcript role of the summary entry.')
-    content: list[SessionContentBlock] | None = Field(
-        None,
-        description="The summary's full canonical content blocks, so replaying the stream reconstructs the compaction entry exactly.",
-    )
-    covers_through_sequence: int | None = Field(
-        None,
-        description='Highest message sequence the new summary covers — the before/after boundary.',
-    )
-    message_count: int | None = Field(
-        None, description='Number of transcript messages folded into this summary.'
-    )
-    summary_model: str | None = Field(
-        None, description='Model that produced the summary.'
-    )
-
-
 class SessionToolResultBlock(BaseModel):
     """
     The result of a tool call.
@@ -10505,31 +9741,44 @@ class SessionMessageListResponse(BaseModel):
     )
 
 
-class TurnAck(BaseModel):
+class SessionInputAck(BaseModel):
     """
-    Acknowledgement that a turn started, with a stream cursor.
+    Acknowledgement of accepted input: where it went, the turn carrying it, and a cursor to follow that turn.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
+    delivery: SessionInputOutcome
     session: Session
-    turn: AgentTurn
-    user_message: SessionTranscriptMessage | None = Field(
-        None, description='Durable caller row created for this turn.'
-    )
-    resume_cursor: str = Field(
+    turn: AgentTurn = Field(
         ...,
-        description='Opaque stable v2 lower boundary for streaming and terminal settlement. It precedes every durable message owned by the returned turn and is safe for both fresh and deduplicated invocations. A deduplicated retry may replay already-observed frames.',
+        description='For `new_turn`, the turn that carries the input. For `current_turn`, the turn the direction is queued for. For `queued`, the running turn the direction waits behind.',
+    )
+    user_message: SessionTranscriptMessage | None = Field(
+        None,
+        description='Durable caller row that carries the input. Present exactly when `delivery` is `new_turn`.',
+    )
+    resume_cursor: str | None = Field(
+        None,
+        description='Present exactly when `delivery` is `new_turn`. Opaque stable v2 lower boundary for streaming and terminal settlement. It precedes every durable message owned by the returned turn and is safe for both fresh and deduplicated invocations. A deduplicated retry may replay already-observed frames.',
         min_length=1,
     )
     after_sequence: int = Field(
         ...,
-        description='The transcript message `sequence` this turn starts after. To follow the turn, pass `resume_cursor` to `GET .../transcript/stream`.',
+        description='The transcript message `sequence` the turn follows from. To follow a started turn, pass `resume_cursor` to `GET .../transcript/stream`.',
     )
-    deduped: bool | None = Field(
+    deduped: bool = Field(
+        ...,
+        description='True when a repeated idempotency key returned the original input without writing again.',
+    )
+    woke_turn: bool = Field(
+        ...,
+        description='True when `wake` interrupted a waiting tool and requeued the turn.',
+    )
+    nudge: SessionNudge | None = Field(
         None,
-        description='True when a repeated idempotency key returned an existing turn without restarting it.',
+        description='The nudge queue entry, present for a `delivery: current_turn` request. Follow queued direction through it, and cancel it with `cancelNudge` while it is `pending`.',
     )
 
 
@@ -10593,64 +9842,8 @@ class SessionTranscriptFrame(
     ) = Field(..., discriminator='event_type')
 
 
-class SessionStreamFrame(
-    RootModel[
-        SessionUserMessagePayload
-        | AgentMessagePayload
-        | CompactionStartedPayload
-        | CompactionCreatedPayload
-        | CompactionFailedPayload
-        | TurnStartedPayload
-        | TurnWaitingPayload
-        | TurnCompletedPayload
-        | TurnFailedPayload
-        | TurnCancelledPayload
-        | NudgeEventPayload
-        | SessionMessagePreviewFrame
-        | SessionResyncFrame
-        | StreamEndFrame
-        | ToolCallPayload
-        | ToolResultPayload
-        | MessageUpsertFrame
-        | MessageBlockFrame
-        | MessageBlockPatchFrame
-        | MessageDeltaFrame
-    ]
-):
-    root: (
-        SessionUserMessagePayload
-        | AgentMessagePayload
-        | CompactionStartedPayload
-        | CompactionCreatedPayload
-        | CompactionFailedPayload
-        | TurnStartedPayload
-        | TurnWaitingPayload
-        | TurnCompletedPayload
-        | TurnFailedPayload
-        | TurnCancelledPayload
-        | NudgeEventPayload
-        | SessionMessagePreviewFrame
-        | SessionResyncFrame
-        | StreamEndFrame
-        | ToolCallPayload
-        | ToolResultPayload
-        | MessageUpsertFrame
-        | MessageBlockFrame
-        | MessageBlockPatchFrame
-        | MessageDeltaFrame
-    ) = Field(
-        ...,
-        description="JSON payload of a single `data:` line on a turn's SSE response, paired with an `event: <event type>` line. The streaming responses of `startTurn` and `invokeAgent` use it. The response first replays the transcript messages committed after the cursor, then tails the turn live, and closes once the session is idle.\n\nThe `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.\n\nDurable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>`. That `id:` is not a resume cursor: the inline stream cannot be resumed, and a repeated POST starts another turn unless it reuses the same `idempotency_key`. A client that loses the inline stream follows the turn on `streamSessionTranscript` from the acknowledgement's `resume_cursor` (`?cursor=`). Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, `compaction.started`, `compaction.failed`, and the transcript preview frames (`message.upsert`, `message.block`, `message.block.patch`, `message.delta`) are live-only and carry no `id:`. Streamed text arrives as `message.delta`, coalesced per block. `stream.end` is the final envelope on every deliberate server-side close and also carries no `id:`.",
-    )
-
-
 SessionTranscriptMessage.model_rebuild()
 MessageBlockFrame.model_rebuild()
-SessionMessagePreviewFrame.model_rebuild()
-SessionUserMessagePayload.model_rebuild()
-AgentMessagePayload.model_rebuild()
-ToolResultPayload.model_rebuild()
-CompactionCreatedPayload.model_rebuild()
 SessionToolResultBlock.model_rebuild()
 SessionAttachmentResponse.model_rebuild()
 SessionMessage.model_rebuild()

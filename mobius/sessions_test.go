@@ -33,60 +33,79 @@ func TestListSessionsFiltersByAgentNameAndSessionKey(t *testing.T) {
 	assert.Contains(t, query, "q=invoice")
 }
 
-func TestInvokeAgent_HighLevelClient(t *testing.T) {
+func TestCreateSession_HighLevelClient(t *testing.T) {
 	var body map[string]interface{}
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/v1/agents/invoke":
-			assert.Equal(t, r.Header.Get("Idempotency-Key"), "evt_1")
-			b, _ := io.ReadAll(r.Body)
-			assert.NoError(t, json.Unmarshal(b, &body))
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusAccepted)
-			_, _ = io.WriteString(w, turnAckJSON("sess_1", "turn_1", 7))
-		default:
-			http.NotFound(w, r)
-		}
+		assert.Equal(t, r.Method, http.MethodPost)
+		assert.Equal(t, r.URL.Path, "/v1/sessions")
+		raw, _ := io.ReadAll(r.Body)
+		assert.NoError(t, json.Unmarshal(raw, &body))
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, sessionJSON("sess_1"))
 	})
 	c, srv := newTestClient(t, h)
 	defer srv.Close()
 
-	turn, err := c.InvokeAgent(context.Background(), InvokeAgentOptions{
-		AgentID:        "agent_1",
+	session, err := c.CreateSession(context.Background(), CreateSessionRequest{
+		AgentId:       "agent_1",
+		SessionKey:    ptr("app:acct_1:user_2"),
+		ModelOverride: ptr("claude-sonnet-5"),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, session.Id, "sess_1")
+	assert.Equal(t, body["agent_id"], "agent_1")
+	assert.Equal(t, body["session_key"], "app:acct_1:user_2")
+	assert.Equal(t, body["model_override"], "claude-sonnet-5")
+
+	_, err = c.CreateSession(context.Background(), CreateSessionRequest{})
+	assert.Error(t, err)
+}
+
+func TestSendSessionInput_NewTurn(t *testing.T) {
+	var body map[string]interface{}
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, r.Method, http.MethodPost)
+		assert.Equal(t, r.URL.Path, "/v1/sessions/sess_1/inputs")
+		assert.Equal(t, r.Header.Get("Idempotency-Key"), "evt_1")
+		raw, _ := io.ReadAll(r.Body)
+		assert.NoError(t, json.Unmarshal(raw, &body))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusAccepted)
+		_, _ = io.WriteString(w, turnAckJSON("sess_1", "turn_1", 7))
+	})
+	c, srv := newTestClient(t, h)
+	defer srv.Close()
+
+	in, err := c.SendSessionInput(context.Background(), "sess_1", SendSessionInputOptions{
 		Content:        []map[string]interface{}{{"type": "text", "text": "hi"}},
 		Context:        []RuntimeContextItem{{Name: "naming-board", Content: "Chosen: none"}},
 		IdempotencyKey: "evt_1",
-		Session: &api.InvokeSessionSpec{
-			SessionKey:    ptr("app:acct_1:user_2"),
-			ModelOverride: ptr("claude-sonnet-5"),
-		},
-		Operation: &api.AgentTurnOperationPolicy{TimeoutSeconds: ptr(int64(90))},
-		Output: &api.TurnOutputSpec{Schema: map[string]interface{}{
-			"type": "object", "required": []string{"answer"},
-		}},
+		Operation:      &api.AgentTurnOperationPolicy{TimeoutSeconds: ptr(int64(45))},
+		Output:         &api.TurnOutputSpec{Schema: map[string]interface{}{"type": "object"}},
+		Metadata:       map[string]interface{}{"source": "app"},
 	})
 
 	assert.NoError(t, err)
+	assert.Equal(t, in.Delivery, DeliverNewTurn)
+	assert.Equal(t, in.SessionID, "sess_1")
+	assert.Equal(t, in.TurnID, "turn_1")
+	assert.True(t, in.Nudge == nil)
+	turn := in.Turn
+	assert.True(t, turn != nil)
 	assert.Equal(t, turn.AfterSequence(), int64(7))
 	assert.Equal(t, turn.SessionID(), "sess_1")
 	assert.Equal(t, turn.ID(), "turn_1")
 	assert.Equal(t, turn.Status(), "running")
 	assert.False(t, turn.Deduped())
-	assert.Equal(t, body["agent_ref"].(map[string]any)["id"], "agent_1")
-	input := body["input"].(map[string]any)
-	assert.Equal(t, input["idempotency_key"], "evt_1")
-	contextItem := input["context"].([]any)[0].(map[string]any)
+	_, hasDelivery := body["delivery"]
+	assert.False(t, hasDelivery)
+	assert.Equal(t, body["idempotency_key"], "evt_1")
+	assert.Equal(t, body["operation"].(map[string]any)["timeout_seconds"], float64(45))
+	assert.Equal(t, body["output"].(map[string]any)["schema"].(map[string]any)["type"], "object")
+	assert.Equal(t, body["metadata"].(map[string]any)["source"], "app")
+	contextItem := body["context"].([]any)[0].(map[string]any)
 	assert.Equal(t, contextItem["name"], "naming-board")
 	assert.Equal(t, contextItem["content"], "Chosen: none")
-	assert.Equal(t, body["session"].(map[string]any)["session_key"], "app:acct_1:user_2")
-	assert.Equal(t, body["session"].(map[string]any)["model_override"], "claude-sonnet-5")
-	// The stored agent is the sole definition authority: model_override above is
-	// the one execution override an invocation carries, so the request body must
-	// not grow a `config` alongside it.
-	_, hasConfig := body["config"]
-	assert.False(t, hasConfig)
-	assert.Equal(t, body["operation"].(map[string]any)["timeout_seconds"], float64(90))
-	assert.Equal(t, body["output"].(map[string]any)["schema"].(map[string]any)["type"], "object")
 
 	turn.Transcript().Apply(TranscriptStreamEvent{Frame: mustFrame(t,
 		`{"event_type":"turn.upsert","id":"turn_1","session_id":"sess_1","agent_id":"agent_1","attempt":1,"status":"failed","error_type":"invalid_conversation_state","error_message":"history ended with assistant content","created_at":"2026-05-27T00:00:00Z","updated_at":"2026-05-27T00:00:01Z"}`)})
@@ -104,12 +123,12 @@ func TestTurnTranscript_StructuredOutput(t *testing.T) {
 	c, srv := newTestClient(t, h)
 	defer srv.Close()
 
-	turn, err := c.InvokeAgent(context.Background(), InvokeAgentOptions{
-		AgentID: "agent_1",
+	in, err := c.SendSessionInput(context.Background(), "sess_1", SendSessionInputOptions{
 		Content: []map[string]interface{}{{"type": "text", "text": "hi"}},
 		Output:  &api.TurnOutputSpec{Schema: map[string]interface{}{"type": "object"}},
 	})
 	assert.NoError(t, err)
+	turn := in.Turn
 	assert.Equal(t, turn.Output(), map[string]interface{}(nil))
 	assert.Equal(t, turn.OutputSource(), "")
 
@@ -118,41 +137,6 @@ func TestTurnTranscript_StructuredOutput(t *testing.T) {
 	assert.Equal(t, turn.Status(), "completed")
 	assert.Equal(t, turn.Output()["answer"], "42")
 	assert.Equal(t, turn.OutputSource(), "tool")
-}
-
-func TestStartTurn_HighLevelClient(t *testing.T) {
-	var body map[string]interface{}
-	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, r.Method, http.MethodPost)
-		assert.Equal(t, r.URL.Path, "/v1/sessions/sess_1/turns")
-		assert.Equal(t, r.Header.Get("Idempotency-Key"), "evt_1")
-		raw, _ := io.ReadAll(r.Body)
-		assert.NoError(t, json.Unmarshal(raw, &body))
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusAccepted)
-		_, _ = io.WriteString(w, turnAckJSON("sess_1", "turn_1", 7))
-	})
-	c, srv := newTestClient(t, h)
-	defer srv.Close()
-
-	turn, err := c.StartTurn(context.Background(), "sess_1", StartTurnOptions{
-		Content:        []map[string]interface{}{{"type": "text", "text": "hi"}},
-		Context:        []RuntimeContextItem{{Name: "naming-board", Content: "Chosen: none"}},
-		IdempotencyKey: "evt_1",
-		Operation:      &api.AgentTurnOperationPolicy{TimeoutSeconds: ptr(int64(45))},
-		Output:         &api.TurnOutputSpec{Schema: map[string]interface{}{"type": "object"}},
-		Metadata:       map[string]interface{}{"source": "app"},
-	})
-
-	assert.NoError(t, err)
-	assert.Equal(t, turn.ID(), "turn_1")
-	assert.Equal(t, body["idempotency_key"], "evt_1")
-	assert.Equal(t, body["operation"].(map[string]any)["timeout_seconds"], float64(45))
-	assert.Equal(t, body["output"].(map[string]any)["schema"].(map[string]any)["type"], "object")
-	assert.Equal(t, body["metadata"].(map[string]any)["source"], "app")
-	contextItem := body["context"].([]any)[0].(map[string]any)
-	assert.Equal(t, contextItem["name"], "naming-board")
-	assert.Equal(t, contextItem["content"], "Chosen: none")
 }
 
 func TestListSessionMessages_IncludesContext(t *testing.T) {
@@ -175,52 +159,23 @@ func TestListSessionMessages_IncludesContext(t *testing.T) {
 	assert.Equal(t, reminder.Content, "Chosen: none")
 }
 
-func TestInvokeAgent_RequiresAgentRefAndContent(t *testing.T) {
+func TestSendSessionInput_RequiresContent(t *testing.T) {
 	c, srv := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 	}))
 	defer srv.Close()
 
-	_, err := c.InvokeAgent(context.Background(), InvokeAgentOptions{
-		Content: []map[string]interface{}{{"type": "text", "text": "hi"}},
-	})
-	assert.Error(t, err)
-
-	_, err = c.InvokeAgent(context.Background(), InvokeAgentOptions{AgentID: "agent_1"})
+	_, err := c.SendSessionInput(context.Background(), "sess_1", SendSessionInputOptions{})
 	assert.Error(t, err)
 }
 
-func TestInvokeAgent_ModeNewIsNotMarkedReplaySafe(t *testing.T) {
+func TestSendSessionInput_WhitespaceIdempotencyKeyIsOmitted(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, r.Header.Get("Idempotency-Key"), "")
 		var body map[string]interface{}
 		raw, _ := io.ReadAll(r.Body)
 		assert.NoError(t, json.Unmarshal(raw, &body))
-		assert.Equal(t, body["input"].(map[string]any)["idempotency_key"], "evt_1")
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusAccepted)
-		_, _ = io.WriteString(w, turnAckJSON("sess_1", "turn_1", 7))
-	})
-	c, srv := newTestClient(t, h)
-	defer srv.Close()
-
-	mode := api.InvokeSessionSpecModeNew
-	_, err := c.InvokeAgent(context.Background(), InvokeAgentOptions{
-		AgentName:      "support",
-		Content:        []map[string]interface{}{{"type": "text", "text": "hi"}},
-		IdempotencyKey: "evt_1",
-		Session:        &api.InvokeSessionSpec{Mode: &mode},
-	})
-	assert.NoError(t, err)
-}
-
-func TestInvokeAgent_WhitespaceIdempotencyKeyIsOmitted(t *testing.T) {
-	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, r.Header.Get("Idempotency-Key"), "")
-		var body map[string]interface{}
-		raw, _ := io.ReadAll(r.Body)
-		assert.NoError(t, json.Unmarshal(raw, &body))
-		_, present := body["input"].(map[string]any)["idempotency_key"]
+		_, present := body["idempotency_key"]
 		assert.False(t, present)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusAccepted)
@@ -229,15 +184,14 @@ func TestInvokeAgent_WhitespaceIdempotencyKeyIsOmitted(t *testing.T) {
 	c, srv := newTestClient(t, h)
 	defer srv.Close()
 
-	_, err := c.InvokeAgent(context.Background(), InvokeAgentOptions{
-		AgentName:      "support",
+	_, err := c.SendSessionInput(context.Background(), "sess_1", SendSessionInputOptions{
 		Content:        []map[string]interface{}{{"type": "text", "text": "hi"}},
 		IdempotencyKey: "  \t  ",
 	})
 	assert.NoError(t, err)
 }
 
-func TestInvokeAgent_StructuredAPIError(t *testing.T) {
+func TestSendSessionInput_StructuredAPIError(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("X-Request-ID", "req_1")
@@ -248,9 +202,8 @@ func TestInvokeAgent_StructuredAPIError(t *testing.T) {
 	c, srv := newTestClient(t, h)
 	defer srv.Close()
 
-	_, err := c.InvokeAgent(context.Background(), InvokeAgentOptions{
-		AgentName: "support",
-		Content:   []map[string]interface{}{{"type": "text", "text": "next"}},
+	_, err := c.SendSessionInput(context.Background(), "sess_1", SendSessionInputOptions{
+		Content: []map[string]interface{}{{"type": "text", "text": "next"}},
 	})
 	var apiErr *APIError
 	assert.True(t, errors.As(err, &apiErr))
@@ -261,29 +214,35 @@ func TestInvokeAgent_StructuredAPIError(t *testing.T) {
 	assert.Equal(t, apiErr.RetryAfter.String(), "2s")
 }
 
-func TestNudgeSession_HighLevelClient(t *testing.T) {
+func TestSendSessionInput_CurrentTurn(t *testing.T) {
 	var body map[string]interface{}
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, r.Method, http.MethodPost)
-		assert.Equal(t, r.URL.Path, "/v1/sessions/s1/nudges")
+		assert.Equal(t, r.URL.Path, "/v1/sessions/s1/inputs")
 		assert.Equal(t, r.Header.Get("Idempotency-Key"), "event_2")
 		raw, _ := io.ReadAll(r.Body)
 		assert.NoError(t, json.Unmarshal(raw, &body))
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusAccepted)
-		_, _ = io.WriteString(w, `{"nudge_id":"nudge_1","delivery":"current_turn","session":{"id":"s1","agent_id":"a1","origin":"api","scope":"agent","scope_name":"app","scope_ref_id":"a1","session_key":"app","status":"active","title":"","visibility":"private","version":1,"message_count":1,"token_input_total":0,"cache_read_input_total":0,"cache_creation_input_total":0,"token_output_total":0,"created_at":"2026-05-27T00:00:00Z","updated_at":"2026-05-27T00:00:00Z"},"turn":{"id":"t1","agent_id":"a1","session_id":"s1","attempt":1,"status":"running","created_at":"2026-05-27T00:00:00Z","updated_at":"2026-05-27T00:00:00Z"},"after_sequence":2,"deduped":false,"woke_turn":true}`)
+		_, _ = io.WriteString(w, `{"delivery":"current_turn","session":`+sessionJSON("s1")+`,"turn":{"id":"t1","agent_id":"a1","session_id":"s1","attempt":1,"status":"running","created_at":"2026-05-27T00:00:00Z","updated_at":"2026-05-27T00:00:00Z"},"after_sequence":2,"deduped":false,"woke_turn":true,"nudge":{"id":"nudge_1","status":"pending","delivery":"current_turn","content":"Use the shorter name","turn":{"id":"t1","status":"running"},"sender_principal_id":"principal_1","created_at":"2026-07-14T12:00:00Z"}}`)
 	})
 	c, srv := newTestClient(t, h)
 	defer srv.Close()
 
-	ack, err := c.NudgeSession(context.Background(), "s1", NudgeSessionOptions{
-		Content:        "Use the shorter name",
+	in, err := c.SendSessionInput(context.Background(), "s1", SendSessionInputOptions{
+		Content:        []map[string]interface{}{{"type": "text", "text": "Use the shorter name"}},
+		Delivery:       DeliverCurrentTurn,
 		IdempotencyKey: "event_2",
 		Wake:           true,
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, ack.NudgeId, "nudge_1")
-	assert.Equal(t, body["content"], "Use the shorter name")
+	assert.Equal(t, in.Delivery, DeliverCurrentTurn)
+	assert.Equal(t, in.TurnID, "t1")
+	assert.True(t, in.WokeTurn)
+	assert.True(t, in.Turn == nil)
+	assert.Equal(t, in.Nudge.Id, "nudge_1")
+	assert.Equal(t, body["delivery"], "current_turn")
+	assert.Equal(t, body["content"].([]any)[0].(map[string]any)["text"], "Use the shorter name")
 	assert.Equal(t, body["idempotency_key"], "event_2")
 	assert.Equal(t, body["wake"], true)
 }
@@ -326,61 +285,36 @@ func TestSessionNudgeLifecycle_HighLevelClient(t *testing.T) {
 	assert.Equal(t, nudge.Status, api.SessionNudgeStatus("cancelled"))
 }
 
-func TestInvokeAgentStream_HighLevelClient(t *testing.T) {
-	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/v1/agents/invoke":
-			assert.Equal(t, r.Header.Get("Accept"), "text/event-stream")
-			assert.Equal(t, r.Header.Get("Idempotency-Key"), "evt_stream_1")
-			w.Header().Set("Content-Type", "text/event-stream")
-			_, _ = io.WriteString(w, "event: turn.completed\ndata: {\"usage\":{\"input_tokens\":42}}\n\n")
-		default:
-			http.NotFound(w, r)
-		}
-	})
-	c, srv := newTestClient(t, h)
-	defer srv.Close()
-
-	events, err := c.InvokeAgentStream(context.Background(), InvokeAgentOptions{
-		AgentName:      "support",
-		Content:        []map[string]interface{}{{"type": "text", "text": "hi"}},
-		IdempotencyKey: "evt_stream_1",
-	})
-	assert.NoError(t, err)
-
-	ev, ok := <-events
-	assert.True(t, ok)
-	assert.Equal(t, ev.EventType, "turn.completed")
-	payload, err := ev.Frame.AsTurnCompletedPayload()
-	assert.NoError(t, err)
-	assert.Equal(t, *payload.Usage.InputTokens, 42)
-
-	_, ok = <-events
-	assert.False(t, ok)
+func sessionJSON(sessionID string) string {
+	return fmt.Sprintf(`{
+		"id": %q,
+		"agent_id": "agent_1",
+		"origin": "api",
+		"scope": "agent",
+		"scope_name": "app:acct_1:user_2",
+		"scope_ref_id": "agent_1",
+		"session_key": "app:acct_1:user_2",
+		"status": "active",
+		"title": "",
+		"visibility": "private",
+		"version": 1,
+		"message_count": 1,
+		"token_input_total": 0,
+		"token_output_total": 0,
+		"created_at": "2026-05-27T00:00:00Z",
+		"updated_at": "2026-05-27T00:00:00Z"
+	}`, sessionID)
 }
 
+// turnAckJSON is a new_turn SessionInputAck for a running turn.
 func turnAckJSON(sessionID, turnID string, afterSequence int) string {
 	return fmt.Sprintf(`{
+		"delivery": "new_turn",
 		"after_sequence": %d,
 		"resume_cursor": "41.6",
-		"session": {
-			"id": %q,
-			"agent_id": "agent_1",
-			"origin": "api",
-			"scope": "agent",
-			"scope_name": "app:acct_1:user_2",
-			"scope_ref_id": "agent_1",
-			"session_key": "app:acct_1:user_2",
-			"status": "active",
-			"title": "",
-			"visibility": "private",
-			"version": 1,
-			"message_count": 1,
-			"token_input_total": 0,
-			"token_output_total": 0,
-			"created_at": "2026-05-27T00:00:00Z",
-			"updated_at": "2026-05-27T00:00:00Z"
-		},
+		"deduped": false,
+		"woke_turn": false,
+		"session": %s,
 		"turn": {
 			"id": %q,
 			"agent_id": "agent_1",
@@ -390,7 +324,7 @@ func turnAckJSON(sessionID, turnID string, afterSequence int) string {
 			"created_at": "2026-05-27T00:00:00Z",
 			"updated_at": "2026-05-27T00:00:00Z"
 		}
-	}`, afterSequence, sessionID, turnID, sessionID)
+	}`, afterSequence, sessionJSON(sessionID), turnID, sessionID)
 }
 
 func ptr[T any](v T) *T { return &v }

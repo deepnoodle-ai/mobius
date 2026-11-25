@@ -39,8 +39,8 @@ def test_oauth_return_origin_routes() -> None:
     client.close()
 
     assert seen == [
-        ("GET", "/v1/organization/oauth-return-origins"),
-        ("PUT", "/v1/organization/oauth-return-origins"),
+        ("GET", "/v1/orgs/current/oauth-return-origins"),
+        ("PUT", "/v1/orgs/current/oauth-return-origins"),
     ]
 
 

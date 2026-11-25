@@ -34,9 +34,6 @@ tags:
   x-displayName: Jobs
   description: The worker WebSocket protocol used by customer-side workers to claim, run,
     and report jobs.
-- name: integrations
-  x-displayName: Integrations
-  description: Org integration records, provider setup, lifecycle checks, and event diagnostics.
 - name: billing
   x-displayName: Billing
   description: Organization subscription, invoice, and billing portal endpoints.
@@ -691,323 +688,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/integrations/governance:
-    get:
-      operationId: listConnectionGovernance
-      x-public: true
-      tags:
-      - integrations
-      summary: List minimal connection governance metadata
-      description: Organization administrators can identify and deactivate connections without
-        seeing personal configuration, account labels, credentials, or provider content.
-      parameters:
-      - name: provider
-        in: query
-        schema:
-          type: string
-      - $ref: '#/components/parameters/LimitParam'
-      - $ref: '#/components/parameters/CursorParam'
-      responses:
-        '200':
-          description: Minimal governance metadata
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ConnectionGovernanceListResponse'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-  /v1/integrations/governance/{integration_id}/deactivate:
-    post:
-      operationId: deactivateConnectionGovernance
-      x-public: true
-      tags:
-      - integrations
-      summary: Deactivate a connection through organization governance
-      description: Deactivates the connection, revokes grants and defaults, and suspends dependent
-        routines. It never transfers control or exposes provider content.
-      parameters:
-      - name: integration_id
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        '204':
-          description: Connection deactivated
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/integrations/connections/{integration_id}/team-management:
-    post:
-      operationId: startConnectionTeamManagement
-      x-public: true
-      tags:
-      - integrations
-      summary: Start team management of an existing account
-      description: Explicitly transfers management of the existing active connection to the
-        organization. Only its current human manager with live local organization administrator
-        authority may make this change. Preserves the connection ID, credentials, provider
-        identity, label, grants and their audiences, defaults, and routine bindings. Does
-        not start provider authorization or broaden assistant access. Repeating the request
-        for an already team-managed account is an administrator-only no-op.
-      parameters:
-      - name: integration_id
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: Completed management change with kind complete and the same active
-            integration
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IntegrationConnectResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-  /v1/integrations/connections/{integration_id}/confirm-replacement:
-    post:
-      operationId: confirmConnectionReplacement
-      x-public: true
-      tags:
-      - integrations
-      summary: Confirm replacement using fresh provider authorization
-      description: Consumes a short-lived candidate authorized by this human and atomically
-        retires the former authority and its grants. The candidate receives no inherited grants.
-      parameters:
-      - name: integration_id
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        '204':
-          description: Replacement confirmed
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/integrations/connections/{integration_id}/grants:
-    get:
-      operationId: listConnectionGrants
-      x-public: true
-      tags:
-      - integrations
-      summary: List agents with access to a controlled connection
-      description: Returns live grants only to the connection controller or an authorized
-        organization administrator.
-      parameters:
-      - name: integration_id
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: Controller-authorized grants
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ConnectionGrantListResponse'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    post:
-      operationId: materializeConnectionGrants
-      x-public: true
-      tags:
-      - integrations
-      summary: Give explicitly selected current agents access
-      description: Materializes grants for the submitted agent IDs. Identical active grants
-        are replay-safe; changed constraints revoke the previous grant ID.
-      parameters:
-      - name: integration_id
-        in: path
-        required: true
-        schema:
-          type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MaterializeConnectionGrantsRequest'
-      responses:
-        '200':
-          description: Individual grants; replay preserves identical active grants
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ConnectionGrantListResponse'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/integrations/connections/{integration_id}/grants/{grant_id}:
-    delete:
-      operationId: revokeConnectionGrant
-      x-public: true
-      tags:
-      - integrations
-      summary: Revoke one grant and its context defaults
-      description: Revokes the specified grant and removes only defaults bound to that grant.
-        In-flight work must revalidate before its next dispatch.
-      parameters:
-      - name: integration_id
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: grant_id
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        '204':
-          description: Grant revoked or already absent
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/agents/{agent_id}/connection-grants:
-    get:
-      operationId: listAgentConnectionGrants
-      x-public: true
-      tags:
-      - integrations
-      summary: List this viewer's operational connection grants for an agent
-      description: Returns operational labels for grants the viewer controls or belongs to,
-        after verifying the viewer can reach the agent. Credentials and connection configuration
-        are omitted.
-      parameters:
-      - name: agent_id
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: Authorized operational labels and grants
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ConnectionGrantListResponse'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/agents/{agent_id}/connection-defaults:
-    get:
-      operationId: listAgentConnectionDefaults
-      x-public: true
-      tags:
-      - integrations
-      summary: List account preferences for one execution context
-      description: Returns the union of saved and currently selectable provider preferences
-        without exposing credentials or unavailable account identity.
-      parameters:
-      - name: agent_id
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: context
-        in: query
-        required: true
-        schema:
-          $ref: '#/components/schemas/ConnectionDefaultContext'
-      - name: execution_mode
-        in: query
-        required: true
-        schema:
-          $ref: '#/components/schemas/ConnectionExecutionMode'
-      responses:
-        '200':
-          description: Saved state and selectable account choices by provider
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ConnectionDefaultPreferenceListResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/agents/{agent_id}/connection-defaults/{provider}:
-    put:
-      operationId: setAgentConnectionDefault
-      x-public: true
-      tags:
-      - integrations
-      summary: Select a default for one execution context
-      description: Changes only the authenticated human context or an administrator-authorized
-        organization background context. The selected active grant must satisfy connection
-        ownership and audience restrictions for that context.
-      parameters:
-      - name: agent_id
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: provider
-        in: path
-        required: true
-        schema:
-          type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SetConnectionDefaultRequest'
-      responses:
-        '204':
-          description: Context default selected
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    delete:
-      operationId: clearAgentConnectionDefault
-      x-public: true
-      tags:
-      - integrations
-      summary: Clear a default for one execution context
-      description: Clears only the exact context preference. Repeated clears succeed and do
-        not revoke account access.
-      parameters:
-      - name: agent_id
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: provider
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: context
-        in: query
-        required: true
-        schema:
-          $ref: '#/components/schemas/ConnectionDefaultContext'
-      - name: execution_mode
-        in: query
-        required: true
-        schema:
-          $ref: '#/components/schemas/ConnectionExecutionMode'
-      responses:
-        '204':
-          description: Context default cleared or already absent
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
   /v1/billing/usage-events:
     get:
       operationId: listBillingUsageEvents
@@ -1403,7 +1083,9 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /v1/organization/oauth-return-origins:
+  /v1/orgs/{org_id}/oauth-return-origins:
+    parameters:
+    - $ref: '#/components/parameters/OrgPathParam'
     get:
       operationId: getOAuthReturnOrigins
       tags:
@@ -1458,7 +1140,9 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/organization/context:
+  /v1/orgs/{org_id}/context:
+    parameters:
+    - $ref: '#/components/parameters/OrgPathParam'
     get:
       operationId: getOrgContext
       tags:
@@ -1668,28 +1352,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Interaction'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    delete:
-      operationId: deleteInteraction
-      tags:
-      - interactions
-      summary: Delete interaction
-      description: Deletes an interaction so it disappears from inbox and org listings. The
-        row is retained for audit history. Only terminal interactions (`completed`, `cancelled`,
-        `expired`) may be deleted; pending or in-review interactions must be cancelled first
-        so anything waiting on them can route to a fallback.
-      parameters:
-      - $ref: '#/components/parameters/IDParam'
-      responses:
-        '204':
-          description: No Content
-        '400':
-          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2925,87 +2587,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/agents/invoke:
-    post:
-      operationId: invokeAgent
-      tags:
-      - sessions
-      summary: Invoke an agent
-      description: |-
-        One compound runtime call for hosted apps: it resolves an agent, resolves or creates a session by `session_key`, appends the caller's input message, and starts an agent turn — collapsing the create-or-resolve-session plus start-turn sequence into a single retryable request. This is the entry point a product backend (an embedded app, a Slack handler, a Telegram bot) calls per inbound message; the lower-level session and turn APIs remain available for finer control.
-
-        Agents always run from their stored definition. A newly created session may set `session.model_override` to keep that conversation on one model. For a one-shot timeout override, send `operation.timeout_seconds` with a value of at least one; it applies only to the newly admitted turn.
-
-        By default it returns `202 Accepted` immediately with a durable `after_sequence` stream cursor; the turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection, identical to the `POST /v1/sessions/{session_id}/turns` stream. A repeated call with the same `input.idempotency_key` resolves the same session and returns the existing invocation without restarting it or writing new input, so a webhook handler can acknowledge fast and retry safely. Requires the `mobius.resource.use` permission (or the agent's own backing principal).
-
-        Only one direct invocation may be nonterminal in a session. A distinct input while a turn is queued, running, or waiting returns `409` with `error.code = session_turn_active` and `error.details = {turn_id, status}` before the new input is appended. Use the session nudge endpoint explicitly to steer a running or waiting turn; Mobius never converts a second send into a nudge implicitly.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/InvokeAgentRequest'
-            example:
-              agent_ref:
-                id: agent_5n8p2q7m4x9r3v6t
-              session:
-                mode: continue_or_create
-                session_key: app:acct_123:user_456:slack:support:thread_789
-                title: Support in Slack
-                model_override: claude-sonnet-4-6
-                metadata:
-                  account_id: acct_123
-                  user_id: user_456
-              operation:
-                timeout_seconds: 120
-              input:
-                content:
-                - type: text
-                  text: Can you summarize my open tickets?
-                idempotency_key: slack:evt_0a1b2c3d
-              channel_context:
-                provider: slack
-                workspace_id: T123
-                channel_id: C123
-                thread_id: '1700000000.123'
-      responses:
-        '200':
-          description: 'Server-sent event stream of the turn''s activity, returned when the
-            request sets `Accept: text/event-stream`. `SessionStreamFrame` describes the framing.'
-          content:
-            text/event-stream:
-              schema:
-                $ref: '#/components/schemas/SessionStreamFrame'
-        '202':
-          description: The turn was accepted and is running.
-          headers:
-            Location:
-              description: Pollable session turn.
-              schema:
-                type: string
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TurnAck'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          description: A distinct direct invocation is already queued, running, or waiting.
-            The `session_turn_active` error details contain its `turn_id` and `status`. While
-            a voice call is in progress in the chat, a send returns `voice_call_active` with
-            the message "A voice call is in progress in this chat."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
   /v1/sessions:
     get:
       operationId: listSessions
@@ -3512,14 +3093,34 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/sessions/{session_id}/inputs:
     post:
-      operationId: appendSessionMessages
+      operationId: sendSessionInput
       tags:
       - sessions
-      summary: Append session messages
-      description: Appends one or more messages to a durable session and returns the updated
-        session. The service assigns sequence numbers atomically and may append an additional
-        compaction summary when the session crosses its compaction threshold.
+      summary: Send input to a session
+      description: |-
+        The one way to put caller input into a session. `delivery` says where it goes:
+
+        - `new_turn` (the default) appends the input as a user message and
+        starts an agent turn to respond. A distinct send while a turn is
+        queued, running, or waiting returns `409 session_turn_active` before
+        anything is written; send it again with `delivery: current_turn` to
+        steer that turn instead.
+        - `current_turn` adds the input as direction to the newest turn that
+        can still absorb it. The agent receives it at the turn's next safe
+        boundary, after any in-flight provider request or tool call
+        finishes. The direction waits in the session's nudge queue
+        (`listSessionNudges`) until then and can be cancelled. When no turn
+        can take it (the session is idle), the input becomes a regular user
+        message carried by a fresh turn, and the acknowledgement reports
+        `delivery: new_turn`. When another person's turn is running, the
+        direction waits behind it and the acknowledgement reports
+        `delivery: queued`. Direction carries text only, so every content
+        block must be `text`, and the turn-only fields (`operation`,
+        `context`, `output`) are refused.
+
+        The response is always `202 Accepted` with JSON. When it reports `delivery: new_turn`, follow the turn on `GET .../transcript/stream?cursor=<resume_cursor>`; the turn keeps running if the caller disconnects. A repeated call with the same `idempotency_key` returns the original acknowledgement without writing new input. Requires the `mobius.resource.use` permission (or the agent's own backing principal).
       parameters:
       - $ref: '#/components/parameters/SessionIdParam'
       requestBody:
@@ -3527,14 +3128,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AppendSessionMessagesRequest'
+              $ref: '#/components/schemas/SessionInputRequest'
       responses:
-        '200':
-          description: OK
+        '202':
+          description: The input was accepted.
+          headers:
+            Location:
+              description: The started turn, or the queued nudge when the input was added
+                to a running turn.
+              schema:
+                type: string
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Session'
+                $ref: '#/components/schemas/SessionInputAck'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -3543,6 +3150,17 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: For `new_turn`, a distinct turn is already queued, running, or waiting
+            (`session_turn_active`, with its `turn_id` and `status` in the error details).
+            For `current_turn`, the session's nudge queue is full (`nudge_queue_full`), or
+            an idempotency key was reused with different content. While a voice call is in
+            progress in the chat, any input returns `voice_call_active` with the message "A
+            voice call is in progress in this chat."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/sessions/{session_id}/turns:
@@ -3591,61 +3209,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-    post:
-      operationId: startTurn
-      tags:
-      - sessions
-      summary: Start an agent turn
-      description: |-
-        Appends one caller input message to the session and starts an agent turn to respond. By default returns `202 Accepted` immediately with a `resume_cursor`; open `GET .../transcript/stream?cursor=<resume_cursor>` to follow the turn. The turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection. The inline stream cannot be resumed; a client that loses it follows the turn on the transcript stream from `resume_cursor`. A repeated call with the same `idempotency_key` returns the existing invocation without restarting it or writing new input. A distinct send while a direct turn is queued, running, or waiting returns `409 session_turn_active` before appending the new input; use the nudge endpoint explicitly to steer an active turn. Requires the `mobius.resource.use` permission (or the agent's own backing principal).
-
-        Set `operation.timeout_seconds` to at least one for a one-shot timeout override on this turn. It takes precedence over the agent default and is not saved on the session.
-      parameters:
-      - $ref: '#/components/parameters/SessionIdParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/StartTurnRequest'
-      responses:
-        '200':
-          description: 'Server-sent event stream of the turn''s activity, returned when the
-            request sets `Accept: text/event-stream`. `SessionStreamFrame` describes the framing.'
-          content:
-            text/event-stream:
-              schema:
-                $ref: '#/components/schemas/SessionStreamFrame'
-        '202':
-          description: The turn was accepted and is running.
-          headers:
-            Location:
-              description: Pollable session turn.
-              schema:
-                type: string
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TurnAck'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          description: A distinct direct invocation is already queued, running, or waiting.
-            The `session_turn_active` error details contain its `turn_id` and `status`. While
-            a voice call is in progress in the chat, a send returns `voice_call_active` with
-            the message "A voice call is in progress in this chat."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
   /v1/sessions/{session_id}/turns/{turn_id}:
     get:
       operationId: getSessionTurn
@@ -3741,54 +3304,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-    post:
-      operationId: nudgeSession
-      tags:
-      - sessions
-      summary: Nudge a session
-      description: 'Adds user direction to the newest turn that can still absorb it. The agent
-        receives it as contextual runtime input at the turn''s next safe boundary, after any
-        in-flight provider request or tool call finishes — including one final boundary as
-        the turn is about to complete. When no such turn exists (the session is idle), the
-        input converts to a regular user message carried by a fresh direct-session turn, exactly
-        as if it had been sent to the session; the acknowledgement then reports `delivery:
-        new_turn` and `status: delivered`. The same conversion re-homes input whose target
-        turn ends without absorbing it, so accepted input is never lost. Reusing an `idempotency_key`
-        with identical content returns the original acknowledgement; reusing it with different
-        content returns `409 Conflict`. Requires the `mobius.resource.use` permission (or
-        the agent''s own backing principal).'
-      parameters:
-      - $ref: '#/components/parameters/SessionIdParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/NudgeSessionRequest'
-      responses:
-        '202':
-          description: The nudge input was accepted for delivery.
-          headers:
-            Location:
-              description: Pollable session nudge.
-              schema:
-                type: string
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SessionNudgeAck'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
   /v1/sessions/{session_id}/nudges/{nudge_id}:
     get:
       operationId: getSessionNudge
@@ -4234,33 +3749,6 @@ paths:
                 $ref: '#/components/schemas/RoutineThreadList'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/routines/{routine_id}/threads/{key}:
-    get:
-      parameters:
-      - $ref: '#/components/parameters/RoutineID'
-      - name: key
-        in: path
-        required: true
-        schema:
-          type: string
-      operationId: getRoutineThread
-      tags:
-      - routines
-      summary: Get a followed thread
-      description: Returns a thread under the same custody and reach policy as its routine.
-      responses:
-        '200':
-          description: Thread record.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RoutineThread'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -7267,15 +6755,6 @@ components:
       description: Reference type name, such as `slack.channel` or `table.table`.
       schema:
         type: string
-    IntegrationIDQueryParam:
-      name: integration_id
-      in: query
-      required: true
-      description: Exact integration connection this account-scoped operation acts on. Invalid,
-        inaccessible, stale, or wrong-provider IDs never fall back to another connection.
-      schema:
-        type: string
-        pattern: ^intg_[A-Za-z0-9]+$
     IntegrationIDParam:
       name: integration_id
       in: path
@@ -7292,13 +6771,6 @@ components:
       schema:
         type: string
         pattern: ^ievt_[A-Za-z0-9]+$
-    IntegrationProviderParam:
-      name: provider
-      in: path
-      required: true
-      description: Framework provider identifier from the integration provider catalog.
-      schema:
-        type: string
     IdempotencyKey:
       name: Idempotency-Key
       in: header
@@ -7308,6 +6780,14 @@ components:
         type: string
         minLength: 1
         maxLength: 255
+    OrgPathParam:
+      name: org_id
+      in: path
+      required: true
+      description: Organization ID, or `current` for the caller's active organization. Any
+        organization the caller may not act in answers 404.
+      schema:
+        type: string
     MemoryKeyParam:
       name: memory_key
       in: path
@@ -7569,7 +7049,7 @@ components:
                 (`key`, `org`, or `browser`), `window`, `limit`, and `retry_after_seconds`
                 in `details`; an endpoint''s own cap returns the same code without them. Direct
                 session invocation conflicts use `session_turn_active` with the blocking `turn_id`
-                and `status` in `details`; a send or nudge while a voice call is in progress
+                and `status` in `details`; session input while a voice call is in progress
                 in the chat uses `voice_call_active`. Session-key lookups without an agent
                 scope use `session_key_scope_required`; supplying both agent ID and name uses
                 `session_agent_ref_conflict`. API-key creation for a principal with no role
@@ -7652,6 +7132,31 @@ components:
         can_delete:
           type: boolean
           description: Whether the caller may delete the resource.
+    ViewerActions:
+      type: object
+      additionalProperties: false
+      required:
+      - view
+      - work_with
+      - manage
+      - stop
+      description: The four access levels the current caller holds on this resource, answered
+        by the shared access function. Clients show or enable actions from these fields rather
+        than re-deriving them from ownership, visibility, or role.
+      properties:
+        view:
+          type: boolean
+          description: Whether the caller may see this resource read-only.
+        work_with:
+          type: boolean
+          description: Whether the caller may use this resource or change its content.
+        manage:
+          type: boolean
+          description: Whether the caller may change this resource's setup, rename it, or
+            move it.
+        stop:
+          type: boolean
+          description: Whether the caller may pause, archive, or delete this resource.
     CapabilityReadiness:
       type: string
       enum:
@@ -8058,6 +7563,8 @@ components:
           description: 'Whether the caller may change this assistant''s setup: exactly what
             `PATCH /v1/agents/{resource_id}` would allow. False on internal administration
             listings.'
+        viewer_actions:
+          $ref: '#/components/schemas/ViewerActions'
         active_chat_count:
           type: integer
           minimum: 0
@@ -8321,6 +7828,8 @@ components:
           $ref: '#/components/schemas/ResourcePosture'
         controls:
           $ref: '#/components/schemas/ResourceControls'
+        viewer_actions:
+          $ref: '#/components/schemas/ViewerActions'
         model_override:
           type: string
           description: Model selected for this session. Omitted when the session inherits
@@ -8961,6 +8470,8 @@ components:
           $ref: '#/components/schemas/ResourcePosture'
         controls:
           $ref: '#/components/schemas/ResourceControls'
+        viewer_actions:
+          $ref: '#/components/schemas/ViewerActions'
         name:
           type: string
           description: Stable identifier the action is called by.
@@ -9186,6 +8697,9 @@ components:
           description: Present for an organization-authored custom action.
         controls:
           $ref: '#/components/schemas/ResourceControls'
+          description: Present for an organization-authored custom action.
+        viewer_actions:
+          $ref: '#/components/schemas/ViewerActions'
           description: Present for an organization-authored custom action.
     ActionExecutionMetadata:
       type: object
@@ -10300,38 +9814,6 @@ components:
           $ref: '#/components/schemas/WorkerSocketMessageID'
         error:
           $ref: '#/components/schemas/WorkerSocketProtocolError'
-    ConnectionGovernance:
-      type: object
-      additionalProperties: false
-      required:
-      - id
-      - provider
-      - status
-      - controller
-      properties:
-        id:
-          type: string
-        provider:
-          type: string
-        status:
-          $ref: '#/components/schemas/IntegrationStatus'
-        controller:
-          $ref: '#/components/schemas/ConnectionController'
-    ConnectionGovernanceListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      - has_more
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/ConnectionGovernance'
-        has_more:
-          type: boolean
-        next_cursor:
-          type: string
     ConnectionBindings:
       type: object
       description: Exact accounts available to routine actions, keyed by provider. Each call
@@ -10387,326 +9869,6 @@ components:
             run starts only when it returns true. A condition that cannot be evaluated against
             an event records a `failed` run with `error_code` `trigger_condition_error` and
             starts nothing.
-    ConnectionExecutionMode:
-      type: string
-      enum:
-      - authenticated_human
-      - controller_background
-      - organization_background
-    ConnectionGrantAudience:
-      type: object
-      additionalProperties: false
-      required:
-      - organization
-      - principal_ids
-      properties:
-        organization:
-          type: boolean
-        principal_ids:
-          type: array
-          uniqueItems: true
-          items:
-            type: string
-    ConnectionGrant:
-      type: object
-      additionalProperties: false
-      description: Access for one assistant in conversations and routines, subject to connection
-        ownership and result audience restrictions.
-      required:
-      - id
-      - connection_id
-      - agent_id
-      - audience
-      - created_at
-      - connection_label
-      - provider
-      - controlled_by_organization
-      - can_manage
-      properties:
-        id:
-          type: string
-        connection_id:
-          type: string
-        agent_id:
-          type: string
-        audience:
-          $ref: '#/components/schemas/ConnectionGrantAudience'
-        created_at:
-          type: string
-          format: date-time
-        connection_label:
-          type: string
-        provider:
-          type: string
-        controlled_by_organization:
-          type: boolean
-        represented_actor:
-          type: string
-        identity_label:
-          type: string
-          description: The provider's short account identity, such as an email address. Presentation
-            only.
-        can_manage:
-          type: boolean
-    ConnectionGrantListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/ConnectionGrant'
-    MaterializeConnectionGrantsRequest:
-      type: object
-      additionalProperties: false
-      description: Grant current assistants access for both conversations and routines within
-        the specified audience and connection ownership restrictions. Does not assign tools.
-      required:
-      - agent_ids
-      - audience
-      properties:
-        agent_ids:
-          type: array
-          minItems: 1
-          maxItems: 500
-          uniqueItems: true
-          items:
-            type: string
-        audience:
-          $ref: '#/components/schemas/ConnectionGrantAudience'
-    SetConnectionDefaultRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - connection_id
-      - grant_id
-      - execution_mode
-      - context
-      properties:
-        connection_id:
-          type: string
-        grant_id:
-          type: string
-        execution_mode:
-          $ref: '#/components/schemas/ConnectionExecutionMode'
-        context:
-          $ref: '#/components/schemas/ConnectionDefaultContext'
-    ConnectionDefaultContext:
-      type: string
-      enum:
-      - self
-      - organization
-    ConnectionDefaultChoice:
-      type: object
-      additionalProperties: false
-      required:
-      - connection_id
-      - grant_id
-      - connection_label
-      - controlled_by_organization
-      properties:
-        connection_id:
-          type: string
-        grant_id:
-          type: string
-        connection_label:
-          type: string
-        represented_actor:
-          type: string
-        controlled_by_organization:
-          type: boolean
-    ConnectionDefaultPreference:
-      type: object
-      additionalProperties: false
-      required:
-      - provider
-      - state
-      - choices
-      properties:
-        provider:
-          type: string
-        state:
-          type: string
-          enum:
-          - unset
-          - selected
-          - unavailable
-        selection:
-          $ref: '#/components/schemas/ConnectionDefaultChoice'
-        choices:
-          type: array
-          items:
-            $ref: '#/components/schemas/ConnectionDefaultChoice'
-    ConnectionDefaultPreferenceListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/ConnectionDefaultPreference'
-    IntegrationStatus:
-      type: string
-      enum:
-      - active
-      - inactive
-      - expired
-      - confirmation_required
-      description: '`active` — integration is enabled and usable by agents. `inactive` — manually
-        disabled; no automatic expiry behavior. `expired` — token/credential has expired (e.g.,
-        OAuth token not refreshed).'
-    IntegrationTeamManagement:
-      type: object
-      additionalProperties: false
-      required:
-      - supported
-      - can_start
-      description: Server-evaluated eligibility for making this account team-managed in place.
-      properties:
-        supported:
-          type: boolean
-        can_start:
-          type: boolean
-        unavailable_reason:
-          type: string
-    Integration:
-      type: object
-      additionalProperties: false
-      description: Connection to an external provider such as Slack, GitHub, or a model service.
-        Agents and actions use integrations to find provider configuration without embedding
-        secrets in definitions. External identity is unique per (organization, owner, provider);
-        the same external account may have distinct personal, agent, and business rows.
-      required:
-      - id
-      - name
-      - provider
-      - status
-      - controller
-      - created_at
-      - updated_at
-      properties:
-        team_management:
-          $ref: '#/components/schemas/IntegrationTeamManagement'
-        connection_mode:
-          type: string
-          description: Immutable provider authorization mode.
-        represented_actor:
-          type: string
-          description: Verified actor represented by this connection.
-        confirmation_expires_at:
-          type: string
-          format: date-time
-          description: Deadline for confirming fresh replacement evidence, when required.
-        identity_label:
-          type: string
-          description: External account identity; safe metadata available in the governance
-            view.
-        id:
-          type: string
-          description: Unique identifier for this integration.
-        name:
-          type: string
-          description: 'Human-readable name, chosen by whoever connected it. Unique per `(org,
-            owner, provider)`: two people may each call their own mailbox "work", but two
-            org-shared connections may not.'
-        provider:
-          type: string
-          description: Free-form provider identifier (e.g. `openai`, `slack`, `github`). Immutable
-            after creation.
-        config:
-          type: object
-          additionalProperties: true
-          description: Provider-specific non-sensitive configuration stored as JSON. The shape
-            is provider-defined. Sensitive credentials are never returned in this field.
-        status:
-          $ref: '#/components/schemas/IntegrationStatus'
-          description: 'Current integration lifecycle state: `active`, `inactive`, or `expired`.'
-        status_reason:
-          type: string
-          description: Human-readable reason when `status` is `expired` (needs reconnect).
-        credentials_unreadable:
-          type: boolean
-          description: True when the stored credential cannot be decrypted by the running
-            platform. The connection still exists and its `status` is unchanged, but nothing
-            that needs the credential will work until an admin reconnects the integration.
-            Absent or `false` in the normal case.
-        controller:
-          allOf:
-          - $ref: '#/components/schemas/ConnectionController'
-          description: Who this connection belongs to, and the only axis that decides who
-            may use it. Absent means org-shared.
-        account_model:
-          allOf:
-          - $ref: '#/components/schemas/IntegrationAccountModel'
-          description: The provider's account model, repeated here so a client can render
-            a connection without also fetching the catalog.
-        created_by:
-          type: string
-          description: User ID of the org member who created this integration.
-        tags:
-          $ref: '#/components/schemas/TagMap'
-        created_at:
-          type: string
-          format: date-time
-          description: Timestamp when this integration was created.
-        updated_at:
-          type: string
-          format: date-time
-          description: Timestamp when this integration was last updated.
-    IntegrationConnectResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - kind
-      description: Unified integration-framework connect response. Redirect-style providers
-        return `kind=redirect` plus `redirect_url`; inline API-key and service-credential
-        providers return `kind=complete` plus the persisted integration row.
-      properties:
-        kind:
-          type: string
-          enum:
-          - redirect
-          - complete
-        redirect_url:
-          type: string
-          description: OAuth or install URL to visit when `kind=redirect`.
-        integration:
-          $ref: '#/components/schemas/Integration'
-    IntegrationAccountModel:
-      type: string
-      enum:
-      - personal
-      - workspace
-      - capability
-      description: |-
-        What one connection to a provider represents.
-
-        `personal` — one human's own account, and acting through it acts as that person (Gmail, Google Calendar, X). `workspace` — a shared external workspace the whole org acts within (Slack, Jira, GitHub). `capability` — a keyed service with no account identity behind it (Firecrawl, a model provider, a database).
-
-        It decides the default owner of a new connection and whether the connection is offered to an agent by default.
-    ConnectionController:
-      type: object
-      additionalProperties: false
-      required:
-      - kind
-      description: Lifecycle and grant authority. Control does not authorize organization-provider
-        content or agent execution.
-      properties:
-        kind:
-          type: string
-          enum:
-          - person
-          - organization
-        principal_id:
-          type: string
-          description: Human controller ID, present only for person control.
-        display_name:
-          type: string
-          description: Human controller display name, when available.
     AgentMessagingProvider:
       type: string
       enum:
@@ -13786,6 +12948,8 @@ components:
           $ref: '#/components/schemas/ResourcePosture'
         controls:
           $ref: '#/components/schemas/ResourceControls'
+        viewer_actions:
+          $ref: '#/components/schemas/ViewerActions'
         allowed_actions:
           type: array
           description: |-
@@ -14557,108 +13721,6 @@ components:
           type: string
         resume_cursor:
           type: string
-    SessionStreamFrame:
-      anyOf:
-      - $ref: '#/components/schemas/SessionUserMessagePayload'
-      - $ref: '#/components/schemas/AgentMessagePayload'
-      - $ref: '#/components/schemas/CompactionStartedPayload'
-      - $ref: '#/components/schemas/CompactionCreatedPayload'
-      - $ref: '#/components/schemas/CompactionFailedPayload'
-      - $ref: '#/components/schemas/TurnStartedPayload'
-      - $ref: '#/components/schemas/TurnWaitingPayload'
-      - $ref: '#/components/schemas/TurnCompletedPayload'
-      - $ref: '#/components/schemas/TurnFailedPayload'
-      - $ref: '#/components/schemas/TurnCancelledPayload'
-      - $ref: '#/components/schemas/NudgeEventPayload'
-      - $ref: '#/components/schemas/SessionMessagePreviewFrame'
-      - $ref: '#/components/schemas/SessionResyncFrame'
-      - $ref: '#/components/schemas/StreamEndFrame'
-      - $ref: '#/components/schemas/ToolCallPayload'
-      - $ref: '#/components/schemas/ToolResultPayload'
-      - $ref: '#/components/schemas/MessageUpsertFrame'
-      - $ref: '#/components/schemas/MessageBlockFrame'
-      - $ref: '#/components/schemas/MessageBlockPatchFrame'
-      - $ref: '#/components/schemas/MessageDeltaFrame'
-      description: |-
-        JSON payload of a single `data:` line on a turn's SSE response, paired with an `event: <event type>` line. The streaming responses of `startTurn` and `invokeAgent` use it. The response first replays the transcript messages committed after the cursor, then tails the turn live, and closes once the session is idle.
-
-        The `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.
-
-        Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>`. That `id:` is not a resume cursor: the inline stream cannot be resumed, and a repeated POST starts another turn unless it reuses the same `idempotency_key`. A client that loses the inline stream follows the turn on `streamSessionTranscript` from the acknowledgement's `resume_cursor` (`?cursor=`). Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, `compaction.started`, `compaction.failed`, and the transcript preview frames (`message.upsert`, `message.block`, `message.block.patch`, `message.delta`) are live-only and carry no `id:`. Streamed text arrives as `message.delta`, coalesced per block. `stream.end` is the final envelope on every deliberate server-side close and also carries no `id:`.
-    SessionMessagePreviewFrame:
-      type: object
-      additionalProperties: true
-      required:
-      - event_type
-      - id
-      - session_id
-      - turn_id
-      - role
-      - entry_type
-      - content
-      - metadata
-      description: Live-only, SessionMessage-compatible transcript preview for an in-flight
-        agent response segment. It carries no durable `seq`, transcript `sequence`, or stable
-        `message_id`; the committed row later replaces it by `turn_id` plus `metadata.response_message_index`.
-      properties:
-        event_type:
-          type: string
-          enum:
-          - session.message.preview
-        id:
-          type: string
-          description: Provisional live id. Do not persist or use as the durable message id.
-        session_id:
-          type: string
-          description: Session this preview belongs to.
-        agent_id:
-          type: string
-          description: Agent container executing the parent session, when known.
-        turn_id:
-          type: string
-          description: Agent turn that produced the preview.
-        live_sequence:
-          type: integer
-          format: int64
-          description: Monotonic per-turn sequence across all live-only session frames; use
-            to detect dropped live frames.
-        role:
-          $ref: '#/components/schemas/SessionMessageRole'
-        entry_type:
-          $ref: '#/components/schemas/SessionMessageEntryType'
-        content:
-          type: array
-          description: Ordered content blocks using the same canonical block shape as SessionMessage.
-          items:
-            $ref: '#/components/schemas/SessionContentBlock'
-        metadata:
-          type: object
-          additionalProperties: true
-          description: Must include `response_message_index`, the handoff key shared with
-            the durable transcript row.
-        emitted_at:
-          type: string
-          format: date-time
-          description: Server timestamp when this live preview frame was emitted.
-    SessionResyncFrame:
-      type: object
-      additionalProperties: false
-      required:
-      - event_type
-      - session_id
-      - reason
-      description: 'Live-only marker: the client missed live frames. Read the transcript again
-        with `getSessionTranscript` to reconcile the active turn.'
-      properties:
-        event_type:
-          type: string
-          enum:
-          - session.resync
-        session_id:
-          type: string
-        reason:
-          type: string
-          description: Machine-readable resync reason, e.g. `subscriber_overflow`.
     StreamEndFrame:
       type: object
       additionalProperties: false
@@ -14745,148 +13807,6 @@ components:
         ended_at:
           type: string
           format: date-time
-    SessionUserMessagePayload:
-      type: object
-      additionalProperties: true
-      required:
-      - message_id
-      - sequence
-      - role
-      - content
-      description: 'Payload of a `user.message` content event: the durable encoding of one
-        non-assistant transcript message — caller input, or a user-role message carrying tool
-        results. It mirrors the transcript row exactly, carrying the message identity (`message_id`
-        + `sequence`) and full content. Replaying these events reconstructs the same view
-        as reading the messages API.'
-      properties:
-        message_id:
-          type: string
-          description: Id of the transcript message this event mirrors.
-        sequence:
-          type: integer
-          format: int64
-          description: The mirrored message's per-session transcript sequence.
-        role:
-          $ref: '#/components/schemas/SessionMessageRole'
-          description: Transcript role of the message (e.g. `user`, `system`, or a user-role
-            message carrying tool results); never `assistant`.
-        content:
-          type: array
-          description: The message's full canonical content blocks (text, tool_result, …).
-          items:
-            $ref: '#/components/schemas/SessionContentBlock'
-        turn_id:
-          type: string
-          description: The agent turn that produced this message, when applicable.
-    TurnStartedPayload:
-      type: object
-      additionalProperties: true
-      description: 'Payload of a `turn.started` event. Empty: the turn is identified by the
-        envelope `turn_id`, so nothing is duplicated in the payload.'
-    AgentMessagePayload:
-      type: object
-      additionalProperties: true
-      required:
-      - message_id
-      - sequence
-      - role
-      - content
-      description: 'Payload of an `agent.message` content event: the durable encoding of one
-        assistant transcript message. Carries the message''s full structured content (text,
-        thinking, tool_use) plus the message identity (`message_id` + `sequence`). Replaying
-        these events reconstructs the same view as reading the messages API.'
-      properties:
-        message_id:
-          type: string
-          description: Id of the transcript message this event mirrors.
-        sequence:
-          type: integer
-          format: int64
-          description: The mirrored message's per-session transcript sequence.
-        role:
-          type: string
-          enum:
-          - assistant
-          description: Always `assistant`.
-        content:
-          type: array
-          description: The assistant message's full canonical content blocks (text, thinking,
-            tool_use).
-          items:
-            $ref: '#/components/schemas/SessionContentBlock'
-        turn_id:
-          type: string
-          description: The agent turn that produced this message.
-    ToolCallPayload:
-      type: object
-      additionalProperties: true
-      description: 'Payload of a live-only `tool.call` frame — an in-flight preview that a
-        tool was invoked during the active turn. Never persisted and carries no sequence:
-        the durable record of the call is the `tool_use` content block of the assistant message,
-        delivered as an `agent.message` event when the turn commits.'
-      properties:
-        tool_call_id:
-          type: string
-        tool_name:
-          type: string
-        input:
-          type: object
-          additionalProperties: true
-        live_sequence:
-          type: integer
-          format: int64
-          description: Monotonic per-turn sequence across all live-only session frames; use
-            to detect dropped live frames.
-        emitted_at:
-          type: string
-          format: date-time
-          description: Server timestamp when this live preview frame was emitted.
-    ToolResultPayload:
-      type: object
-      additionalProperties: true
-      description: 'Payload of a live-only `tool.result` frame — an in-flight preview that
-        a tool returned during the active turn. Never persisted and carries no sequence: the
-        durable record is the `tool_result` content block of the following transcript message,
-        delivered as a `user.message` event when the turn commits.'
-      properties:
-        tool_call_id:
-          type: string
-        tool_name:
-          type: string
-        content:
-          type: array
-          description: 'The tool result as canonical content blocks (e.g. `[{ "type": "text",
-            "text": "…" }]`), the same `SessionContentBlock` shape as the `tool_result` content
-            of the durable transcript message — so the live preview and the committed record
-            read identically. In practice the server collapses the result to a single `text`
-            block.'
-          items:
-            $ref: '#/components/schemas/SessionContentBlock'
-        display:
-          type: string
-        is_error:
-          type: boolean
-        error:
-          type: string
-        live_sequence:
-          type: integer
-          format: int64
-          description: Monotonic per-turn sequence across all live-only session frames; use
-            to detect dropped live frames.
-        emitted_at:
-          type: string
-          format: date-time
-          description: Server timestamp when this live preview frame was emitted.
-    TurnWaitingPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        turn_id:
-          type: string
-        reason:
-          type: string
-        wait:
-          $ref: '#/components/schemas/SessionTranscriptWait'
     SessionTranscriptWait:
       type: object
       additionalProperties: false
@@ -14933,150 +13853,6 @@ components:
           format: date-time
           description: When the call paused. The chat's timer for the wait counts from here,
             not from the start of the turn.
-    TurnCompletedPayload:
-      type: object
-      additionalProperties: true
-      description: Payload of a `turn.completed` event — the terminal idle marker carrying
-        token usage. The assistant output is not duplicated here; it is delivered as `agent.message`
-        content events when the transcript commits. The same usage is readable after the fact
-        on the turn resource, so a consumer that missed the pulse never has to replay the
-        stream for it.
-      properties:
-        usage:
-          $ref: '#/components/schemas/AgentTurnUsage'
-          description: Token usage of the completed turn. A failed turn emits `turn.failed`,
-            which carries no usage; read a failed turn's usage from the turn resource.
-    TurnFailedPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        error:
-          type: string
-        error_type:
-          type: string
-    TurnCancelledPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        reason:
-          type: string
-    NudgeEventPayload:
-      type: object
-      additionalProperties: true
-      required:
-      - nudge_id
-      - turn_id
-      - delivery
-      - status
-      description: Live reconciliation hint emitted for `nudge.queued`, `nudge.delivered`,
-        and `nudge.cancelled`. Re-read the queue resource after receiving it; this pulse is
-        not durable replay state.
-      properties:
-        nudge_id:
-          type: string
-        turn_id:
-          type: string
-        delivery:
-          $ref: '#/components/schemas/SessionNudgeDelivery'
-        status:
-          $ref: '#/components/schemas/SessionNudgeStatus'
-    CompactionTrigger:
-      type: string
-      enum:
-      - auto
-      - manual
-      - append
-      description: What started a compaction pass. `auto` is the threshold-gated pass a turn
-        runs before it loads its context; `manual` is a compaction turn queued by a compact
-        request. `append` appears only on summaries written before compaction moved into turns.
-    CompactionStartedPayload:
-      type: object
-      additionalProperties: true
-      description: 'Payload of a `compaction.started` event, emitted immediately before the
-        summarizer call and only once every gate has passed — so receiving it means a pass
-        is really running. Live-only: it is not replayed on reconnect, so a client that connects
-        mid-pass reads the session''s `compaction` field instead. Every started pass is followed
-        by exactly one `compaction.created` or `compaction.failed`.'
-      properties:
-        trigger:
-          $ref: '#/components/schemas/CompactionTrigger'
-        from_sequence:
-          type: integer
-          description: Lowest transcript sequence this pass is summarizing.
-        through_sequence:
-          type: integer
-          description: Highest transcript sequence this pass is summarizing.
-        message_count:
-          type: integer
-          description: Number of transcript messages this pass is folding into the summary.
-        estimated_tokens:
-          type: integer
-          description: Estimated token size of the window being summarized.
-        summary_model:
-          type: string
-          description: Model that will produce the summary.
-    CompactionFailedPayload:
-      type: object
-      additionalProperties: true
-      description: 'Payload of a `compaction.failed` event — the other terminal outcome of
-        a started pass. It guarantees an indicator opened on `compaction.started` always comes
-        down, instead of hanging on a pass that produced no summary. Live-only, like `compaction.started`:
-        a failed pass appends nothing to the transcript, so there is no durable row to replay.
-        The transcript is unchanged; the next pass recomputes from the same boundary.'
-      properties:
-        trigger:
-          $ref: '#/components/schemas/CompactionTrigger'
-        from_sequence:
-          type: integer
-          description: Lowest transcript sequence the failed pass was summarizing.
-        through_sequence:
-          type: integer
-          description: Highest transcript sequence the failed pass was summarizing.
-        error_type:
-          type: string
-          description: 'Machine-readable failure category. Currently `summarizer_error`, `timeout`,
-            `empty_summary`, or `storage_error`. Treat it as an open string: new categories
-            may be added, and a client that switches on it should fall through to a generic
-            "compaction failed".'
-        error_message:
-          type: string
-          description: Truncated failure detail. Diagnostics live in the server logs, not
-            here.
-    CompactionCreatedPayload:
-      type: object
-      additionalProperties: true
-      description: 'Payload of a `compaction.created` event, emitted when the session transcript
-        is summarized. The event is non-terminal: it never closes the session stream, so a
-        live consumer observes a compaction landing inline.'
-      properties:
-        trigger:
-          $ref: '#/components/schemas/CompactionTrigger'
-        message_id:
-          type: string
-          description: Id of the compaction summary message appended to the transcript.
-        sequence:
-          type: integer
-          format: int64
-          description: The summary message's per-session transcript sequence.
-        role:
-          type: string
-          description: Transcript role of the summary entry.
-        content:
-          type: array
-          description: The summary's full canonical content blocks, so replaying the stream
-            reconstructs the compaction entry exactly.
-          items:
-            $ref: '#/components/schemas/SessionContentBlock'
-        covers_through_sequence:
-          type: integer
-          description: Highest message sequence the new summary covers — the before/after
-            boundary.
-        message_count:
-          type: integer
-          description: Number of transcript messages folded into this summary.
-        summary_model:
-          type: string
-          description: Model that produced the summary.
     SessionContentBlock:
       oneOf:
       - $ref: '#/components/schemas/SessionTextBlock'
@@ -15715,90 +14491,6 @@ components:
             stream with `after_sequence=next_sequence` to receive the in-flight turn and everything
             after it — the stream and the messages API share one `sequence` cursor, so there
             is no overlap and no gap.
-    AppendSessionMessagesRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - messages
-      properties:
-        messages:
-          type: array
-          minItems: 1
-          description: Messages to append to the session, in order.
-          items:
-            $ref: '#/components/schemas/AppendSessionMessage'
-        token_input_total:
-          type: integer
-          minimum: 0
-          description: Fresh (uncached) input tokens to add to this session's lifetime total.
-        token_output_total:
-          type: integer
-          minimum: 0
-          description: Output tokens to add to this session's lifetime total.
-        cache_read_input_total:
-          type: integer
-          minimum: 0
-          description: Prompt-cache-read input tokens to add to this session's lifetime total.
-        cache_creation_input_total:
-          type: integer
-          minimum: 0
-          description: Prompt-cache-write input tokens to add to this session's lifetime total.
-        model:
-          type: string
-          description: Model that produced these messages.
-        model_provider:
-          type: string
-          description: Provider for the supplied `model`.
-    AppendSessionMessage:
-      type: object
-      additionalProperties: false
-      description: Message payload to append to an existing durable session.
-      required:
-      - role
-      - content
-      properties:
-        role:
-          $ref: '#/components/schemas/SessionMessageRole'
-          description: Role to store for this appended message.
-        content:
-          type: array
-          description: Ordered content blocks (text, tool calls, tool results, images). Blocks
-            of type `reminder` are host-managed runtime context and are rejected on this surface.
-          items:
-            type: object
-            additionalProperties: true
-        metadata:
-          type: object
-          additionalProperties: true
-          description: Free-form caller metadata for this message.
-        created_at:
-          type: string
-          format: date-time
-          description: Caller-supplied creation timestamp. The server assigns one if absent.
-    InvokeAgentRequest:
-      type: object
-      additionalProperties: false
-      description: 'A single compound invocation: which stored agent to run, how to resolve
-        the session, the caller''s input message, and optional channel routing context. `operation.timeout_seconds`
-        must be at least one and takes precedence for this admitted turn.'
-      required:
-      - agent_ref
-      - input
-      properties:
-        agent_ref:
-          $ref: '#/components/schemas/AgentRef'
-        session:
-          $ref: '#/components/schemas/InvokeSessionSpec'
-        operation:
-          $ref: '#/components/schemas/AgentTurnOperationPolicy'
-        input:
-          $ref: '#/components/schemas/InvokeInput'
-        output:
-          $ref: '#/components/schemas/TurnOutputSpec'
-          description: Optional structured-output contract for this turn. Read the validated
-            value from the completed turn's `output`.
-        channel_context:
-          $ref: '#/components/schemas/ChannelContext'
     AgentTurnOperationPolicy:
       type: object
       additionalProperties: false
@@ -15811,71 +14503,6 @@ components:
           format: int64
           minimum: 1
           description: Overall active-execution budget for this logical turn.
-    AgentRef:
-      type: object
-      additionalProperties: false
-      minProperties: 1
-      description: Reference to an agent in this org. Supply exactly one of `id` (the agent
-        identifier) or `name` (the org-unique agent name). A blueprint-binding reference form
-        is reserved for a later release and is not resolvable yet.
-      properties:
-        id:
-          type: string
-          description: Agent identifier.
-        name:
-          type: string
-          description: Org-unique agent name.
-    InvokeSessionSpec:
-      type: object
-      additionalProperties: false
-      description: 'How to resolve or create the session this invocation runs in. Mirrors
-        the create-session policy: `mode` + `session_key` resolve a durable conversation for
-        the agent, and the remaining fields seed a session that does not already exist (they
-        are ignored when an existing session is resolved). Omit the whole object to use a
-        single default session per agent in `continue_or_create` mode.'
-      properties:
-        mode:
-          type: string
-          enum:
-          - new
-          - continue
-          - continue_or_create
-          description: '`continue_or_create` (default) resolves an existing session for the
-            `session_key` or creates one; `new` always creates a fresh session; `continue`
-            resolves an existing session and fails if none exists.'
-        session_key:
-          type: string
-          description: Stable key identifying the conversation within the agent.
-        title:
-          type: string
-          description: Human-friendly title for a newly created session.
-        owner:
-          $ref: '#/components/schemas/ResourceOwner'
-        visibility:
-          $ref: '#/components/schemas/ResourceVisibility'
-        model_override:
-          type: string
-          description: Model to use for a newly created session. Overrides the stored agent's
-            model and is ignored when an existing session is resolved. Creating a session
-            for a worker-routed agent returns `400 invalid_argument` with `details.argument
-            = model_override`.
-        compaction_policy:
-          $ref: '#/components/schemas/SessionCompactionPolicy'
-          description: Per-session compaction overrides applied when the session is first
-            created. Merged over the agent's default policy and server defaults. Ignored when
-            an existing session is resolved.
-        retention:
-          $ref: '#/components/schemas/SessionRetentionPolicy'
-          description: Retention policy applied when the session is first created. Ignored
-            when an existing session is resolved.
-        thinking_effort:
-          $ref: '#/components/schemas/ThinkingEffort'
-          description: Reasoning-effort override applied when the session is first created.
-            Overrides the agent default. Ignored when an existing session is resolved.
-        metadata:
-          type: object
-          additionalProperties: true
-          description: Free-form caller metadata stored on a newly created session.
     ContextIncludeParam:
       type: string
       enum:
@@ -15932,55 +14559,6 @@ components:
             objects/arrays, `oneOf`/`anyOf`/`allOf`, and `nullable`. Not supported: `$ref`/`$defs`,
             `if`/`then`/`else`, `const` (use a one-value `enum`), `patternProperties`, and
             `prefixItems`.'
-    InvokeInput:
-      type: object
-      additionalProperties: false
-      description: The caller input message that starts the agent turn.
-      required:
-      - content
-      properties:
-        content:
-          type: array
-          minItems: 1
-          description: 'Ordered content blocks for the input message. Canonical documents
-            use `{ "type": "document", "source": { "type": "base64", "media_type": "application/pdf",
-            "data": "..." }, "title": "report.pdf" }` or a URL source. Mobius also translates
-            supported OpenAI `input_file` and Chat Completions `file` blocks at ingestion.'
-          items:
-            type: object
-            additionalProperties: true
-        idempotency_key:
-          type: string
-          description: Dedup key scoped to the resolved session. A repeat call with the same
-            key returns the existing invocation and writes nothing new; it never restarts
-            a terminal turn. Derive it from the provider event id for Slack/Telegram webhook
-            retries. Omitting it or sending a blank value disables retry deduplication.
-        context:
-          $ref: '#/components/schemas/RuntimeContext'
-        metadata:
-          type: object
-          additionalProperties: true
-          description: Free-form caller metadata attached to the input message.
-    ChannelContext:
-      type: object
-      additionalProperties: false
-      description: Optional messaging provider/channel routing context (Slack, Telegram, …).
-        Persisted on the started turn's input-message metadata under a `channel_context` key
-        so chat history and support views can trace a turn back to the provider thread it
-        came from.
-      properties:
-        provider:
-          type: string
-          description: Messaging provider, e.g. `slack` or `telegram`.
-        workspace_id:
-          type: string
-          description: Provider workspace/team identifier.
-        channel_id:
-          type: string
-          description: Provider channel or chat identifier.
-        thread_id:
-          type: string
-          description: Provider thread identifier within the channel.
     CreateSessionRequest:
       type: object
       additionalProperties: false
@@ -16032,108 +14610,104 @@ components:
           type: object
           additionalProperties: true
           description: Free-form caller metadata for the session.
-    StartTurnRequest:
+    SessionInputRequest:
       type: object
       additionalProperties: false
-      description: Caller input that starts an agent turn in a session. `operation.timeout_seconds`
-        must be at least one and takes precedence for this admitted turn.
+      description: Caller input for a session. `delivery` picks whether it starts a turn or
+        steers the running one. `operation.timeout_seconds` must be at least one and takes
+        precedence for the admitted turn.
       required:
       - content
       properties:
-        role:
-          type: string
-          enum:
-          - user
-          default: user
-          description: Role of the input message. A turn carries caller input, so only `user`
-            is accepted; defaults to `user` when omitted.
         content:
           type: array
           minItems: 1
           description: 'Ordered content blocks for the input message. Canonical documents
             use `{ "type": "document", "source": { "type": "base64", "media_type": "application/pdf",
             "data": "..." }, "title": "report.pdf" }` or a URL source. Mobius also translates
-            supported OpenAI `input_file` and Chat Completions `file` blocks at ingestion.'
+            supported OpenAI `input_file` and Chat Completions `file` blocks at ingestion.
+            With `delivery: current_turn`, every block must be `text`.'
           items:
             type: object
             additionalProperties: true
+        delivery:
+          $ref: '#/components/schemas/SessionInputDelivery'
         idempotency_key:
           type: string
+          maxLength: 255
           description: Dedup key scoped to the session. A repeat call with the same key returns
-            the existing invocation and writes nothing new; it never restarts a terminal turn.
-            Omitting it or sending a blank value disables retry deduplication.
+            the original acknowledgement and writes nothing new; it never restarts a terminal
+            turn. Direction reused with different content returns `409`. Omitting it or sending
+            a blank value disables retry deduplication.
         operation:
           $ref: '#/components/schemas/AgentTurnOperationPolicy'
         context:
           $ref: '#/components/schemas/RuntimeContext'
         output:
           $ref: '#/components/schemas/TurnOutputSpec'
-          description: Optional structured-output contract for this turn. Read the validated
-            value from the completed turn's `output`.
+          description: 'Optional structured-output contract for this turn. Read the validated
+            value from the completed turn''s `output`. Only with `delivery: new_turn`.'
         metadata:
           type: object
           additionalProperties: true
-          description: Free-form caller metadata attached to the input message.
-    TurnAck:
-      type: object
-      additionalProperties: false
-      description: Acknowledgement that a turn started, with a stream cursor.
-      required:
-      - session
-      - turn
-      - resume_cursor
-      - after_sequence
-      properties:
-        session:
-          $ref: '#/components/schemas/Session'
-        turn:
-          $ref: '#/components/schemas/AgentTurn'
-        user_message:
-          $ref: '#/components/schemas/SessionTranscriptMessage'
-          description: Durable caller row created for this turn.
-        resume_cursor:
-          type: string
-          minLength: 1
-          description: Opaque stable v2 lower boundary for streaming and terminal settlement.
-            It precedes every durable message owned by the returned turn and is safe for both
-            fresh and deduplicated invocations. A deduplicated retry may replay already-observed
-            frames.
-        after_sequence:
-          type: integer
-          format: int64
-          description: The transcript message `sequence` this turn starts after. To follow
-            the turn, pass `resume_cursor` to `GET .../transcript/stream`.
-        deduped:
-          type: boolean
-          description: True when a repeated idempotency key returned an existing turn without
-            restarting it.
-    NudgeSessionRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - content
-      properties:
-        content:
-          type: string
-          minLength: 1
-          maxLength: 32768
-          description: User direction to deliver at the next iteration boundary.
-        idempotency_key:
-          type: string
-          maxLength: 255
-          description: Dedup key scoped to the session. Reusing the key with identical content
-            returns the original nudge request; different content conflicts.
-        metadata:
-          type: object
-          additionalProperties: true
-          description: Free-form caller metadata retained with the nudge request.
+          description: Free-form caller metadata attached to the input.
         wake:
           type: boolean
           default: false
           description: |-
-            When true and the target turn is waiting on an interruptible agent tool, resolve that tool call with `{ "interrupted": true, "reason": "user_direction" }` and resume the same turn. Running and newly queued turns ignore this field.
+            Only with `delivery: current_turn`. When true and the target turn is waiting on an interruptible agent tool, resolve that tool call with `{ "interrupted": true, "reason": "user_direction" }` and resume the same turn. Running and newly queued turns ignore this field. Resend the same content and `idempotency_key` with `wake` to wake a turn for direction that is already queued.
 
-            A turn waiting on the outcome of a question it asked with `mobius.interaction.create` (`mobius_event_wait` on `interaction.resolved`) is resumed by every nudge, with or without this field. The question stays open: the tool result also carries `interaction_id` and `interaction_status: "pending"`, and the question's outcome still arrives in the conversation as its own input.
+            A turn waiting on the outcome of a question it asked with `mobius.interaction.create` (`mobius_event_wait` on `interaction.resolved`) is resumed by every direction, with or without this field. The question stays open: the tool result also carries `interaction_id` and `interaction_status: "pending"`, and the question's outcome still arrives in the conversation as its own input.
+    SessionInputAck:
+      type: object
+      additionalProperties: false
+      description: 'Acknowledgement of accepted input: where it went, the turn carrying it,
+        and a cursor to follow that turn.'
+      required:
+      - delivery
+      - session
+      - turn
+      - after_sequence
+      - deduped
+      - woke_turn
+      properties:
+        delivery:
+          $ref: '#/components/schemas/SessionInputOutcome'
+        session:
+          $ref: '#/components/schemas/Session'
+        turn:
+          $ref: '#/components/schemas/AgentTurn'
+          description: For `new_turn`, the turn that carries the input. For `current_turn`,
+            the turn the direction is queued for. For `queued`, the running turn the direction
+            waits behind.
+        user_message:
+          $ref: '#/components/schemas/SessionTranscriptMessage'
+          description: Durable caller row that carries the input. Present exactly when `delivery`
+            is `new_turn`.
+        resume_cursor:
+          type: string
+          minLength: 1
+          description: Present exactly when `delivery` is `new_turn`. Opaque stable v2 lower
+            boundary for streaming and terminal settlement. It precedes every durable message
+            owned by the returned turn and is safe for both fresh and deduplicated invocations.
+            A deduplicated retry may replay already-observed frames.
+        after_sequence:
+          type: integer
+          format: int64
+          description: The transcript message `sequence` the turn follows from. To follow
+            a started turn, pass `resume_cursor` to `GET .../transcript/stream`.
+        deduped:
+          type: boolean
+          description: True when a repeated idempotency key returned the original input without
+            writing again.
+        woke_turn:
+          type: boolean
+          description: True when `wake` interrupted a waiting tool and requeued the turn.
+        nudge:
+          $ref: '#/components/schemas/SessionNudge'
+          description: 'The nudge queue entry, present for a `delivery: current_turn` request.
+            Follow queued direction through it, and cancel it with `cancelNudge` while it
+            is `pending`.'
     SessionNudgeStatus:
       type: string
       enum:
@@ -16141,18 +14715,36 @@ components:
       - delivered
       - cancelled
       description: Durable nudge queue lifecycle status.
-    SessionNudgeDelivery:
+    SessionInputDelivery:
       type: string
       enum:
-      - current_turn
       - new_turn
-      description: '`current_turn` means the input targets an existing turn and will reach
-        the agent as contextual runtime input at that turn''s next safe boundary. `new_turn`
-        means the input was converted to a regular user message carried by a fresh direct-session
-        turn (the same shape as a send); the nudge is `delivered` the moment that conversion
-        commits. A nudge accepted as `current_turn` converts to `new_turn` if its target turn
-        ends before absorbing it, so the durable record reflects how the input was ultimately
-        routed — the acknowledgement reflects routing at admission time.'
+      - current_turn
+      default: new_turn
+      description: '`new_turn` starts a turn that carries the input as a regular user message.
+        `current_turn` targets an existing turn: the input reaches the agent as direction
+        at that turn''s next safe boundary. Direction that no turn can absorb becomes a regular
+        user message carried by a fresh turn, and its nudge is `delivered` the moment that
+        conversion commits. A nudge accepted for a turn converts the same way if that turn
+        ends before absorbing it, so the nudge record reflects how the input was finally routed.'
+    SessionInputOutcome:
+      type: string
+      enum:
+      - new_turn
+      - current_turn
+      - queued
+      description: |-
+        What the input became when the request was answered.
+
+        - `new_turn`: the input is a user message on a turn. The
+        acknowledgement always carries `user_message` and `resume_cursor`;
+        follow the turn on the transcript stream.
+        - `current_turn`: the input is direction queued for the running turn,
+        which receives it at its next safe boundary.
+        - `queued`: the input is direction waiting behind a turn someone else
+        is running. It starts the next turn once that turn ends.
+
+        For `current_turn` and `queued`, follow the input through `nudge`.
     SessionNudgeTurn:
       type: object
       additionalProperties: false
@@ -16182,7 +14774,7 @@ components:
         status:
           $ref: '#/components/schemas/SessionNudgeStatus'
         delivery:
-          $ref: '#/components/schemas/SessionNudgeDelivery'
+          $ref: '#/components/schemas/SessionInputDelivery'
         content:
           type: string
           description: Exact user direction supplied when the nudge was queued.
@@ -16219,40 +14811,6 @@ components:
           type: string
           nullable: true
           description: Opaque continuation cursor, or null at the end.
-    SessionNudgeAck:
-      type: object
-      additionalProperties: false
-      required:
-      - nudge_id
-      - status
-      - delivery
-      - session
-      - turn
-      - after_sequence
-      - deduped
-      - woke_turn
-      properties:
-        nudge_id:
-          type: string
-          description: Stable id of the durable nudge mailbox row.
-        status:
-          $ref: '#/components/schemas/SessionNudgeStatus'
-        delivery:
-          $ref: '#/components/schemas/SessionNudgeDelivery'
-        session:
-          $ref: '#/components/schemas/Session'
-        turn:
-          $ref: '#/components/schemas/AgentTurn'
-        after_sequence:
-          type: integer
-          format: int64
-          description: Current transcript sequence cursor for following the target turn.
-        deduped:
-          type: boolean
-          description: True when an existing idempotent nudge request was returned.
-        woke_turn:
-          type: boolean
-          description: True when wake interrupted a waiting tool and requeued this turn.
     SessionEventSubscriptionFilter:
       type: object
       additionalProperties: false
@@ -16688,6 +15246,8 @@ components:
           $ref: '#/components/schemas/ResourceContainer'
         posture:
           $ref: '#/components/schemas/ResourcePosture'
+        viewer_actions:
+          $ref: '#/components/schemas/ViewerActions'
         name:
           type: string
           description: Display name or relative virtual path. Forward slash may be used to
@@ -17143,6 +15703,8 @@ components:
             - resume
             - delete
             - invite
+        viewer_actions:
+          $ref: '#/components/schemas/ViewerActions'
         posture:
           $ref: '#/components/schemas/ResourcePosture'
         audience:
@@ -18603,6 +17165,8 @@ components:
           $ref: '#/components/schemas/ResourcePosture'
         controls:
           $ref: '#/components/schemas/ResourceControls'
+        viewer_actions:
+          $ref: '#/components/schemas/ViewerActions'
         name:
           type: string
           pattern: ^[a-z][a-z0-9_]*$
@@ -19101,6 +17665,8 @@ components:
           $ref: '#/components/schemas/ChannelVisibility'
         access:
           $ref: '#/components/schemas/ChannelAccess'
+        viewer_actions:
+          $ref: '#/components/schemas/ViewerActions'
         last_seq:
           type: integer
           format: int64
@@ -20022,6 +18588,8 @@ components:
           $ref: '#/components/schemas/ResourceOwner'
         visibility:
           $ref: '#/components/schemas/ResourceVisibility'
+        viewer_actions:
+          $ref: '#/components/schemas/ViewerActions'
         created_at:
           type: string
           format: date-time
@@ -20274,9 +18842,6 @@ x-tagGroups:
 - name: Jobs
   tags:
   - jobs
-- name: Integrations
-  tags:
-  - integrations
 - name: Billing Endpoints
   tags:
   - billing

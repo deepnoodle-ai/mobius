@@ -303,13 +303,49 @@ test("smoke: synthetic webhook delivery posts signed Mobius envelope", async () 
   );
 });
 
-test("client: invokeAgent posts the compound invoke request shape", async () => {
+test("client: createSession posts the resolve-or-create request", async () => {
+  let requestedURL = "";
+  let requestMethod = "";
+  let requestBody = "";
+  const restore = installFakeFetch({
+    status: 200,
+    body: inputAck("sess_1", "turn_1", 7).session,
+    capture: (input, init) => {
+      requestedURL = typeof input === "string" ? input : input.toString();
+      requestMethod = init?.method ?? "GET";
+      requestBody = String(init?.body ?? "");
+    },
+  });
+  try {
+    const client = new Client({
+      apiKey: "mbx_test",
+      baseURL: "https://api.example.invalid",
+    });
+    const session = await client.createSession({
+      agent_id: "agent_1",
+      session_key: "app:acct_1:user_2",
+      model_override: "claude-sonnet-5",
+    });
+    assert.equal(session.id, "sess_1");
+  } finally {
+    restore();
+  }
+  assert.equal(requestMethod, "POST");
+  assert.equal(requestedURL, "https://api.example.invalid/v1/sessions");
+  assert.deepEqual(JSON.parse(requestBody), {
+    agent_id: "agent_1",
+    session_key: "app:acct_1:user_2",
+    model_override: "claude-sonnet-5",
+  });
+});
+
+test("client: sendSessionInput starts a turn and returns its transcript", async () => {
   let requestedURL = "";
   let requestBody = "";
   let idempotencyHeader: string | null = null;
   const restore = installFakeFetch({
     status: 202,
-    body: turnAck("sess_1", "turn_1", 7),
+    body: inputAck("sess_1", "turn_1", 7),
     capture: (input, init) => {
       requestedURL = typeof input === "string" ? input : input.toString();
       requestBody = String(init?.body ?? "");
@@ -321,18 +357,22 @@ test("client: invokeAgent posts the compound invoke request shape", async () => 
       apiKey: "mbx_test",
       baseURL: "https://api.example.invalid",
     });
-    const turn = await client.invokeAgent({
-      agentId: "agent_1",
+    const result = await client.sendSessionInput("sess_1", {
       content: [{ type: "text", text: "hi" }],
       context: [{ name: "naming-board", content: "Chosen: none" }],
       idempotencyKey: "evt_1",
-      session: {
-        session_key: "app:acct_1:user_2",
-        model_override: "claude-sonnet-5",
-      },
       operation: { timeout_seconds: 90 },
       output: { schema: { type: "object" } },
+      metadata: { source: "slack" },
     });
+    assert.equal(result.delivery, "new_turn");
+    assert.equal(result.sessionId, "sess_1");
+    assert.equal(result.turnId, "turn_1");
+    assert.equal(result.deduped, false);
+    assert.equal(result.wokeTurn, false);
+    assert.equal(result.nudge, undefined);
+    const turn = result.turn;
+    assert.ok(turn);
     assert.equal(turn.afterSequence, 7);
     assert.equal(turn.sessionId, "sess_1");
     assert.equal(turn.id, "turn_1");
@@ -360,71 +400,42 @@ test("client: invokeAgent posts the compound invoke request shape", async () => 
   }
   assert.equal(
     requestedURL,
-    "https://api.example.invalid/v1/agents/invoke",
-  );
-  assert.match(requestBody, /"agent_ref":\{"id":"agent_1"\}/);
-  assert.match(requestBody, /"idempotency_key":"evt_1"/);
-  assert.equal(idempotencyHeader, "evt_1");
-  assert.match(requestBody, /"context":\[\{"name":"naming-board","content":"Chosen: none"\}\]/);
-  assert.match(requestBody, /"session_key":"app:acct_1:user_2"/);
-  assert.match(requestBody, /"model_override":"claude-sonnet-5"/);
-  // The stored agent is the sole definition authority: model_override above is
-  // the one execution override an invocation carries, so no inline config.
-  assert.doesNotMatch(requestBody, /"config":\{/);
-  assert.match(requestBody, /"operation":\{"timeout_seconds":90\}/);
-  assert.match(requestBody, /"output":\{"schema":\{"type":"object"\}\}/);
-});
-
-test("client: startTurn passes runtime context to an existing session", async () => {
-  let requestedURL = "";
-  let requestBody = "";
-  let idempotencyHeader: string | null = null;
-  const restore = installFakeFetch({
-    status: 202,
-    body: turnAck("sess_1", "turn_1", 7),
-    capture: (input, init) => {
-      requestedURL = typeof input === "string" ? input : input.toString();
-      requestBody = String(init?.body ?? "");
-      idempotencyHeader = new Headers(init?.headers).get("Idempotency-Key");
-    },
-  });
-  try {
-    const client = new Client({
-      apiKey: "mbx_test",
-      baseURL: "https://api.example.invalid",
-    });
-    const turn = await client.startTurn("sess_1", {
-      content: [{ type: "text", text: "hi" }],
-      context: [{ name: "naming-board", content: "Chosen: none" }],
-      idempotencyKey: "evt_1",
-      operation: { timeout_seconds: 45 },
-      output: { schema: { type: "object" } },
-    });
-    assert.equal(turn.id, "turn_1");
-  } finally {
-    restore();
-  }
-  assert.equal(
-    requestedURL,
-    "https://api.example.invalid/v1/sessions/sess_1/turns",
+    "https://api.example.invalid/v1/sessions/sess_1/inputs",
   );
   assert.deepEqual(JSON.parse(requestBody), {
-    role: "user",
     content: [{ type: "text", text: "hi" }],
-    context: [{ name: "naming-board", content: "Chosen: none" }],
     idempotency_key: "evt_1",
-    operation: { timeout_seconds: 45 },
+    operation: { timeout_seconds: 90 },
+    context: [{ name: "naming-board", content: "Chosen: none" }],
     output: { schema: { type: "object" } },
+    metadata: { source: "slack" },
   });
   assert.equal(idempotencyHeader, "evt_1");
 });
 
-test("client: invokeAgent does not mark mode new as replay-safe", async () => {
-  let idempotencyHeader: string | null = null;
+test("client: sendSessionInput reports direction for a running turn", async () => {
   let requestBody = "";
+  let idempotencyHeader: string | null = null;
+  const nudge = {
+    id: "nudge_1",
+    status: "pending",
+    delivery: "current_turn",
+    content: "Use the shorter name",
+    turn: { id: "turn_1", status: "waiting" },
+    sender_principal_id: "principal_1",
+    created_at: "2026-07-14T12:00:00Z",
+  };
+  const ack = inputAck("sess_1", "turn_1", 7);
   const restore = installFakeFetch({
     status: 202,
-    body: turnAck("sess_1", "turn_1", 7),
+    body: {
+      ...ack,
+      delivery: "current_turn",
+      user_message: undefined,
+      resume_cursor: undefined,
+      woke_turn: true,
+      nudge,
+    },
     capture: (_input, init) => {
       requestBody = String(init?.body ?? "");
       idempotencyHeader = new Headers(init?.headers).get("Idempotency-Key");
@@ -432,26 +443,37 @@ test("client: invokeAgent does not mark mode new as replay-safe", async () => {
   });
   try {
     const client = new Client({ apiKey: "mbx_test" });
-    await client.invokeAgent({
-      agentName: "support",
-      content: [{ type: "text", text: "hi" }],
-      idempotencyKey: "evt_1",
-      session: { mode: "new" },
+    const result = await client.sendSessionInput("sess_1", {
+      content: [{ type: "text", text: "Use the shorter name" }],
+      delivery: "current_turn",
+      idempotencyKey: "  event_2  ",
+      wake: true,
     });
+    assert.equal(result.delivery, "current_turn");
+    assert.equal(result.turnId, "turn_1");
+    assert.equal(result.wokeTurn, true);
+    assert.equal(result.turn, undefined);
+    assert.equal(result.nudge?.id, "nudge_1");
+    assert.equal(result.nudge?.status, "pending");
   } finally {
     restore();
   }
 
-  assert.equal(JSON.parse(requestBody).input.idempotency_key, "evt_1");
-  assert.equal(idempotencyHeader, null);
+  assert.deepEqual(JSON.parse(requestBody), {
+    content: [{ type: "text", text: "Use the shorter name" }],
+    delivery: "current_turn",
+    idempotency_key: "event_2",
+    wake: true,
+  });
+  assert.equal(idempotencyHeader, "event_2");
 });
 
-test("client: invokeAgent omits a whitespace-only idempotency key", async () => {
+test("client: sendSessionInput omits a whitespace-only idempotency key", async () => {
   let idempotencyHeader: string | null = null;
   let requestBody = "";
   const restore = installFakeFetch({
     status: 202,
-    body: turnAck("sess_1", "turn_1", 7),
+    body: inputAck("sess_1", "turn_1", 7),
     capture: (_input, init) => {
       requestBody = String(init?.body ?? "");
       idempotencyHeader = new Headers(init?.headers).get("Idempotency-Key");
@@ -459,8 +481,7 @@ test("client: invokeAgent omits a whitespace-only idempotency key", async () => 
   });
   try {
     const client = new Client({ apiKey: "mbx_test" });
-    await client.invokeAgent({
-      agentName: "support",
+    await client.sendSessionInput("sess_1", {
       content: [{ type: "text", text: "hi" }],
       idempotencyKey: "  \t  ",
     });
@@ -468,33 +489,40 @@ test("client: invokeAgent omits a whitespace-only idempotency key", async () => 
     restore();
   }
 
-  assert.equal("idempotency_key" in JSON.parse(requestBody).input, false);
+  assert.equal("idempotency_key" in JSON.parse(requestBody), false);
   assert.equal(idempotencyHeader, null);
 });
 
-test("client: nudgeSession mirrors its normalized idempotency key", async () => {
-  let requestBody = "";
-  let idempotencyHeader: string | null = null;
-  const restore = installFakeFetch({
-    status: 202,
-    body: { nudge_id: "nudge_1" },
-    capture: (_input, init) => {
-      requestBody = String(init?.body ?? "");
-      idempotencyHeader = new Headers(init?.headers).get("Idempotency-Key");
-    },
-  });
-  try {
-    const client = new Client({ apiKey: "mbx_test" });
-    await client.nudgeSession("sess_1", {
-      content: "Use the shorter name",
-      idempotencyKey: "  event_2  ",
-    });
-  } finally {
-    restore();
+test("client: sendSessionInput retries only when it carries an idempotency key", async () => {
+  async function callsFor(idempotencyKey?: string): Promise<number> {
+    let calls = 0;
+    const original = globalThis.fetch;
+    globalThis.fetch = (async () => {
+      calls += 1;
+      if (calls === 1) {
+        return new Response(null, {
+          status: 503,
+          headers: { "Retry-After": "0" },
+        });
+      }
+      return Response.json(inputAck("sess_1", "turn_1", 7), { status: 202 });
+    }) as typeof fetch;
+    try {
+      const client = new Client({ apiKey: "mbx_test", retry: 1 });
+      await client
+        .sendSessionInput("sess_1", {
+          content: [{ type: "text", text: "hi" }],
+          idempotencyKey,
+        })
+        .catch(() => undefined);
+    } finally {
+      globalThis.fetch = original;
+    }
+    return calls;
   }
 
-  assert.equal(JSON.parse(requestBody).idempotency_key, "event_2");
-  assert.equal(idempotencyHeader, "event_2");
+  assert.equal(await callsFor("evt_1"), 2);
+  assert.equal(await callsFor(undefined), 1);
 });
 
 test("client: listSessionMessages can include runtime context", async () => {
@@ -597,53 +625,26 @@ test("client: session nudge lifecycle routes", async () => {
   ]);
 });
 
-test("client: invokeAgent requires agent ref and content", async () => {
+test("client: sendSessionInput requires content", async () => {
   const client = new Client({ apiKey: "mbx_test" });
-  await assert.rejects(() =>
-    client.invokeAgent({ content: [{ type: "text", text: "hi" }] }),
+  await assert.rejects(
+    () => client.sendSessionInput("sess_1", { content: [] }),
+    ConfigError,
   );
-  await assert.rejects(() => client.invokeAgent({ agentId: "agent_1", content: [] }));
-});
-
-test("client: invokeAgentStream streams session frames inline", async () => {
-  let acceptHeader: string | null = null;
-  let idempotencyHeader: string | null = null;
-  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    const headers = new Headers(init?.headers);
-    acceptHeader = headers.get("Accept");
-    idempotencyHeader = headers.get("Idempotency-Key");
-    return new Response(
-      'event: turn.completed\ndata: {"usage":{"input_tokens":42}}\n\n',
-      { status: 200, headers: { "Content-Type": "text/event-stream" } },
-    );
-  }) as typeof fetch;
-
-  const client = new Client({
-    apiKey: "mbx_test",
-    baseURL: "https://api.example.invalid",
-  });
-
-  const events = [];
-  for await (const ev of client.invokeAgentStream({
-    agentName: "support",
-    content: [{ type: "text", text: "hi" }],
-    idempotencyKey: "evt_stream_1",
-  })) {
-    events.push(ev);
-  }
-
-  assert.equal(acceptHeader, "text/event-stream");
-  assert.equal(idempotencyHeader, "evt_stream_1");
-  assert.equal(events.length, 1);
-  assert.equal(events[0].eventType, "turn.completed");
-  assert.equal(
-    (events[0].data as { usage: { input_tokens: number } }).usage.input_tokens,
-    42,
+  await assert.rejects(
+    () =>
+      client.sendSessionInput("sess_1", {
+        content: undefined as unknown as Record<string, unknown>[],
+      }),
+    ConfigError,
   );
 });
 
-function turnAck(sessionId: string, turnId: string, afterSequence: number) {
+function inputAck(sessionId: string, turnId: string, afterSequence: number) {
   return {
+    delivery: "new_turn",
+    deduped: false,
+    woke_turn: false,
     after_sequence: afterSequence,
     resume_cursor: "41.6",
     session: {

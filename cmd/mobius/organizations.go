@@ -19,6 +19,7 @@ func registerReplaceOAuthReturnOriginsCommand(app *cli.App) {
 
 	grp.Command("replace-oauth-return-origins").
 		Description("Replace the org's OAuth return-origin allowlist").
+		AddArg(&cli.Arg{Name: "org-id", Description: "Organization ID, or `current` (the default) for the caller's active organization."}).
 		Flags(
 			cli.Strings("origins", "").Help("Exact HTTPS return origins to allow. Required unless --clear or --file is used."),
 			cli.Bool("clear", "").Help("Replace the allowlist with an empty list, disabling embedded return. Mutually exclusive with --origins."),
@@ -52,7 +53,11 @@ func runReplaceOAuthReturnOrigins(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	resp, err := mc.RawClient().ReplaceOAuthReturnOriginsWithResponse(ctx.Context(), body)
+	orgID := ctx.Arg(0)
+	if orgID == "" {
+		orgID = "current"
+	}
+	resp, err := mc.RawClient().ReplaceOAuthReturnOriginsWithResponse(ctx.Context(), api.OrgPathParam(orgID), body)
 	if err != nil {
 		return err
 	}

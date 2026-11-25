@@ -25,27 +25,22 @@ from ._api.models import (
     AgentTurn,
     AgentTurnListResponse,
     AgentTurnOperationPolicy,
-    AgentRef,
     ApplyBlueprintRequest,
     Artifact,
     BlueprintApplyResult,
     BlueprintBindingListResponse,
     BlueprintDeleteResult,
-    ChannelContext,
     CompleteSessionPDFUploadRequest,
     CreateAgentRequest,
     CreatePrincipalRequest,
     CreateRoleAssignmentRequest,
     CreateRoleRequest,
+    CreateSessionRequest,
     IfExists,
     InteractionKind,
     InteractionListResponse,
-    InvokeAgentRequest,
-    InvokeInput,
-    InvokeSessionSpec,
     MemoryKind,
     MemorySearchMode,
-    NudgeSessionRequest,
     OAuthReturnOrigins,
     PermissionCatalogResponse,
     Principal,
@@ -67,16 +62,16 @@ from ._api.models import (
     RoleListResponse,
     Session,
     SessionAttachmentResponse,
+    SessionInputAck,
+    SessionInputDelivery,
+    SessionInputRequest,
     SessionListResponse,
     SessionMessageListResponse,
     SessionNudge,
-    SessionNudgeAck,
     SessionNudgeListResponse,
     SessionTranscriptSnapshot,
     SetBlueprintProtectionRequest,
-    StartTurnRequest,
     TagMap,
-    TurnAck,
     TurnOutputSpec,
     UpdatePrincipalRequest,
     UpdateRoleRequest,
@@ -126,61 +121,64 @@ class ClientOptions:
 
 
 @dataclass
-class InvokeAgentOptions:
-    # Ordered content blocks (text, images, ...) for the caller's input
-    # message. Required.
+class SendSessionInputOptions:
+    # Ordered content blocks (text, images, ...) for the caller's input.
+    # Required and non-empty. With delivery "current_turn", every block must
+    # be text.
     content: list[dict[str, Any]]
-    # Agent identifier. Mutually exclusive with agent_name.
-    agent_id: str | None = None
-    # Org-unique agent name. Mutually exclusive with agent_id.
-    agent_name: str | None = None
-    # Ordered application-owned state for this turn.
+    # Where the input goes: "new_turn" (the server default) starts a turn;
+    # "current_turn" steers the running turn as direction.
+    delivery: SessionInputDelivery | str | None = None
+    # Ordered application-owned state for the started turn. Only with
+    # delivery "new_turn".
     context: list[RuntimeContextItem] | None = None
-    # Dedup key scoped to the resolved session. A repeat call with the same
-    # key resolves the same session and returns the existing invocation
-    # without restarting it or starting a second one — derive it from the
-    # provider event id for Slack/Telegram webhook retries. The SDK retries
-    # admission automatically unless session.mode is "new", which cannot be
-    # safely replayed with a session-scoped key.
+    # Dedup key scoped to the session. A repeat with the same key returns the
+    # original result, writes nothing new, and never restarts a terminal
+    # turn — derive it from the provider event id for webhook retries. The
+    # SDK retries the request automatically only when a key is set.
     idempotency_key: str | None = None
-    # Free-form caller metadata attached to the input message.
-    input_metadata: dict[str, Any] | None = None
-    # How to resolve or create the session this invocation runs in. Omit to
-    # use a single default session per agent in continue_or_create mode. Set
-    # session.thinking_effort to override the agent's reasoning-effort default
-    # for this session.
-    session: InvokeSessionSpec | None = None
-    # Policy for only this newly admitted turn. Its timeout takes precedence
-    # over the stored agent timeout and is not saved on the session.
+    # Policy for only the started turn. Its timeout takes precedence over
+    # the stored agent timeout and is not saved on the session. Only with
+    # delivery "new_turn".
     operation: AgentTurnOperationPolicy | None = None
-    # Structured-output contract for this turn. When set, Mobius exposes a
-    # reserved submit tool for the schema, validates the submission
-    # server-side, and fails the turn if it never produces a schema-valid
-    # object. Read the validated value from TurnTranscript.output.
+    # Structured-output contract for the started turn. When set, Mobius
+    # exposes a reserved submit tool for the schema, validates the
+    # submission server-side, and fails the turn if it never produces a
+    # schema-valid object. Read the validated value from
+    # TurnTranscript.output. Only with delivery "new_turn".
     output: TurnOutputSpec | None = None
-    # Optional messaging provider/channel routing context (Slack, Telegram,
-    # ...) recorded on the started turn.
-    channel_context: ChannelContext | None = None
+    # Free-form caller metadata attached to the input.
+    metadata: dict[str, Any] | None = None
+    # Only with delivery "current_turn": when the target turn is waiting on
+    # an interruptible tool, interrupt it and resume the turn now.
+    wake: bool | None = None
 
 
 @dataclass
-class StartTurnOptions:
-    # Ordered content blocks (text, images, ...) for the caller's input
-    # message. Required.
-    content: list[dict[str, Any]]
-    # Ordered application-owned state for this turn.
-    context: list[RuntimeContextItem] | None = None
-    # Dedup key scoped to the existing session. A repeat returns the existing
-    # invocation, writes no new input, and never restarts a terminal turn.
-    idempotency_key: str | None = None
-    # Policy for only this newly admitted turn. Its timeout takes precedence
-    # over the stored agent timeout and is not saved on the session.
-    operation: AgentTurnOperationPolicy | None = None
-    # Structured-output contract for this turn. See InvokeAgentOptions.output;
-    # read the validated value from TurnTranscript.output.
-    output: TurnOutputSpec | None = None
-    # Free-form caller metadata attached to the input message.
-    metadata: dict[str, Any] | None = None
+class SessionInput:
+    """Where input sent with ``send_session_input`` went.
+
+    ``turn`` is the live transcript handle of the started turn and is set
+    exactly when ``delivery`` is "new_turn". For "current_turn" and
+    "queued", follow the direction through ``nudge``.
+    """
+
+    # "new_turn", "current_turn", or "queued".
+    delivery: str
+    session_id: str
+    # The started turn ("new_turn"), the turn the direction is queued for
+    # ("current_turn"), or the running turn it waits behind ("queued").
+    turn_id: str
+    # True when a repeated idempotency key returned the original result
+    # without writing again.
+    deduped: bool
+    # True when wake interrupted a waiting tool and requeued the turn.
+    woke_turn: bool
+    # The nudge queue entry, present for a current_turn request.
+    nudge: SessionNudge | None = None
+    # The started turn's lazy transcript handle; None unless delivery is
+    # "new_turn".
+    turn: TurnTranscript | None = None
 
 
 @dataclass
@@ -264,14 +262,6 @@ class ListSessionMessagesOptions:
 
 
 @dataclass
-class NudgeSessionOptions:
-    content: str
-    idempotency_key: str | None = None
-    metadata: dict[str, Any] | None = None
-    wake: bool = False
-
-
-@dataclass
 class ListSessionNudgesOptions:
     status: list[str] | None = None
     order: str | None = None
@@ -332,15 +322,6 @@ class ListSessionTurnsOptions:
     order: str | None = None
     cursor: str | None = None
     limit: int | None = None
-
-
-@dataclass
-class SessionStreamEvent:
-    # event_type is the authoritative SSE `event:` name (e.g.
-    # "turn.completed"); validate data with the payload model matching it —
-    # SessionStreamFrame is a reference-only union, ambiguous from data alone.
-    event_type: str
-    data: dict[str, Any]
 
 
 @dataclass(frozen=True)
@@ -782,7 +763,7 @@ class Client:
         ``return_url``. An empty list means embedded return is disabled.
         Requires Admin or Owner membership.
         """
-        resp = self._request("GET", "/v1/organization/oauth-return-origins")
+        resp = self._request("GET", "/v1/orgs/current/oauth-return-origins")
         return OAuthReturnOrigins.model_validate(resp.json())
 
     def replace_oauth_return_origins(
@@ -797,7 +778,7 @@ class Client:
         """
         resp = self._request(
             "PUT",
-            "/v1/organization/oauth-return-origins",
+            "/v1/orgs/current/oauth-return-origins",
             json=PutOAuthReturnOriginsRequest(origins=list(origins)),
         )
         return OAuthReturnOrigins.model_validate(resp.json())
@@ -897,95 +878,87 @@ class Client:
         )
         return SkillAssignmentListResponse.model_validate(resp.json())
 
-    # Resolves (or creates) a session, appends opts.content as the caller's
-    # input message, and starts an agent turn in one retryable call. Returns
-    # once the turn is accepted. The returned TurnTranscript carries the
-    # turn's identity (id, session_id, status) immediately and its live
-    # transcript on demand: the stream is lazy, so iterate the handle to
-    # render the turn as it runs, or never iterate for fire-and-forget. Use
-    # invoke_agent_stream instead to observe the turn's activity inline on
-    # the same connection with v1 session-stream framing.
-    def invoke_agent(self, opts: InvokeAgentOptions) -> TurnTranscript:
-        body = _invoke_agent_request(opts)
-        resp = self._request(
-            "POST",
-            "/v1/agents/invoke",
-            json=body,
-            idempotency_key=_invoke_agent_replay_key(body),
-        )
-        ack = TurnAck.model_validate(resp.json())
-        return self._turn_transcript(ack, "invoke agent")
+    def create_session(self, request: CreateSessionRequest) -> Session:
+        """Resolve or create a session for an agent and return it.
 
-    def start_turn(self, session_id: str, opts: StartTurnOptions) -> TurnTranscript:
-        """Append caller input to an existing session and start a turn."""
+        This is how a product backend finds the conversation to talk to:
+        with the default ``continue_or_create`` mode, a stable
+        ``session_key`` (for example one per user or per chat thread)
+        returns the existing session or creates it. Then call
+        :meth:`send_session_input` with the session's id.
+        """
+        resp = self._request("POST", "/v1/sessions", json=request)
+        return Session.model_validate(resp.json())
+
+    def send_session_input(
+        self, session_id: str, opts: SendSessionInputOptions
+    ) -> SessionInput:
+        """Send caller input to a session.
+
+        With the default delivery ("new_turn") the input becomes a user
+        message and starts an agent turn; the result's ``turn`` is a lazy
+        :class:`TurnTranscript` that carries the turn's identity right away
+        and streams its transcript when iterated (never iterate it for
+        fire-and-forget). A distinct send while a turn is active raises a
+        409 ``session_turn_active`` MobiusAPIError; send again with
+        ``delivery="current_turn"`` to steer that turn instead. Direction
+        sent that way is reported through the result's ``nudge``, and the
+        server may answer "new_turn" (the session was idle, so a turn
+        started) or "queued" (it waits behind another person's turn).
+
+        The request is retried automatically only when
+        ``opts.idempotency_key`` is set; the key is sent in the body and as
+        the ``Idempotency-Key`` header.
+        """
         if not opts.content:
-            raise ValueError("mobius: start turn: content is required")
+            raise ValueError("mobius: send session input: content is required")
+        values: dict[str, Any] = {"content": opts.content}
+        if opts.delivery is not None:
+            values["delivery"] = opts.delivery
+        if opts.context is not None:
+            values["context"] = RuntimeContext(root=opts.context)
         idempotency_key = _normalize_idempotency_key(opts.idempotency_key)
-        body = StartTurnRequest(
-            role="user",
-            content=opts.content,
-            context=(
-                RuntimeContext(root=opts.context) if opts.context is not None else None
-            ),
-            idempotency_key=idempotency_key,
-            operation=opts.operation,
-            output=opts.output,
-            metadata=opts.metadata,
+        if idempotency_key is not None:
+            values["idempotency_key"] = idempotency_key
+        if opts.operation is not None:
+            values["operation"] = opts.operation
+        if opts.output is not None:
+            values["output"] = opts.output
+        if opts.metadata is not None:
+            values["metadata"] = opts.metadata
+        if opts.wake is not None:
+            values["wake"] = opts.wake
+        # Dump only the fields the caller set, so server defaults
+        # (delivery, wake) are not sent explicitly.
+        body = SessionInputRequest(**values).model_dump(
+            mode="json", exclude_unset=True, exclude_none=True, by_alias=True
         )
         resp = self._request(
             "POST",
-            f"/v1/sessions/{quote(session_id, safe='')}/turns",
+            f"/v1/sessions/{quote(session_id, safe='')}/inputs",
             json=body,
-            idempotency_key=body.idempotency_key,
+            idempotency_key=idempotency_key,
         )
-        ack = TurnAck.model_validate(resp.json())
-        return self._turn_transcript(ack, "start turn")
-
-    def _turn_transcript(self, ack: TurnAck, operation: str) -> TurnTranscript:
-        if not ack.resume_cursor.strip():
-            raise ValueError(f"mobius: {operation} response missing resume_cursor")
-        transcript = SessionTranscript()
-        transcript.seed(ack)
-        return TurnTranscript(self, ack, transcript)
-
-    # Behaves like invoke_agent but streams the turn's activity inline on
-    # the same connection instead of waiting for a TurnAck.
-    def invoke_agent_stream(self, opts: InvokeAgentOptions) -> Iterator[SessionStreamEvent]:
-        body = _invoke_agent_request(opts)
-        payload = _model_dump(body)
-        path = self._path("/v1/agents/invoke")
-        with self._client.stream(
-            "POST",
-            path,
-            json=payload,
-            headers=_idempotency_headers(
-                _invoke_agent_replay_key(body),
-                accept="text/event-stream",
-            ),
-        ) as resp:
-            _raise_for_response(resp)
-            buf = ""
-            for chunk in resp.iter_text():
-                buf += chunk
-                while "\n\n" in buf:
-                    raw, buf = buf.split("\n\n", 1)
-                    lines = raw.splitlines()
-                    data = "\n".join(
-                        line.removeprefix("data:").lstrip()
-                        for line in lines
-                        if line.startswith("data:")
-                    )
-                    event_type = next(
-                        (
-                            line.removeprefix("event:").lstrip()
-                            for line in lines
-                            if line.startswith("event:")
-                        ),
-                        None,
-                    )
-                    if not data or not event_type:
-                        continue
-                    yield SessionStreamEvent(event_type=event_type, data=json.loads(data))
+        ack = SessionInputAck.model_validate(resp.json())
+        delivery = str(ack.delivery.value)
+        turn: TurnTranscript | None = None
+        if delivery == "new_turn":
+            if not (ack.resume_cursor or "").strip():
+                raise ValueError(
+                    "mobius: send session input: response missing resume_cursor"
+                )
+            transcript = SessionTranscript()
+            transcript.seed(ack)
+            turn = TurnTranscript(self, ack, transcript)
+        return SessionInput(
+            delivery=delivery,
+            session_id=ack.session.id,
+            turn_id=ack.turn.id,
+            deduped=bool(ack.deduped),
+            woke_turn=bool(ack.woke_turn),
+            nudge=ack.nudge,
+            turn=turn,
+        )
 
     def list_sessions(self, opts: ListSessionsOptions | None = None) -> SessionListResponse:
         resp = self._request("GET", "/v1/sessions", params=_params(opts))
@@ -1200,22 +1173,6 @@ class Client:
             params=_params(opts),
         )
         return SessionMessageListResponse.model_validate(resp.json())
-
-    def nudge_session(self, session_id: str, opts: NudgeSessionOptions) -> SessionNudgeAck:
-        values = _drop_none(opts.__dict__)
-        idempotency_key = _normalize_idempotency_key(
-            values.pop("idempotency_key", None)
-        )
-        if idempotency_key is not None:
-            values["idempotency_key"] = idempotency_key
-        body = NudgeSessionRequest(**values)
-        resp = self._request(
-            "POST",
-            f"/v1/sessions/{quote(session_id, safe='')}/nudges",
-            json=body,
-            idempotency_key=body.idempotency_key,
-        )
-        return SessionNudgeAck.model_validate(resp.json())
 
     def list_session_nudges(
         self, session_id: str, opts: ListSessionNudgesOptions | None = None
@@ -1510,15 +1467,16 @@ class Client:
 
 
 class TurnTranscript:
-    """A started agent turn and its live transcript, from ``invoke_agent``.
+    """A started agent turn and its live transcript, from
+    ``send_session_input`` (``SessionInput.turn``).
 
     The identity attributes (``id``, ``session_id``, …) are available
     immediately; the transcript stream is lazy — iteration opens it, so a
-    caller that never iterates pays for nothing beyond the invoke itself.
+    caller that never iterates pays for nothing beyond the send itself.
 
     Iterate the handle to render the turn as it streams::
 
-        turn = client.invoke_agent(opts)
+        turn = client.send_session_input(session.id, opts).turn
         for t in turn:
             render(t.messages())
         turn.status  # "completed"
@@ -1533,13 +1491,15 @@ class TurnTranscript:
     to this turn, and ``transcript`` exposes the whole session view.
     """
 
-    def __init__(self, client: Client, ack: TurnAck, transcript: SessionTranscript) -> None:
+    def __init__(
+        self, client: Client, ack: SessionInputAck, transcript: SessionTranscript
+    ) -> None:
         self._client = client
         # Turn id.
         self.id: str = ack.turn.id
         # Id of the session this turn runs in.
         self.session_id: str = ack.session.id
-        # Message sequence from the turn-start response. It is not a stream
+        # Message sequence from the send response. It is not a stream
         # cursor: to follow the turn yourself, open GET …/transcript/stream
         # from the response's resume_cursor.
         self.after_sequence: int = ack.after_sequence
@@ -1550,7 +1510,7 @@ class TurnTranscript:
         self.transcript: SessionTranscript = transcript
         # Immutable invocation boundary for initial replay and terminal
         # settlement. The transcript cursor keeps moving for reconnects.
-        self._invocation_cursor = ack.resume_cursor
+        self._invocation_cursor: str = ack.resume_cursor or ""
         # Set when deduplication returned an already-terminal turn. There is
         # nothing to stream, so iteration fetches
         # the snapshot (all pages) instead, making messages() complete either
@@ -1591,7 +1551,7 @@ class TurnTranscript:
         """The turn's validated structured output.
 
         Present only on a completed turn that declared an output contract
-        (see InvokeAgentOptions.output); None until the terminal turn.upsert
+        (see SendSessionInputOptions.output); None until the terminal turn.upsert
         frame is applied. Read this instead of parsing the transcript messages.
         """
         value = (self.transcript.turn(self.id) or {}).get("output")
@@ -1926,28 +1886,6 @@ def _drop_none(values: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in values.items() if v is not None}
 
 
-def _invoke_agent_request(opts: InvokeAgentOptions) -> InvokeAgentRequest:
-    if not opts.agent_id and not opts.agent_name:
-        raise ValueError("mobius: invoke agent: agent_id or agent_name is required")
-    if not opts.content:
-        raise ValueError("mobius: invoke agent: content is required")
-    return InvokeAgentRequest(
-        agent_ref=AgentRef(id=opts.agent_id, name=opts.agent_name),
-        input=InvokeInput(
-            content=opts.content,
-            context=(
-                RuntimeContext(root=opts.context) if opts.context is not None else None
-            ),
-            idempotency_key=_normalize_idempotency_key(opts.idempotency_key),
-            metadata=opts.input_metadata,
-        ),
-        session=opts.session,
-        operation=opts.operation,
-        output=opts.output,
-        channel_context=opts.channel_context,
-    )
-
-
 def _normalize_idempotency_key(value: str | None) -> str | None:
     normalized = value.strip() if value is not None else ""
     return normalized or None
@@ -1964,26 +1902,12 @@ def _read_full(source: BinaryIO, size: int) -> bytes:
     return bytes(buf)
 
 
-def _idempotency_headers(
-    value: str | None,
-    *,
-    accept: str | None = None,
-) -> dict[str, str]:
+def _idempotency_headers(value: str | None) -> dict[str, str]:
     headers: dict[str, str] = {}
     key = _normalize_idempotency_key(value)
     if key is not None:
         headers["Idempotency-Key"] = key
-    if accept is not None:
-        headers["Accept"] = accept
     return headers
-
-
-def _invoke_agent_replay_key(body: InvokeAgentRequest) -> str | None:
-    if body.session is not None and body.session.mode is not None:
-        mode = body.session.mode.value
-        if mode == "new":
-            return None
-    return _normalize_idempotency_key(body.input.idempotency_key)
 
 
 def _params(opts: Any | None) -> dict[str, Any] | None:

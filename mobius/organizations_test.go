@@ -12,9 +12,9 @@ import (
 func TestOAuthReturnOriginsRoutes(t *testing.T) {
 	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method + " " + r.URL.Path {
-		case "GET /v1/organization/oauth-return-origins":
+		case "GET /v1/orgs/current/oauth-return-origins":
 			writeJSON(w, http.StatusOK, `{"origins":["https://app.partner.example"]}`)
-		case "PUT /v1/organization/oauth-return-origins":
+		case "PUT /v1/orgs/current/oauth-return-origins":
 			var body struct {
 				Origins []string `json:"origins"`
 			}

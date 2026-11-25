@@ -3,9 +3,8 @@
 ``SessionTranscript`` is the live view of a session — the session-scope
 analogue of Dive's ``ResponseAccumulator``. It is built by folding
 session-transcript stream frames (or snapshot pages) into place. Frames are
-plain decoded JSON objects (``dict``) — the same open representation the SDK
-already uses for ``SessionStreamEvent.data`` — so unknown fields and enum
-values round-trip untouched.
+plain decoded JSON objects (``dict``), so unknown fields and enum values
+round-trip untouched.
 """
 
 from __future__ import annotations
@@ -156,8 +155,9 @@ class SessionTranscript:
     write wins and nothing is an increment except ``message.delta`` text.
     Ignoring deltas entirely still converges.
 
-    The streaming client methods drive one for you: ``Client.invoke_agent``
-    returns a ``TurnTranscript`` and ``Client.watch_session_transcript``
+    The streaming client methods drive one for you:
+    ``Client.send_session_input`` returns a ``TurnTranscript`` (as
+    ``SessionInput.turn``) and ``Client.watch_session_transcript``
     returns a ``TranscriptWatcher``, both folding frames into an embedded view
     as you iterate. Construct one directly only for the escape hatches:
     polling ``get_session_transcript`` into :meth:`apply_snapshot`, or feeding
@@ -411,12 +411,12 @@ class SessionTranscript:
         self._cursor = snap["resume_cursor"]
 
     def seed(self, ack: Any) -> None:
-        """Fold a turn-start response into the view.
+        """Fold a ``sendSessionInput`` response into the view.
 
-        Accepts the ``TurnAck`` model or an equivalent dict, folding in the
-        caller's message row, the acked turn, and the resume cursor.
-        ``Client.invoke_agent`` calls it for you; it is public for callers
-        wiring their own transport around a raw invoke.
+        Accepts the ``SessionInputAck`` model or an equivalent dict, folding
+        in the caller's message row, the turn, and the resume cursor.
+        ``Client.send_session_input`` calls it for you; it is public for
+        callers wiring their own transport around a raw send.
         """
         data = ack if isinstance(ack, dict) else ack.model_dump(mode="json")
         user_message = data.get("user_message")

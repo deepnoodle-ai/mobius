@@ -22,13 +22,3 @@ func idempotencyRequestEditors(value string) []api.RequestEditorFn {
 		return nil
 	}}
 }
-
-func invokeAgentReplayKey(req api.InvokeAgentRequest) string {
-	if req.Session != nil && req.Session.Mode != nil && *req.Session.Mode == api.InvokeSessionSpecModeNew {
-		return ""
-	}
-	if req.Input.IdempotencyKey == nil {
-		return ""
-	}
-	return normalizeIdempotencyKey(*req.Input.IdempotencyKey)
-}

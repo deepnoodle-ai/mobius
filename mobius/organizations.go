@@ -7,12 +7,16 @@ import (
 	"github.com/deepnoodle-ai/mobius/mobius/api"
 )
 
+// currentOrg is the org path id the server resolves to the caller's active
+// organization.
+const currentOrg api.OrgPathParam = "current"
+
 // GetOAuthReturnOrigins returns the active organization's allowlist of exact
 // HTTPS origins an embedded partner may name as an OAuth connect return_url.
 // An empty list means embedded return is disabled. Requires Admin or Owner
 // membership.
 func (c *Client) GetOAuthReturnOrigins(ctx context.Context) (*api.OAuthReturnOrigins, error) {
-	resp, err := c.ac.GetOAuthReturnOriginsWithResponse(ctx)
+	resp, err := c.ac.GetOAuthReturnOriginsWithResponse(ctx, currentOrg)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: get oauth return origins: %w", err)
 	}
@@ -31,7 +35,7 @@ func (c *Client) ReplaceOAuthReturnOrigins(ctx context.Context, origins []string
 	if origins == nil {
 		origins = []string{}
 	}
-	resp, err := c.ac.ReplaceOAuthReturnOriginsWithResponse(ctx, api.PutOAuthReturnOriginsRequest{Origins: origins})
+	resp, err := c.ac.ReplaceOAuthReturnOriginsWithResponse(ctx, currentOrg, api.PutOAuthReturnOriginsRequest{Origins: origins})
 	if err != nil {
 		return nil, fmt.Errorf("mobius: replace oauth return origins: %w", err)
 	}

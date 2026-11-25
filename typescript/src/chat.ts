@@ -6,7 +6,7 @@ import type {
 } from "./api/index.js";
 import type {
   Client,
-  InvokeAgentOptions,
+  SendSessionInputOptions,
   TranscriptUpdate,
   WatchSessionTranscriptOptions,
 } from "./client.js";
@@ -48,7 +48,7 @@ export interface SessionChatUpdate extends TranscriptUpdate {
 }
 
 /**
- * High-level embedded-chat protocol: invoke an agent, follow the canonical v2
+ * High-level embedded-chat protocol: send input to a session, follow the canonical v2
  * transcript through reconnects/rotations, observe human-input interactions,
  * and respond without implementing frame dispatch or polling.
  */
@@ -65,13 +65,20 @@ export class SessionChat {
     this.#callbacks = callbacks;
   }
 
-  /** Invoke and follow one turn until it settles. */
+  /**
+   * Send input to a session and follow the turn it started until it
+   * settles. When the input did not start a turn (it became direction for a
+   * running turn), this yields nothing; use {@link watch} to follow the
+   * session instead.
+   */
   async *send(
-    input: InvokeAgentOptions,
+    sessionId: string,
+    options: SendSessionInputOptions,
     opts: { signal?: AbortSignal } = {},
   ): AsyncGenerator<SessionChatUpdate> {
-    const turn = await this.#client.invokeAgent(input, opts);
-    for await (const update of turn.updates()) {
+    const result = await this.#client.sendSessionInput(sessionId, options, opts);
+    if (!result.turn) return;
+    for await (const update of result.turn.updates()) {
       yield this.#emit(update);
     }
   }

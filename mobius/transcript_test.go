@@ -107,7 +107,7 @@ func TestSessionTranscript_NormalizesNullContentAtEveryIngress(t *testing.T) {
 	view.ApplySnapshot(&snap)
 	assert.NotNil(t, mustMessage(t, view, "m_snapshot").Content)
 
-	var ack api.TurnAck
+	var ack api.SessionInputAck
 	assert.NoError(t, json.Unmarshal([]byte(invokeAckWithCursor("s1", "t1", 42)), &ack))
 	ack.UserMessage.Content = nil
 	view.Seed(&ack)
@@ -234,7 +234,7 @@ func TestSessionTranscript_FoldsAndReconcilesInteractions(t *testing.T) {
 }
 
 func TestSessionTranscript_SeedFoldsAckState(t *testing.T) {
-	var ack api.TurnAck
+	var ack api.SessionInputAck
 	assert.NoError(t, json.Unmarshal([]byte(invokeAckWithCursor("s1", "t1", 42)), &ack))
 
 	view := NewSessionTranscript()
@@ -405,11 +405,11 @@ func TestWatchSessionTranscript_ContinuesProvidedTranscript(t *testing.T) {
 	assert.NoError(t, watch.Err())
 }
 
-func TestInvokeAgent_StreamsTurnToTerminal(t *testing.T) {
+func TestSendSessionInput_StreamsTurnToTerminal(t *testing.T) {
 	var streamCalls int32
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/v1/agents/invoke":
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/sessions/s1/inputs":
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusAccepted)
 			_, _ = io.WriteString(w, invokeAckWithCursor("s1", "t1", 42))
@@ -430,9 +430,8 @@ func TestInvokeAgent_StreamsTurnToTerminal(t *testing.T) {
 	c, srv := newTestClient(t, h)
 	defer srv.Close()
 
-	turn, err := c.InvokeAgent(context.Background(), InvokeAgentOptions{
-		AgentName: "support",
-		Content:   []map[string]interface{}{{"type": "text", "text": "hi"}},
+	turn, err := sendNewTurn(c, SendSessionInputOptions{
+		Content: []map[string]interface{}{{"type": "text", "text": "hi"}},
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, turn.ID(), "t1")
@@ -463,10 +462,10 @@ func TestInvokeAgent_StreamsTurnToTerminal(t *testing.T) {
 	assert.Equal(t, turn.Transcript().Cursor(), "43.9")
 }
 
-func TestInvokeAgent_RedrainsFromInvocationCursorBeforeFinalUpdate(t *testing.T) {
+func TestSendSessionInput_RedrainsFromInvocationCursorBeforeFinalUpdate(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/v1/agents/invoke":
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/sessions/s1/inputs":
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusAccepted)
 			_, _ = io.WriteString(w, invokeAckWithCursor("s1", "t1", 42))
@@ -494,9 +493,8 @@ func TestInvokeAgent_RedrainsFromInvocationCursorBeforeFinalUpdate(t *testing.T)
 	c, srv := newTestClient(t, h)
 	defer srv.Close()
 
-	turn, err := c.InvokeAgent(context.Background(), InvokeAgentOptions{
-		AgentName: "support",
-		Content:   []map[string]interface{}{{"type": "text", "text": "hi"}},
+	turn, err := sendNewTurn(c, SendSessionInputOptions{
+		Content: []map[string]interface{}{{"type": "text", "text": "hi"}},
 	})
 	assert.NoError(t, err)
 
@@ -520,7 +518,7 @@ func TestInvokeAgent_RedrainsFromInvocationCursorBeforeFinalUpdate(t *testing.T)
 	assert.Equal(t, resolved["name"], "naming.words.coin")
 }
 
-func TestInvokeAgent_DedupedInFlightReplaysFromStableCursor(t *testing.T) {
+func TestSendSessionInput_DedupedInFlightReplaysFromStableCursor(t *testing.T) {
 	var ack map[string]interface{}
 	assert.NoError(t, json.Unmarshal([]byte(invokeAckWithCursor("s1", "t1", 44)), &ack))
 	ack["deduped"] = true
@@ -531,7 +529,7 @@ func TestInvokeAgent_DedupedInFlightReplaysFromStableCursor(t *testing.T) {
 
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/v1/agents/invoke":
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/sessions/s1/inputs":
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusAccepted)
 			_, _ = w.Write(ackBody)
@@ -550,9 +548,7 @@ func TestInvokeAgent_DedupedInFlightReplaysFromStableCursor(t *testing.T) {
 	c, srv := newTestClient(t, h)
 	defer srv.Close()
 
-	turn, err := c.InvokeAgent(context.Background(), InvokeAgentOptions{
-		AgentName: "support", Content: []map[string]interface{}{{"type": "text", "text": "hi"}}, IdempotencyKey: "evt_1",
-	})
+	turn, err := sendNewTurn(c, SendSessionInputOptions{Content: []map[string]interface{}{{"type": "text", "text": "hi"}}, IdempotencyKey: "evt_1"})
 	assert.NoError(t, err)
 	assert.True(t, turn.Deduped())
 	for turn.Next() {
@@ -562,10 +558,10 @@ func TestInvokeAgent_DedupedInFlightReplaysFromStableCursor(t *testing.T) {
 	assert.Equal(t, resolved["name"], "naming.words.coin")
 }
 
-func TestInvokeAgent_ReturnsTerminalReconciliationError(t *testing.T) {
+func TestSendSessionInput_ReturnsTerminalReconciliationError(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/v1/agents/invoke":
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/sessions/s1/inputs":
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusAccepted)
 			_, _ = io.WriteString(w, invokeAckWithCursor("s1", "t1", 42))
@@ -581,9 +577,8 @@ func TestInvokeAgent_ReturnsTerminalReconciliationError(t *testing.T) {
 	c, srv := newTestClient(t, h)
 	defer srv.Close()
 
-	turn, err := c.InvokeAgent(context.Background(), InvokeAgentOptions{
-		AgentName: "support",
-		Content:   []map[string]interface{}{{"type": "text", "text": "hi"}},
+	turn, err := sendNewTurn(c, SendSessionInputOptions{
+		Content: []map[string]interface{}{{"type": "text", "text": "hi"}},
 	})
 	assert.NoError(t, err)
 	assert.False(t, turn.Next())
@@ -592,11 +587,11 @@ func TestInvokeAgent_ReturnsTerminalReconciliationError(t *testing.T) {
 	assert.ErrorContains(t, turn.Err(), "500")
 }
 
-func TestInvokeAgent_LazyStreamNeverOpensWithoutNext(t *testing.T) {
+func TestSendSessionInput_LazyStreamNeverOpensWithoutNext(t *testing.T) {
 	var streamCalls int32
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/v1/agents/invoke":
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/sessions/s1/inputs":
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusAccepted)
 			_, _ = io.WriteString(w, invokeAckWithCursor("s1", "t1", 42))
@@ -608,16 +603,15 @@ func TestInvokeAgent_LazyStreamNeverOpensWithoutNext(t *testing.T) {
 	c, srv := newTestClient(t, h)
 	defer srv.Close()
 
-	turn, err := c.InvokeAgent(context.Background(), InvokeAgentOptions{
-		AgentName: "support",
-		Content:   []map[string]interface{}{{"type": "text", "text": "hi"}},
+	turn, err := sendNewTurn(c, SendSessionInputOptions{
+		Content: []map[string]interface{}{{"type": "text", "text": "hi"}},
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, turn.ID(), "t1")
 	assert.Equal(t, atomic.LoadInt32(&streamCalls), int32(0)) // fire-and-forget: no stream request
 }
 
-func TestInvokeAgent_RejectsBlankResumeCursor(t *testing.T) {
+func TestSendSessionInput_RejectsBlankResumeCursor(t *testing.T) {
 	var ack map[string]interface{}
 	assert.NoError(t, json.Unmarshal([]byte(invokeAckWithCursor("s1", "t1", 42)), &ack))
 	ack["resume_cursor"] = " "
@@ -631,18 +625,17 @@ func TestInvokeAgent_RejectsBlankResumeCursor(t *testing.T) {
 	c, srv := newTestClient(t, h)
 	defer srv.Close()
 
-	_, err = c.InvokeAgent(context.Background(), InvokeAgentOptions{
-		AgentName: "support",
-		Content:   []map[string]interface{}{{"type": "text", "text": "hi"}},
+	_, err = sendNewTurn(c, SendSessionInputOptions{
+		Content: []map[string]interface{}{{"type": "text", "text": "hi"}},
 	})
 	assert.ErrorContains(t, err, "resume_cursor")
 }
 
-func TestInvokeAgent_TerminalAckHydratesFromSnapshot(t *testing.T) {
+func TestSendSessionInput_TerminalAckHydratesFromSnapshot(t *testing.T) {
 	var streamCalls int32
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/v1/agents/invoke":
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/sessions/s1/inputs":
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusAccepted)
 			_, _ = io.WriteString(w, invokeAckTerminal("s1", "t1"))
@@ -664,8 +657,7 @@ func TestInvokeAgent_TerminalAckHydratesFromSnapshot(t *testing.T) {
 	c, srv := newTestClient(t, h)
 	defer srv.Close()
 
-	turn, err := c.InvokeAgent(context.Background(), InvokeAgentOptions{
-		AgentName:      "support",
+	turn, err := sendNewTurn(c, SendSessionInputOptions{
 		Content:        []map[string]interface{}{{"type": "text", "text": "hi"}},
 		IdempotencyKey: "evt_1",
 	})
@@ -698,6 +690,9 @@ func TestIsTerminalTurnStatus(t *testing.T) {
 
 func invokeAckWithCursor(sessionID, turnID string, afterSequence int) string {
 	return fmt.Sprintf(`{
+		"delivery": "new_turn",
+		"deduped": false,
+		"woke_turn": false,
 		"after_sequence": %d,
 		"resume_cursor": "41.6",
 		"user_message": {
@@ -721,9 +716,12 @@ func invokeAckWithCursor(sessionID, turnID string, afterSequence int) string {
 	}`, afterSequence, sessionID, turnID, sessionID, turnID, sessionID)
 }
 
-// invokeAckTerminal is a deduped invoke response whose turn already completed.
+// invokeAckTerminal is a deduped send-input response whose turn already
+// completed.
 func invokeAckTerminal(sessionID, turnID string) string {
 	return fmt.Sprintf(`{
+		"delivery": "new_turn",
+		"woke_turn": false,
 		"after_sequence": 43,
 		"deduped": true,
 		"resume_cursor": "31.6",
@@ -740,4 +738,13 @@ func invokeAckTerminal(sessionID, turnID string) string {
 			"updated_at": "2026-05-27T00:00:00Z"
 		}
 	}`, sessionID, turnID, sessionID)
+}
+
+// sendNewTurn sends input to session s1 and returns the started turn.
+func sendNewTurn(c *Client, opts SendSessionInputOptions) (*TurnTranscript, error) {
+	in, err := c.SendSessionInput(context.Background(), "s1", opts)
+	if err != nil {
+		return nil, err
+	}
+	return in.Turn, nil
 }

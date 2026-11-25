@@ -58,10 +58,6 @@ var overrides = map[string]Override{
 	"listDeletedAgents": {Command: "list-deleted"},
 	// `name` is optional: a bare restore keeps the old name.
 	"restoreAgent": {AllowEmptyBody: true},
-	// Tagged `sessions` in the spec because it returns a turn transcript, but
-	// the path is /v1/agents/invoke and users look for it next to the other
-	// agent commands.
-	"invokeAgent": {Group: "agents", Command: "invoke"},
 
 	// --- principals -------------------------------------------------------
 	// Hand-written so `principals create NAME --role Operator --with-key`
@@ -141,17 +137,14 @@ var overrides = map[string]Override{
 	// `cancelTurn` and `cancelSession` both auto-derive to `cancel` (the
 	// trailing resource word is stripped), so one would land as `cancel-2`.
 	// Name the turn-scoped op explicitly so it joins the turn family
-	// (`get-turn`/`start-turn`/`list-turns`); `cancelSession` keeps `cancel`.
+	// (`get-turn`/`list-turns`/`delete-turn`); `cancelSession` keeps `cancel`.
 	"cancelTurn":      {Command: "cancel-turn"},
 	"markSessionRead": {Command: "mark-read"},
-	// Keep nudge lifecycle commands explicit. Without overrides, `cancelNudge`
-	// steals the existing `cancel` leaf from `cancelSession`, and `nudgeSession`
-	// redundantly renders as `nudge-session` inside the sessions group.
-	"nudgeSession":            {Command: "nudge"},
+	// Without an override, `cancelNudge` steals the existing `cancel` leaf
+	// from `cancelSession`. `sendSessionInput` derives to `send-input`.
 	"cancelNudge":             {Command: "cancel-nudge"},
 	"compactSession":          {Command: "compact"},
 	"streamSessionTranscript": {Command: "stream-transcript"},
-	"appendSessionMessages":   {Command: "append-messages"},
 	// Multipart upload: the generated client exposes it only in raw-body
 	// form, so `sessions attach` is hand-written in session_attachments.go.
 	"createSessionAttachment": {Skip: true},
