@@ -10,6 +10,8 @@ the minor version.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-25
+
 ### Removed
 
 - `PATCH /v1/resources/{resource_type}/{resource_id}/ownership`
