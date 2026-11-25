@@ -108,7 +108,7 @@ func registerChannelsCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "channel-id", Description: "Channel ID.", Required: true}).
 		Flags(
 			cli.String("query", "").Help("Words to find in the message body."),
-			cli.Int("before", "").Help("The next_cursor of the previous finder page."),
+			cli.Int("before", "").Help("The previous finder page's `next_cursor`. It is a message sequence written as a decimal string; send it as this integer."),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -247,40 +247,6 @@ func registerChannelsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "replaceChannelExternalAgents", resp.StatusCode(), resp.Body)
-		})
-
-	channelsGrp.Command("stream").
-		Description("Stream channel activity").
-		Flags(
-			cli.String("watch", "").Help("Public channels to follow without joining, comma separated."),
-			cli.String("cursor", "").Help("Resume cursor from the last frame's id."),
-			cli.String("last-event-id", "").Help("Resume cursor from the last frame's id."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			params := &api.StreamChannelsParams{}
-			if ctx.IsSet("watch") {
-				v := ctx.String("watch")
-				params.Watch = &v
-			}
-			if ctx.IsSet("cursor") {
-				v := ctx.String("cursor")
-				params.Cursor = &v
-			}
-			if ctx.IsSet("last-event-id") {
-				v := ctx.String("last-event-id")
-				params.LastEventID = &v
-			}
-			resp, err := client.StreamChannelsWithResponse(ctx.Context(), params)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "streamChannels", resp.StatusCode(), resp.Body)
 		})
 
 	channelsGrp.Command("update-read-state").

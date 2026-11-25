@@ -987,7 +987,7 @@ export interface paths {
         };
         /**
          * Get agent inbox summary
-         * @description Returns the agent's provisioned email inbox address (when enabled) along with message counts across accepted, unread, and gate-filtered emails.
+         * @description Returns the agent's provisioned email inbox address (when enabled) and its unread message count.
          */
         get: operations["getAgentInbox"];
         put?: never;
@@ -2768,7 +2768,7 @@ export interface paths {
         get?: never;
         /**
          * Replace a project connection's external agents in a channel
-         * @description Only a project connection's token calls this, on its own channel. Send the whole list of the project's external agents, every time. Mobius changes only this project's external agents: it creates each named agent that is not live, keeps each live one that is named, and removes each live one that is not named. Removing an agent writes no line. The first agent that joins writes the project's line in the channel. The same owner, channel, and handle are always the same agent and author. A handle follows the rules of `createChannelExternalAgent`, and a handle that another live external agent holds in the channel is refused. The answer has one entry per entry of the list, in order: the external agent's ID, or a refusal `code` and its `refused` text. Use the ID with `exchangeExternalAgentToken`. A project connection may send its list 12 times a minute. Past that, the answer is `429` `rate_limit_exceeded` with `Retry-After`, and nothing changes.
+         * @description Only a project connection's token calls this, on its own channel. Send the whole list of the project's external agents, every time. Mobius changes only this project's external agents: it creates each named agent that is not live, keeps each live one that is named, and removes each live one that is not named. Removing an agent writes no line. The first agent that joins writes the project's line in the channel. The same owner, channel, and handle are always the same agent and author. A handle is 1 to 32 lowercase letters, numbers, hyphens, or underscores, starting with a letter or number. It cannot be a reserved word or the name of a person or assistant in the organization, and a handle that another live external agent holds in the channel is refused. The answer has one entry per entry of the list, in order: the external agent's ID, or a refusal `code` and its `refused` text. Use the ID with `exchangeExternalAgentToken`. A project connection may send its list 12 times a minute. Past that, the answer is `429` `rate_limit_exceeded` with `Retry-After`, and nothing changes.
          */
         put: operations["replaceChannelExternalAgents"];
         post?: never;
@@ -6750,7 +6750,7 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /** @description Live-only marker asking the client to reconcile the active turn from the live snapshot endpoint. */
+        /** @description Live-only marker: the client missed live frames. Read the transcript again with `getSessionTranscript` to reconcile the active turn. */
         SessionResyncFrame: {
             /** @enum {string} */
             event_type: "session.resync";
@@ -15868,7 +15868,7 @@ export interface operations {
             query?: {
                 /** @description Words to find in the message body. */
                 query?: string;
-                /** @description The next_cursor of the previous finder page. */
+                /** @description The previous finder page's `next_cursor`. It is a message sequence written as a decimal string; send it as this integer. */
                 before?: number;
             };
             header?: never;

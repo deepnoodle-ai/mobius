@@ -26,6 +26,10 @@ type SpecOp struct {
 	// default), a bare invocation with no body is a valid request, so the
 	// generator must not emit a "supply a flag or --file" guard.
 	BodyRequired bool
+	// NoAuth is true when the operation declares `security: []`: it takes no
+	// credential, such as redeeming a pairing code. Its command must run on
+	// a machine with no stored login.
+	NoAuth bool
 }
 
 // openapiRoot is a minimal shape covering the fields we read.
@@ -46,6 +50,9 @@ type specOpRaw struct {
 	Description string              `yaml:"description"`
 	Parameters  []specParamRaw      `yaml:"parameters"`
 	RequestBody *specRequestBodyRaw `yaml:"requestBody"`
+	// Security is nil when the operation inherits the spec's default and an
+	// empty slice when it declares `security: []`.
+	Security *[]map[string][]string `yaml:"security"`
 }
 
 // specRequestBodyRaw covers the one requestBody field the generator needs.
@@ -123,6 +130,7 @@ func parseSpec(path string) (map[string]*SpecOp, error) {
 				ParamDescriptions: paramDescs,
 				ParamDefaultTrue:  defaultTrue,
 				BodyRequired:      op.RequestBody != nil && op.RequestBody.Required,
+				NoAuth:            op.Security != nil && len(*op.Security) == 0,
 			}
 		}
 	}

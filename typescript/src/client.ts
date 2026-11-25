@@ -960,10 +960,7 @@ export class Client {
     );
   }
 
-  /**
-   * Lists org-owned and organization-shared skills. Organization skills are
-   * read-only through these mutation routes.
-   */
+  /** Lists the skills visible to the caller. */
   async listSkills(): Promise<SkillListResponse> {
     const resp = await this.request("/v1/skills", { method: "GET" });
     return (await resp.json()) as SkillListResponse;
@@ -996,10 +993,7 @@ export class Client {
     return (await resp.json()) as Skill;
   }
 
-  /**
-   * Returns a single org-owned, organization-shared, or system skill by
-   * ID.
-   */
+  /** Returns a single skill by ID. */
   async getSkill(skillId: string): Promise<Skill> {
     const resp = await this.request(
       `/v1/skills/${encodeURIComponent(skillId)}`,

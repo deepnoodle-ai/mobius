@@ -10823,7 +10823,7 @@ type SessionResolvedAction struct {
 	Name string `json:"name"`
 }
 
-// SessionResyncFrame Live-only marker asking the client to reconcile the active turn from the live snapshot endpoint.
+// SessionResyncFrame Live-only marker: the client missed live frames. Read the transcript again with `getSessionTranscript` to reconcile the active turn.
 type SessionResyncFrame struct {
 	EventType SessionResyncFrameEventType `json:"event_type"`
 
@@ -12742,7 +12742,7 @@ type FindChannelMessagesParams struct {
 	// Query Words to find in the message body.
 	Query *string `form:"query,omitempty" json:"query,omitempty"`
 
-	// Before The next_cursor of the previous finder page.
+	// Before The previous finder page's `next_cursor`. It is a message sequence written as a decimal string; send it as this integer.
 	Before *int64 `form:"before,omitempty" json:"before,omitempty"`
 }
 

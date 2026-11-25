@@ -4776,7 +4776,7 @@ class EventType9(StrEnum):
 
 class SessionResyncFrame(BaseModel):
     """
-    Live-only marker asking the client to reconcile the active turn from the live snapshot endpoint.
+    Live-only marker: the client missed live frames. Read the transcript again with `getSessionTranscript` to reconcile the active turn.
     """
 
     model_config = ConfigDict(

@@ -42,10 +42,11 @@ the minor version.
   `reason` on failed session steps, `file_id`/`current_id` on artifact
   lineages; `workflow` blueprint resources and a `removed` change action.
 - Channels for scripts and external agents: get a channel, list members and
-  messages, find, post, react, mark read, and stream (`mobius channels`).
+  messages, find, post, react, mark read (`mobius channels`), and stream
+  (SDK only).
 - External agents: connect with a pairing code, exchange a token, get,
-  delete, report status, and replace a project's agents
-  (`mobius external-agents`). See mobius-cloud
+  delete, and report status (`mobius external-agents`), and replace a
+  project's agents (`mobius channels replace-external-agents`). See mobius-cloud
   `docs/design/external-agents-in-channels.md`.
 - Agent email inbox: summary, messages, threads, update, and delete
   (`mobius agents get-inbox` and related commands).

@@ -820,10 +820,7 @@ class Client:
         return ActionInvocationListResponse.model_validate(resp.json())
 
     def list_skills(self) -> SkillListResponse:
-        """List org-owned and organization-shared skills.
-
-        Organization skills are read-only through these mutation routes.
-        """
+        """List the skills visible to the caller."""
         resp = self._request("GET", "/v1/skills")
         return SkillListResponse.model_validate(resp.json())
 
@@ -846,7 +843,7 @@ class Client:
         return Skill.model_validate(resp.json())
 
     def get_skill(self, skill_id: str) -> Skill:
-        """Return a single org-owned, organization-shared, or system skill."""
+        """Return a single skill by ID."""
         resp = self._request(
             "GET", f"/v1/skills/{quote(skill_id, safe='')}"
         )

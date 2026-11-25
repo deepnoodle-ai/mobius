@@ -32,7 +32,7 @@ type Override struct {
 //
 // The recurring rename is the redundant resource token: the auto-derivation
 // only strips the resource word for verbs it recognises, so operations like
-// `pauseRoutine` or `reviewInteraction` keep a noun the group name already
+// `pauseRoutine` or `respondToInteraction` keep a noun the group name already
 // carries. Strip it so every leaf in a group reads verb-first.
 //
 // Entries are grouped by command group so the file mirrors how a user reads
@@ -76,7 +76,6 @@ var overrides = map[string]Override{
 
 	// --- interactions -----------------------------------------------------
 	"respondToInteraction": {Command: "respond"},
-	"reviewInteraction":    {Command: "review"},
 
 	// --- api-keys ---------------------------------------------------------
 	// Drop the redundant `key` token; the group name already carries it.
@@ -180,7 +179,9 @@ var overrides = map[string]Override{
 	"setExternalAgentStatus":       {Group: "external-agents", Command: "set-status"},
 	"replaceChannelExternalAgents": {Command: "replace-external-agents"},
 	"findChannelMessages":          {Command: "find-messages"},
-	"streamChannels":               {Command: "stream"},
+	// The generated command reads the whole SSE body before printing, so a
+	// live stream never prints. Leave it out until the CLI streams.
+	"streamChannels": {Skip: true},
 }
 
 // groupDescriptions is an opt-in table of subcommand group descriptions,
