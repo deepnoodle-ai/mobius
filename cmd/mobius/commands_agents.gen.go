@@ -125,8 +125,6 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("model", "").Help("Model identifier for agents. Any id from `GET /v1/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default."),
 			cli.String("model-route", "").Help("Default model route used by built-in messaging and by any turn that does not override the route. Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("[required] Unique name for this agent. Free-form human-readable label, 1-63 characters."),
-			cli.String("output-folder", "").Help("Ignored. An assistant chooses a folder for each file it saves. Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set"),
-			cli.String("owner", "").Help("The human or team responsible for this resource. Accepts JSON, @file, or @-."),
 			cli.String("system-prompt", "").Help("Custom system prompt for agents. Empty uses the generated default."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session, or the provider's own default when nothing sets a level."),
@@ -199,15 +197,6 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
 			}
-			if ctx.IsSet("output-folder") {
-				v := ctx.String("output-folder")
-				body.OutputFolder = &v
-			}
-			if ctx.IsSet("owner") {
-				if err := decodeFlagJSON(ctx, "owner", ctx.String("owner"), &body.Owner); err != nil {
-					return err
-				}
-			}
 			if ctx.IsSet("system-prompt") {
 				v := ctx.String("system-prompt")
 				body.SystemPrompt = &v
@@ -242,7 +231,7 @@ func registerAgentsCommands(app *cli.App) {
 				return fmt.Errorf("--name is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body, "action_selectors", "compaction_policy", "memory_context", "model_route", "owner", "tags")
+				return printDryRun(ctx, body, "action_selectors", "compaction_policy", "memory_context", "model_route", "tags")
 			}
 			resp, err := client.CreateAgentWithResponse(ctx.Context(), body)
 			if err != nil {
@@ -267,6 +256,26 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "deleteAgent", resp.StatusCode(), resp.Body)
+		})
+
+	agentsGrp.Command("delete-inbox-message").
+		Description("Delete an agent inbox message").
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "message-id", Description: "Identifier of the inbox email message.", Required: true}).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.IDParam(ctx.Arg(0))
+			p1 := ctx.Arg(1)
+			resp, err := client.DeleteAgentInboxMessageWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "deleteAgentInboxMessage", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("delete-memory-entry").
@@ -313,6 +322,77 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "getAgent", resp.StatusCode(), resp.Body)
+		})
+
+	agentsGrp.Command("get-inbox").
+		Description("Get agent inbox summary").
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.IDParam(ctx.Arg(0))
+			resp, err := client.GetAgentInboxWithResponse(ctx.Context(), p0)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "getAgentInbox", resp.StatusCode(), resp.Body)
+		})
+
+	agentsGrp.Command("get-inbox-message").
+		Description("Get an agent inbox message").
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "message-id", Description: "Identifier of the inbox email message.", Required: true}).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.IDParam(ctx.Arg(0))
+			p1 := ctx.Arg(1)
+			resp, err := client.GetAgentInboxMessageWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "getAgentInboxMessage", resp.StatusCode(), resp.Body)
+		})
+
+	agentsGrp.Command("get-inbox-thread").
+		Description("Get an agent inbox thread").
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "thread-key", Description: "Stable conversation thread key for the email thread.", Required: true}).
+		Flags(
+			cli.String("gate", "").Help("Select gate-accepted emails (`accepted`, default), gate-suppressed emails (`filtered`), or both (`all`)."),
+			cli.Int("limit", "").Help("Maximum number of thread messages to return (1–100, default 50)."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.IDParam(ctx.Arg(0))
+			p1 := ctx.Arg(1)
+			params := &api.GetAgentInboxThreadParams{}
+			if ctx.IsSet("gate") {
+				v := api.AgentEmailGateFilter(ctx.String("gate"))
+				params.Gate = &v
+			}
+			if ctx.IsSet("limit") {
+				v := ctx.Int("limit")
+				params.Limit = &v
+			}
+			resp, err := client.GetAgentInboxThreadWithResponse(ctx.Context(), p0, p1, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "getAgentInboxThread", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("get-memory").
@@ -498,6 +578,67 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "listDeletedAgents", resp.StatusCode(), resp.Body)
+		})
+
+	agentsGrp.Command("list-inbox-messages").
+		Description("List agent inbox messages").
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
+		Flags(
+			cli.String("status", "").Help("Filter by triage status (`unread`, `read`, `archived`, or `all`). Omit to return active messages (`unread` and `read`, excluding `archived`)."),
+			cli.String("direction", "").Help("Filter by message direction (`inbound` or `outbound`)."),
+			cli.String("gate", "").Help("Select gate-accepted emails (`accepted`, default), gate-suppressed emails (`filtered`), or both (`all`)."),
+			cli.String("from", "").Help("Filter by sender address or display name substring."),
+			cli.String("label", "").Help("Filter by exact triage label (case-insensitive)."),
+			cli.String("query", "").Help("Optional keyword search matched across subject, sender, plain-text body, and triage notes."),
+			cli.Int("limit", "").Help("Maximum number of messages to return (1–50, default 20)."),
+			cli.String("cursor", "").Help("Opaque pagination cursor returned as `next_cursor` from the previous page."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.IDParam(ctx.Arg(0))
+			params := &api.ListAgentInboxMessagesParams{}
+			if ctx.IsSet("status") {
+				v := api.ListAgentInboxMessagesParamsStatus(ctx.String("status"))
+				params.Status = &v
+			}
+			if ctx.IsSet("direction") {
+				v := api.AgentEmailDirection(ctx.String("direction"))
+				params.Direction = &v
+			}
+			if ctx.IsSet("gate") {
+				v := api.AgentEmailGateFilter(ctx.String("gate"))
+				params.Gate = &v
+			}
+			if ctx.IsSet("from") {
+				v := ctx.String("from")
+				params.From = &v
+			}
+			if ctx.IsSet("label") {
+				v := ctx.String("label")
+				params.Label = &v
+			}
+			if ctx.IsSet("query") {
+				v := ctx.String("query")
+				params.Query = &v
+			}
+			if ctx.IsSet("limit") {
+				v := ctx.Int("limit")
+				params.Limit = &v
+			}
+			if ctx.IsSet("cursor") {
+				v := ctx.String("cursor")
+				params.Cursor = &v
+			}
+			resp, err := client.ListAgentInboxMessagesWithResponse(ctx.Context(), p0, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listAgentInboxMessages", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("list-members").
@@ -978,29 +1119,24 @@ func registerAgentsCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("action-selectors", "").Help("Replacement action selection, as a whole. Omit to leave the agent's current selection untouched; send an empty array to select none. Accepts JSON, @file, or @-."),
-			cli.String("affected-resource-dispositions", "").Help("Ignored. Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set Accepts JSON, @file, or @-."),
 			cli.String("color", "").Help("Replacement display color (Mantine palette key, e.g. `indigo`). Pass empty string to clear and fall back to a hash-derived color."),
 			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values. Accepts JSON, @file, or @-."),
-			cli.Bool("confirm-visibility-change", "").Help("Ignored. Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set"),
 			cli.String("description", "").Help("Replacement description."),
-			cli.String("expected-updated-at", "").Help("The agent's `updated_at` as the caller last read it. When set, the update saves only if the agent is unchanged since then, compared to the microsecond; otherwise it returns 409 with code `agent_changed` and saves nothing. Accepts JSON, @file, or @-."),
+			cli.String("email-replies", "").Help("Whose mail to `email_address` the agent answers by email, from that address. Every message is stored whatever this says, and replies go only to a sender address the receiving mail server authenticated. Mailing lists and no-reply senders never get a reply. `off` answers no one. `audience` answers the people who can use the agent, matched by their verified email; it is the default. `anyone` also answers people outside that audience; those conversations run without company accounts and cannot send email, call webhooks, or take destructive actions."),
+			cli.String("expected-updated-at", "").Help("The agent's `updated_at` as the caller last read it. When set, the update saves only if the agent is unchanged since then, compared to the microsecond; otherwise it returns 409 with code `agent_changed` and saves nothing. Required when the request replaces `system_prompt` or `action_selectors`; without it those requests return 400 with code `agent_version_required`. Accepts JSON, @file, or @-."),
 			cli.String("external-ref", "").Help("Assign-once client identity key, unique within the org. Accepted when the agent has no external_ref, or when it repeats the current value idempotently. Changing an already-set value returns 409."),
-			cli.Strings("members", "").Help("Replacement members for a `restricted` or `private` agent: the exact set after this call. Omit to leave membership unchanged. An empty set is refused, and a `private` agent's one member is the person it belongs to. Use the members endpoints instead. Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set"),
 			cli.String("memory-context", "").Help("Replacement automatic memory delivery policy. Send an empty object to clear the stored override and restore the bounded index default. Otherwise `mode` is required (`index`, `full`, or `off`) and `max_bytes` is optional. Accepts JSON, @file, or @-."),
 			cli.Bool("memory-enabled", "").Help("Replacement runtime memory hard gate. It cannot be overridden at invocation time."),
 			cli.String("model", "").Help("Replacement model identifier for agents (any id from `GET /v1/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id)."),
 			cli.String("model-route", "").Help("Default model route used by built-in messaging and by any turn that does not override the route. Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("Free-form human-readable label, 1-63 characters; must be unique within the org."),
-			cli.String("output-folder", "").Help("Ignored. An assistant chooses a folder for each file it saves. Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set"),
 			cli.String("status", "").Help("Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent."),
-			cli.String("stranded-disposition", "").Help("Ignored. Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set"),
 			cli.String("system-prompt", "").Help("Replacement system prompt for agents."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session, or the provider's own default when nothing sets a level."),
 			cli.Int("timeout-seconds", "").Help("Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (1800s / 30 minutes); a request's `operation.timeout_seconds` overrides it for that turn."),
 			cli.String("tool-approval-mode", "").Help("Which tool calls on a connected account or a remote tool wait for a person's approval. `never` asks before nothing. `destructive` asks before a call that cannot be undone, such as sending an email, deleting, or posting publicly. `writes` asks before any call that is not read-only. Tools inside Mobius (memory, Library, tables, the workspace) never ask. One approval covers that tool for the rest of the message, or the routine run."),
 			cli.String("tool-presentation", "").Help("Controls how selected actions are surfaced to the model in Mobius-hosted agent turns. `flat` (the default) exposes one tool per action, while `meta` groups related actions behind compact command routers."),
-			cli.String("visibility", "").Help("Who, inside the org that owns this agent, may reach it at all."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -1021,11 +1157,6 @@ func registerAgentsCommands(app *cli.App) {
 					return err
 				}
 			}
-			if ctx.IsSet("affected-resource-dispositions") {
-				if err := decodeFlagJSON(ctx, "affected-resource-dispositions", ctx.String("affected-resource-dispositions"), &body.AffectedResourceDispositions); err != nil {
-					return err
-				}
-			}
 			if ctx.IsSet("color") {
 				v := ctx.String("color")
 				body.Color = &v
@@ -1035,13 +1166,13 @@ func registerAgentsCommands(app *cli.App) {
 					return err
 				}
 			}
-			if ctx.IsSet("confirm-visibility-change") {
-				v := ctx.Bool("confirm-visibility-change")
-				body.ConfirmVisibilityChange = &v
-			}
 			if ctx.IsSet("description") {
 				v := ctx.String("description")
 				body.Description = &v
+			}
+			if ctx.IsSet("email-replies") {
+				v := api.AgentEmailReplies(ctx.String("email-replies"))
+				body.EmailReplies = &v
 			}
 			if ctx.IsSet("expected-updated-at") {
 				if err := decodeFlagJSON(ctx, "expected-updated-at", ctx.String("expected-updated-at"), &body.ExpectedUpdatedAt); err != nil {
@@ -1051,10 +1182,6 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.IsSet("external-ref") {
 				v := ctx.String("external-ref")
 				body.ExternalRef = &v
-			}
-			if ctx.IsSet("members") {
-				v := ctx.Strings("members")
-				body.Members = &v
 			}
 			if ctx.IsSet("memory-context") {
 				if err := decodeFlagJSON(ctx, "memory-context", ctx.String("memory-context"), &body.MemoryContext); err != nil {
@@ -1078,17 +1205,9 @@ func registerAgentsCommands(app *cli.App) {
 				v := ctx.String("name")
 				body.Name = &v
 			}
-			if ctx.IsSet("output-folder") {
-				v := ctx.String("output-folder")
-				body.OutputFolder = &v
-			}
 			if ctx.IsSet("status") {
 				v := api.UpdateAgentRequestStatus(ctx.String("status"))
 				body.Status = &v
-			}
-			if ctx.IsSet("stranded-disposition") {
-				v := api.UpdateAgentRequestStrandedDisposition(ctx.String("stranded-disposition"))
-				body.StrandedDisposition = &v
 			}
 			if ctx.IsSet("system-prompt") {
 				v := ctx.String("system-prompt")
@@ -1116,21 +1235,66 @@ func registerAgentsCommands(app *cli.App) {
 				v := api.AgentToolPresentation(ctx.String("tool-presentation"))
 				body.ToolPresentation = &v
 			}
-			if ctx.IsSet("visibility") {
-				v := api.AgentVisibility(ctx.String("visibility"))
-				body.Visibility = &v
-			}
-			if ctx.String("file") == "" && !ctx.IsSet("action-selectors") && !ctx.IsSet("affected-resource-dispositions") && !ctx.IsSet("color") && !ctx.IsSet("compaction-policy") && !ctx.IsSet("confirm-visibility-change") && !ctx.IsSet("description") && !ctx.IsSet("expected-updated-at") && !ctx.IsSet("external-ref") && !ctx.IsSet("members") && !ctx.IsSet("memory-context") && !ctx.IsSet("memory-enabled") && !ctx.IsSet("model") && !ctx.IsSet("model-route") && !ctx.IsSet("name") && !ctx.IsSet("output-folder") && !ctx.IsSet("status") && !ctx.IsSet("stranded-disposition") && !ctx.IsSet("system-prompt") && !ctx.IsSet("tag") && !ctx.IsSet("thinking-effort") && !ctx.IsSet("timeout-seconds") && !ctx.IsSet("tool-approval-mode") && !ctx.IsSet("tool-presentation") && !ctx.IsSet("visibility") {
+			if ctx.String("file") == "" && !ctx.IsSet("action-selectors") && !ctx.IsSet("color") && !ctx.IsSet("compaction-policy") && !ctx.IsSet("description") && !ctx.IsSet("email-replies") && !ctx.IsSet("expected-updated-at") && !ctx.IsSet("external-ref") && !ctx.IsSet("memory-context") && !ctx.IsSet("memory-enabled") && !ctx.IsSet("model") && !ctx.IsSet("model-route") && !ctx.IsSet("name") && !ctx.IsSet("status") && !ctx.IsSet("system-prompt") && !ctx.IsSet("tag") && !ctx.IsSet("thinking-effort") && !ctx.IsSet("timeout-seconds") && !ctx.IsSet("tool-approval-mode") && !ctx.IsSet("tool-presentation") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body, "action_selectors", "affected_resource_dispositions", "compaction_policy", "memory_context", "model_route", "tags")
+				return printDryRun(ctx, body, "action_selectors", "compaction_policy", "memory_context", "model_route", "tags")
 			}
 			resp, err := client.UpdateAgentWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
 			return printResponse(ctx, "updateAgent", resp.StatusCode(), resp.Body)
+		})
+
+	agentsGrp.Command("update-inbox-message").
+		Description("Update an agent inbox message").
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "message-id", Description: "Identifier of the inbox email message.", Required: true}).
+		Flags(
+			cli.Strings("labels", "").Help("Replacement list of up to 20 short triage labels."),
+			cli.String("notes", "").Help("Plain-text triage notes (up to 8,000 characters)."),
+			cli.String("status", "").Help("Mutable triage status of a stored agent email message."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := api.IDParam(ctx.Arg(0))
+			p1 := ctx.Arg(1)
+			var body api.UpdateAgentInboxMessageJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("labels") {
+				v := ctx.Strings("labels")
+				body.Labels = &v
+			}
+			if ctx.IsSet("notes") {
+				v := ctx.String("notes")
+				body.Notes = &v
+			}
+			if ctx.IsSet("status") {
+				v := api.AgentEmailStatus(ctx.String("status"))
+				body.Status = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("labels") && !ctx.IsSet("notes") && !ctx.IsSet("status") {
+				return fmt.Errorf("at least one flag or --file is required")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.UpdateAgentInboxMessageWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "updateAgentInboxMessage", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("update-member").

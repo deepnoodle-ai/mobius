@@ -292,6 +292,26 @@ class SessionCompactionPolicy(BaseModel):
         deprecated=True,
         description='Ignored. Every session is summarized by the same platform model. Accepted until web clients that send it are gone; never returned.',
     )
+    effective_threshold_tokens: int | None = Field(
+        None,
+        description='Effective compaction threshold in estimated tokens for the resolved policy and model, after applying any long-context price-tier ceiling. Present when `strategy` is `auto`.',
+    )
+    ceiling_applied: bool | None = Field(
+        None,
+        description="True when the model's long-context price-tier ceiling capped `effective_threshold_tokens` below the configured preset or exact `threshold_tokens`.",
+    )
+    compaction_ceiling_tokens: int | None = Field(
+        None,
+        description="Maximum compaction threshold in tokens under the model's long-context price tier. Omitted when the model has no tier.",
+    )
+    long_context_threshold_tokens: int | None = Field(
+        None,
+        description='Input token count at which the model enters its long-context price tier. Omitted when the model has no tier.',
+    )
+    context_window_tokens: int | None = Field(
+        None,
+        description='Model input context window in tokens used to resolve model-relative compaction presets.',
+    )
 
 
 class MemoryContextMode(StrEnum):
@@ -360,6 +380,16 @@ class AgentVisibility(StrEnum):
     organization = 'organization'
     restricted = 'restricted'
     private = 'private'
+
+
+class AgentEmailReplies(StrEnum):
+    """
+    Whose mail to `email_address` the agent answers by email, from that address. Every message is stored whatever this says, and replies go only to a sender address the receiving mail server authenticated. Mailing lists and no-reply senders never get a reply. `off` answers no one. `audience` answers the people who can use the agent, matched by their verified email; it is the default. `anyone` also answers people outside that audience; those conversations run without company accounts and cannot send email, call webhooks, or take destructive actions.
+    """
+
+    off = 'off'
+    audience = 'audience'
+    anyone = 'anyone'
 
 
 class Agent(BaseModel):
@@ -462,6 +492,7 @@ class Agent(BaseModel):
         None,
         description='Inbox address provisioned via POST /v1/agents/{resource_id}/inbox (opt-in; not created automatically at agent creation). The field is populated only after a successful provisioning call. Use this address to add the agent as a member on external platforms (Linear, GitHub, Slack, etc.) so the platform can deliver notifications to the agent.',
     )
+    email_replies: AgentEmailReplies
     tags: TagMap | None = Field(
         None,
         description='Free-form labels used for filtering, ownership, or automation.',
@@ -1646,6 +1677,16 @@ class ModelOption(BaseModel):
         description='Maximum input context used to resolve model-relative compaction presets.',
         ge=1,
     )
+    long_context_threshold_tokens: int | None = Field(
+        None,
+        description='Input token count at which this model enters its long-context price tier. Omitted when the model has no tier.',
+        ge=1,
+    )
+    compaction_ceiling_tokens: int | None = Field(
+        None,
+        description="Maximum compaction threshold in tokens under this model's long-context price tier. Omitted when the model has no tier.",
+        ge=1,
+    )
     recommended: bool | None = Field(
         None, description='Whether this is the suggested default for its provider.'
     )
@@ -2827,7 +2868,11 @@ class AgentCopyLeftOut(BaseModel):
     )
     kind: Kind8
     id: str
-    name: str = Field(..., description='Empty for a file.')
+    name: str = Field(..., description='Empty for a file and for a private skill.')
+    private: bool = Field(
+        ...,
+        description='True for a skill private to its custodian. Its name is left out, so an administrator offboarding the custodian never reads it.',
+    )
     reason: Reason1 = Field(
         ...,
         description='`audience`: the skill is private to fewer people than the copy is for, and its custodian can share it; or the file belongs to a chat and stays in it. `needs_admin`: only an Admin grants a company account. `failed`: the copy or grant failed.',
@@ -2967,7 +3012,6 @@ class InteractionSpec(BaseModel):
     question** — single-question is what makes an approval auditable
     * `request_review` → `select`, `input`
     * `request_information` → `select`, `multi_select`, `input`
-    * `assign_work` → `select`, `multi_select`, `input`
     """
 
     model_config = ConfigDict(
@@ -3028,9 +3072,6 @@ class InteractionKind(StrEnum):
     yes/no/defer)
     * `request_review` — a judgment protocol that evaluates supplied
     material
-    * `assign_work` — assigned work performed by a user or agent, which
-    submits the result. Pair it with `resolution_policy.review` when the
-    result must be accepted before the interaction resolves.
     * `request_takeover` — an assistant asks a person to take over a
     Computer's screen and finish a step only a person can do. Only
     Mobius creates it; `computer_takeover` carries the card. A person
@@ -3038,13 +3079,12 @@ class InteractionKind(StrEnum):
     `answers: [{question_id: "outcome", value: "declined"}]` and no
     other answer; Mobius records how the takeover ended.
 
-    The first three are *answered*; `assign_work` is *worked*. Kind does not by itself decide when an interaction closes — the resolution policy does.
+    Kind does not by itself decide when an interaction closes — the resolution policy does.
     """
 
     request_information = 'request_information'
     request_approval = 'request_approval'
     request_review = 'request_review'
-    assign_work = 'assign_work'
     request_takeover = 'request_takeover'
 
 
@@ -3052,18 +3092,12 @@ class InteractionStatus(StrEnum):
     """
     Lifecycle state of the interaction.
     * `pending` — open; the assigned users still need to act.
-    * `in_review` — a result was submitted and an acceptance reviewer must
-    accept it or send it back. Only interactions whose resolution policy
-    carries a `review` block enter this state.
     * `completed` — resolved; the outcome is final.
     * `expired` — the deadline passed before resolution.
     * `cancelled` — deliberately stopped.
-
-    `pending` and `in_review` are the *open* states: some actor still owes an action and any waiting consumer has not been resumed.
     """
 
     pending = 'pending'
-    in_review = 'in_review'
     completed = 'completed'
     expired = 'expired'
     cancelled = 'cancelled'
@@ -3129,10 +3163,15 @@ class EmailDelivery(BaseModel):
 
 
 class Kind11(StrEnum):
+    """
+    `external_agent_prompt`: an external agent's permission prompt for one call it holds, named to its owner.
+    """
+
     agent_tool = 'agent_tool'
     http_subscriber = 'http_subscriber'
     none = 'none'
     mcp_server_approval = 'mcp_server_approval'
+    external_agent_prompt = 'external_agent_prompt'
 
 
 class InteractionSourceConversation(BaseModel):
@@ -3282,28 +3321,8 @@ class InteractionResponse(BaseModel):
     responded_at: AwareDatetime = Field(
         ..., description='Timestamp when this response was submitted.'
     )
-    attempt: int | None = Field(
-        None,
-        description="Review round this response was submitted under, matching the interaction's `review_round` at submission time. Null or absent for the first round. Only responses whose `attempt` equals the interaction's current `review_round` count toward resolution; earlier rounds are retained as audit history.",
-    )
     created_at: AwareDatetime
     updated_at: AwareDatetime
-
-
-class ReviewPolicy(BaseModel):
-    """
-    Optional acceptance gate on a resolution policy. Its presence — not the interaction's kind — is what makes an interaction reviewable, so the gate stays opt-in and ordinary approvals and input requests are unaffected.
-
-    With a review block, satisfying the resolution rule moves the interaction to `in_review` instead of resolving it, and any waiting consumer stays suspended. A reviewer then calls the review endpoint to accept (resolve and resume) or request changes (return to `pending` under a new review round, consumer still waiting).
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    reviewer_user_ids: list[str] | None = Field(
-        None,
-        description="Principals who may accept or send back submitted work. When omitted or empty, the interaction's creator is the reviewer. Assignees are never implied reviewers — self-acceptance would make the gate decorative. Required when the interaction has no creator.",
-    )
 
 
 class Type18(StrEnum):
@@ -3318,7 +3337,7 @@ class Type18(StrEnum):
 
 class ResolutionPolicy(BaseModel):
     """
-    Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome, and whether that outcome needs acceptance before it is final.
+    Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome.
     """
 
     model_config = ConfigDict(
@@ -3333,10 +3352,6 @@ class ResolutionPolicy(BaseModel):
         description='Required when `type` is `quorum`. Number of distinct eligible participants that must respond before the interaction resolves. Must be `>= 1` and `<=` the participant count.',
         ge=1,
     )
-    review: ReviewPolicy | None = Field(
-        None,
-        description='Optional acceptance gate. Null (the default) means responses resolve the interaction directly.',
-    )
 
 
 class Action1(StrEnum):
@@ -3345,9 +3360,6 @@ class Action1(StrEnum):
     """
 
     created = 'created'
-    submitted_for_review = 'submitted_for_review'
-    accepted = 'accepted'
-    changes_requested = 'changes_requested'
     resolved = 'resolved'
     cancelled = 'cancelled'
     expired = 'expired'
@@ -3371,12 +3383,7 @@ class InteractionLifecycleEvent(BaseModel):
         description='Principal that caused the transition. Null for system-driven transitions such as expiry.',
     )
     comment: str | None = Field(
-        None,
-        description='Reviewer feedback, cancel reason, or responder comment, depending on `action`.',
-    )
-    round: int | None = Field(
-        None,
-        description='Review round the transition belongs to. Zero for the first pass.',
+        None, description='Cancel reason or responder comment, depending on `action`.'
     )
 
 
@@ -3408,34 +3415,7 @@ class RespondToInteractionRequest(BaseModel):
     )
     held_card_seen: bool | None = Field(
         None,
-        description='Send true only from a view that shows the full details of the held tool calls. An approval Mobius opened for held tool calls refuses every answer without it.',
-    )
-
-
-class Action3(StrEnum):
-    """
-    `accept` resolves the interaction and resumes any waiting consumer. `request_changes` returns it to `pending` for another round.
-    """
-
-    accept = 'accept'
-    request_changes = 'request_changes'
-
-
-class ReviewInteractionRequest(BaseModel):
-    """
-    Acceptance decision on submitted work.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    action: Action3 = Field(
-        ...,
-        description='`accept` resolves the interaction and resumes any waiting consumer. `request_changes` returns it to `pending` for another round.',
-    )
-    comment: str | None = Field(
-        None,
-        description="The reviewer's reasoning. Required for `request_changes` — work sent back without a reason gives the assignee nothing to act on. Optional for `accept`, where it is recorded as an acceptance note.",
+        description="Send true only from a view that shows the full details of the held tool calls. An approval Mobius opened for held tool calls refuses every answer without it. An external agent's permission prompt refuses an approval without it, and accepts a denial.",
     )
 
 
@@ -3548,28 +3528,6 @@ class AddAgentMembersRequest(BaseModel):
         description='Principals to add. Each must be a live principal in this org. Adding a principal who is already a member is a no-op.',
         max_length=200,
     )
-
-
-class ResourceType(StrEnum):
-    artifact = 'artifact'
-    session = 'session'
-    skill = 'skill'
-    table = 'table'
-
-
-class Action4(StrEnum):
-    revoke = 'revoke'
-    make_private = 'make_private'
-    keep_and_widen = 'keep_and_widen'
-
-
-class AgentAudienceResourceDisposition(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    resource_type: ResourceType
-    resource_id: str
-    action: Action4
 
 
 class PromoteAgentMemoryEntryRequest(BaseModel):
@@ -3872,23 +3830,12 @@ class CreateAgentRequest(BaseModel):
         None,
         description='Default reasoning-effort level new sessions inherit from this agent.',
     )
-    output_folder: str | None = Field(
-        None,
-        deprecated=True,
-        description='Ignored. An assistant chooses a folder for each file it saves.',
-        max_length=256,
-    )
     tags: TagMap | None = Field(
         None, description='Initial labels used for filtering, ownership, or automation.'
     )
-    owner: ResourceOwner | None = Field(
-        None,
-        deprecated=True,
-        description="Ignored. Custody follows from `visibility`: a `private` agent is in its one member's custody, a `restricted` or `organization` agent in the team's.",
-    )
     visibility: AgentVisibility | None = Field(
         None,
-        description='Who this agent is for: its kind, which cannot change after create. Omit for `private` on the employee API.',
+        description="Who this agent is for: its kind, which cannot change after create. Custody follows from it: a `private` agent is in its one member's custody, a `restricted` or `organization` agent in the team's. Omit for `private` on the employee API.",
     )
     members: list[str] | None = Field(
         None,
@@ -3906,15 +3853,6 @@ class Status3(StrEnum):
     inactive = 'inactive'
 
 
-class StrandedDisposition(StrEnum):
-    """
-    Ignored.
-    """
-
-    retain = 'retain'
-    delete = 'delete'
-
-
 class UpdateAgentRequest(BaseModel):
     """
     Mutable agent fields. The agent's backing identity (`principal_id`, the machine principal created atomically with the agent) is intentionally absent: it is immutable. Reassigning identity is delete-and-recreate.
@@ -3925,7 +3863,7 @@ class UpdateAgentRequest(BaseModel):
     )
     expected_updated_at: AwareDatetime | None = Field(
         None,
-        description="The agent's `updated_at` as the caller last read it. When set, the update saves only if the agent is unchanged since then, compared to the microsecond; otherwise it returns 409 with code `agent_changed` and saves nothing.",
+        description="The agent's `updated_at` as the caller last read it. When set, the update saves only if the agent is unchanged since then, compared to the microsecond; otherwise it returns 409 with code `agent_changed` and saves nothing. Required when the request replaces `system_prompt` or `action_selectors`; without it those requests return 400 with code `agent_version_required`.",
     )
     name: str | None = Field(
         None,
@@ -3983,6 +3921,10 @@ class UpdateAgentRequest(BaseModel):
         None,
         description='Replacement runtime memory hard gate. It cannot be overridden at invocation time.',
     )
+    email_replies: AgentEmailReplies | None = Field(
+        None,
+        description='Replacement setting for whose mail the agent answers by email.',
+    )
     memory_context: UpdateMemoryContextPolicy | None = None
     tool_approval_mode: ToolApprovalMode | None = Field(
         None, description='Replacement approval mode.'
@@ -3991,34 +3933,8 @@ class UpdateAgentRequest(BaseModel):
         None,
         description='Replacement default reasoning-effort level. Send `inherit` to clear the default and leave the provider default in place.',
     )
-    output_folder: str | None = Field(
-        None,
-        deprecated=True,
-        description='Ignored. An assistant chooses a folder for each file it saves.',
-        max_length=256,
-    )
     tags: TagMap | None = Field(
         None, description='Replacement labels; send an empty object to clear all tags.'
-    )
-    visibility: AgentVisibility | None = Field(
-        None,
-        deprecated=True,
-        description="The agent's kind is set when it is created. The current value is accepted and changes nothing; any other value returns `409`.",
-    )
-    members: list[str] | None = Field(
-        None,
-        deprecated=True,
-        description="Replacement members for a `restricted` or `private` agent: the exact set after this call. Omit to leave membership unchanged. An empty set is refused, and a `private` agent's one member is the person it belongs to. Use the members endpoints instead.",
-        max_length=200,
-    )
-    confirm_visibility_change: bool = Field(
-        False, deprecated=True, description='Ignored.'
-    )
-    affected_resource_dispositions: list[AgentAudienceResourceDisposition] | None = (
-        Field(None, deprecated=True, description='Ignored.')
-    )
-    stranded_disposition: StrandedDisposition | None = Field(
-        None, deprecated=True, description='Ignored.'
     )
 
 
@@ -4230,12 +4146,314 @@ class SaveAgentMemoryEntryRequest(BaseModel):
     )
 
 
-class Source3(StrEnum):
+class AgentEmailDirection(StrEnum):
     """
-    Ownership and mutability of the Skill. `system` is built-in and `custom` is user-managed.
+    Whether the email was received by the agent (`inbound`) or sent from the agent's inbox (`outbound`).
     """
 
-    system = 'system'
+    inbound = 'inbound'
+    outbound = 'outbound'
+
+
+class AgentEmailStatus(StrEnum):
+    """
+    Mutable triage status of a stored agent email message.
+    """
+
+    unread = 'unread'
+    read = 'read'
+    archived = 'archived'
+
+
+class AgentEmailGateFilter(StrEnum):
+    """
+    Selects gate-accepted messages (`accepted`), gate-suppressed messages (`filtered`), or both (`all`).
+    """
+
+    accepted = 'accepted'
+    filtered = 'filtered'
+    all = 'all'
+
+
+class AgentEmailInboxSummary(BaseModel):
+    """
+    Summary of an agent's dedicated persistent email inbox.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    agent_id: str = Field(
+        ..., description='Identifier of the agent that owns this inbox.'
+    )
+    email_address: str | None = Field(
+        None, description='Provisioned inbound email address, when enabled.'
+    )
+    provisioned: bool = Field(
+        ...,
+        description='Whether the agent currently has a provisioned inbox email address.',
+    )
+    unread_count: int = Field(
+        ..., description='Number of unread gate-accepted messages in the inbox.'
+    )
+    latest_received_at: AwareDatetime | None = Field(
+        None,
+        description='Timestamp of the most recent gate-accepted message, when the inbox is non-empty.',
+    )
+
+
+class AgentEmailAttachment(BaseModel):
+    """
+    Metadata for one email attachment stored alongside a persisted agent email.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    filename: str | None = Field(None, description='Sanitized attachment filename.')
+    content_type: str | None = Field(
+        None, description='MIME media type of the attachment.'
+    )
+    size_bytes: int | None = Field(None, description='Attachment size in bytes.')
+    artifact_id: str | None = Field(
+        None,
+        description='Optional Library artifact identifier when the attachment has been ingested.',
+    )
+
+
+class AgentEmailMessageSummary(BaseModel):
+    """
+    Compact envelope view of one persisted email in an agent's inbox (omits full bodies).
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(
+        ..., description='Unique identifier of the persisted email message (`aem_...`).'
+    )
+    agent_id: str = Field(..., description='Agent that owns this inbox message.')
+    direction: AgentEmailDirection
+    thread_key: str = Field(
+        ...,
+        description='Stable key grouping inbound and outbound messages in one conversation thread.',
+    )
+    from_address: str | None = Field(
+        None, description='Normalized sender email address.'
+    )
+    from_name: str | None = Field(
+        None, description='Sender display name, when provided.'
+    )
+    to_addresses: list[str] | None = Field(
+        None, description='Recipient email addresses.'
+    )
+    subject: str | None = Field(None, description='Email subject line.')
+    snippet: str | None = Field(
+        None, description='Short plain-text preview of the email body.'
+    )
+    has_attachments: bool = Field(
+        ..., description='Whether the email carried one or more attachments.'
+    )
+    sender_authenticated: bool = Field(
+        ...,
+        description='Whether the receiving mail provider authenticated the sender (SPF/DKIM/DMARC alignment).',
+    )
+    injection_signals: list[str] | None = Field(
+        None,
+        description='Prompt-injection warning signals detected on inbound content, if any.',
+    )
+    gate_decision: str = Field(
+        ...,
+        description='Decision recorded by the inbound email safety gate (`accepted`, `loop_suppressed`, `replayed`, `rate_limited`, etc.).',
+    )
+    gate_reason: str | None = Field(
+        None, description='Short reason explaining the gate decision.'
+    )
+    status: AgentEmailStatus
+    labels: list[str] = Field(
+        ..., description='Mutable triage labels applied to this message.'
+    )
+    notes: str | None = Field(None, description='Mutable plain-text triage notes.')
+    received_at: AwareDatetime = Field(
+        ..., description='When the email was received or sent.'
+    )
+    created_at: AwareDatetime = Field(..., description='When this record was stored.')
+    updated_at: AwareDatetime = Field(
+        ..., description='When triage metadata was last updated.'
+    )
+
+
+class AgentEmailMessage(BaseModel):
+    """
+    Full persisted email message in an agent's dedicated inbox (plain text only; raw HTML is omitted from API responses).
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(
+        ..., description='Unique identifier of the persisted email message (`aem_...`).'
+    )
+    agent_id: str = Field(..., description='Agent that owns this inbox message.')
+    direction: AgentEmailDirection
+    thread_key: str = Field(
+        ...,
+        description='Stable key grouping inbound and outbound messages in one conversation thread.',
+    )
+    message_id: str | None = Field(
+        None, description='RFC 5322 Message-ID header, when present.'
+    )
+    in_reply_to: str | None = Field(
+        None, description='RFC 5322 In-Reply-To header, when present.'
+    )
+    references: list[str] | None = Field(
+        None, description='RFC 5322 References header chain.'
+    )
+    from_address: str | None = Field(
+        None, description='Normalized sender email address.'
+    )
+    from_name: str | None = Field(
+        None, description='Sender display name, when provided.'
+    )
+    header_from: str | None = Field(None, description='Raw From header value.')
+    reply_to: str | None = Field(
+        None, description='Reply-To header address, when present.'
+    )
+    to_addresses: list[str] | None = Field(
+        None, description='Recipient email addresses.'
+    )
+    cc_addresses: list[str] | None = Field(
+        None, description='Carbon-copy recipient email addresses.'
+    )
+    subject: str | None = Field(None, description='Email subject line.')
+    snippet: str | None = Field(
+        None, description='Short plain-text preview of the email body.'
+    )
+    text_body: str | None = Field(
+        None, description='Plain-text body of the email, when supplied.'
+    )
+    html_text: str | None = Field(
+        None, description='Extracted visible plain text derived from an HTML body.'
+    )
+    text: str | None = Field(
+        None,
+        description='Effective plain-text body (`text_body`, falling back to `html_text`).',
+    )
+    attachments: list[AgentEmailAttachment] | None = Field(
+        None, description='Attachment metadata list.'
+    )
+    has_attachments: bool = Field(
+        ..., description='Whether the email carried one or more attachments.'
+    )
+    sender_authenticated: bool = Field(
+        ..., description='Whether the receiving mail provider authenticated the sender.'
+    )
+    auth_facts: dict[str, Any] | None = Field(
+        None,
+        description='Authentication verification facts (SPF, DKIM, DMARC, aligned domain).',
+    )
+    loop_facts: dict[str, Any] | None = Field(
+        None, description='Loop and auto-reply detection signals.'
+    )
+    injection_signals: list[str] | None = Field(
+        None,
+        description='Prompt-injection warning signals detected on inbound content, if any.',
+    )
+    gate_decision: str = Field(
+        ..., description='Decision recorded by the inbound email safety gate.'
+    )
+    gate_reason: str | None = Field(
+        None, description='Short reason explaining the gate decision.'
+    )
+    source_event_id: str | None = Field(
+        None, description='Source event identifier for inbound messages, when linked.'
+    )
+    channel_exchange_id: str | None = Field(
+        None,
+        description='Channel exchange identifier for outbound replies, when linked.',
+    )
+    session_id: str | None = Field(
+        None,
+        description='Conversation session identifier linked to this reply, when present.',
+    )
+    status: AgentEmailStatus
+    labels: list[str] = Field(
+        ..., description='Mutable triage labels applied to this message.'
+    )
+    notes: str | None = Field(None, description='Mutable plain-text triage notes.')
+    received_at: AwareDatetime = Field(
+        ..., description='When the email was received or sent.'
+    )
+    created_at: AwareDatetime = Field(..., description='When this record was stored.')
+    updated_at: AwareDatetime = Field(
+        ..., description='When triage metadata was last updated.'
+    )
+
+
+class AgentEmailMessageListResponse(BaseModel):
+    """
+    Paginated list of compact email envelopes in an agent's inbox.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[AgentEmailMessageSummary] = Field(
+        ..., description='Page of inbox messages, newest first.'
+    )
+    has_more: bool = Field(
+        ..., description='Whether additional messages follow this page.'
+    )
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request when `has_more` is true.',
+    )
+
+
+class AgentEmailThreadResponse(BaseModel):
+    """
+    Chronological list of messages belonging to one email conversation thread.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    thread_key: str = Field(..., description='Stable thread identifier.')
+    items: list[AgentEmailMessage] = Field(
+        ..., description='Messages in this thread ordered oldest first.'
+    )
+
+
+class Label(RootModel[str]):
+    root: str = Field(..., max_length=64)
+
+
+class UpdateAgentEmailMessageRequest(BaseModel):
+    """
+    Partial update to mutable triage fields on one stored agent email message.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    status: AgentEmailStatus | None = None
+    labels: list[Label] | None = Field(
+        None,
+        description='Replacement list of up to 20 short triage labels.',
+        max_length=20,
+    )
+    notes: str | None = Field(
+        None,
+        description='Plain-text triage notes (up to 8,000 characters).',
+        max_length=8000,
+    )
+
+
+class Source3(StrEnum):
+    """
+    Where the skill comes from. Every stored skill is `custom`, managed by the organization.
+    """
+
     custom = 'custom'
 
 
@@ -4254,7 +4472,7 @@ class Skill(BaseModel):
     )
     source: Source3 = Field(
         ...,
-        description='Ownership and mutability of the Skill. `system` is built-in and `custom` is user-managed.',
+        description='Where the skill comes from. Every stored skill is `custom`, managed by the organization.',
     )
     instructions: str = Field(
         ..., description='Markdown instructions loaded when the skill is active.'
@@ -4552,29 +4770,6 @@ class EventType8(StrEnum):
     session_message_preview = 'session.message.preview'
 
 
-class SessionLiveSnapshot(BaseModel):
-    """
-    Ephemeral live transcript snapshot for an in-flight turn. Deployments with shared cache support make it available across backend replicas.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    session_id: str
-    turn_id: str
-    frames: list[dict[str, Any]] = Field(
-        ...,
-        description='Always empty. Kept for the response shape while the endpoint is retired.',
-    )
-    last_live_sequence: int = Field(
-        ...,
-        description='Highest live_sequence recorded for the turn, or 0 when none is known.',
-    )
-    updated_at: AwareDatetime = Field(
-        ..., description='Server timestamp when the snapshot was last updated.'
-    )
-
-
 class EventType9(StrEnum):
     session_resync = 'session.resync'
 
@@ -4706,6 +4901,33 @@ class SessionTranscriptWait(BaseModel):
     interaction_id: str
     tool_call_id: str
     expires_at: AwareDatetime | None = None
+
+
+class SessionTranscriptActionAwait(BaseModel):
+    """
+    The slow tool call a waiting turn is paused on, such as a scraper run. Present only while the turn is `waiting` on such a call.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    tool_call_id: str = Field(..., description='The paused tool call.')
+    reason: str | None = Field(
+        None,
+        description='Short machine label for the wait, such as `running_scraper`. Unknown values must be preserved.',
+    )
+    label: str | None = Field(
+        None,
+        description="What is being waited on, for people, such as a scraper's name.",
+    )
+    expectation: str | None = Field(
+        None,
+        description='One plain sentence on how long the wait usually takes, such as "Scraper runs usually take 1–10 minutes."',
+    )
+    paused_at: AwareDatetime | None = Field(
+        None,
+        description="When the call paused. The chat's timer for the wait counts from here, not from the start of the turn.",
+    )
 
 
 class TurnCompletedPayload(BaseModel):
@@ -5585,6 +5807,10 @@ class SessionEventSubscription(BaseModel):
         description='Reserved, not-yet-injected event inputs. The subscription stops visibly at 256.',
         ge=0,
     )
+    funding_hold_reason: str | None = Field(
+        None,
+        description="Set while a pending delivery is ready but waits because the turn it needs cannot be funded, for example when the person's monthly credit cap is reached. A full sentence the person reads: why it is held and what releases it. The delivery retries on its own.",
+    )
     coverage_cutoff_at: AwareDatetime | None = Field(
         None,
         description='First observed time intake stopped because the pending-input limit was reached.',
@@ -6366,7 +6592,7 @@ class BlueprintDeleteResult(BaseModel):
 
 class ColumnType(StrEnum):
     """
-    Column value type: `string`, `number`, `boolean`, `date`, `object`, `array`, or `any`. `link` stores one row of another table and reads as `{id, name}`. `lookup` and `rollup` are computed on read and cannot be written. `select` holds one of the column's `choices`; `multi_select` holds an array of them.
+    Column value type: `string`, `number`, `boolean`, `date`, `object`, `array`, or `any`. `link` stores one row of another table and reads as `{id, name}`. `lookup` and `rollup` are computed on read and cannot be written. `select` holds one of the column's `choices`; `multi_select` holds an array of them. `file` stores one Library file: write its artifact ID (or a Library file ID, which stores its current version). The writer must be able to read the file, and everyone who can see the table must be able to see the file. It reads as `{id, name, content_type, size}`, never the content, or `{id, missing: true}` when the file was deleted or the reader cannot open it. Deleting the row never deletes the file.
     """
 
     string = 'string'
@@ -6381,6 +6607,7 @@ class ColumnType(StrEnum):
     rollup = 'rollup'
     select = 'select'
     multi_select = 'multi_select'
+    file = 'file'
 
 
 class OnDelete(StrEnum):
@@ -6777,7 +7004,6 @@ class Table(BaseModel):
     id: str = Field(..., description='Unique table identifier.')
     owner: ResourceOwner
     visibility: ResourceVisibility
-    container: ResourceContainer | None = None
     posture: ResourcePosture
     controls: ResourceControls
     name: str = Field(
@@ -7123,6 +7349,450 @@ class UpsertRowResult(BaseModel):
     created: bool = Field(
         ...,
         description='True when a new row was inserted; false when an existing row was updated.',
+    )
+
+
+class ChannelVisibility(StrEnum):
+    """
+    Chosen at creation and never changed.
+    """
+
+    public = 'public'
+    private = 'private'
+
+
+class ChannelAccess(StrEnum):
+    """
+    What the caller may do. `read`: a public channel they have not joined. `member`: post and react. `admin`: also add and remove people, change the topic, and archive.
+    """
+
+    read = 'read'
+    member = 'member'
+    admin = 'admin'
+
+
+class ChannelRole(StrEnum):
+    """
+    A member's role in the channel.
+    """
+
+    member = 'member'
+    admin = 'admin'
+
+
+class ChannelCurrentMember(BaseModel):
+    """
+    The caller's membership. Null when the caller is not a member.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    role: ChannelRole
+    last_read_seq: int = Field(..., description="The caller's read position.")
+    joined_at: AwareDatetime = Field(..., description='When the caller joined.')
+
+
+class AgentClient(RootModel[str]):
+    root: str = Field(
+        ...,
+        description='The client, as it reports itself, for example `claude_code`, `codex`, `antigravity`, or `other`. Any value of 1 to 32 lowercase letters, numbers, or underscores is accepted. It is not verified, and no rule reads it.',
+        max_length=32,
+        pattern='^[a-z0-9_]{1,32}$',
+    )
+
+
+class ExternalAgentWakePolicy(StrEnum):
+    """
+    Whose @mention wakes the external agent. `owner_only`, the default, admits only its owner. `channel_members` admits every member.
+    """
+
+    owner_only = 'owner_only'
+    channel_members = 'channel_members'
+
+
+class Kind18(StrEnum):
+    """
+    `project` for a project connection, which brings the external agents whose `project_id` is its ID. Absent means `agent`.
+    """
+
+    agent = 'agent'
+    project = 'project'
+
+
+class ProjectExternalAgent(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    handle: str = Field(
+        ..., description="The agent's handle, without the @.", max_length=64
+    )
+    client_kind: str = Field(
+        ...,
+        description='The client, such as `claude_code`: 1 to 32 lowercase letters, numbers, or underscores. A bad value refuses only this entry.',
+        max_length=64,
+    )
+
+
+class Code(StrEnum):
+    """
+    Why Mobius refused this entry, for the client. The agent is not in the channel. Read an unknown code as "refused": Mobius can add codes.
+
+    - Choose another handle: `handle_invalid` (breaks the handle
+    rule, or is reserved), `handle_taken` (a person or assistant
+    in the organization has the name), `handle_in_use` (another
+    live external agent in the channel has it).
+    - Send each handle once: `handle_repeated`.
+    - Fix the client kind: `client_kind_invalid`.
+    - Send the list again later: `channel_full` (the channel has
+    its most members).
+    """
+
+    handle_invalid = 'handle_invalid'
+    handle_repeated = 'handle_repeated'
+    handle_taken = 'handle_taken'
+    handle_in_use = 'handle_in_use'
+    client_kind_invalid = 'client_kind_invalid'
+    channel_full = 'channel_full'
+
+
+class ProjectExternalAgentResult(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    handle: str = Field(..., description='The handle as the list sent it.')
+    external_agent_id: str | None = Field(
+        None, description="The external agent's ID, when it is in the channel."
+    )
+    code: Code | None = Field(
+        None,
+        description='Why Mobius refused this entry, for the client. The agent is not in the channel. Read an unknown code as "refused": Mobius can add codes.\n\n- Choose another handle: `handle_invalid` (breaks the handle\nrule, or is reserved), `handle_taken` (a person or assistant\nin the organization has the name), `handle_in_use` (another\nlive external agent in the channel has it).\n- Send each handle once: `handle_repeated`.\n- Fix the client kind: `client_kind_invalid`.\n- Send the list again later: `channel_full` (the channel has\nits most members).',
+    )
+    refused: str | None = Field(
+        None,
+        description='Why Mobius refused this entry, as text for a person. Do not parse it: use `code`.',
+    )
+
+
+class ExternalAgentState(StrEnum):
+    """
+    What an Online external agent is doing. `waiting`: it waits on its owner, such as for a permission prompt. `idle`: between turns.
+    """
+
+    working = 'working'
+    waiting = 'waiting'
+    idle = 'idle'
+    unknown = 'unknown'
+
+
+class ExternalAgentPrompt(BaseModel):
+    """
+    Asks the owner to approve or deny one call that the agent holds. Mobius opens a request named to the owner only. One request is open per agent. A prompt with the open `call_id`, the same `tool`, and the same `input` bytes is a resend and changes nothing. Any other prompt while one is open is `409 prompt_open`, and the open request stays as it is. A prompt for a call that is over (the owner answered it, the client settled it, it expired, or an interrupt closed it) opens nothing, and the status succeeds. The owner's answer arrives as an `agent.answer` frame for this `call_id`.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    call_id: str = Field(
+        ...,
+        description='A random ID for the held call. It exists only while the client holds the call.',
+        max_length=128,
+    )
+    tool: str = Field(
+        ...,
+        description='The tool the call uses, such as `Bash`: 1 to 128 letters, digits, or the characters `_ - . :`. Else `400`.',
+        max_length=128,
+        min_length=1,
+        pattern='^[A-Za-z0-9_.:-]{1,128}$',
+    )
+    input: dict[str, Any] = Field(
+        ...,
+        description="The call's input exactly as the agent sent it, with known secrets removed: a JSON object of at most 16 KB, measured on the bytes sent. Mobius keeps those bytes. The request shows them as a string in `context.input`, so numbers and key order do not change.",
+    )
+    expires_in_s: int = Field(
+        ...,
+        description="The seconds the client will still wait for an answer. The request ends then, by Mobius's clock.",
+        ge=1,
+        le=3540,
+    )
+
+
+class Outcome(StrEnum):
+    """
+    `answered_locally`: someone answered on the machine. `expired`: the call's time ran out.
+    """
+
+    answered_locally = 'answered_locally'
+    expired = 'expired'
+
+
+class ExternalAgentPromptSettled(BaseModel):
+    """
+    Closes the open request when the call ended without a remote answer.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    call_id: str = Field(..., max_length=128)
+    outcome: Outcome = Field(
+        ...,
+        description="`answered_locally`: someone answered on the machine. `expired`: the call's time ran out.",
+    )
+
+
+class ChannelAuthorKind(StrEnum):
+    """
+    What kind of principal wrote a message or holds a membership. An `external_agent` is an agent that a person runs outside Mobius, connected to the channel.
+    """
+
+    human = 'human'
+    agent = 'agent'
+    routine = 'routine'
+    workflow = 'workflow'
+    external_agent = 'external_agent'
+
+
+class ChannelAuthor(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    principal_id: str = Field(..., description="The author's principal ID.")
+    kind: ChannelAuthorKind
+    display_name: str = Field(
+        ..., description="The author's name when the message was read."
+    )
+    avatar_url: str | None = Field(
+        None, description="The author's picture, when they have one."
+    )
+
+
+class ChannelReactionSummary(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    emoji: str = Field(..., description='One emoji.')
+    count: int = Field(..., description='How many people added it.')
+    principal_ids: list[str] = Field(..., description='Who added it, oldest first.')
+    reacted_by_me: bool = Field(..., description='Whether the caller added it.')
+
+
+class TrustLevel(StrEnum):
+    """
+    Only for an external agent caller: how far the agent may trust the author. `owner` is the person who owns the agent. `same_owner_agent` is another external agent of that person whose wake policy is `owner_only`. `other` is everyone else, and always a line with `system_kind`. The server sets it from the author, never from the text.
+    """
+
+    owner = 'owner'
+    same_owner_agent = 'same_owner_agent'
+    other = 'other'
+
+
+class Reason3(StrEnum):
+    """
+    Why the agent was not woken: `policy` (its wake policy does not admit the sender), `wake_cap` (an agent's post wakes at most 2 agents), or `thread_budget` (6 agent posts have followed the last person's post). `offline` marks a woken agent with no live connection.
+    """
+
+    policy = 'policy'
+    wake_cap = 'wake_cap'
+    thread_budget = 'thread_budget'
+    offline = 'offline'
+
+
+class ExternalAgentWake(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    agent_id: str = Field(
+        ...,
+        description="The external agent's principal ID, the same as its member row.",
+    )
+    handle: str = Field(..., description='The handle the text named, without the @.')
+    woken: bool = Field(..., description='Whether the post woke the agent.')
+    reason: Reason3 | None = Field(
+        None,
+        description="Why the agent was not woken: `policy` (its wake policy does not admit the sender), `wake_cap` (an agent's post wakes at most 2 agents), or `thread_budget` (6 agent posts have followed the last person's post). `offline` marks a woken agent with no live connection.",
+    )
+
+
+class CreateChannelMessageRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    body: str = Field(..., description='Markdown, up to 40,000 characters.')
+    thread_root_id: str | None = Field(
+        None, description="Reply in this message's thread."
+    )
+    mentions: list[str] | None = Field(
+        None,
+        description='People and assistants the message mentions. A mentioned assistant must be a member of the channel; it answers in the thread. An external agent must not send this field: it names others with `@handles` in the text.',
+        max_length=50,
+    )
+
+
+class ChannelReactionRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    emoji: str = Field(..., description='One emoji.')
+
+
+class UpdateChannelReadStateRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    message_id: str | None = Field(
+        None,
+        description='Read up to this message. Empty means everything, except for an external agent, which must send it.',
+    )
+
+
+class ChannelReadState(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    channel_id: str = Field(..., description='Channel ID.')
+    last_read_seq: int = Field(..., description='The stored read position.')
+    unread_count: int = Field(
+        ..., description='Unread top-level messages after the change.'
+    )
+    mention_count: int = Field(..., description='Unread mentions after the change.')
+
+
+class ChannelStreamFrameType(StrEnum):
+    """
+    `channel.change`: one change-log row, with the message it names. `channel.typing`: a member is typing. `channel.read`: the caller's read position moved in another tab. `channel.membership`: the caller's channel set changed; refetch the channel list. `channel.resync`: frames were lost; refetch. `stream.ready`: the replay is done. `stream.end`: reconnect with the cursor. `external_agent.status`: an external agent in the channel reported a new state (`external_agent_id`, `state`); a person's stream only. `agent.interrupt` (an external agent's stream only): end the current turn, then echo `control_id` in the next status. `agent.answer` (an external agent's stream only): the owner's answer to the agent's open prompt `call_id`; `decision` is `allow` or `deny`. Echo `control_id` in the next status. Ignore a frame type you do not know.
+    """
+
+    channel_change = 'channel.change'
+    channel_typing = 'channel.typing'
+    channel_read = 'channel.read'
+    channel_membership = 'channel.membership'
+    channel_resync = 'channel.resync'
+    stream_ready = 'stream.ready'
+    stream_end = 'stream.end'
+    external_agent_status = 'external_agent.status'
+    agent_interrupt = 'agent.interrupt'
+    agent_answer = 'agent.answer'
+
+
+class ChannelChangeKind(StrEnum):
+    """
+    What changed in the channel. `assistant.working`: an assistant started or stopped working in the thread of the frame's message.
+    """
+
+    message_posted = 'message.posted'
+    message_edited = 'message.edited'
+    message_deleted = 'message.deleted'
+    reaction_added = 'reaction.added'
+    reaction_removed = 'reaction.removed'
+    member_joined = 'member.joined'
+    member_left = 'member.left'
+    channel_updated = 'channel.updated'
+    channel_archived = 'channel.archived'
+    assistant_working = 'assistant.working'
+
+
+class Decision(StrEnum):
+    """
+    The owner's answer, on `agent.answer`.
+    """
+
+    allow = 'allow'
+    deny = 'deny'
+
+
+class ConnectExternalAgentRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    pairing_code: str = Field(
+        ..., description='The `mbp_` pairing code from the web app.', max_length=256
+    )
+    client_kind: str | None = Field(
+        None,
+        description="The client's own kind, such as `claude_code`. When it is sent, it replaces the value set when the code was made. It is not verified, and no rule reads it.",
+        max_length=32,
+        pattern='^[a-z0-9_]{1,32}$',
+    )
+    metadata: dict[str, str] | None = Field(
+        None,
+        description="What the client reports about itself, such as its version. At most 8 keys of up to 32 bytes, and values of up to 128 bytes. For a project connection, `project` is the project's display name.",
+    )
+
+
+class Kind19(StrEnum):
+    """
+    `project` for a project connection: the credential pairs the project, which sends its external agents with `replaceChannelExternalAgents`. The owner can approve the commands of those agents that send a prompt. Absent means `agent`.
+    """
+
+    agent = 'agent'
+    project = 'project'
+
+
+class ExternalAgentConnection(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    credential: str = Field(
+        ...,
+        description='The `mba_` credential. Shown once. Keep it where only the owner can read it.',
+    )
+    external_agent_id: str = Field(
+        ...,
+        description="The external agent's ID, for `getExternalAgent` and `deleteExternalAgent`.",
+    )
+    handle: str = Field(
+        ..., description="The agent's handle in the channel, without the `@`."
+    )
+    client_kind: str = Field(..., description='The client, such as `claude_code`.')
+    wake_policy: str = Field(
+        ...,
+        description='Whose mentions wake the agent, `owner_only` or `channel_members`.',
+    )
+    org_name: str = Field(
+        ..., description='The display name of the organization the channel is in.'
+    )
+    channel_id: str = Field(..., description='The channel the agent joined.')
+    channel_name: str = Field(..., description="The channel's name.")
+    owner_name: str = Field(
+        ..., description='The first name of the person who connected the agent.'
+    )
+    kind: Kind19 | None = Field(
+        None,
+        description='`project` for a project connection: the credential pairs the project, which sends its external agents with `replaceChannelExternalAgents`. The owner can approve the commands of those agents that send a prompt. Absent means `agent`.',
+    )
+    project: str | None = Field(
+        None,
+        description="The project's display name (metadata `project`), for a project connection.",
+    )
+
+
+class ExchangeExternalAgentTokenRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    credential: str = Field(
+        ...,
+        description='The `mba_` credential from `connectExternalAgent`.',
+        max_length=256,
+    )
+    external_agent_id: str | None = Field(
+        None,
+        description="Only with a project connection's credential: the external agent to get a token for. It must be a live external agent of this project connection, else `404 not_found` (the agent was removed). Without it, a project credential gets the project token, which reaches only `replaceChannelExternalAgents` on its own channel and `deleteExternalAgent` on itself. Every other operation answers the project token `403 project_token`.",
+        max_length=64,
+    )
+
+
+class ExternalAgentAccessToken(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    access_token: str = Field(
+        ...,
+        description='The `mbat_` access token. Send it as `Authorization: Bearer <token>`.',
+    )
+    expires_at: AwareDatetime = Field(
+        ..., description='When the access token stops working.'
     )
 
 
@@ -7670,6 +8340,10 @@ class Integration(BaseModel):
         ...,
         description='Current integration lifecycle state: `active`, `inactive`, or `expired`.',
     )
+    status_reason: str | None = Field(
+        None,
+        description='Human-readable reason when `status` is `expired` (needs reconnect).',
+    )
     credentials_unreadable: bool | None = Field(
         None,
         description='True when the stored credential cannot be decrypted by the running platform. The connection still exists and its `status` is unchanged, but nothing that needs the credential will work until an admin reconnects the integration. Absent or `false` in the normal case.',
@@ -7732,7 +8406,10 @@ class Consumer(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind11
+    kind: Kind11 = Field(
+        ...,
+        description="`external_agent_prompt`: an external agent's permission prompt for one call it holds, named to its owner.",
+    )
     agent_tool: AgentToolConsumer | None = Field(
         None,
         description='Agent tool continuation target when `kind=agent_tool`; null for other consumer kinds.',
@@ -7954,6 +8631,10 @@ class AgentTurn(BaseModel):
     error_message: str | None = Field(
         None, description='Human-readable failure detail when the turn failed.'
     )
+    stop_reason: str | None = Field(
+        None,
+        description='Why a terminal turn stopped (for example `end_turn`, `iteration_limit`, `output_limit`, `context_limit`, or `cancelled`). Absent on non-terminal turns and historical rows without a recorded reason.',
+    )
     error_scope: AgentTurnErrorScope | None = None
     output: dict[str, Any] | None = Field(
         None,
@@ -8026,6 +8707,7 @@ class SessionTranscriptTurn(BaseModel):
     seq: int | None = None
     error_type: str | None = None
     error_message: str | None = None
+    stop_reason: str | None = Field(None, description='Why a terminal turn stopped.')
     usage: AgentTurnUsage | None = Field(
         None,
         description='Token usage recorded when the turn completed or failed. On a failed turn it covers the model calls that finished before the failure. Identical to the `usage` on the turn resource, and identical on the bootstrap and cursored reads of this snapshot.',
@@ -8038,6 +8720,7 @@ class SessionTranscriptTurn(BaseModel):
         None, description='Where `output` came from (`tool` or `text`).'
     )
     wait: SessionTranscriptWait | None = None
+    action_await: SessionTranscriptActionAwait | None = None
     created_at: AwareDatetime
     updated_at: AwareDatetime
     completed_at: AwareDatetime | None = None
@@ -8334,12 +9017,6 @@ class RoutineCreateRequest(BaseModel):
         None,
         description="Runs the routine when a matching integration event arrives. Each matched event creates a ledger entry for each followed thread. Runs serialize within a thread, with concurrent threads bounded by the routine's concurrency setting; each-event routines serialize per routine. Waiting thread events may be coalesced into the newest entry. A run still waiting six hours later is closed `skipped` with `error_code` `stale`. `event_type` may be omitted when `follow_target` names a provider target, which derives the subscription; the `event`, `routine`, and `custom` follow targets require an explicit event type.",
     )
-    output_folder: str | None = Field(
-        None,
-        deprecated=True,
-        description='Ignored. An assistant chooses a folder for each file it saves.',
-        max_length=256,
-    )
     model_override: str | None = Field(
         None,
         description="Model every run uses instead of the assistant's. Omit to use the assistant's model. Whether the organization may run it is checked when each run starts. Rejected for a worker-routed assistant.",
@@ -8402,12 +9079,6 @@ class RoutineUpdateRequest(BaseModel):
     connection_bindings: ConnectionBindings | None = None
     name: str | None = None
     instructions: str | None = None
-    output_folder: str | None = Field(
-        None,
-        deprecated=True,
-        description='Ignored. An assistant chooses a folder for each file it saves.',
-        max_length=256,
-    )
     model_override: str | None = Field(
         None,
         description="Replacement model for every run. Omit to leave it unchanged; send an empty string to return to the assistant's model.",
@@ -8664,12 +9335,6 @@ class RoutineProposalApproval(BaseModel):
     name: str | None = None
     instructions: str | None = Field(None, min_length=1)
     schedule: RoutineSchedule | None = None
-    output_folder: str | None = Field(
-        None,
-        deprecated=True,
-        description='Ignored. An assistant chooses a folder for each file it saves.',
-        max_length=256,
-    )
     per_occurrence_ceiling_milli: int | None = Field(None, ge=1)
     daily_ceiling_milli: int | None = Field(None, ge=1)
     follower_principal_ids: list[str] | None = Field(
@@ -8799,6 +9464,282 @@ class BlueprintApplyResult(BaseModel):
     bindings: list[BlueprintBinding]
 
 
+class Channel(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Channel ID.')
+    name: str = Field(
+        ..., description='Lowercase slug, unique in the organization. Never changes.'
+    )
+    topic: str = Field(
+        ..., description='One line describing the channel. May be empty.'
+    )
+    instructions: str | None = Field(
+        None,
+        description="Standing instructions added to every assistant's instructions in this channel. Set on single-channel reads. Empty when none.",
+    )
+    max_instruction_chars: int | None = Field(
+        None,
+        description='The most characters the instructions may hold. Set on single-channel reads.',
+    )
+    visibility: ChannelVisibility
+    access: ChannelAccess
+    last_seq: int = Field(..., description='The newest sequence number in the channel.')
+    member_count: int | None = Field(
+        None,
+        description='How many members the channel has. Set on single-channel reads.',
+    )
+    unread_count: int = Field(
+        ...,
+        description="Top-level messages from others after the caller's read position. Zero for non-members.",
+    )
+    mention_count: int = Field(
+        ...,
+        description="Messages from others after the caller's read position that mention them.",
+    )
+    current_member: ChannelCurrentMember | None = None
+    archived_at: AwareDatetime | None = Field(
+        None, description='When the channel was archived. Null while it is active.'
+    )
+    created_at: AwareDatetime = Field(..., description='When the channel was created.')
+
+
+class ChannelMember(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    principal_id: str = Field(..., description="The member's principal ID.")
+    kind: ChannelAuthorKind
+    display_name: str = Field(..., description="The member's name.")
+    email: str | None = Field(None, description="The member's email, for people.")
+    avatar_url: str | None = Field(
+        None, description="The member's picture, when they have one."
+    )
+    role: ChannelRole
+    joined_at: AwareDatetime = Field(..., description='When they joined.')
+    online: bool | None = Field(
+        None,
+        description='For an external agent: whether it has a live stream now. Absent for everyone else.',
+    )
+    handle: str | None = Field(
+        None,
+        description="An external agent's handle, without the @. Only on external agents.",
+    )
+
+
+class ExternalAgent(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='The external agent ID.')
+    channel_id: str = Field(..., description='The one channel the agent belongs to.')
+    handle: str = Field(..., description="The agent's handle, without the @.")
+    client_kind: AgentClient
+    wake_policy: ExternalAgentWakePolicy
+    owner_principal_id: str = Field(
+        ..., description='The person who connected the agent.'
+    )
+    agent_principal_id: str | None = Field(
+        None, description="The agent's principal, once it is connected."
+    )
+    connected: bool = Field(
+        ..., description='False while the agent waits for its pairing code.'
+    )
+    pairing_expires_at: AwareDatetime | None = Field(
+        None, description='When an unused pairing code stops working.'
+    )
+    last_used_at: AwareDatetime | None = Field(
+        None, description='When the agent last signed in.'
+    )
+    online: bool | None = Field(
+        None, description='Whether the agent has a live stream now.'
+    )
+    created_at: AwareDatetime
+    kind: Kind18 | None = Field(
+        None,
+        description='`project` for a project connection, which brings the external agents whose `project_id` is its ID. Absent means `agent`.',
+    )
+    project_id: str | None = Field(
+        None,
+        description='The project connection that brings this external agent, if any.',
+    )
+    project: str | None = Field(
+        None,
+        description="The project's display name, on a project connection and on each of its external agents.",
+    )
+    state: ExternalAgentState | None = None
+    ask: str | None = Field(
+        None,
+        description="The short form of what the agent asks. Only for the agent's owner.",
+    )
+    control_id: str | None = Field(
+        None,
+        description="The last control the client applied. Only for the agent's owner. Compare it with the `control_id` an interrupt returned.",
+    )
+    request_id: str | None = Field(
+        None, description="The agent's open prompt request. Only for the agent's owner."
+    )
+
+
+class ReplaceChannelExternalAgentsRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    external_agents: list[ProjectExternalAgent] = Field(
+        ...,
+        description='Every external agent of the project in this channel. An empty list removes them all.',
+        max_length=100,
+    )
+
+
+class ProjectExternalAgentList(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    external_agents: list[ProjectExternalAgentResult]
+
+
+class ExternalAgentStatusRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    state: ExternalAgentState
+    ask: str | None = Field(
+        None,
+        description='The short form of what the agent asks, such as "Run go test". At most 80 bytes. Only the owner sees it.',
+        max_length=80,
+    )
+    control_id: str | None = Field(
+        None,
+        description='The `control_id` of the last control frame the client applied (`agent.interrupt` or `agent.answer`). The echo of an interrupt closes the open request with reason `interrupted`.',
+        max_length=64,
+    )
+    prompt: ExternalAgentPrompt | None = None
+    settled: ExternalAgentPromptSettled | None = None
+
+
+class ChannelMemberListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[ChannelMember]
+    has_more: bool
+    next_cursor: str | None = None
+
+
+class ChannelMessage(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Message ID.')
+    channel_id: str = Field(..., description='Channel ID.')
+    seq: int = Field(..., description="The message's sequence number in the channel.")
+    thread_root_id: str | None = Field(
+        None,
+        description="The thread's first message, for a reply. Null for a top-level message.",
+    )
+    reply_count: int = Field(..., description="Replies in this message's thread.")
+    last_reply_at: AwareDatetime | None = Field(
+        None, description='When the newest reply was posted. Null without replies.'
+    )
+    author: ChannelAuthor
+    body: str = Field(..., description='Markdown text. Empty for a deleted message.')
+    mentions: list[str] = Field(..., description='Principal IDs the message mentions.')
+    deleted: bool = Field(..., description='Whether the message was deleted.')
+    edited_at: AwareDatetime | None = Field(
+        None, description='When the text last changed. Null if never edited.'
+    )
+    reactions: list[ChannelReactionSummary]
+    created_at: AwareDatetime = Field(..., description='When the message was posted.')
+    session_id: str | None = Field(
+        None,
+        description="For an assistant's reply, notice, or approval card: the working conversation it came from. Open it with getChannelConversation.",
+    )
+    turn_id: str | None = Field(
+        None,
+        description="For an assistant's reply or notice: the turn that produced it. A follow-up's created_turn_id matches the reply that confirmed it.",
+    )
+    interaction_id: str | None = Field(
+        None, description='For an approval card, the held-call approval it shows.'
+    )
+    working_agent_ids: list[str] | None = Field(
+        None,
+        description="For a thread's first message: the principals of the assistants working in the thread now.",
+    )
+    agent_wakes: list[ExternalAgentWake] | None = Field(
+        None,
+        description='One entry for each external agent the text names, in the order named, with whether the post woke it. Absent when the text names no external agent. Decided when the message is posted; an edit never changes it.',
+    )
+    unresolved_mentions: list[str] | None = Field(
+        None,
+        description='Only in the answer to create: the `@handles` in the text that name no connected external agent, without the @, in the order named. Empty when every `@handle` names one.',
+    )
+    reply_thread_root_id: str | None = Field(
+        None,
+        description="The thread a reply to this message goes in: `thread_root_id` for a reply, else the message's own ID. Always set.",
+    )
+    system_kind: str | None = Field(
+        None,
+        description='Set on a line the system wrote, for example `agent_connected` or `agent_disconnected`. Nobody can edit or delete such a line. Absent on every other message.',
+    )
+    trust_level: TrustLevel | None = Field(
+        None,
+        description='Only for an external agent caller: how far the agent may trust the author. `owner` is the person who owns the agent. `same_owner_agent` is another external agent of that person whose wake policy is `owner_only`. `other` is everyone else, and always a line with `system_kind`. The server sets it from the author, never from the text.',
+    )
+
+
+class ChannelMessageListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    root: ChannelMessage | None = Field(
+        None, description='The original message when listing a thread.'
+    )
+    items: list[ChannelMessage]
+    has_more: bool
+    next_cursor: str | None = None
+
+
+class ChannelStreamFrame(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    type: ChannelStreamFrameType
+    channel_id: str | None = Field(None, description='The channel the frame is about.')
+    seq: int | None = Field(None, description="The change's sequence number.")
+    kind: ChannelChangeKind | None = None
+    message: ChannelMessage | None = None
+    actor_principal_id: str | None = Field(
+        None, description='Who made the change, or who is typing.'
+    )
+    last_read_seq: int | None = Field(
+        None, description="The caller's new read position, on `channel.read`."
+    )
+    reason: str | None = Field(
+        None,
+        description='Why the stream ended, on `stream.end`. `rotate`: reconnect now. `unavailable`: reconnect later. Only for an external agent: `replaced` (a newer stream of the same agent took over; do not reconnect) and `revoked` (the agent is disconnected; stop). Ignore a reason you do not know and reconnect later.',
+    )
+    addressed_to_you: bool | None = Field(
+        None,
+        description='Only for an external agent, on the `message.posted` change of a message that woke it. Absent on every other frame.',
+    )
+    external_agent_id: str | None = Field(
+        None,
+        description='The external agent an `external_agent.status` frame is about.',
+    )
+    state: ExternalAgentState | None = None
+    control_id: str | None = Field(
+        None, description="The control's ID, on `agent.interrupt` and `agent.answer`."
+    )
+    call_id: str | None = Field(
+        None, description="The prompt's call, on `agent.answer`."
+    )
+    decision: Decision | None = Field(
+        None, description="The owner's answer, on `agent.answer`."
+    )
+
+
 class ActionInvocationV1(BaseModel):
     """
     Signed HTTP action request body for `signed_context_v1`. Receivers must verify the HMAC over the exact raw body before parsing this envelope. Unknown fields are permitted for forward compatibility.
@@ -8921,7 +9862,7 @@ class Interaction(BaseModel):
     posture: ResourcePosture
     controls: ResourceControls | None = Field(
         None,
-        description="What the caller may do to this interaction. `can_edit` means the caller may cancel (dismiss) it and `can_delete` that they may delete it once it is closed: whoever asked, the person the asking turn ran for, a recipient, a reviewer, or an administrator. Present on responses to a person's request.",
+        description="What the caller may do to this interaction. `can_edit` means the caller may cancel (dismiss) it and `can_delete` that they may delete it once it is closed: whoever asked, the person the asking turn ran for, a recipient, or an administrator. Present on responses to a person's request.",
     )
     kind: InteractionKind = Field(..., description='Protocol kind of the interaction.')
     status: InteractionStatus = Field(
@@ -9025,22 +9966,6 @@ class Interaction(BaseModel):
     )
     cancel_reason: str | None = Field(
         None, description='Reason recorded when the interaction was cancelled.'
-    )
-    review_round: int | None = Field(
-        None,
-        description="Number of completed send-backs. Zero on the first pass. Responses record the round they answered in their `attempt` field, and only the current round's responses count toward resolution.",
-    )
-    submitted_at: AwareDatetime | None = Field(
-        None,
-        description='When the interaction most recently entered `in_review`. Null for interactions that have never been submitted for acceptance.',
-    )
-    review_feedback: str | None = Field(
-        None,
-        description="The reviewer's most recent send-back note. Survives the return to `pending` so the assignee can see why the work came back.",
-    )
-    reviewer: InteractionResponder | None = Field(
-        None,
-        description='Principal whose accept or send-back was recorded last; null until a review decision is made. Distinct from `responder`, which names whoever submitted the work.',
     )
     lifecycle: list[InteractionLifecycleEvent] | None = Field(
         None,

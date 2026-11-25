@@ -17,6 +17,14 @@ the minor version.
   `mobius resources` command group.
 - `channels` on agent messaging settings and binding requests (and the
   `--channels` flag). Channel settings now decide which assistants answer.
+- The interaction review gate: `reviewInteraction`, the `in_review` status,
+  the `review` resolution policy, review fields on interactions, and the
+  `assign_work` kind.
+- `getSessionTurnLive` and `SessionLiveSnapshot`.
+- System skills: `include_system` on `listSkills`, and the SDK option for it
+  (`ListSkillsOptions` in Go and TypeScript, `include_system` in Python).
+- `output_folder` on agent and routine requests, `owner` on create-agent,
+  visibility and member changes on update-agent, and `container` on tables.
 
 ### Added
 
@@ -33,6 +41,18 @@ the minor version.
   on catalog actions, `agent_id` on artifacts, `source` on table columns,
   `reason` on failed session steps, `file_id`/`current_id` on artifact
   lineages; `workflow` blueprint resources and a `removed` change action.
+- Channels for scripts and external agents: get a channel, list members and
+  messages, find, post, react, mark read, and stream (`mobius channels`).
+- External agents: connect with a pairing code, exchange a token, get,
+  delete, report status, and replace a project's agents
+  (`mobius external-agents`). See mobius-cloud
+  `docs/design/external-agents-in-channels.md`.
+- Agent email inbox: summary, messages, threads, update, and delete
+  (`mobius agents get-inbox` and related commands).
+- `email_replies` on agents (required in responses), `file` table column
+  type, `stop_reason` on turns, `action_await` on transcript turns,
+  `status_reason` on integrations, compaction thresholds on models and
+  sessions, `funding_hold_reason` on event subscriptions.
 
 ### Changed
 

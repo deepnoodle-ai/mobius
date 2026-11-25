@@ -788,30 +788,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/interactions/{resource_id}/review": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Accept or send back submitted work
-         * @description Records an acceptance decision on an interaction in `in_review`.
-         *
-         *     `accept` resolves the interaction with the outcome that was submitted and resumes any waiting consumer — for a reviewed interaction, this is the moment the workflow moves on. `request_changes` returns the interaction to `pending` under a new review round with the reviewer's feedback attached, and the consumer keeps waiting; a send-back is not a workflow outcome. The retracted submission stays in `responses` for audit, tagged with the round it belonged to.
-         *
-         *     Only a principal named by `resolution_policy.review.reviewer_user_ids` may call this, or the interaction's creator when that list is empty. Assignees cannot accept their own work.
-         */
-        post: operations["reviewInteraction"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/interactions/{resource_id}/cancel": {
         parameters: {
             query?: never;
@@ -823,7 +799,7 @@ export interface paths {
         put?: never;
         /**
          * Cancel open interaction
-         * @description Cancels an open interaction — `pending` or `in_review` — recording who cancelled and an optional reason. Work awaiting acceptance is cancellable too: a requester who no longer needs the result should not have to accept it first. Whatever was waiting on the interaction is told it was cancelled so it can route to a fallback. Only humans may cancel by default — agents must request cancellation through an interaction.
+         * @description Cancels a `pending` interaction, recording who cancelled and an optional reason. Whatever was waiting on the interaction is told it was cancelled so it can route to a fallback. Only humans may cancel by default — agents must request cancellation through an interaction.
          */
         post: operations["cancelInteraction"];
         delete?: never;
@@ -1009,13 +985,85 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Get agent inbox summary
+         * @description Returns the agent's provisioned email inbox address (when enabled) along with message counts across accepted, unread, and gate-filtered emails.
+         */
+        get: operations["getAgentInbox"];
         put?: never;
         /**
          * Provision agent inbox
          * @description Provisions a dedicated email inbox for the agent. The address is derived from the agent ID (`{agentID}@mobiusinbox.com`) and stored on the agent record. Idempotent: if an inbox is already provisioned, the existing agent is returned unchanged.
          */
         post: operations["provisionAgentInbox"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agents/{resource_id}/inbox/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List agent inbox messages
+         * @description Lists or searches persisted inbound and outbound emails in the agent's dedicated inbox, newest first. Returns compact envelopes without full bodies; fetch a message or thread for full text.
+         */
+        get: operations["listAgentInboxMessages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agents/{resource_id}/inbox/messages/{message_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get an agent inbox message
+         * @description Returns one persisted email message in the agent's inbox, including its plain-text body, attachment metadata, sender authentication and security signals, and triage fields.
+         */
+        get: operations["getAgentInboxMessage"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete an agent inbox message
+         * @description Permanently removes one persisted email message from the agent's inbox. Only users who can manage the agent (its owner, group managers, or org admins) may permanently delete messages.
+         */
+        delete: operations["deleteAgentInboxMessage"];
+        options?: never;
+        head?: never;
+        /**
+         * Update an agent inbox message
+         * @description Updates mutable triage fields (`status`, `labels`, or `notes`) on one persisted email in the agent's inbox. Original email headers and body content are immutable.
+         */
+        patch: operations["updateAgentInboxMessage"];
+        trace?: never;
+    };
+    "/v1/agents/{resource_id}/inbox/threads/{thread_key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get an agent inbox thread
+         * @description Returns all messages belonging to one email conversation thread in chronological order (oldest first), combining inbound emails and outbound agent replies.
+         */
+        get: operations["getAgentInboxThread"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1654,26 +1702,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/sessions/{session_id}/turns/{turn_id}/live": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get live session turn snapshot
-         * @description Deprecated and being retired. Returns the highest `live_sequence` recorded for an in-flight turn. `frames` is always empty: the server no longer keeps live frames. Reconnecting clients recover an in-flight turn from the transcript stream instead.
-         */
-        get: operations["getSessionTurnLive"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/sessions/{session_id}/turns/{turn_id}/cancel": {
         parameters: {
             query?: never;
@@ -2179,7 +2207,7 @@ export interface paths {
         };
         /**
          * List skills
-         * @description Returns organization-owned and system skills visible to the caller's organization by default.
+         * @description Returns the organization's skills that the caller can see.
          */
         get: operations["listSkills"];
         put?: never;
@@ -2582,6 +2610,275 @@ export interface paths {
         patch: operations["updateTableRow"];
         trace?: never;
     };
+    "/v1/channels/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream channel activity
+         * @description One long-lived Server-Sent Events stream per person, carrying every channel they are in plus up to five public channels named in `watch`. Each frame's `id:` is the resume cursor; reconnect with `cursor` or `Last-Event-ID` to replay what was missed.
+         *
+         *     An external agent's stream carries its own channel only. `watch` is a 400. `cursor` and `Last-Event-ID` are ignored. The stream first replays, from the agent's read position up to the channel's newest change, only the `message.posted` changes that woke this agent. Then it sends `stream.ready`. Then it sends every change after that head. So for an external agent, `stream.ready` comes after the wake replay and before the live changes. For a person it comes after the whole catch-up. Dedupe by `seq`. An external agent has one stream: a newer stream ends the older one with `replaced`. No `channel.typing` frames are sent to an external agent.
+         */
+        get: operations["streamChannels"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/channels/{channel_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a channel
+         * @description Returns a channel the caller can read: any public channel in the organization, or a private channel they are in. A private channel the caller is not in answers 404, the same as one that does not exist.
+         */
+        get: operations["getChannel"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/channels/{channel_id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List channel members
+         * @description Returns everyone in a channel the caller can read, in the order they joined. Private channels answer 404 to non-members.
+         */
+        get: operations["listChannelMembers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/channels/{channel_id}/find": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Find messages and active threads in a channel
+         * @description With a query, returns matching messages and thread replies, newest first. Without a query, returns thread roots by most recent reply. Only messages in this readable channel are eligible.
+         */
+        get: operations["findChannelMessages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/channels/{channel_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List channel messages
+         * @description Returns top-level messages, or the replies of one thread with `thread_root_id`, oldest first. Without a position it returns the newest page; `cursor` pages back and `after_sequence` catches up. A thread page also returns its root, including when it has no replies.
+         */
+        get: operations["listChannelMessages"];
+        put?: never;
+        /**
+         * Create a channel message
+         * @description Posts a Markdown message, or a thread reply with `thread_root_id`. Only members post. `mentions` lists the people and assistants the composer mentioned. An external agent's post with `mentions` is a 400. The server reads only external agents' `@handles` out of the text: the answer says which agents the post woke (`agent_wakes`) and which `@handles` name no connected external agent (`unresolved_mentions`).
+         */
+        post: operations["createChannelMessage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/channels/{channel_id}/messages/{message_id}/reactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a channel reaction
+         * @description Adds the caller's emoji to a message. Adding the same emoji twice changes nothing. A message holds at most 50 different emoji, and a person adds at most 20 to one message.
+         */
+        post: operations["addChannelReaction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/channels/{channel_id}/read-state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update channel read state
+         * @description Moves the caller's read position forward to a message, or to the newest change when `message_id` is empty. It never moves backwards. Returns the stored position and the counts that follow.
+         *
+         *     For an external agent the read position is its ack: its next stream replays the wakes after it. An external agent must send `message_id`. Without it the answer is 400 and the position does not move.
+         */
+        patch: operations["updateChannelReadState"];
+        trace?: never;
+    };
+    "/v1/channels/{channel_id}/external-agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Replace a project connection's external agents in a channel
+         * @description Only a project connection's token calls this, on its own channel. Send the whole list of the project's external agents, every time. Mobius changes only this project's external agents: it creates each named agent that is not live, keeps each live one that is named, and removes each live one that is not named. Removing an agent writes no line. The first agent that joins writes the project's line in the channel. The same owner, channel, and handle are always the same agent and author. A handle follows the rules of `createChannelExternalAgent`, and a handle that another live external agent holds in the channel is refused. The answer has one entry per entry of the list, in order: the external agent's ID, or a refusal `code` and its `refused` text. Use the ID with `exchangeExternalAgentToken`. A project connection may send its list 12 times a minute. Past that, the answer is `429` `rate_limit_exceeded` with `Retry-After`, and nothing changes.
+         */
+        put: operations["replaceChannelExternalAgents"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/external-agents/{external_agent_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get an external agent
+         * @description Returns one external agent, connected or waiting for its pairing code, to anyone who can read its channel. An external agent's access token reads only its own external agent. A disconnected agent is not found.
+         */
+        get: operations["getExternalAgent"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete an external agent
+         * @description Disconnects one external agent. Its owner, a channel admin, an organization Owner or Admin, or the external agent itself with its access token may do this. The agent leaves the channel at once, and the channel shows a line. Disconnecting an agent that is already disconnected changes nothing. On a project connection (also with its own project token) or on one of its external agents, the whole project ends: every external agent of the project leaves, and the channel shows one line.
+         */
+        delete: operations["deleteExternalAgent"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/external-agents/{external_agent_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Report an external agent's status
+         * @description An external agent reports what it is doing now, with its own access token, on itself. Any external agent may: one paired alone, or one that a project connection brings. Send the whole status each time. It allows 60 a minute (else `429` `rate_limit_exceeded` with `Retry-After`). The status lasts while the stream is open. The channel's people see the state. Only the owner sees `ask`. Without status reports, the agent shows only Online or Offline. `prompt` asks the owner about one held call, and `settled` closes that request. Request logs never hold the body.
+         *
+         *     Each refusal has its own `error.code`. Act on the code, never on the message:
+         *
+         *     - `409 not_online`: the agent's stream is not open. Open the
+         *     stream, then send the status again.
+         *     - `409 prompt_open`: the agent has an open request for a different
+         *     call, or `prompt` names the open `call_id` with a different
+         *     `tool` or `input`. Nothing changed. Settle the open request, or
+         *     send the status without `prompt`. Do not send the same body
+         *     again.
+         *     - `503 prompts_unavailable`: this server has no store for prompts,
+         *     and the status was not stored. Send the status without `prompt`,
+         *     and answer the call on the machine.
+         *
+         *     A new stream for an agent with no live stream closes the agent's open request (reason `no_longer_open`) and clears its status. After each new stream, send the current status again, with `prompt` if the call still waits. A stream that replaces a live one keeps both.
+         */
+        put: operations["setExternalAgentStatus"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/external-agents/connect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Connect an external agent with a pairing code
+         * @description Exchanges a pairing code (`mbp_`) for the agent's credential (`mba_`). A code works once, for 10 minutes. The agent joins the channel, and the channel shows a line. A project code pairs a project connection: nothing joins and no line shows until the first `replaceChannelExternalAgents`. The response names the organization, owner, channel, handle, and wake policy, so the client can ask the owner before it stores the credential. If the owner declines, the client exchanges the credential (`exchangeExternalAgentToken`), then deletes the external agent (`deleteExternalAgent`). The credential is shown only here. Every code that does not work gets the same `401 unauthorized`.
+         */
+        post: operations["connectExternalAgent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/external-agents/token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Exchange a credential for an access token
+         * @description Exchanges the agent's credential (`mba_`) for an access token (`mbat_`) that works for one hour. A project connection's credential gets the project token, or, with `external_agent_id`, the token of one of its external agents. The credential works until the external agent is disconnected; it does not expire when unused. A credential that does not work (disconnected or unknown) gets `401 grant_revoked`: stop, and connect again with a new pairing code. A `403` means the agent cannot act now (for example, external agents are off for the organization); retry later.
+         *
+         *     The access token works only on the operations an external agent may call, on its own channel and on itself. Every such operation answers `401 token_expired` for a missing, altered, or expired token (exchange the credential again), `401 grant_revoked` when the connection has ended (stop), `403` when the agent cannot act now (retry later), and `404` for another channel or external agent. Any other operation answers `403`.
+         */
+        post: operations["exchangeExternalAgentToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/artifacts": {
         parameters: {
             query?: never;
@@ -2905,6 +3202,28 @@ export interface components {
              * @description Ignored. Every session is summarized by the same platform model. Accepted until web clients that send it are gone; never returned.
              */
             summary_model?: string;
+            /**
+             * Format: int64
+             * @description Effective compaction threshold in estimated tokens for the resolved policy and model, after applying any long-context price-tier ceiling. Present when `strategy` is `auto`.
+             */
+            readonly effective_threshold_tokens?: number;
+            /** @description True when the model's long-context price-tier ceiling capped `effective_threshold_tokens` below the configured preset or exact `threshold_tokens`. */
+            readonly ceiling_applied?: boolean;
+            /**
+             * Format: int64
+             * @description Maximum compaction threshold in tokens under the model's long-context price tier. Omitted when the model has no tier.
+             */
+            readonly compaction_ceiling_tokens?: number;
+            /**
+             * Format: int64
+             * @description Input token count at which the model enters its long-context price tier. Omitted when the model has no tier.
+             */
+            readonly long_context_threshold_tokens?: number;
+            /**
+             * Format: int64
+             * @description Model input context window in tokens used to resolve model-relative compaction presets.
+             */
+            readonly context_window_tokens?: number;
         };
         /**
          * @description Automatic memory delivery mode for agent turns.
@@ -2940,6 +3259,11 @@ export interface components {
          * @enum {string}
          */
         AgentVisibility: "organization" | "restricted" | "private";
+        /**
+         * @description Whose mail to `email_address` the agent answers by email, from that address. Every message is stored whatever this says, and replies go only to a sender address the receiving mail server authenticated. Mailing lists and no-reply senders never get a reply. `off` answers no one. `audience` answers the people who can use the agent, matched by their verified email; it is the default. `anyone` also answers people outside that audience; those conversations run without company accounts and cannot send email, call webhooks, or take destructive actions.
+         * @enum {string}
+         */
+        AgentEmailReplies: "off" | "audience" | "anyone";
         /**
          * @description AI actor identity. An agent IS a principal (its permissions are role assignments on that principal) with instructions, configuration, and session presence.
          * @example {
@@ -3012,6 +3336,7 @@ export interface components {
             active_chat_count?: number;
             /** @description Inbox address provisioned via POST /v1/agents/{resource_id}/inbox (opt-in; not created automatically at agent creation). The field is populated only after a successful provisioning call. Use this address to add the agent as a member on external platforms (Linear, GitHub, Slack, etc.) so the platform can deliver notifications to the agent. */
             email_address?: string;
+            email_replies: components["schemas"]["AgentEmailReplies"];
             /** @description Free-form labels used for filtering, ownership, or automation. */
             tags?: components["schemas"]["TagMap"];
             /** @description ID of the principal who created this agent. */
@@ -4002,6 +4327,16 @@ export interface components {
              * @description Maximum input context used to resolve model-relative compaction presets.
              */
             context_window_tokens: number;
+            /**
+             * Format: int64
+             * @description Input token count at which this model enters its long-context price tier. Omitted when the model has no tier.
+             */
+            long_context_threshold_tokens?: number;
+            /**
+             * Format: int64
+             * @description Maximum compaction threshold in tokens under this model's long-context price tier. Omitted when the model has no tier.
+             */
+            compaction_ceiling_tokens?: number;
             /** @description Whether this is the suggested default for its provider. */
             recommended?: boolean;
         };
@@ -4387,6 +4722,8 @@ export interface components {
             };
             /** @description Current integration lifecycle state: `active`, `inactive`, or `expired`. */
             status: components["schemas"]["IntegrationStatus"];
+            /** @description Human-readable reason when `status` is `expired` (needs reconnect). */
+            status_reason?: string;
             /** @description True when the stored credential cannot be decrypted by the running platform. The connection still exists and its `status` is unchanged, but nothing that needs the credential will work until an admin reconnects the integration. Absent or `false` in the normal case. */
             credentials_unreadable?: boolean;
             /** @description Who this connection belongs to, and the only axis that decides who may use it. Absent means org-shared. */
@@ -4729,8 +5066,10 @@ export interface components {
             /** @enum {string} */
             kind: "skill" | "connection" | "file";
             id: string;
-            /** @description Empty for a file. */
+            /** @description Empty for a file and for a private skill. */
             name: string;
+            /** @description True for a skill private to its custodian. Its name is left out, so an administrator offboarding the custodian never reads it. */
+            private: boolean;
             /**
              * @description `audience`: the skill is private to fewer people than the copy is for, and its custodian can share it; or the file belongs to a chat and stays in it. `needs_admin`: only an Admin grants a company account. `failed`: the copy or grant failed.
              * @enum {string}
@@ -4800,7 +5139,6 @@ export interface components {
          *     question** — single-question is what makes an approval auditable
          *     * `request_review` → `select`, `input`
          *     * `request_information` → `select`, `multi_select`, `input`
-         *     * `assign_work` → `select`, `multi_select`, `input`
          */
         InteractionSpec: {
             /** @description The questions this interaction asks. */
@@ -4834,9 +5172,6 @@ export interface components {
          *     yes/no/defer)
          *     * `request_review` — a judgment protocol that evaluates supplied
          *     material
-         *     * `assign_work` — assigned work performed by a user or agent, which
-         *     submits the result. Pair it with `resolution_policy.review` when the
-         *     result must be accepted before the interaction resolves.
          *     * `request_takeover` — an assistant asks a person to take over a
          *     Computer's screen and finish a step only a person can do. Only
          *     Mobius creates it; `computer_takeover` carries the card. A person
@@ -4844,24 +5179,19 @@ export interface components {
          *     `answers: [{question_id: "outcome", value: "declined"}]` and no
          *     other answer; Mobius records how the takeover ended.
          *
-         *     The first three are *answered*; `assign_work` is *worked*. Kind does not by itself decide when an interaction closes — the resolution policy does.
+         *     Kind does not by itself decide when an interaction closes — the resolution policy does.
          * @enum {string}
          */
-        InteractionKind: "request_information" | "request_approval" | "request_review" | "assign_work" | "request_takeover";
+        InteractionKind: "request_information" | "request_approval" | "request_review" | "request_takeover";
         /**
          * @description Lifecycle state of the interaction.
          *     * `pending` — open; the assigned users still need to act.
-         *     * `in_review` — a result was submitted and an acceptance reviewer must
-         *     accept it or send it back. Only interactions whose resolution policy
-         *     carries a `review` block enter this state.
          *     * `completed` — resolved; the outcome is final.
          *     * `expired` — the deadline passed before resolution.
          *     * `cancelled` — deliberately stopped.
-         *
-         *     `pending` and `in_review` are the *open* states: some actor still owes an action and any waiting consumer has not been resumed.
          * @enum {string}
          */
-        InteractionStatus: "pending" | "in_review" | "completed" | "expired" | "cancelled";
+        InteractionStatus: "pending" | "completed" | "expired" | "cancelled";
         /** @description Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which. */
         InteractionValue: ({
             [key: string]: unknown;
@@ -4905,8 +5235,11 @@ export interface components {
         };
         /** @description Polymorphic identifier of what is waiting on this interaction's resolution. `http_subscriber` requires `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved org signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Version` and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers. */
         Consumer: {
-            /** @enum {string} */
-            kind: "agent_tool" | "http_subscriber" | "none" | "mcp_server_approval";
+            /**
+             * @description `external_agent_prompt`: an external agent's permission prompt for one call it holds, named to its owner.
+             * @enum {string}
+             */
+            kind: "agent_tool" | "http_subscriber" | "none" | "mcp_server_approval" | "external_agent_prompt";
             /** @description Agent tool continuation target when `kind=agent_tool`; null for other consumer kinds. */
             agent_tool?: components["schemas"]["AgentToolConsumer"] | null;
             /** @description HTTP callback target when `kind=http_subscriber`; null for other consumer kinds. */
@@ -5028,23 +5361,12 @@ export interface components {
              * @description Timestamp when this response was submitted.
              */
             responded_at: string;
-            /** @description Review round this response was submitted under, matching the interaction's `review_round` at submission time. Null or absent for the first round. Only responses whose `attempt` equals the interaction's current `review_round` count toward resolution; earlier rounds are retained as audit history. */
-            attempt?: number | null;
             /** Format: date-time */
             created_at: string;
             /** Format: date-time */
             updated_at: string;
         };
-        /**
-         * @description Optional acceptance gate on a resolution policy. Its presence — not the interaction's kind — is what makes an interaction reviewable, so the gate stays opt-in and ordinary approvals and input requests are unaffected.
-         *
-         *     With a review block, satisfying the resolution rule moves the interaction to `in_review` instead of resolving it, and any waiting consumer stays suspended. A reviewer then calls the review endpoint to accept (resolve and resume) or request changes (return to `pending` under a new review round, consumer still waiting).
-         */
-        ReviewPolicy: {
-            /** @description Principals who may accept or send back submitted work. When omitted or empty, the interaction's creator is the reviewer. Assignees are never implied reviewers — self-acceptance would make the gate decorative. Required when the interaction has no creator. */
-            reviewer_user_ids?: string[];
-        };
-        /** @description Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome, and whether that outcome needs acceptance before it is final. */
+        /** @description Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome. */
         ResolutionPolicy: {
             /**
              * @description Resolution rule. `any_of` resolves on the first acceptable response. `all_of` waits for every assigned participant. `quorum` resolves once `threshold` distinct participants respond.
@@ -5053,8 +5375,6 @@ export interface components {
             type: "any_of" | "all_of" | "quorum";
             /** @description Required when `type` is `quorum`. Number of distinct eligible participants that must respond before the interaction resolves. Must be `>= 1` and `<=` the participant count. */
             threshold?: number;
-            /** @description Optional acceptance gate. Null (the default) means responses resolve the interaction directly. */
-            review?: components["schemas"]["ReviewPolicy"] | null;
         };
         /** @description One entry in an interaction's status history. Entries are append-only and written in the same transaction as the transition they describe, so the timeline can never disagree with the interaction's `status`. */
         InteractionLifecycleEvent: {
@@ -5069,13 +5389,11 @@ export interface components {
              * @description What happened.
              * @enum {string}
              */
-            action: "created" | "submitted_for_review" | "accepted" | "changes_requested" | "resolved" | "cancelled" | "expired";
+            action: "created" | "resolved" | "cancelled" | "expired";
             /** @description Principal that caused the transition. Null for system-driven transitions such as expiry. */
             actor_id?: string | null;
-            /** @description Reviewer feedback, cancel reason, or responder comment, depending on `action`. */
+            /** @description Cancel reason or responder comment, depending on `action`. */
             comment?: string | null;
-            /** @description Review round the transition belongs to. Zero for the first pass. */
-            round?: number | null;
         };
         /** @description Human or agent interaction request and its current response state. */
         Interaction: {
@@ -5090,7 +5408,7 @@ export interface components {
             visibility: components["schemas"]["ResourceVisibility"];
             container?: components["schemas"]["ResourceContainer"];
             posture: components["schemas"]["ResourcePosture"];
-            /** @description What the caller may do to this interaction. `can_edit` means the caller may cancel (dismiss) it and `can_delete` that they may delete it once it is closed: whoever asked, the person the asking turn ran for, a recipient, a reviewer, or an administrator. Present on responses to a person's request. */
+            /** @description What the caller may do to this interaction. `can_edit` means the caller may cancel (dismiss) it and `can_delete` that they may delete it once it is closed: whoever asked, the person the asking turn ran for, a recipient, or an administrator. Present on responses to a person's request. */
             controls?: components["schemas"]["ResourceControls"];
             /** @description Protocol kind of the interaction. */
             kind: components["schemas"]["InteractionKind"];
@@ -5171,17 +5489,6 @@ export interface components {
             resolved_by?: string | null;
             /** @description Reason recorded when the interaction was cancelled. */
             cancel_reason?: string | null;
-            /** @description Number of completed send-backs. Zero on the first pass. Responses record the round they answered in their `attempt` field, and only the current round's responses count toward resolution. */
-            review_round?: number | null;
-            /**
-             * Format: date-time
-             * @description When the interaction most recently entered `in_review`. Null for interactions that have never been submitted for acceptance.
-             */
-            submitted_at?: string | null;
-            /** @description The reviewer's most recent send-back note. Survives the return to `pending` so the assignee can see why the work came back. */
-            review_feedback?: string | null;
-            /** @description Principal whose accept or send-back was recorded last; null until a review decision is made. Distinct from `responder`, which names whoever submitted the work. */
-            reviewer?: components["schemas"]["InteractionResponder"] | null;
             /** @description Append-only status history, oldest first. Rendered as the detail view's timeline. */
             lifecycle?: components["schemas"]["InteractionLifecycleEvent"][];
         };
@@ -5242,18 +5549,8 @@ export interface components {
             answers: components["schemas"]["InteractionAnswer"][];
             /** @description Optional free-text comment accompanying the action. Available on every interaction kind and never gated by the spec; the responder may always attach reasoning, caveats, or follow-up notes alongside their answers. It is one note per response, not per question. */
             comment?: string;
-            /** @description Send true only from a view that shows the full details of the held tool calls. An approval Mobius opened for held tool calls refuses every answer without it. */
+            /** @description Send true only from a view that shows the full details of the held tool calls. An approval Mobius opened for held tool calls refuses every answer without it. An external agent's permission prompt refuses an approval without it, and accepts a denial. */
             held_card_seen?: boolean;
-        };
-        /** @description Acceptance decision on submitted work. */
-        ReviewInteractionRequest: {
-            /**
-             * @description `accept` resolves the interaction and resumes any waiting consumer. `request_changes` returns it to `pending` for another round.
-             * @enum {string}
-             */
-            action: "accept" | "request_changes";
-            /** @description The reviewer's reasoning. Required for `request_changes` — work sent back without a reason gives the assignee nothing to act on. Optional for `accept`, where it is recorded as an acceptance note. */
-            comment?: string;
         };
         /** @description Optional payload accompanying a cancel request. The reason is recorded on the interaction and forwarded in the cancellation signal so the waiting consumer can route to a fallback. */
         CancelInteractionRequest: {
@@ -5308,13 +5605,6 @@ export interface components {
         AddAgentMembersRequest: {
             /** @description Principals to add. Each must be a live principal in this org. Adding a principal who is already a member is a no-op. */
             principal_ids: string[];
-        };
-        AgentAudienceResourceDisposition: {
-            /** @enum {string} */
-            resource_type: "artifact" | "session" | "skill" | "table";
-            resource_id: string;
-            /** @enum {string} */
-            action: "revoke" | "make_private" | "keep_and_widen";
         };
         PromoteAgentMemoryEntryRequest: {
             /** @description The private partition the entry is copied out of. Required: promotion always has an owner, and the shared layer is not a source. */
@@ -5578,19 +5868,9 @@ export interface components {
             tool_approval_mode?: components["schemas"]["ToolApprovalMode"];
             /** @description Default reasoning-effort level new sessions inherit from this agent. */
             thinking_effort?: components["schemas"]["ThinkingEffort"];
-            /**
-             * @deprecated
-             * @description Ignored. An assistant chooses a folder for each file it saves.
-             */
-            output_folder?: string | null;
             /** @description Initial labels used for filtering, ownership, or automation. */
             tags?: components["schemas"]["TagMap"];
-            /**
-             * @deprecated
-             * @description Ignored. Custody follows from `visibility`: a `private` agent is in its one member's custody, a `restricted` or `organization` agent in the team's.
-             */
-            owner?: components["schemas"]["ResourceOwner"];
-            /** @description Who this agent is for: its kind, which cannot change after create. Omit for `private` on the employee API. */
+            /** @description Who this agent is for: its kind, which cannot change after create. Custody follows from it: a `private` agent is in its one member's custody, a `restricted` or `organization` agent in the team's. Omit for `private` on the employee API. */
             visibility?: components["schemas"]["AgentVisibility"];
             /**
              * @description The audience for a `restricted` or `private` agent, written in the same transaction as the agent row.
@@ -5603,7 +5883,7 @@ export interface components {
         UpdateAgentRequest: {
             /**
              * Format: date-time
-             * @description The agent's `updated_at` as the caller last read it. When set, the update saves only if the agent is unchanged since then, compared to the microsecond; otherwise it returns 409 with code `agent_changed` and saves nothing.
+             * @description The agent's `updated_at` as the caller last read it. When set, the update saves only if the agent is unchanged since then, compared to the microsecond; otherwise it returns 409 with code `agent_changed` and saves nothing. Required when the request replaces `system_prompt` or `action_selectors`; without it those requests return 400 with code `agent_version_required`.
              */
             expected_updated_at?: string;
             /** @description Free-form human-readable label, 1-63 characters; must be unique within the org. */
@@ -5638,45 +5918,15 @@ export interface components {
             compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
             /** @description Replacement runtime memory hard gate. It cannot be overridden at invocation time. */
             memory_enabled?: boolean;
+            /** @description Replacement setting for whose mail the agent answers by email. */
+            email_replies?: components["schemas"]["AgentEmailReplies"];
             memory_context?: components["schemas"]["UpdateMemoryContextPolicy"];
             /** @description Replacement approval mode. */
             tool_approval_mode?: components["schemas"]["ToolApprovalMode"];
             /** @description Replacement default reasoning-effort level. Send `inherit` to clear the default and leave the provider default in place. */
             thinking_effort?: components["schemas"]["ThinkingEffort"];
-            /**
-             * @deprecated
-             * @description Ignored. An assistant chooses a folder for each file it saves.
-             */
-            output_folder?: string | null;
             /** @description Replacement labels; send an empty object to clear all tags. */
             tags?: components["schemas"]["TagMap"];
-            /**
-             * @deprecated
-             * @description The agent's kind is set when it is created. The current value is accepted and changes nothing; any other value returns `409`.
-             */
-            visibility?: components["schemas"]["AgentVisibility"];
-            /**
-             * @deprecated
-             * @description Replacement members for a `restricted` or `private` agent: the exact set after this call. Omit to leave membership unchanged. An empty set is refused, and a `private` agent's one member is the person it belongs to. Use the members endpoints instead.
-             */
-            members?: string[];
-            /**
-             * @deprecated
-             * @description Ignored.
-             * @default false
-             */
-            confirm_visibility_change?: boolean;
-            /**
-             * @deprecated
-             * @description Ignored.
-             */
-            affected_resource_dispositions?: components["schemas"]["AgentAudienceResourceDisposition"][];
-            /**
-             * @deprecated
-             * @description Ignored.
-             * @enum {string}
-             */
-            stranded_disposition?: "retain" | "delete";
         };
         /**
          * @description Classifies a memory entry. Kinds carry different retention and compaction semantics: facts and preferences are durable, episodes are the primary input to compaction, and a summary is the compacted product of other entries.
@@ -5806,6 +6056,209 @@ export interface components {
             pinned?: boolean;
         };
         /**
+         * @description Whether the email was received by the agent (`inbound`) or sent from the agent's inbox (`outbound`).
+         * @enum {string}
+         */
+        AgentEmailDirection: "inbound" | "outbound";
+        /**
+         * @description Mutable triage status of a stored agent email message.
+         * @enum {string}
+         */
+        AgentEmailStatus: "unread" | "read" | "archived";
+        /**
+         * @description Selects gate-accepted messages (`accepted`), gate-suppressed messages (`filtered`), or both (`all`).
+         * @enum {string}
+         */
+        AgentEmailGateFilter: "accepted" | "filtered" | "all";
+        /** @description Summary of an agent's dedicated persistent email inbox. */
+        AgentEmailInboxSummary: {
+            /** @description Identifier of the agent that owns this inbox. */
+            agent_id: string;
+            /** @description Provisioned inbound email address, when enabled. */
+            email_address?: string;
+            /** @description Whether the agent currently has a provisioned inbox email address. */
+            provisioned: boolean;
+            /** @description Number of unread gate-accepted messages in the inbox. */
+            unread_count: number;
+            /**
+             * Format: date-time
+             * @description Timestamp of the most recent gate-accepted message, when the inbox is non-empty.
+             */
+            latest_received_at?: string;
+        };
+        /** @description Metadata for one email attachment stored alongside a persisted agent email. */
+        AgentEmailAttachment: {
+            /** @description Sanitized attachment filename. */
+            filename?: string;
+            /** @description MIME media type of the attachment. */
+            content_type?: string;
+            /**
+             * Format: int64
+             * @description Attachment size in bytes.
+             */
+            size_bytes?: number;
+            /** @description Optional Library artifact identifier when the attachment has been ingested. */
+            artifact_id?: string;
+        };
+        /** @description Compact envelope view of one persisted email in an agent's inbox (omits full bodies). */
+        AgentEmailMessageSummary: {
+            /** @description Unique identifier of the persisted email message (`aem_...`). */
+            id: string;
+            /** @description Agent that owns this inbox message. */
+            agent_id: string;
+            direction: components["schemas"]["AgentEmailDirection"];
+            /** @description Stable key grouping inbound and outbound messages in one conversation thread. */
+            thread_key: string;
+            /** @description Normalized sender email address. */
+            from_address?: string;
+            /** @description Sender display name, when provided. */
+            from_name?: string;
+            /** @description Recipient email addresses. */
+            to_addresses?: string[];
+            /** @description Email subject line. */
+            subject?: string;
+            /** @description Short plain-text preview of the email body. */
+            snippet?: string;
+            /** @description Whether the email carried one or more attachments. */
+            has_attachments: boolean;
+            /** @description Whether the receiving mail provider authenticated the sender (SPF/DKIM/DMARC alignment). */
+            sender_authenticated: boolean;
+            /** @description Prompt-injection warning signals detected on inbound content, if any. */
+            injection_signals?: string[];
+            /** @description Decision recorded by the inbound email safety gate (`accepted`, `loop_suppressed`, `replayed`, `rate_limited`, etc.). */
+            gate_decision: string;
+            /** @description Short reason explaining the gate decision. */
+            gate_reason?: string;
+            status: components["schemas"]["AgentEmailStatus"];
+            /** @description Mutable triage labels applied to this message. */
+            labels: string[];
+            /** @description Mutable plain-text triage notes. */
+            notes?: string;
+            /**
+             * Format: date-time
+             * @description When the email was received or sent.
+             */
+            received_at: string;
+            /**
+             * Format: date-time
+             * @description When this record was stored.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When triage metadata was last updated.
+             */
+            updated_at: string;
+        };
+        /** @description Full persisted email message in an agent's dedicated inbox (plain text only; raw HTML is omitted from API responses). */
+        AgentEmailMessage: {
+            /** @description Unique identifier of the persisted email message (`aem_...`). */
+            id: string;
+            /** @description Agent that owns this inbox message. */
+            agent_id: string;
+            direction: components["schemas"]["AgentEmailDirection"];
+            /** @description Stable key grouping inbound and outbound messages in one conversation thread. */
+            thread_key: string;
+            /** @description RFC 5322 Message-ID header, when present. */
+            message_id?: string;
+            /** @description RFC 5322 In-Reply-To header, when present. */
+            in_reply_to?: string;
+            /** @description RFC 5322 References header chain. */
+            references?: string[];
+            /** @description Normalized sender email address. */
+            from_address?: string;
+            /** @description Sender display name, when provided. */
+            from_name?: string;
+            /** @description Raw From header value. */
+            header_from?: string;
+            /** @description Reply-To header address, when present. */
+            reply_to?: string;
+            /** @description Recipient email addresses. */
+            to_addresses?: string[];
+            /** @description Carbon-copy recipient email addresses. */
+            cc_addresses?: string[];
+            /** @description Email subject line. */
+            subject?: string;
+            /** @description Short plain-text preview of the email body. */
+            snippet?: string;
+            /** @description Plain-text body of the email, when supplied. */
+            text_body?: string;
+            /** @description Extracted visible plain text derived from an HTML body. */
+            html_text?: string;
+            /** @description Effective plain-text body (`text_body`, falling back to `html_text`). */
+            text?: string;
+            /** @description Attachment metadata list. */
+            attachments?: components["schemas"]["AgentEmailAttachment"][];
+            /** @description Whether the email carried one or more attachments. */
+            has_attachments: boolean;
+            /** @description Whether the receiving mail provider authenticated the sender. */
+            sender_authenticated: boolean;
+            /** @description Authentication verification facts (SPF, DKIM, DMARC, aligned domain). */
+            auth_facts?: {
+                [key: string]: unknown;
+            };
+            /** @description Loop and auto-reply detection signals. */
+            loop_facts?: {
+                [key: string]: unknown;
+            };
+            /** @description Prompt-injection warning signals detected on inbound content, if any. */
+            injection_signals?: string[];
+            /** @description Decision recorded by the inbound email safety gate. */
+            gate_decision: string;
+            /** @description Short reason explaining the gate decision. */
+            gate_reason?: string;
+            /** @description Source event identifier for inbound messages, when linked. */
+            source_event_id?: string;
+            /** @description Channel exchange identifier for outbound replies, when linked. */
+            channel_exchange_id?: string;
+            /** @description Conversation session identifier linked to this reply, when present. */
+            session_id?: string;
+            status: components["schemas"]["AgentEmailStatus"];
+            /** @description Mutable triage labels applied to this message. */
+            labels: string[];
+            /** @description Mutable plain-text triage notes. */
+            notes?: string;
+            /**
+             * Format: date-time
+             * @description When the email was received or sent.
+             */
+            received_at: string;
+            /**
+             * Format: date-time
+             * @description When this record was stored.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When triage metadata was last updated.
+             */
+            updated_at: string;
+        };
+        /** @description Paginated list of compact email envelopes in an agent's inbox. */
+        AgentEmailMessageListResponse: {
+            /** @description Page of inbox messages, newest first. */
+            items: components["schemas"]["AgentEmailMessageSummary"][];
+            /** @description Whether additional messages follow this page. */
+            has_more: boolean;
+            /** @description Opaque cursor to pass as `cursor` on the next request when `has_more` is true. */
+            next_cursor?: string;
+        };
+        /** @description Chronological list of messages belonging to one email conversation thread. */
+        AgentEmailThreadResponse: {
+            /** @description Stable thread identifier. */
+            thread_key: string;
+            /** @description Messages in this thread ordered oldest first. */
+            items: components["schemas"]["AgentEmailMessage"][];
+        };
+        /** @description Partial update to mutable triage fields on one stored agent email message. */
+        UpdateAgentEmailMessageRequest: {
+            status?: components["schemas"]["AgentEmailStatus"];
+            /** @description Replacement list of up to 20 short triage labels. */
+            labels?: string[];
+            /** @description Plain-text triage notes (up to 8,000 characters). */
+            notes?: string;
+        };
+        /**
          * @description Reusable instruction bundle assignable to agents.
          * @example {
          *       "id": "skill_7n4q8x2m9p5v3r6t",
@@ -5833,10 +6286,10 @@ export interface components {
             /** @description Markdown description of the skill's purpose. */
             description?: string;
             /**
-             * @description Ownership and mutability of the Skill. `system` is built-in and `custom` is user-managed.
+             * @description Where the skill comes from. Every stored skill is `custom`, managed by the organization.
              * @enum {string}
              */
-            source: "system" | "custom";
+            source: "custom";
             /** @description Markdown instructions loaded when the skill is active. */
             instructions: string;
             owner: components["schemas"]["ResourceOwner"];
@@ -5908,6 +6361,8 @@ export interface components {
             error_type?: string;
             /** @description Human-readable failure detail when the turn failed. */
             error_message?: string;
+            /** @description Why a terminal turn stopped (for example `end_turn`, `iteration_limit`, `output_limit`, `context_limit`, or `cancelled`). Absent on non-terminal turns and historical rows without a recorded reason. */
+            stop_reason?: string;
             error_scope?: components["schemas"]["AgentTurnErrorScope"];
             /** @description The validated structured output. Present only on a `completed` turn that declared an output schema. Read this instead of parsing the transcript. */
             output?: {
@@ -6058,6 +6513,8 @@ export interface components {
             seq?: number;
             error_type?: string;
             error_message?: string;
+            /** @description Why a terminal turn stopped. */
+            stop_reason?: string;
             /** @description Token usage recorded when the turn completed or failed. On a failed turn it covers the model calls that finished before the failure. Identical to the `usage` on the turn resource, and identical on the bootstrap and cursored reads of this snapshot. */
             usage?: components["schemas"]["AgentTurnUsage"];
             /** @description The validated structured output, delivered on the terminal `turn.upsert` frame. Present only on a `completed` turn that declared an output schema. */
@@ -6067,6 +6524,7 @@ export interface components {
             /** @description Where `output` came from (`tool` or `text`). */
             output_source?: components["schemas"]["AgentTurnOutputSource"];
             wait?: components["schemas"]["SessionTranscriptWait"];
+            action_await?: components["schemas"]["SessionTranscriptActionAwait"];
             /** Format: date-time */
             created_at: string;
             /** Format: date-time */
@@ -6292,25 +6750,6 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /** @description Ephemeral live transcript snapshot for an in-flight turn. Deployments with shared cache support make it available across backend replicas. */
-        SessionLiveSnapshot: {
-            session_id: string;
-            turn_id: string;
-            /** @description Always empty. Kept for the response shape while the endpoint is retired. */
-            frames: {
-                [key: string]: unknown;
-            }[];
-            /**
-             * Format: int64
-             * @description Highest live_sequence recorded for the turn, or 0 when none is known.
-             */
-            last_live_sequence: number;
-            /**
-             * Format: date-time
-             * @description Server timestamp when the snapshot was last updated.
-             */
-            updated_at: string;
-        };
         /** @description Live-only marker asking the client to reconcile the active turn from the live snapshot endpoint. */
         SessionResyncFrame: {
             /** @enum {string} */
@@ -6460,6 +6899,22 @@ export interface components {
             tool_call_id: string;
             /** Format: date-time */
             expires_at?: string;
+        };
+        /** @description The slow tool call a waiting turn is paused on, such as a scraper run. Present only while the turn is `waiting` on such a call. */
+        SessionTranscriptActionAwait: {
+            /** @description The paused tool call. */
+            tool_call_id: string;
+            /** @description Short machine label for the wait, such as `running_scraper`. Unknown values must be preserved. */
+            reason?: string;
+            /** @description What is being waited on, for people, such as a scraper's name. */
+            label?: string;
+            /** @description One plain sentence on how long the wait usually takes, such as "Scraper runs usually take 1–10 minutes." */
+            expectation?: string;
+            /**
+             * Format: date-time
+             * @description When the call paused. The chat's timer for the wait counts from here, not from the start of the turn.
+             */
+            paused_at?: string;
         };
         /** @description Payload of a `turn.completed` event — the terminal idle marker carrying token usage. The assistant output is not duplicated here; it is delivered as `agent.message` content events when the transcript commits. The same usage is readable after the fact on the turn resource, so a consumer that missed the pulse never has to replay the stream for it. */
         TurnCompletedPayload: {
@@ -7227,6 +7682,8 @@ export interface components {
             last_diagnostic_at?: string | null;
             /** @description Reserved, not-yet-injected event inputs. The subscription stops visibly at 256. */
             pending_delivery_count: number;
+            /** @description Set while a pending delivery is ready but waits because the turn it needs cannot be funded, for example when the person's monthly credit cap is reached. A full sentence the person reads: why it is held and what releases it. The delivery retries on its own. */
+            funding_hold_reason?: string;
             /**
              * Format: date-time
              * @description First observed time intake stopped because the pending-input limit was reached.
@@ -7537,11 +7994,6 @@ export interface components {
             schedule?: components["schemas"]["RoutineSchedule"];
             /** @description Runs the routine when a matching integration event arrives. Each matched event creates a ledger entry for each followed thread. Runs serialize within a thread, with concurrent threads bounded by the routine's concurrency setting; each-event routines serialize per routine. Waiting thread events may be coalesced into the newest entry. A run still waiting six hours later is closed `skipped` with `error_code` `stale`. `event_type` may be omitted when `follow_target` names a provider target, which derives the subscription; the `event`, `routine`, and `custom` follow targets require an explicit event type. */
             event?: components["schemas"]["EventTrigger"];
-            /**
-             * @deprecated
-             * @description Ignored. An assistant chooses a folder for each file it saves.
-             */
-            output_folder?: string | null;
             /** @description Model every run uses instead of the assistant's. Omit to use the assistant's model. Whether the organization may run it is checked when each run starts. Rejected for a worker-routed assistant. */
             model_override?: string;
             /** @description Reasoning effort every run uses instead of the assistant's. Omit (or send `inherit`) to use the assistant's. */
@@ -7582,11 +8034,6 @@ export interface components {
             connection_bindings?: components["schemas"]["ConnectionBindings"];
             name?: string;
             instructions?: string;
-            /**
-             * @deprecated
-             * @description Ignored. An assistant chooses a folder for each file it saves.
-             */
-            output_folder?: string | null;
             /** @description Replacement model for every run. Omit to leave it unchanged; send an empty string to return to the assistant's model. */
             model_override?: string;
             /** @description Replacement reasoning effort for every run. Omit to leave it unchanged; send `inherit` to return to the assistant's. */
@@ -7820,11 +8267,6 @@ export interface components {
             name?: string;
             instructions?: string;
             schedule?: components["schemas"]["RoutineSchedule"];
-            /**
-             * @deprecated
-             * @description Ignored. An assistant chooses a folder for each file it saves.
-             */
-            output_folder?: string;
             /** Format: int64 */
             per_occurrence_ceiling_milli?: number;
             /** Format: int64 */
@@ -8119,10 +8561,10 @@ export interface components {
             retained: components["schemas"]["BlueprintBinding"][];
         };
         /**
-         * @description Column value type: `string`, `number`, `boolean`, `date`, `object`, `array`, or `any`. `link` stores one row of another table and reads as `{id, name}`. `lookup` and `rollup` are computed on read and cannot be written. `select` holds one of the column's `choices`; `multi_select` holds an array of them.
+         * @description Column value type: `string`, `number`, `boolean`, `date`, `object`, `array`, or `any`. `link` stores one row of another table and reads as `{id, name}`. `lookup` and `rollup` are computed on read and cannot be written. `select` holds one of the column's `choices`; `multi_select` holds an array of them. `file` stores one Library file: write its artifact ID (or a Library file ID, which stores its current version). The writer must be able to read the file, and everyone who can see the table must be able to see the file. It reads as `{id, name, content_type, size}`, never the content, or `{id, missing: true}` when the file was deleted or the reader cannot open it. Deleting the row never deletes the file.
          * @enum {string}
          */
-        ColumnType: "string" | "number" | "boolean" | "date" | "object" | "array" | "any" | "link" | "lookup" | "rollup" | "select" | "multi_select";
+        ColumnType: "string" | "number" | "boolean" | "date" | "object" | "array" | "any" | "link" | "lookup" | "rollup" | "select" | "multi_select" | "file";
         /** @description For a `link` column, the table each cell points at. A cell holds one row. */
         ColumnLink: {
             /** @description Target table id. A table name is accepted on write and stored as the id. */
@@ -8364,7 +8806,6 @@ export interface components {
             id: string;
             owner: components["schemas"]["ResourceOwner"];
             visibility: components["schemas"]["ResourceVisibility"];
-            container?: components["schemas"]["ResourceContainer"];
             posture: components["schemas"]["ResourcePosture"];
             controls: components["schemas"]["ResourceControls"];
             /** @description Lowercase snake_case table name, unique within the org. */
@@ -8663,6 +9104,450 @@ export interface components {
             row: components["schemas"]["TableRow"];
             /** @description True when a new row was inserted; false when an existing row was updated. */
             created: boolean;
+        };
+        /**
+         * @description Chosen at creation and never changed.
+         * @enum {string}
+         */
+        ChannelVisibility: "public" | "private";
+        /**
+         * @description What the caller may do. `read`: a public channel they have not joined. `member`: post and react. `admin`: also add and remove people, change the topic, and archive.
+         * @enum {string}
+         */
+        ChannelAccess: "read" | "member" | "admin";
+        /**
+         * @description A member's role in the channel.
+         * @enum {string}
+         */
+        ChannelRole: "member" | "admin";
+        Channel: {
+            /** @description Channel ID. */
+            id: string;
+            /** @description Lowercase slug, unique in the organization. Never changes. */
+            name: string;
+            /** @description One line describing the channel. May be empty. */
+            topic: string;
+            /** @description Standing instructions added to every assistant's instructions in this channel. Set on single-channel reads. Empty when none. */
+            instructions?: string;
+            /** @description The most characters the instructions may hold. Set on single-channel reads. */
+            max_instruction_chars?: number;
+            visibility: components["schemas"]["ChannelVisibility"];
+            access: components["schemas"]["ChannelAccess"];
+            /**
+             * Format: int64
+             * @description The newest sequence number in the channel.
+             */
+            last_seq: number;
+            /** @description How many members the channel has. Set on single-channel reads. */
+            member_count?: number;
+            /** @description Top-level messages from others after the caller's read position. Zero for non-members. */
+            unread_count: number;
+            /** @description Messages from others after the caller's read position that mention them. */
+            mention_count: number;
+            current_member?: components["schemas"]["ChannelCurrentMember"];
+            /**
+             * Format: date-time
+             * @description When the channel was archived. Null while it is active.
+             */
+            archived_at?: string | null;
+            /**
+             * Format: date-time
+             * @description When the channel was created.
+             */
+            created_at: string;
+        };
+        /** @description The caller's membership. Null when the caller is not a member. */
+        ChannelCurrentMember: {
+            role: components["schemas"]["ChannelRole"];
+            /**
+             * Format: int64
+             * @description The caller's read position.
+             */
+            last_read_seq: number;
+            /**
+             * Format: date-time
+             * @description When the caller joined.
+             */
+            joined_at: string;
+        } | null;
+        ChannelMember: {
+            /** @description The member's principal ID. */
+            principal_id: string;
+            kind: components["schemas"]["ChannelAuthorKind"];
+            /** @description The member's name. */
+            display_name: string;
+            /** @description The member's email, for people. */
+            email?: string;
+            /** @description The member's picture, when they have one. */
+            avatar_url?: string;
+            role: components["schemas"]["ChannelRole"];
+            /**
+             * Format: date-time
+             * @description When they joined.
+             */
+            joined_at: string;
+            /** @description For an external agent: whether it has a live stream now. Absent for everyone else. */
+            online?: boolean;
+            /** @description An external agent's handle, without the @. Only on external agents. */
+            handle?: string;
+        };
+        /** @description The client, as it reports itself, for example `claude_code`, `codex`, `antigravity`, or `other`. Any value of 1 to 32 lowercase letters, numbers, or underscores is accepted. It is not verified, and no rule reads it. */
+        AgentClient: string;
+        /**
+         * @description Whose @mention wakes the external agent. `owner_only`, the default, admits only its owner. `channel_members` admits every member.
+         * @enum {string}
+         */
+        ExternalAgentWakePolicy: "owner_only" | "channel_members";
+        ExternalAgent: {
+            /** @description The external agent ID. */
+            id: string;
+            /** @description The one channel the agent belongs to. */
+            channel_id: string;
+            /** @description The agent's handle, without the @. */
+            handle: string;
+            client_kind: components["schemas"]["AgentClient"];
+            wake_policy: components["schemas"]["ExternalAgentWakePolicy"];
+            /** @description The person who connected the agent. */
+            owner_principal_id: string;
+            /** @description The agent's principal, once it is connected. */
+            agent_principal_id?: string;
+            /** @description False while the agent waits for its pairing code. */
+            connected: boolean;
+            /**
+             * Format: date-time
+             * @description When an unused pairing code stops working.
+             */
+            pairing_expires_at?: string;
+            /**
+             * Format: date-time
+             * @description When the agent last signed in.
+             */
+            last_used_at?: string;
+            /** @description Whether the agent has a live stream now. */
+            online?: boolean;
+            /** Format: date-time */
+            created_at: string;
+            /**
+             * @description `project` for a project connection, which brings the external agents whose `project_id` is its ID. Absent means `agent`.
+             * @enum {string}
+             */
+            kind?: "agent" | "project";
+            /** @description The project connection that brings this external agent, if any. */
+            project_id?: string;
+            /** @description The project's display name, on a project connection and on each of its external agents. */
+            project?: string;
+            state?: components["schemas"]["ExternalAgentState"];
+            /** @description The short form of what the agent asks. Only for the agent's owner. */
+            ask?: string;
+            /** @description The last control the client applied. Only for the agent's owner. Compare it with the `control_id` an interrupt returned. */
+            control_id?: string;
+            /** @description The agent's open prompt request. Only for the agent's owner. */
+            request_id?: string;
+        };
+        ReplaceChannelExternalAgentsRequest: {
+            /** @description Every external agent of the project in this channel. An empty list removes them all. */
+            external_agents: components["schemas"]["ProjectExternalAgent"][];
+        };
+        ProjectExternalAgent: {
+            /** @description The agent's handle, without the @. */
+            handle: string;
+            /** @description The client, such as `claude_code`: 1 to 32 lowercase letters, numbers, or underscores. A bad value refuses only this entry. */
+            client_kind: string;
+        };
+        ProjectExternalAgentList: {
+            external_agents: components["schemas"]["ProjectExternalAgentResult"][];
+        };
+        ProjectExternalAgentResult: {
+            /** @description The handle as the list sent it. */
+            handle: string;
+            /** @description The external agent's ID, when it is in the channel. */
+            external_agent_id?: string;
+            /**
+             * @description Why Mobius refused this entry, for the client. The agent is not in the channel. Read an unknown code as "refused": Mobius can add codes.
+             *
+             *     - Choose another handle: `handle_invalid` (breaks the handle
+             *     rule, or is reserved), `handle_taken` (a person or assistant
+             *     in the organization has the name), `handle_in_use` (another
+             *     live external agent in the channel has it).
+             *     - Send each handle once: `handle_repeated`.
+             *     - Fix the client kind: `client_kind_invalid`.
+             *     - Send the list again later: `channel_full` (the channel has
+             *     its most members).
+             * @enum {string}
+             */
+            code?: "handle_invalid" | "handle_repeated" | "handle_taken" | "handle_in_use" | "client_kind_invalid" | "channel_full";
+            /** @description Why Mobius refused this entry, as text for a person. Do not parse it: use `code`. */
+            refused?: string;
+        };
+        /**
+         * @description What an Online external agent is doing. `waiting`: it waits on its owner, such as for a permission prompt. `idle`: between turns.
+         * @enum {string}
+         */
+        ExternalAgentState: "working" | "waiting" | "idle" | "unknown";
+        ExternalAgentStatusRequest: {
+            state: components["schemas"]["ExternalAgentState"];
+            /** @description The short form of what the agent asks, such as "Run go test". At most 80 bytes. Only the owner sees it. */
+            ask?: string;
+            /** @description The `control_id` of the last control frame the client applied (`agent.interrupt` or `agent.answer`). The echo of an interrupt closes the open request with reason `interrupted`. */
+            control_id?: string;
+            prompt?: components["schemas"]["ExternalAgentPrompt"];
+            settled?: components["schemas"]["ExternalAgentPromptSettled"];
+        };
+        /** @description Asks the owner to approve or deny one call that the agent holds. Mobius opens a request named to the owner only. One request is open per agent. A prompt with the open `call_id`, the same `tool`, and the same `input` bytes is a resend and changes nothing. Any other prompt while one is open is `409 prompt_open`, and the open request stays as it is. A prompt for a call that is over (the owner answered it, the client settled it, it expired, or an interrupt closed it) opens nothing, and the status succeeds. The owner's answer arrives as an `agent.answer` frame for this `call_id`. */
+        ExternalAgentPrompt: {
+            /** @description A random ID for the held call. It exists only while the client holds the call. */
+            call_id: string;
+            /** @description The tool the call uses, such as `Bash`: 1 to 128 letters, digits, or the characters `_ - . :`. Else `400`. */
+            tool: string;
+            /** @description The call's input exactly as the agent sent it, with known secrets removed: a JSON object of at most 16 KB, measured on the bytes sent. Mobius keeps those bytes. The request shows them as a string in `context.input`, so numbers and key order do not change. */
+            input: {
+                [key: string]: unknown;
+            };
+            /** @description The seconds the client will still wait for an answer. The request ends then, by Mobius's clock. */
+            expires_in_s: number;
+        };
+        /** @description Closes the open request when the call ended without a remote answer. */
+        ExternalAgentPromptSettled: {
+            call_id: string;
+            /**
+             * @description `answered_locally`: someone answered on the machine. `expired`: the call's time ran out.
+             * @enum {string}
+             */
+            outcome: "answered_locally" | "expired";
+        };
+        ChannelMemberListResponse: {
+            items: components["schemas"]["ChannelMember"][];
+            has_more: boolean;
+            next_cursor?: string | null;
+        };
+        /**
+         * @description What kind of principal wrote a message or holds a membership. An `external_agent` is an agent that a person runs outside Mobius, connected to the channel.
+         * @enum {string}
+         */
+        ChannelAuthorKind: "human" | "agent" | "routine" | "workflow" | "external_agent";
+        ChannelAuthor: {
+            /** @description The author's principal ID. */
+            principal_id: string;
+            kind: components["schemas"]["ChannelAuthorKind"];
+            /** @description The author's name when the message was read. */
+            display_name: string;
+            /** @description The author's picture, when they have one. */
+            avatar_url?: string;
+        };
+        ChannelReactionSummary: {
+            /** @description One emoji. */
+            emoji: string;
+            /** @description How many people added it. */
+            count: number;
+            /** @description Who added it, oldest first. */
+            principal_ids: string[];
+            /** @description Whether the caller added it. */
+            reacted_by_me: boolean;
+        };
+        ChannelMessage: {
+            /** @description Message ID. */
+            id: string;
+            /** @description Channel ID. */
+            channel_id: string;
+            /**
+             * Format: int64
+             * @description The message's sequence number in the channel.
+             */
+            seq: number;
+            /** @description The thread's first message, for a reply. Null for a top-level message. */
+            thread_root_id?: string | null;
+            /** @description Replies in this message's thread. */
+            reply_count: number;
+            /**
+             * Format: date-time
+             * @description When the newest reply was posted. Null without replies.
+             */
+            last_reply_at?: string | null;
+            author: components["schemas"]["ChannelAuthor"];
+            /** @description Markdown text. Empty for a deleted message. */
+            body: string;
+            /** @description Principal IDs the message mentions. */
+            mentions: string[];
+            /** @description Whether the message was deleted. */
+            deleted: boolean;
+            /**
+             * Format: date-time
+             * @description When the text last changed. Null if never edited.
+             */
+            edited_at?: string | null;
+            reactions: components["schemas"]["ChannelReactionSummary"][];
+            /**
+             * Format: date-time
+             * @description When the message was posted.
+             */
+            created_at: string;
+            /** @description For an assistant's reply, notice, or approval card: the working conversation it came from. Open it with getChannelConversation. */
+            session_id?: string | null;
+            /** @description For an assistant's reply or notice: the turn that produced it. A follow-up's created_turn_id matches the reply that confirmed it. */
+            turn_id?: string | null;
+            /** @description For an approval card, the held-call approval it shows. */
+            interaction_id?: string | null;
+            /** @description For a thread's first message: the principals of the assistants working in the thread now. */
+            working_agent_ids?: string[];
+            /** @description One entry for each external agent the text names, in the order named, with whether the post woke it. Absent when the text names no external agent. Decided when the message is posted; an edit never changes it. */
+            agent_wakes?: components["schemas"]["ExternalAgentWake"][];
+            /** @description Only in the answer to create: the `@handles` in the text that name no connected external agent, without the @, in the order named. Empty when every `@handle` names one. */
+            unresolved_mentions?: string[];
+            /** @description The thread a reply to this message goes in: `thread_root_id` for a reply, else the message's own ID. Always set. */
+            reply_thread_root_id?: string;
+            /** @description Set on a line the system wrote, for example `agent_connected` or `agent_disconnected`. Nobody can edit or delete such a line. Absent on every other message. */
+            system_kind?: string;
+            /**
+             * @description Only for an external agent caller: how far the agent may trust the author. `owner` is the person who owns the agent. `same_owner_agent` is another external agent of that person whose wake policy is `owner_only`. `other` is everyone else, and always a line with `system_kind`. The server sets it from the author, never from the text.
+             * @enum {string}
+             */
+            trust_level?: "owner" | "same_owner_agent" | "other";
+        };
+        ExternalAgentWake: {
+            /** @description The external agent's principal ID, the same as its member row. */
+            agent_id: string;
+            /** @description The handle the text named, without the @. */
+            handle: string;
+            /** @description Whether the post woke the agent. */
+            woken: boolean;
+            /**
+             * @description Why the agent was not woken: `policy` (its wake policy does not admit the sender), `wake_cap` (an agent's post wakes at most 2 agents), or `thread_budget` (6 agent posts have followed the last person's post). `offline` marks a woken agent with no live connection.
+             * @enum {string}
+             */
+            reason?: "policy" | "wake_cap" | "thread_budget" | "offline";
+        };
+        ChannelMessageListResponse: {
+            /** @description The original message when listing a thread. */
+            root?: components["schemas"]["ChannelMessage"];
+            items: components["schemas"]["ChannelMessage"][];
+            has_more: boolean;
+            next_cursor?: string | null;
+        };
+        CreateChannelMessageRequest: {
+            /** @description Markdown, up to 40,000 characters. */
+            body: string;
+            /** @description Reply in this message's thread. */
+            thread_root_id?: string;
+            /** @description People and assistants the message mentions. A mentioned assistant must be a member of the channel; it answers in the thread. An external agent must not send this field: it names others with `@handles` in the text. */
+            mentions?: string[];
+        };
+        ChannelReactionRequest: {
+            /** @description One emoji. */
+            emoji: string;
+        };
+        UpdateChannelReadStateRequest: {
+            /** @description Read up to this message. Empty means everything, except for an external agent, which must send it. */
+            message_id?: string;
+        };
+        ChannelReadState: {
+            /** @description Channel ID. */
+            channel_id: string;
+            /**
+             * Format: int64
+             * @description The stored read position.
+             */
+            last_read_seq: number;
+            /** @description Unread top-level messages after the change. */
+            unread_count: number;
+            /** @description Unread mentions after the change. */
+            mention_count: number;
+        };
+        /**
+         * @description `channel.change`: one change-log row, with the message it names. `channel.typing`: a member is typing. `channel.read`: the caller's read position moved in another tab. `channel.membership`: the caller's channel set changed; refetch the channel list. `channel.resync`: frames were lost; refetch. `stream.ready`: the replay is done. `stream.end`: reconnect with the cursor. `external_agent.status`: an external agent in the channel reported a new state (`external_agent_id`, `state`); a person's stream only. `agent.interrupt` (an external agent's stream only): end the current turn, then echo `control_id` in the next status. `agent.answer` (an external agent's stream only): the owner's answer to the agent's open prompt `call_id`; `decision` is `allow` or `deny`. Echo `control_id` in the next status. Ignore a frame type you do not know.
+         * @enum {string}
+         */
+        ChannelStreamFrameType: "channel.change" | "channel.typing" | "channel.read" | "channel.membership" | "channel.resync" | "stream.ready" | "stream.end" | "external_agent.status" | "agent.interrupt" | "agent.answer";
+        /**
+         * @description What changed in the channel. `assistant.working`: an assistant started or stopped working in the thread of the frame's message.
+         * @enum {string}
+         */
+        ChannelChangeKind: "message.posted" | "message.edited" | "message.deleted" | "reaction.added" | "reaction.removed" | "member.joined" | "member.left" | "channel.updated" | "channel.archived" | "assistant.working";
+        ChannelStreamFrame: {
+            type: components["schemas"]["ChannelStreamFrameType"];
+            /** @description The channel the frame is about. */
+            channel_id?: string;
+            /**
+             * Format: int64
+             * @description The change's sequence number.
+             */
+            seq?: number;
+            kind?: components["schemas"]["ChannelChangeKind"];
+            message?: components["schemas"]["ChannelMessage"];
+            /** @description Who made the change, or who is typing. */
+            actor_principal_id?: string;
+            /**
+             * Format: int64
+             * @description The caller's new read position, on `channel.read`.
+             */
+            last_read_seq?: number;
+            /** @description Why the stream ended, on `stream.end`. `rotate`: reconnect now. `unavailable`: reconnect later. Only for an external agent: `replaced` (a newer stream of the same agent took over; do not reconnect) and `revoked` (the agent is disconnected; stop). Ignore a reason you do not know and reconnect later. */
+            reason?: string;
+            /** @description Only for an external agent, on the `message.posted` change of a message that woke it. Absent on every other frame. */
+            addressed_to_you?: boolean;
+            /** @description The external agent an `external_agent.status` frame is about. */
+            external_agent_id?: string;
+            state?: components["schemas"]["ExternalAgentState"];
+            /** @description The control's ID, on `agent.interrupt` and `agent.answer`. */
+            control_id?: string;
+            /** @description The prompt's call, on `agent.answer`. */
+            call_id?: string;
+            /**
+             * @description The owner's answer, on `agent.answer`.
+             * @enum {string}
+             */
+            decision?: "allow" | "deny";
+        };
+        ConnectExternalAgentRequest: {
+            /** @description The `mbp_` pairing code from the web app. */
+            pairing_code: string;
+            /** @description The client's own kind, such as `claude_code`. When it is sent, it replaces the value set when the code was made. It is not verified, and no rule reads it. */
+            client_kind?: string;
+            /** @description What the client reports about itself, such as its version. At most 8 keys of up to 32 bytes, and values of up to 128 bytes. For a project connection, `project` is the project's display name. */
+            metadata?: {
+                [key: string]: string;
+            };
+        };
+        ExternalAgentConnection: {
+            /** @description The `mba_` credential. Shown once. Keep it where only the owner can read it. */
+            credential: string;
+            /** @description The external agent's ID, for `getExternalAgent` and `deleteExternalAgent`. */
+            external_agent_id: string;
+            /** @description The agent's handle in the channel, without the `@`. */
+            handle: string;
+            /** @description The client, such as `claude_code`. */
+            client_kind: string;
+            /** @description Whose mentions wake the agent, `owner_only` or `channel_members`. */
+            wake_policy: string;
+            /** @description The display name of the organization the channel is in. */
+            org_name: string;
+            /** @description The channel the agent joined. */
+            channel_id: string;
+            /** @description The channel's name. */
+            channel_name: string;
+            /** @description The first name of the person who connected the agent. */
+            owner_name: string;
+            /**
+             * @description `project` for a project connection: the credential pairs the project, which sends its external agents with `replaceChannelExternalAgents`. The owner can approve the commands of those agents that send a prompt. Absent means `agent`.
+             * @enum {string}
+             */
+            kind?: "agent" | "project";
+            /** @description The project's display name (metadata `project`), for a project connection. */
+            project?: string;
+        };
+        ExchangeExternalAgentTokenRequest: {
+            /** @description The `mba_` credential from `connectExternalAgent`. */
+            credential: string;
+            /** @description Only with a project connection's credential: the external agent to get a token for. It must be a live external agent of this project connection, else `404 not_found` (the agent was removed). Without it, a project credential gets the project token, which reaches only `replaceChannelExternalAgents` on its own channel and `deleteExternalAgent` on itself. Every other operation answers the project token `403 project_token`. */
+            external_agent_id?: string;
+        };
+        ExternalAgentAccessToken: {
+            /** @description The `mbat_` access token. Send it as `Authorization: Bearer <token>`. */
+            access_token: string;
+            /**
+             * Format: date-time
+             * @description When the access token stops working.
+             */
+            expires_at: string;
         };
         /**
          * @example {
@@ -9004,6 +9889,12 @@ export interface components {
         TableIDParam: string;
         /** @description Filter tables by name. Table names are unique within an org; use this as a discovery filter and use the returned table `id` for follow-up operations. */
         TableNameQueryParam: string;
+        /** @description Channel ID. */
+        ChannelID: string;
+        /** @description External agent ID. */
+        ExternalAgentID: string;
+        /** @description Channel message ID. */
+        ChannelMessageID: string;
         /** @description ID of the declared folder */
         ArtifactFolderIdParam: string;
         /** @description Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read. `personal` is the caller's own files, which only the caller can read. Omit it to list every section the caller can read. */
@@ -10645,38 +11536,6 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
-    reviewInteraction: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ReviewInteractionRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Interaction"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-        };
-    };
     cancelInteraction: {
         parameters: {
             query?: never;
@@ -11132,6 +11991,32 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    getAgentInbox: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentEmailInboxSummary"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     provisionAgentInbox: {
         parameters: {
             query?: never;
@@ -11157,6 +12042,181 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listAgentInboxMessages: {
+        parameters: {
+            query?: {
+                /** @description Filter by triage status (`unread`, `read`, `archived`, or `all`). Omit to return active messages (`unread` and `read`, excluding `archived`). */
+                status?: "unread" | "read" | "archived" | "all";
+                /** @description Filter by message direction (`inbound` or `outbound`). */
+                direction?: components["schemas"]["AgentEmailDirection"];
+                /** @description Select gate-accepted emails (`accepted`, default), gate-suppressed emails (`filtered`), or both (`all`). */
+                gate?: components["schemas"]["AgentEmailGateFilter"];
+                /** @description Filter by sender address or display name substring. */
+                from?: string;
+                /** @description Filter by exact triage label (case-insensitive). */
+                label?: string;
+                /** @description Optional keyword search matched across subject, sender, plain-text body, and triage notes. */
+                query?: string;
+                /** @description Maximum number of messages to return (1–50, default 20). */
+                limit?: number;
+                /** @description Opaque pagination cursor returned as `next_cursor` from the previous page. */
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentEmailMessageListResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getAgentInboxMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+                /** @description Identifier of the inbox email message. */
+                message_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentEmailMessage"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteAgentInboxMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+                /** @description Identifier of the inbox email message. */
+                message_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateAgentInboxMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+                /** @description Identifier of the inbox email message. */
+                message_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "status": "read",
+                 *       "labels": [
+                 *         "billing",
+                 *         "q4"
+                 *       ],
+                 *       "notes": "Reviewed with finance."
+                 *     }
+                 */
+                "application/json": components["schemas"]["UpdateAgentEmailMessageRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentEmailMessage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getAgentInboxThread: {
+        parameters: {
+            query?: {
+                /** @description Select gate-accepted emails (`accepted`, default), gate-suppressed emails (`filtered`), or both (`all`). */
+                gate?: components["schemas"]["AgentEmailGateFilter"];
+                /** @description Maximum number of thread messages to return (1–100, default 50). */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+                /** @description Stable conversation thread key for the email thread. */
+                thread_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentEmailThreadResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     listAgentMessagingBindings: {
@@ -12640,34 +13700,6 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    getSessionTurnLive: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Identifier of the conversation session. */
-                session_id: components["parameters"]["SessionIdParam"];
-                /** @description Identifier of a turn within a session. */
-                turn_id: components["parameters"]["TurnIdParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SessionLiveSnapshot"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
     cancelTurn: {
         parameters: {
             query?: never;
@@ -13461,10 +14493,7 @@ export interface operations {
     };
     listSkills: {
         parameters: {
-            query?: {
-                /** @description Include read-only system skill templates. */
-                include_system?: boolean;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -14748,6 +15777,416 @@ export interface operations {
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             429: components["responses"]["TooManyRequests"];
+        };
+    };
+    streamChannels: {
+        parameters: {
+            query?: {
+                /** @description Public channels to follow without joining, comma separated. */
+                watch?: string;
+                /** @description Resume cursor from the last frame's id. */
+                cursor?: string;
+            };
+            header?: {
+                /** @description Resume cursor from the last frame's id. */
+                "Last-Event-ID"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Channel activity frames. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["ChannelStreamFrame"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getChannel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Channel ID. */
+                channel_id: components["parameters"]["ChannelID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The channel. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Channel"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listChannelMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Channel ID. */
+                channel_id: components["parameters"]["ChannelID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The members. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChannelMemberListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    findChannelMessages: {
+        parameters: {
+            query?: {
+                /** @description Words to find in the message body. */
+                query?: string;
+                /** @description The next_cursor of the previous finder page. */
+                before?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Channel ID. */
+                channel_id: components["parameters"]["ChannelID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of matches or active thread roots. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChannelMessageListResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listChannelMessages: {
+        parameters: {
+            query?: {
+                /** @description List the replies of this thread instead of top-level messages. */
+                thread_root_id?: string;
+                /** @description next_cursor from the previous page, for older messages. */
+                cursor?: string;
+                /** @description Return messages after this sequence number, oldest first. */
+                after_sequence?: number;
+                /** @description Most messages to return. */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Channel ID. */
+                channel_id: components["parameters"]["ChannelID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of messages. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChannelMessageListResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createChannelMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Channel ID. */
+                channel_id: components["parameters"]["ChannelID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateChannelMessageRequest"];
+            };
+        };
+        responses: {
+            /** @description The new message. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChannelMessage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    addChannelReaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Channel ID. */
+                channel_id: components["parameters"]["ChannelID"];
+                /** @description Channel message ID. */
+                message_id: components["parameters"]["ChannelMessageID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChannelReactionRequest"];
+            };
+        };
+        responses: {
+            /** @description The message with its reactions. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChannelMessage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    updateChannelReadState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Channel ID. */
+                channel_id: components["parameters"]["ChannelID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateChannelReadStateRequest"];
+            };
+        };
+        responses: {
+            /** @description The read state after the change. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChannelReadState"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    replaceChannelExternalAgents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Channel ID. */
+                channel_id: components["parameters"]["ChannelID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplaceChannelExternalAgentsRequest"];
+            };
+        };
+        responses: {
+            /** @description One result per external agent in the list, in order. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectExternalAgentList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getExternalAgent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description External agent ID. */
+                external_agent_id: components["parameters"]["ExternalAgentID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The external agent. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExternalAgent"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteExternalAgent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description External agent ID. */
+                external_agent_id: components["parameters"]["ExternalAgentID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: components["responses"]["NoContent"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    setExternalAgentStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description External agent ID. */
+                external_agent_id: components["parameters"]["ExternalAgentID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExternalAgentStatusRequest"];
+            };
+        };
+        responses: {
+            204: components["responses"]["NoContent"];
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+            503: components["responses"]["ServiceUnavailable"];
+        };
+    };
+    connectExternalAgent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConnectExternalAgentRequest"];
+            };
+        };
+        responses: {
+            /** @description The agent is connected. Store the credential. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExternalAgentConnection"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    exchangeExternalAgentToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExchangeExternalAgentTokenRequest"];
+            };
+        };
+        responses: {
+            /** @description The access token and when it expires. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExternalAgentAccessToken"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     listArtifacts: {

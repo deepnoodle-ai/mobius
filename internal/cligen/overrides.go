@@ -166,6 +166,21 @@ var overrides = map[string]Override{
 	"queryTableRows":      {Command: "query-rows"},
 	"searchTableRows":     {Command: "search-rows"},
 	"bulkCreateTableRows": {Command: "bulk-create-rows"},
+
+	// --- channels and external agents --------------------------------------
+	// The spec splits external agent operations across the `channels` and
+	// `external-agent` tags, and the derived leaves repeat the resource word
+	// (external-agent connect-external-agent). Keep every operation on one
+	// external agent under `external-agents`, and the channel operations
+	// under `channels` with short verbs.
+	"connectExternalAgent":         {Group: "external-agents", Command: "connect"},
+	"exchangeExternalAgentToken":   {Group: "external-agents", Command: "token"},
+	"getExternalAgent":             {Group: "external-agents", Command: "get"},
+	"deleteExternalAgent":          {Group: "external-agents", Command: "delete"},
+	"setExternalAgentStatus":       {Group: "external-agents", Command: "set-status"},
+	"replaceChannelExternalAgents": {Command: "replace-external-agents"},
+	"findChannelMessages":          {Command: "find-messages"},
+	"streamChannels":               {Command: "stream"},
 }
 
 // groupDescriptions is an opt-in table of subcommand group descriptions,
@@ -176,20 +191,22 @@ var overrides = map[string]Override{
 // grammatical shape across entries. Every group the generator emits should
 // have one — `mobius --help` prints a bare group name otherwise.
 var groupDescriptions = map[string]string{
-	"actions":       "Actions that agents and workers invoke",
-	"agents":        "Agent identities, memory, and lifecycle",
-	"api-keys":      "API keys scoped to the org",
-	"artifacts":     "Stored files, uploads, and storage quota",
-	"billing":       "Recorded usage events for the org",
-	"blueprints":    "Org blueprint application and bindings",
-	"catalog":       "Available actions, events, and models",
-	"interactions":  "Information, approval, and review requests between users and agents",
-	"organizations": "Organization settings and control plane",
-	"permissions":   "Assignable org permission catalog",
-	"principals":    "Machine identities and their roles",
-	"roles":         "Org roles and assignments",
-	"routines":      "Scheduled routines, occurrences, and rosters",
-	"sessions":      "Conversation sessions, transcripts, and turns",
-	"skills":        "Skill templates that shape agent behavior and tool access",
-	"tables":        "Org-scoped tables and rows",
+	"actions":         "Actions that agents and workers invoke",
+	"agents":          "Agent identities, memory, and lifecycle",
+	"api-keys":        "API keys scoped to the org",
+	"artifacts":       "Stored files, uploads, and storage quota",
+	"billing":         "Recorded usage events for the org",
+	"blueprints":      "Org blueprint application and bindings",
+	"catalog":         "Available actions, events, and models",
+	"channels":        "Shared channels, messages, and members",
+	"external-agents": "Agents outside Mobius that join a channel",
+	"interactions":    "Information, approval, and review requests between users and agents",
+	"organizations":   "Organization settings and control plane",
+	"permissions":     "Assignable org permission catalog",
+	"principals":      "Machine identities and their roles",
+	"roles":           "Org roles and assignments",
+	"routines":        "Scheduled routines, occurrences, and rosters",
+	"sessions":        "Conversation sessions, transcripts, and turns",
+	"skills":          "Skill templates that shape agent behavior and tool access",
+	"tables":          "Org-scoped tables and rows",
 }

@@ -25,9 +25,6 @@ func TestSkillLifecycleRoutes(t *testing.T) {
 	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method + " " + r.URL.Path {
 		case "GET /v1/skills":
-			if got := r.URL.Query().Get("include_system"); got != "false" {
-				t.Fatalf("include_system = %q, want false", got)
-			}
 			writeJSON(w, http.StatusOK, `{"items":[`+skillJSON("skill_1", "custom")+`]}`)
 		case "POST /v1/skills":
 			var req api.SkillRequest
@@ -51,7 +48,7 @@ func TestSkillLifecycleRoutes(t *testing.T) {
 	}))
 
 	ctx := context.Background()
-	page, err := c.ListSkills(ctx, &ListSkillsOptions{ExcludeSystem: true})
+	page, err := c.ListSkills(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

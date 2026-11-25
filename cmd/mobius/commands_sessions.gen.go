@@ -530,26 +530,6 @@ func registerSessionsCommands(app *cli.App) {
 			return printResponse(ctx, "getSessionTurn", resp.StatusCode(), resp.Body)
 		})
 
-	sessionsGrp.Command("get-turn-live").
-		Description("Get live session turn snapshot").
-		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
-		AddArg(&cli.Arg{Name: "turn-id", Description: "Identifier of a turn within a session.", Required: true}).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := api.SessionIdParam(ctx.Arg(0))
-			p1 := api.TurnIdParam(ctx.Arg(1))
-			resp, err := client.GetSessionTurnLiveWithResponse(ctx.Context(), p0, p1)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "getSessionTurnLive", resp.StatusCode(), resp.Body)
-		})
-
 	sessionsGrp.Command("list").
 		Description("List sessions").
 		Flags(

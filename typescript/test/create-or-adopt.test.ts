@@ -19,6 +19,7 @@ function agent(id = "agent_1"): Agent {
     tool_approval_mode: "destructive",
     can_edit: true,
     memory_enabled: false,
+    email_replies: "audience",
   };
 }
 
