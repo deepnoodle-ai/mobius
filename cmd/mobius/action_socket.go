@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -29,11 +30,14 @@ const actionSocketTimeout = 6 * time.Minute
 // maxAncestorDepth bounds the walk from a caller up to its job's command.
 const maxAncestorDepth = 64
 
+// jobStartWait bounds how long a lookup waits for job commands that started
+// but are not registered yet.
+const jobStartWait = 2 * time.Second
+
 // errNotJobProcess refuses a caller that is not inside a running job's
 // process tree: an assistant's leftover process, a daemon that outlived its
 // parent, or a shell outside any job.
-var errNotJobProcess = errors.New("Only a workflow script step can call actions, from its own processes, while it runs. " +
-	"This process is not part of a running script step.")
+var errNotJobProcess = errors.New("This process is not part of a running job.")
 
 // errNoPeerCheck refuses calls where the worker cannot tell which process
 // is calling (operating systems other than Linux and macOS).
@@ -138,7 +142,7 @@ func (s *actionSocketServer) respond(ctx context.Context, conn net.Conn) actionS
 		return actionSocketResponse{Code: "bad_request", Error: "could not read the request"}
 	}
 	var req actionSocketRequest
-	if err := json.Unmarshal(line, &req); err != nil {
+	if err := decodeJSONNumbers(line, &req); err != nil {
 		return actionSocketResponse{Code: "bad_request", Error: "the request is not valid JSON"}
 	}
 	if req.Action == "" {
@@ -198,7 +202,19 @@ func jobLeaseOfPeer(conn net.Conn) (string, error) {
 	return jobLeaseOfPID(pid, parentPID, os.Getpid())
 }
 
+// jobLeaseOfPID finds the lease for pid. When the walk finds no job and a
+// job command is between its start and its registration, it waits for that
+// registration and walks again: the caller can be that command's first
+// child. With no start in progress, it refuses at once.
 func jobLeaseOfPID(pid int, parent func(int) (int, error), self int) (string, error) {
+	lease, err := walkToJobLease(pid, parent, self)
+	if err != nil && action.JobProcesses.WaitStarts(jobStartWait) {
+		lease, err = walkToJobLease(pid, parent, self)
+	}
+	return lease, err
+}
+
+func walkToJobLease(pid int, parent func(int) (int, error), self int) (string, error) {
 	for depth := 0; depth < maxAncestorDepth && pid > 1 && pid != self; depth++ {
 		if lease, ok := action.JobProcesses.Lease(pid); ok {
 			return lease, nil
@@ -210,4 +226,12 @@ func jobLeaseOfPID(pid int, parent func(int) (int, error), self int) (string, er
 		pid = next
 	}
 	return "", errNotJobProcess
+}
+
+// decodeJSONNumbers decodes data into v and keeps each number in an `any`
+// as a json.Number, so an integer above 2^53 reaches the action unchanged.
+func decodeJSONNumbers(data []byte, v any) error {
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	return dec.Decode(v)
 }

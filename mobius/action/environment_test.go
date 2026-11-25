@@ -48,30 +48,46 @@ func TestEnvironmentBashRegistersItsProcessForTheJob(t *testing.T) {
 	dir := realPath(t, t.TempDir())
 	t.Setenv("MOBIUS_RUNTIME_WORKSPACE", dir)
 	pidFile, goFile := filepath.Join(dir, "pid"), filepath.Join(dir, "go")
-	done := make(chan map[string]any, 1)
+	// Cancel the command and wait for it on every exit, so a failed check
+	// does not leave the shell running until the command timeout.
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	t.Cleanup(func() {
+		cancel()
+		<-done
+	})
 	go func() {
-		out, err := NewEnvironmentBashAction().Execute(testLeasedActionContext{testActionContext{Context: context.Background()}}, map[string]any{
+		defer close(done)
+		if _, err := NewEnvironmentBashAction().Execute(testLeasedActionContext{testActionContext{Context: ctx}}, map[string]any{
 			"command": "echo $$ > pid; while [ ! -f go ]; do sleep 0.02; done",
-		})
-		if err != nil {
+		}); err != nil && ctx.Err() == nil {
 			t.Error(err)
 		}
-		result, _ := out.(map[string]any)
-		done <- result
 	}()
+	// Poll for the registration, not only the pid file: the command can
+	// write the file before the worker registers its process.
 	var pid int
+	var lease string
 	deadline := time.Now().Add(10 * time.Second)
-	for pid == 0 && time.Now().Before(deadline) {
-		if raw, err := os.ReadFile(pidFile); err == nil {
-			pid, _ = strconv.Atoi(strings.TrimSpace(string(raw)))
+	for time.Now().Before(deadline) {
+		if pid == 0 {
+			if raw, err := os.ReadFile(pidFile); err == nil {
+				pid, _ = strconv.Atoi(strings.TrimSpace(string(raw)))
+			}
+		}
+		if pid != 0 {
+			if got, ok := JobProcesses.Lease(pid); ok {
+				lease = got
+				break
+			}
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
 	if pid == 0 {
 		t.Fatal("the command did not start")
 	}
-	if lease, ok := JobProcesses.Lease(pid); !ok || lease != "lease_active" {
-		t.Fatalf("while running, pid %d lease = %q, %v; want lease_active", pid, lease, ok)
+	if lease != "lease_active" {
+		t.Fatalf("while running, pid %d lease = %q; want lease_active", pid, lease)
 	}
 	if err := os.WriteFile(goFile, nil, 0o600); err != nil {
 		t.Fatal(err)

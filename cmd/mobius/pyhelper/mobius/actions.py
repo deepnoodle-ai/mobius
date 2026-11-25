@@ -20,7 +20,10 @@ import socket
 
 __all__ = ["ActionError", "run", "describe"]
 
-_TIMEOUT_SECONDS = 360
+# The worker bounds one request at 360 seconds, from when it accepts the
+# connection. This clock starts earlier, at connect, so it waits 30 seconds
+# longer: the worker finishes or fails the call before the script gives up.
+_TIMEOUT_SECONDS = 390
 
 
 class ActionError(Exception):
@@ -67,6 +70,12 @@ def _send(request):
             if not chunk:
                 break
             chunks.append(chunk)
+    except socket.timeout:
+        raise ActionError(
+            "The Mobius worker did not answer in time. The call may have completed. "
+            "If you passed a key, repeat the call with it to get the result without running it again.",
+            "timeout",
+        )
     except OSError as err:
         raise ActionError("Could not reach the Mobius worker: %s" % err, "worker_unreachable")
     finally:

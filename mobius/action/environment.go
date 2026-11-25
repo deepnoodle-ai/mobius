@@ -211,7 +211,14 @@ func NewEnvironmentBashAction() mobius.Action {
 		limit := resolveOutputMaxBytes(in.MaxOutputBytes, defaultCommandOutputMaxBytes)
 		// The command's process is the root of the job's process tree, so
 		// the action socket can tell the job's processes from any other.
-		started := func(pid int) func() { return JobProcesses.Register(pid, leaseToken) }
+		// Starting covers the gap between the start and Register, so a
+		// lookup in that gap waits instead of refusing the job's process.
+		registered := JobProcesses.Starting()
+		defer registered()
+		started := func(pid int) func() {
+			defer registered()
+			return JobProcesses.Register(pid, leaseToken)
+		}
 		return runCommandTracked(cmd,
 			newHeadTailTruncator(limit, "stdout", bashOutputHint),
 			newHeadTailTruncator(limit, "stderr", bashOutputHint),

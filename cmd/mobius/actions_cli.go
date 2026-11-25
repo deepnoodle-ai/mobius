@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"embed"
 	"encoding/json"
@@ -36,7 +37,7 @@ func registerScriptActionCommands(app *cli.App) {
 	grp.Command("run").
 		Description("Run an action from a workflow script step").
 		Long("Runs one of the step's declared actions as the workflow and prints its output as JSON. "+
-			"Works only inside a workflow script step.").
+			"Works only inside a job in a Mobius computer, for a workflow script step's declared actions.").
 		Args("action").
 		Flags(
 			cli.String("input", "").Help("The action's input as JSON, @file, or - (or @-) for stdin."),
@@ -58,8 +59,14 @@ func runScriptAction(ctx *cli.Context) error {
 		if raw == "-" {
 			raw = "@-"
 		}
-		if err := decodeFlagJSON(ctx, "input", raw, &input); err != nil {
+		// Decode to raw JSON first, then keep numbers exact: a float64
+		// would change an integer above 2^53, such as an ID.
+		var data json.RawMessage
+		if err := decodeFlagJSON(ctx, "input", raw, &data); err != nil {
 			return err
+		}
+		if err := decodeJSONNumbers(data, &input); err != nil {
+			return cli.Errorf("--input: give a JSON object: %v", err)
 		}
 	}
 	resp, err := callActionSocket(ctx.Context(), actionSocketRequest{
@@ -96,6 +103,11 @@ func describeScriptAction(ctx *cli.Context) error {
 	return err
 }
 
+// actionSocketClientSlack is how much longer a client waits than the
+// worker's per-request bound. The client's clock starts before the worker
+// accepts the connection.
+const actionSocketClientSlack = 30 * time.Second
+
 // callActionSocket sends one request to the worker's action socket and
 // returns its answer. A refusal comes back as an error with the worker's
 // sentence.
@@ -113,7 +125,9 @@ func callActionSocket(ctx context.Context, req actionSocketRequest) (*actionSock
 		return nil, fmt.Errorf("connect to the Mobius worker: %w", err)
 	}
 	defer func() { _ = conn.Close() }()
-	_ = conn.SetDeadline(time.Now().Add(actionSocketTimeout))
+	// Wait longer than the worker's own bound, so the worker finishes or
+	// fails the call before the CLI stops waiting for it.
+	_ = conn.SetDeadline(time.Now().Add(actionSocketTimeout + actionSocketClientSlack))
 	raw, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
@@ -124,6 +138,9 @@ func callActionSocket(ctx context.Context, req actionSocketRequest) (*actionSock
 	line, err := bufio.NewReader(conn).ReadBytes('\n')
 	if err != nil && !errors.Is(err, io.EOF) {
 		return nil, fmt.Errorf("read from the Mobius worker: %w", err)
+	}
+	if len(bytes.TrimSpace(line)) == 0 {
+		return nil, errors.New("the Mobius worker closed the connection without an answer; the call may have completed")
 	}
 	var resp actionSocketResponse
 	if err := json.Unmarshal(line, &resp); err != nil {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
@@ -9,11 +10,12 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/deepnoodle-ai/wonton/assert"
+	"github.com/deepnoodle-ai/wonton/cli"
 
 	"github.com/deepnoodle-ai/mobius/mobius"
 	"github.com/deepnoodle-ai/mobius/mobius/action"
@@ -79,6 +81,32 @@ func TestJobLeaseOfPIDWalksToTheJobsCommand(t *testing.T) {
 	assert.Equal(t, errNotJobProcess, err)
 }
 
+// A lookup that runs after a job command starts but before it is registered
+// waits for the registration instead of refusing the command's process. A
+// start that ends without a registration still refuses.
+func TestJobLeaseOfPIDWaitsForAStartingJob(t *testing.T) {
+	parent := func(int) (int, error) { return 1, nil }
+
+	registered := action.JobProcesses.Starting()
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		done := action.JobProcesses.Register(610, "lease_job")
+		t.Cleanup(done)
+		registered()
+	}()
+	lease, err := jobLeaseOfPID(610, parent, 42)
+	assert.NoError(t, err)
+	assert.Equal(t, "lease_job", lease)
+
+	failed := action.JobProcesses.Starting()
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		failed()
+	}()
+	_, err = jobLeaseOfPID(611, parent, 42)
+	assert.Equal(t, errNotJobProcess, err)
+}
+
 func testSocket(t *testing.T, broker actionBroker, leaseOf func(net.Conn) (string, error)) *actionSocketServer {
 	t.Helper()
 	dir, err := os.MkdirTemp("", "mact-")
@@ -127,6 +155,42 @@ func TestActionSocketRefusesProcessesOutsideAJob(t *testing.T) {
 	assert.Equal(t, 0, broker.calls())
 }
 
+// An integer above 2^53 reaches the action unchanged, from the CLI flag
+// through the worker. A float64 on either side would change it.
+func TestActionSocketKeepsLargeIntegersExact(t *testing.T) {
+	broker := &fakeActionBroker{result: &mobius.ScriptCallResult{Status: "completed", Output: map[string]any{}}}
+	testSocket(t, broker, func(net.Conn) (string, error) { return "lease_job", nil })
+	result := newApp().Test(t, cli.TestArgs("actions", "run", "github.issue.get", "--input", `{"id":9007199254740993}`))
+	assert.True(t, result.Success(), "run failed: %v\nstderr: %s", result.Err, result.Stderr)
+	assert.Equal(t, json.Number("9007199254740993"), broker.reqs[0].Input["id"])
+	raw, err := json.Marshal(broker.reqs[0].Input)
+	assert.NoError(t, err)
+	assert.Equal(t, `{"id":9007199254740993}`, string(raw))
+}
+
+// A worker that closes the connection with no answer gives a clear error,
+// not "unreadable answer".
+func TestCallActionSocketReportsAClosedConnection(t *testing.T) {
+	dir, err := os.MkdirTemp("", "mact-")
+	assert.NoError(t, err)
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	listener, err := net.Listen("unix", filepath.Join(dir, "a.sock"))
+	assert.NoError(t, err)
+	t.Cleanup(func() { _ = listener.Close() })
+	go func() {
+		conn, err := listener.Accept()
+		if err != nil {
+			return
+		}
+		_, _ = bufio.NewReader(conn).ReadBytes('\n')
+		_ = conn.Close()
+	}()
+	t.Setenv(actionSocketEnv, listener.Addr().String())
+	_, err = callActionSocket(context.Background(), actionSocketRequest{Op: "run", Action: "slack.message.post"})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "closed the connection without an answer")
+}
+
 // End to end with real processes: a Python script started by a job's
 // command, and its child, call through the helper and are matched to the
 // job. A process outside the job is refused.
@@ -164,8 +228,14 @@ print(json.dumps({"first": first, "child": json.loads(child.stdout)}))
 	cmd.Stderr = os.Stderr
 	stdout, err := cmd.StdoutPipe()
 	assert.NoError(t, err)
+	// Register late, as a slow worker could: the script's calls can reach
+	// the socket before the registration, and must wait for it.
+	registered := action.JobProcesses.Starting()
+	defer registered()
 	assert.NoError(t, cmd.Start())
+	time.Sleep(300 * time.Millisecond)
 	done := action.JobProcesses.Register(cmd.Process.Pid, "lease_job")
+	registered()
 	var got map[string]any
 	decodeErr := json.NewDecoder(stdout).Decode(&got)
 	waitErr := cmd.Wait()
@@ -183,8 +253,46 @@ print(json.dumps({"first": first, "child": json.loads(child.stdout)}))
 	outside.Stderr = os.Stderr
 	out, err := outside.Output()
 	assert.NoError(t, err)
-	assert.True(t, strings.HasPrefix(string(out), "not_script_step: Only a workflow script step can call actions"), string(out))
+	assert.Equal(t, "not_script_step: This process is not part of a running job.\n", string(out))
 	assert.Equal(t, 2, broker.calls())
+}
+
+// When the worker does not answer in time, the Python helper reports a
+// timeout, which says the call may have completed, not an unreachable worker.
+func TestPythonHelperReportsATimeout(t *testing.T) {
+	python, err := exec.LookPath("python3")
+	if err != nil {
+		t.Skip("python3 is not installed")
+	}
+	dir, err := os.MkdirTemp("", "mact-")
+	assert.NoError(t, err)
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	listener, err := net.Listen("unix", filepath.Join(dir, "a.sock"))
+	assert.NoError(t, err)
+	t.Cleanup(func() { _ = listener.Close() })
+	go func() {
+		conn, err := listener.Accept()
+		if err != nil {
+			return
+		}
+		defer func() { _ = conn.Close() }()
+		time.Sleep(5 * time.Second) // never answers within the helper's timeout
+	}()
+	helper := filepath.Join(dir, "py")
+	for _, name := range []string{"__init__.py", "actions.py"} {
+		data, err := pyHelper.ReadFile("pyhelper/mobius/" + name)
+		assert.NoError(t, err)
+		assert.NoError(t, os.MkdirAll(filepath.Join(helper, "mobius"), 0o755))
+		assert.NoError(t, os.WriteFile(filepath.Join(helper, "mobius", name), data, 0o644))
+	}
+	cmd := exec.Command(python, "-c", "from mobius import actions\n"+
+		"actions._TIMEOUT_SECONDS = 0.2\n"+
+		"try:\n    actions.run('slack.message.post', {})\nexcept actions.ActionError as e:\n    print(e.code)")
+	cmd.Env = append(os.Environ(), "PYTHONPATH="+helper, actionSocketEnv+"="+listener.Addr().String())
+	cmd.Stderr = os.Stderr
+	out, err := cmd.Output()
+	assert.NoError(t, err)
+	assert.Equal(t, "timeout\n", string(out))
 }
 
 func TestFormatActionDescription(t *testing.T) {
