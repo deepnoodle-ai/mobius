@@ -174,24 +174,6 @@ func registerInteractionsCommands(app *cli.App) {
 			return printResponse(ctx, "createInteraction", resp.StatusCode(), resp.Body)
 		})
 
-	interactionsGrp.Command("delete").
-		Description("Delete interaction").
-		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := api.IDParam(ctx.Arg(0))
-			resp, err := client.DeleteInteractionWithResponse(ctx.Context(), p0)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "deleteInteraction", resp.StatusCode(), resp.Body)
-		})
-
 	interactionsGrp.Command("get").
 		Description("Get interaction").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).

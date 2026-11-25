@@ -87,8 +87,8 @@ The stock worker registers built-in actions like `print`, `fail`, `json`, `time`
 
 The SDKs expose two layers:
 
-- A high-level surface for common agent and worker flows: invoke agents and
-  follow a session's live transcript, manage sessions, turns, and nudges,
+- A high-level surface for common agent and worker flows: send input to agent
+  sessions and follow a session's live transcript, manage sessions, turns, and nudges,
   upload artifacts and session attachments, read and synchronize agent memory,
   run WebSocket workers that execute action jobs and LLM generation jobs,
   verify and parse webhook deliveries, and deliver synthetic local webhooks.
@@ -98,17 +98,22 @@ The SDKs expose two layers:
 See [`docs/sdk-helpers.md`](./docs/sdk-helpers.md) for cross-language examples
 of the webhook, artifact, session-transcript, and worker helpers.
 
-Start and render a real multi-tool turn with the Go SDK:
+Resolve a session and render a real multi-tool turn with the Go SDK:
 
 ```go
-turn, err := client.InvokeAgent(ctx, mobius.InvokeAgentOptions{
-	AgentName: "launch-scout",
+session, err := client.CreateSession(ctx, mobius.CreateSessionRequest{
+	AgentId:    agentID,
+	SessionKey: &conversationKey, // the same key resolves the same session
+})
+if err != nil { return err }
+in, err := client.SendSessionInput(ctx, session.Id, mobius.SendSessionInputOptions{
 	Content: []map[string]any{{
 		"type": "text", "text": "Check the name and create a shortlist.",
 	}},
 	IdempotencyKey: inboundMessageID,
 })
 if err != nil { return err }
+turn := in.Turn // set because the input started a new turn
 for turn.Next() {
 	for _, message := range turn.RenderableMessages() {
 		fmt.Println(mobius.TextOf(message))
@@ -127,9 +132,9 @@ if err := turn.TurnError(); err != nil { return err }
 ```
 
 Imports omitted above: `github.com/deepnoodle-ai/mobius/mobius` and `fmt`.
-An overlapping distinct direct invoke returns
-typed `*mobius.APIError` code `session_turn_active`; explicitly wait or call
-`NudgeSession` rather than silently turning another message into direction.
+Sending a distinct new turn while another turn is active returns typed
+`*mobius.APIError` code `session_turn_active`; wait, or send again with
+`Delivery: mobius.DeliverCurrentTurn` to steer the active turn.
 
 All three SDKs share the same retry and rate-limit handling: `429` and
 `503` responses are retried transparently (respecting `Retry-After`), and

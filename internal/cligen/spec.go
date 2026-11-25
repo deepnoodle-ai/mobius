@@ -34,7 +34,10 @@ type SpecOp struct {
 
 // openapiRoot is a minimal shape covering the fields we read.
 type openapiRoot struct {
-	Paths      map[string]map[string]specOpRaw `yaml:"paths"`
+	// Each path item maps an HTTP method to its operation, plus an optional
+	// path-level `parameters` list shared by every operation on the path, so
+	// the values are decoded lazily in parseSpec.
+	Paths      map[string]map[string]yaml.Node `yaml:"paths"`
 	Components specComponents                  `yaml:"components"`
 }
 
@@ -89,11 +92,27 @@ func parseSpec(path string) (map[string]*SpecOp, error) {
 		return nil, fmt.Errorf("parse %s: %w", path, err)
 	}
 	out := map[string]*SpecOp{}
-	for p, methods := range root.Paths {
-		for m, op := range methods {
+	for p, item := range root.Paths {
+		var pathParams []specParamRaw
+		if node, ok := item["parameters"]; ok {
+			if err := node.Decode(&pathParams); err != nil {
+				return nil, fmt.Errorf("parse %s: path %s parameters: %w", path, p, err)
+			}
+		}
+		for m, node := range item {
+			if m == "parameters" || strings.HasPrefix(m, "x-") || m == "summary" || m == "description" || m == "servers" {
+				continue
+			}
+			var op specOpRaw
+			if err := node.Decode(&op); err != nil {
+				return nil, fmt.Errorf("parse %s: %s %s: %w", path, m, p, err)
+			}
 			if op.OperationID == "" {
 				continue
 			}
+			// Path-level parameters apply to every operation on the path;
+			// operation-level entries come last so their descriptions win.
+			op.Parameters = append(append([]specParamRaw{}, pathParams...), op.Parameters...)
 			tag := ""
 			if len(op.Tags) > 0 {
 				tag = op.Tags[0]

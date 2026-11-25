@@ -19,74 +19,6 @@ import (
 func registerSessionsCommands(app *cli.App) {
 	sessionsGrp := app.Group("sessions").Description("Conversation sessions, transcripts, and turns")
 	sessionsGrp.Alias("session")
-	sessionsGrp.Command("append-messages").
-		Description("Append session messages").
-		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
-		Flags(
-			cli.Int("cache-creation-input-total", "").Help("Prompt-cache-write input tokens to add to this session's lifetime total."),
-			cli.Int("cache-read-input-total", "").Help("Prompt-cache-read input tokens to add to this session's lifetime total."),
-			cli.String("messages", "").Help("[required] Messages to append to the session, in order. Accepts JSON, @file, or @-."),
-			cli.String("model", "").Help("Model that produced these messages."),
-			cli.String("model-provider", "").Help("Provider for the supplied `model`."),
-			cli.Int("token-input-total", "").Help("Fresh (uncached) input tokens to add to this session's lifetime total."),
-			cli.Int("token-output-total", "").Help("Output tokens to add to this session's lifetime total."),
-			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
-			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := api.SessionIdParam(ctx.Arg(0))
-			var body api.AppendSessionMessagesJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
-				return err
-			}
-			if ctx.IsSet("cache-creation-input-total") {
-				v := ctx.Int("cache-creation-input-total")
-				body.CacheCreationInputTotal = &v
-			}
-			if ctx.IsSet("cache-read-input-total") {
-				v := ctx.Int("cache-read-input-total")
-				body.CacheReadInputTotal = &v
-			}
-			if ctx.IsSet("messages") {
-				if err := decodeFlagJSON(ctx, "messages", ctx.String("messages"), &body.Messages); err != nil {
-					return err
-				}
-			}
-			if ctx.IsSet("model") {
-				v := ctx.String("model")
-				body.Model = &v
-			}
-			if ctx.IsSet("model-provider") {
-				v := ctx.String("model-provider")
-				body.ModelProvider = &v
-			}
-			if ctx.IsSet("token-input-total") {
-				v := ctx.Int("token-input-total")
-				body.TokenInputTotal = &v
-			}
-			if ctx.IsSet("token-output-total") {
-				v := ctx.Int("token-output-total")
-				body.TokenOutputTotal = &v
-			}
-			if ctx.String("file") == "" && !ctx.IsSet("messages") {
-				return fmt.Errorf("--messages is required (or supply it via --file)")
-			}
-			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body, "messages", "token_input_total", "token_output_total")
-			}
-			resp, err := client.AppendSessionMessagesWithResponse(ctx.Context(), p0, body)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "appendSessionMessages", resp.StatusCode(), resp.Body)
-		})
-
 	sessionsGrp.Command("cancel").
 		Description("Cancel the session's active turn").
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
@@ -859,68 +791,17 @@ func registerSessionsCommands(app *cli.App) {
 			return printResponse(ctx, "markSessionRead", resp.StatusCode(), resp.Body)
 		})
 
-	sessionsGrp.Command("nudge").
-		Description("Nudge a session").
+	sessionsGrp.Command("send-input").
+		Description("Send input to a session").
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Flags(
-			cli.String("content", "").Help("[required] User direction to deliver at the next iteration boundary."),
-			cli.String("idempotency-key", "").Help("Dedup key scoped to the session. Reusing the key with identical content returns the original nudge request; different content conflicts."),
-			cli.String("metadata", "").Help("Free-form caller metadata retained with the nudge request. Accepts JSON, @file, or @-."),
-			cli.Bool("wake", "").Help("When true and the target turn is waiting on an interruptible agent tool, resolve that tool call with `{ \"interrupted\": true, \"reason\": \"user_direction\" }` and resume the same turn. Running and newly queued turns ignore this field."),
-			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
-			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := api.SessionIdParam(ctx.Arg(0))
-			var body api.NudgeSessionJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
-				return err
-			}
-			if ctx.IsSet("content") {
-				body.Content = ctx.String("content")
-			}
-			if ctx.IsSet("idempotency-key") {
-				v := ctx.String("idempotency-key")
-				body.IdempotencyKey = &v
-			}
-			if ctx.IsSet("metadata") {
-				if err := decodeFlagJSON(ctx, "metadata", ctx.String("metadata"), &body.Metadata); err != nil {
-					return err
-				}
-			}
-			if ctx.IsSet("wake") {
-				v := ctx.Bool("wake")
-				body.Wake = &v
-			}
-			if body.Content == "" {
-				return fmt.Errorf("--content is required (or supply it via --file)")
-			}
-			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body, "metadata")
-			}
-			resp, err := client.NudgeSessionWithResponse(ctx.Context(), p0, body)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "nudgeSession", resp.StatusCode(), resp.Body)
-		})
-
-	sessionsGrp.Command("start-turn").
-		Description("Start an agent turn").
-		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
-		Flags(
-			cli.String("content", "").Help("[required] Ordered content blocks for the input message. Canonical documents use `{ \"type\": \"document\", \"source\": { \"type\": \"base64\", \"media_type\": \"application/pdf\", \"data\": \"...\" }, \"title\": \"report.pdf\" }` or a URL source. Mobius also translates supported OpenAI `input_file` and Chat Completions `file` blocks at ingestion. Accepts JSON, @file, or @-."),
+			cli.String("content", "").Help("[required] Ordered content blocks for the input message. Canonical documents use `{ \"type\": \"document\", \"source\": { \"type\": \"base64\", \"media_type\": \"application/pdf\", \"data\": \"...\" }, \"title\": \"report.pdf\" }` or a URL source. Mobius also translates supported OpenAI `input_file` and Chat Completions `file` blocks at ingestion. With `delivery: current_turn`, every block must be `text`. Accepts JSON, @file, or @-."),
 			cli.String("context", "").Help("Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on first use, material change, or after compaction removes its prior value from the active model window. Omitting a name leaves its last value standing; send an explicit value such as `none` to clear application state. Names must be unique within the request. Content is limited to 8,192 UTF-8 bytes per item and 16,384 bytes total. Accepts JSON, @file, or @-."),
-			cli.String("idempotency-key", "").Help("Dedup key scoped to the session. A repeat call with the same key returns the existing invocation and writes nothing new; it never restarts a terminal turn. Omitting it or sending a blank value disables retry deduplication."),
-			cli.String("metadata", "").Help("Free-form caller metadata attached to the input message. Accepts JSON, @file, or @-."),
+			cli.String("delivery", "").Help("`new_turn` starts a turn that carries the input as a regular user message. `current_turn` targets an existing turn: the input reaches the agent as direction at that turn's next safe boundary. Direction that no turn can absorb becomes a regular user message carried by a fresh turn, and its nudge is `delivered` the moment that conversion commits. A nudge accepted for a turn converts the same way if that turn ends before absorbing it, so the nudge record reflects how the input was finally routed."),
+			cli.String("idempotency-key", "").Help("Dedup key scoped to the session. A repeat call with the same key returns the original acknowledgement and writes nothing new; it never restarts a terminal turn. Direction reused with different content returns `409`. Omitting it or sending a blank value disables retry deduplication."),
+			cli.String("metadata", "").Help("Free-form caller metadata attached to the input. Accepts JSON, @file, or @-."),
 			cli.String("operation", "").Help("Operational policy for this newly admitted turn only. It is not saved on the session. Its timeout takes precedence over the agent default and must be at least one second. Accepts JSON, @file, or @-."),
-			cli.String("role", "").Help("Role of the input message. A turn carries caller input, so only `user` is accepted; defaults to `user` when omitted."),
+			cli.Bool("wake", "").Help("Only with `delivery: current_turn`. When true and the target turn is waiting on an interruptible agent tool, resolve that tool call with `{ \"interrupted\": true, \"reason\": \"user_direction\" }` and resume the same turn. Running and newly queued turns ignore this field. Resend the same content and `idempotency_key` with `wake` to wake a turn for direction that is already queued."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -932,7 +813,7 @@ func registerSessionsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := api.SessionIdParam(ctx.Arg(0))
-			var body api.StartTurnJSONRequestBody
+			var body api.SendSessionInputJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
@@ -945,6 +826,10 @@ func registerSessionsCommands(app *cli.App) {
 				if err := decodeFlagJSON(ctx, "context", ctx.String("context"), &body.Context); err != nil {
 					return err
 				}
+			}
+			if ctx.IsSet("delivery") {
+				v := api.SessionInputDelivery(ctx.String("delivery"))
+				body.Delivery = &v
 			}
 			if ctx.IsSet("idempotency-key") {
 				v := ctx.String("idempotency-key")
@@ -960,9 +845,9 @@ func registerSessionsCommands(app *cli.App) {
 					return err
 				}
 			}
-			if ctx.IsSet("role") {
-				v := api.StartTurnRequestRole(ctx.String("role"))
-				body.Role = &v
+			if ctx.IsSet("wake") {
+				v := ctx.Bool("wake")
+				body.Wake = &v
 			}
 			if ctx.String("file") == "" && !ctx.IsSet("content") {
 				return fmt.Errorf("--content is required (or supply it via --file)")
@@ -970,11 +855,11 @@ func registerSessionsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body, "content", "context", "metadata", "operation", "output")
 			}
-			resp, err := client.StartTurnWithResponse(ctx.Context(), p0, body)
+			resp, err := client.SendSessionInputWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "startTurn", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "sendSessionInput", resp.StatusCode(), resp.Body)
 		})
 
 	sessionsGrp.Command("stop-session-event-subscriptions").

@@ -1,5 +1,6 @@
 import type {
   Interaction,
+  SessionInputAck,
   SessionResolvedAction,
   SessionToolResultBlock,
   SessionToolUseBlock,
@@ -7,7 +8,6 @@ import type {
   SessionTranscriptMessage,
   SessionTranscriptSnapshot,
   SessionTranscriptTurn,
-  TurnAck,
 } from "./api/index.js";
 
 export interface NormalizedToolUse {
@@ -123,8 +123,8 @@ export interface TranscriptStreamEvent {
  * write wins and nothing is an increment except {@link apply | message.delta}
  * text. Ignoring deltas entirely still converges.
  *
- * The streaming client methods drive one for you: {@link Client.invokeAgent}
- * returns a `TurnTranscript` and {@link Client.watchSessionTranscript} yields
+ * The streaming client methods drive one for you:
+ * {@link Client.sendSessionInput} returns a `TurnTranscript` for a new turn and {@link Client.watchSessionTranscript} yields
  * this view after every change. Construct one directly only for the escape
  * hatches: polling {@link Client.getSessionTranscript} into
  * {@link applySnapshot}, or feeding {@link Client.streamSessionTranscript}
@@ -390,12 +390,12 @@ export class SessionTranscript {
   }
 
   /**
-   * Fold a turn-start response into the view: the caller's message row, the
-   * acked turn, and the resume cursor. {@link Client.invokeAgent} calls it for
-   * you; it is public for callers wiring their own transport around a raw
-   * invoke.
+   * Fold a session-input response into the view: the caller's message row,
+   * the turn carrying it, and the resume cursor.
+   * {@link Client.sendSessionInput} calls it for you; it is public for
+   * callers wiring their own transport around a raw `POST …/inputs`.
    */
-  seed(ack: TurnAck): void {
+  seed(ack: SessionInputAck): void {
     if (ack.user_message)
       this.#rows.set(ack.user_message.id, normalizeMessage(ack.user_message));
     const turn = ack.turn as unknown as SessionTranscriptTurn;

@@ -388,25 +388,6 @@ func registerRoutinesCommands(app *cli.App) {
 			return printResponse(ctx, "getRoutineProposal", resp.StatusCode(), resp.Body)
 		})
 
-	routinesGrp.Command("get-thread").
-		Description("Get a followed thread").
-		Args("routine-id", "key").
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := api.RoutineID(ctx.Arg(0))
-			p1 := ctx.Arg(1)
-			resp, err := client.GetRoutineThreadWithResponse(ctx.Context(), p0, p1)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "getRoutineThread", resp.StatusCode(), resp.Body)
-		})
-
 	routinesGrp.Command("list").
 		Description("List reachable routines").
 		Flags(

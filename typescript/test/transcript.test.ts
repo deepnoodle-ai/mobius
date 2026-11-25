@@ -6,6 +6,7 @@ import {
   Client,
   MobiusAPIError,
   StreamHTTPError,
+  TurnTranscript,
 } from "../src/client.js";
 import {
   SessionTranscript,
@@ -57,6 +58,16 @@ function newClient(): Client {
     apiKey: "mbx_test",
     baseURL: "https://api.example.invalid",
   });
+}
+
+// sendInput starts a new turn in session s1 and returns its TurnTranscript.
+async function sendInput(opts: {
+  content: Record<string, unknown>[];
+  idempotencyKey?: string;
+}): Promise<TurnTranscript> {
+  const result = await newClient().sendSessionInput("s1", opts);
+  assert.ok(result.turn, "expected a new turn");
+  return result.turn;
 }
 
 test("transcript: upsert/block/delta/block-complete converge on a row", () => {
@@ -812,8 +823,7 @@ test("client: ordinary requests expose structured MobiusAPIError", async () => {
     )) as typeof fetch;
   try {
     await assert.rejects(
-      newClient().invokeAgent({
-        agentName: "support",
+      newClient().sendSessionInput("s1", {
         content: [{ type: "text", text: "next" }],
       }),
       (error: unknown) => {
@@ -832,47 +842,6 @@ test("client: ordinary requests expose structured MobiusAPIError", async () => {
   } finally {
     globalThis.fetch = original;
   }
-});
-
-test("client: nudgeSession is a typed thin wrapper", async () => {
-  let requestedURL = "";
-  let requestedBody = "";
-  const original = globalThis.fetch;
-  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    requestedURL = typeof input === "string" ? input : input.toString();
-    requestedBody = String(init?.body ?? "");
-    return new Response(
-      JSON.stringify({
-        nudge_id: "nudge_1",
-        delivery: "current_turn",
-        session: { id: "s1" },
-        turn: { id: "t1", status: "running" },
-        after_sequence: 2,
-        deduped: false,
-        woke_turn: true,
-      }),
-      { status: 202, headers: { "Content-Type": "application/json" } },
-    );
-  }) as typeof fetch;
-  try {
-    const ack = await newClient().nudgeSession("s1", {
-      content: "Use the shorter name",
-      idempotencyKey: "event_2",
-      wake: true,
-    });
-    assert.equal(ack.nudge_id, "nudge_1");
-  } finally {
-    globalThis.fetch = original;
-  }
-  assert.equal(
-    new URL(requestedURL).pathname,
-    "/v1/sessions/s1/nudges",
-  );
-  assert.deepEqual(JSON.parse(requestedBody), {
-    content: "Use the shorter name",
-    idempotency_key: "event_2",
-    wake: true,
-  });
 });
 
 test("client: watchSessionTranscript raises AuthRevokedError on 401", async () => {
@@ -898,7 +867,10 @@ test("client: watchSessionTranscript raises AuthRevokedError on 401", async () =
   assert.equal(calls, 1);
 });
 
-const invokeAck = {
+const inputAck = {
+  delivery: "new_turn",
+  deduped: false,
+  woke_turn: false,
   after_sequence: 42,
   resume_cursor: "41.6",
   user_message: {
@@ -926,13 +898,13 @@ const invokeAck = {
   },
 };
 
-test("client: invokeAgent streams the turn to its terminal upsert", async () => {
+test("client: sendSessionInput streams the turn to its terminal upsert", async () => {
   let streamCalls = 0;
   const original = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = new URL(typeof input === "string" ? input : input.toString());
-    if (url.pathname.endsWith("/agents/invoke")) {
-      return new Response(JSON.stringify(invokeAck), {
+    if (url.pathname.endsWith("/inputs")) {
+      return new Response(JSON.stringify(inputAck), {
         status: 202,
         headers: { "Content-Type": "application/json" },
       });
@@ -959,13 +931,12 @@ test("client: invokeAgent streams the turn to its terminal upsert", async () => 
   }) as typeof fetch;
 
   try {
-    const turn = await newClient().invokeAgent({
-      agentName: "support",
+    const turn = await sendInput({
       content: [{ type: "text", text: "hi" }],
     });
     assert.equal(turn.id, "t1");
     assert.equal(turn.sessionId, "s1");
-    assert.equal(turn.status, "queued"); // seeded from the invoke response
+    assert.equal(turn.status, "queued"); // seeded from the send response
     assert.equal(turn.deduped, false);
     assert.equal(streamCalls, 0); // lazy: no stream until iteration
     // The caller's message row is seeded before any streaming.
@@ -996,7 +967,7 @@ test("client: invokeAgent streams the turn to its terminal upsert", async () => 
 
 test("client: TurnTranscript redrains from the invocation cursor before its final update", async () => {
   const durableMessages: SessionTranscriptSnapshot["messages"] = [
-    invokeAck.user_message as SessionTranscriptSnapshot["messages"][number],
+    inputAck.user_message as SessionTranscriptSnapshot["messages"][number],
     {
       id: "m_call",
       session_id: "s1",
@@ -1060,8 +1031,8 @@ test("client: TurnTranscript redrains from the invocation cursor before its fina
   const original = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = new URL(typeof input === "string" ? input : input.toString());
-    if (url.pathname.endsWith("/agents/invoke")) {
-      return new Response(JSON.stringify(invokeAck), {
+    if (url.pathname.endsWith("/inputs")) {
+      return new Response(JSON.stringify(inputAck), {
         status: 202,
         headers: { "Content-Type": "application/json" },
       });
@@ -1115,8 +1086,7 @@ test("client: TurnTranscript redrains from the invocation cursor before its fina
   }) as typeof fetch;
 
   try {
-    const turn = await newClient().invokeAgent({
-      agentName: "support",
+    const turn = await sendInput({
       content: [{ type: "text", text: "hi" }],
     });
     const updates = [];
@@ -1156,10 +1126,10 @@ test("client: deduped in-flight turn replays from its stable cursor", async () =
   const original = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = new URL(typeof input === "string" ? input : input.toString());
-    if (url.pathname.endsWith("/agents/invoke")) {
+    if (url.pathname.endsWith("/inputs")) {
       return new Response(
         JSON.stringify({
-          ...invokeAck,
+          ...inputAck,
           deduped: true,
           user_message: undefined,
           resume_cursor: "41.6",
@@ -1203,7 +1173,7 @@ test("client: deduped in-flight turn replays from its stable cursor", async () =
             created_at: AT,
           },
         ],
-        turns: [{ ...invokeAck.turn, status: "completed" }],
+        turns: [{ ...inputAck.turn, status: "completed" }],
         interactions: [],
         has_more: false,
         resume_cursor: "45.9",
@@ -1216,8 +1186,7 @@ test("client: deduped in-flight turn replays from its stable cursor", async () =
     throw new Error(`unexpected request: ${url.pathname}`);
   }) as typeof fetch;
   try {
-    const turn = await newClient().invokeAgent({
-      agentName: "support",
+    const turn = await sendInput({
       content: [{ type: "text", text: "hi" }],
       idempotencyKey: "evt_1",
     });
@@ -1241,8 +1210,8 @@ test("client: TurnTranscript surfaces terminal snapshot reconciliation errors", 
   const original = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = new URL(typeof input === "string" ? input : input.toString());
-    if (url.pathname.endsWith("/agents/invoke")) {
-      return new Response(JSON.stringify(invokeAck), {
+    if (url.pathname.endsWith("/inputs")) {
+      return new Response(JSON.stringify(inputAck), {
         status: 202,
         headers: { "Content-Type": "application/json" },
       });
@@ -1263,8 +1232,7 @@ test("client: TurnTranscript surfaces terminal snapshot reconciliation errors", 
   }) as typeof fetch;
 
   try {
-    const turn = await newClient().invokeAgent({
-      agentName: "support",
+    const turn = await sendInput({
       content: [{ type: "text", text: "hi" }],
     });
     await assert.rejects(
@@ -1283,8 +1251,8 @@ test("client: TurnTranscript exposes live failed-turn errors", async () => {
   const original = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = new URL(typeof input === "string" ? input : input.toString());
-    if (url.pathname.endsWith("/agents/invoke")) {
-      return new Response(JSON.stringify(invokeAck), {
+    if (url.pathname.endsWith("/inputs")) {
+      return new Response(JSON.stringify(inputAck), {
         status: 202,
         headers: { "Content-Type": "application/json" },
       });
@@ -1306,8 +1274,7 @@ test("client: TurnTranscript exposes live failed-turn errors", async () => {
     );
   }) as typeof fetch;
   try {
-    const turn = await newClient().invokeAgent({
-      agentName: "support",
+    const turn = await sendInput({
       content: [{ type: "text", text: "hi" }],
     });
     for await (const _ of turn) {
@@ -1321,17 +1288,16 @@ test("client: TurnTranscript exposes live failed-turn errors", async () => {
   }
 });
 
-test("client: invokeAgent rejects a blank resume cursor", async () => {
+test("client: sendSessionInput rejects a blank resume cursor", async () => {
   const original = globalThis.fetch;
   globalThis.fetch = (async () =>
-    new Response(JSON.stringify({ ...invokeAck, resume_cursor: " " }), {
+    new Response(JSON.stringify({ ...inputAck, resume_cursor: " " }), {
       status: 202,
       headers: { "Content-Type": "application/json" },
     })) as typeof fetch;
   try {
     await assert.rejects(
-      newClient().invokeAgent({
-        agentName: "support",
+      newClient().sendSessionInput("s1", {
         content: [{ type: "text", text: "hi" }],
       }),
       /resume_cursor/,
@@ -1341,18 +1307,18 @@ test("client: invokeAgent rejects a blank resume cursor", async () => {
   }
 });
 
-test("client: invokeAgent hydrates an already-terminal turn from the snapshot", async () => {
+test("client: sendSessionInput hydrates an already-terminal turn from the snapshot", async () => {
   let streamCalls = 0;
   const original = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = new URL(typeof input === "string" ? input : input.toString());
-    if (url.pathname.endsWith("/agents/invoke")) {
+    if (url.pathname.endsWith("/inputs")) {
       const ack = {
-        ...invokeAck,
+        ...inputAck,
         deduped: true,
         resume_cursor: "31.6",
         user_message: undefined,
-        turn: { ...invokeAck.turn, status: "completed" },
+        turn: { ...inputAck.turn, status: "completed" },
       };
       return new Response(JSON.stringify(ack), {
         status: 202,
@@ -1419,8 +1385,7 @@ test("client: invokeAgent hydrates an already-terminal turn from the snapshot", 
   }) as typeof fetch;
 
   try {
-    const turn = await newClient().invokeAgent({
-      agentName: "support",
+    const turn = await sendInput({
       content: [{ type: "text", text: "hi" }],
       idempotencyKey: "evt_1",
     });

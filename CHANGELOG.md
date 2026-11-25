@@ -10,6 +10,35 @@ the minor version.
 
 ## [Unreleased]
 
+Breaking: syncs the API reshape in mobius-cloud
+([#2627](https://github.com/deepnoodle-ai/mobius-cloud/issues/2627)). The
+previous CLI calls routes that no longer exist in production.
+
+### Removed
+
+- `invokeAgent`, `startTurn`, `nudgeSession`, `appendSessionMessages`, inline
+  SSE on those POSTs, and the SDK helpers wrapping them (`InvokeAgent`,
+  `InvokeAgentStream`, `StartTurn`, `NudgeSession` and Python/TS twins). CLI:
+  `agents invoke`, `sessions start-turn`, `sessions nudge`, `sessions append-messages`.
+- The 11 integration operations (the `mobius integrations` group),
+  `deleteInteraction` (`interactions delete`), `getRoutineThread`
+  (`routines get-thread`).
+
+### Changed
+
+- Org-scoped routes moved to `/v1/orgs/{org_id}/…`. `organizations get-context`,
+  `replace-context` and `get-oauth-return-origins` take an `ORG_ID` argument
+  (`current` for the active org). The SDK helpers use `current`.
+
+### Added
+
+- `sendSessionInput` (`POST /v1/sessions/{id}/inputs`, `delivery` `new_turn` or
+  `current_turn`): SDK `SendSessionInput` returns a `SessionInput` whose `Turn`
+  follows a new turn; CLI `sessions send-input`. A `CreateSession` helper
+  resolves the session first. See [docs/sdk-helpers.md](./docs/sdk-helpers.md).
+- `viewer_actions` (`ViewerActions`: `view`, `work_with`, `manage`, `stop`) on
+  more resource responses, so clients can gate actions on the caller's access.
+
 ## [0.8.0] - 2026-11-25
 
 ### Removed

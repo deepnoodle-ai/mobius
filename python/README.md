@@ -12,12 +12,18 @@ client = mobius.Client(mobius.ClientOptions(
     api_key=os.environ["MOBIUS_API_KEY"],
 ))
 
+# Resolve the conversation once per user or thread with a stable session_key.
+session = client.create_session(mobius.CreateSessionRequest(
+    agent_id=agent_id,
+    session_key=f"app:{account_id}:{user_id}",
+))
+
 try:
-    turn = client.invoke_agent(mobius.InvokeAgentOptions(
-        agent_name="launch-scout",
+    result = client.send_session_input(session.id, mobius.SendSessionInputOptions(
         idempotency_key=inbound_message_id,
         content=[{"type": "text", "text": "Check the name and create a shortlist."}],
     ))
+    turn = result.turn  # set when delivery == "new_turn"
     for update in turn.updates():
         for message in update.transcript.renderable_messages():
             print(mobius.text_of(message))
@@ -29,7 +35,8 @@ try:
         raise turn.error
 except mobius.MobiusAPIError as error:
     if error.code == "session_turn_active":
-        # Choose explicitly: wait and invoke again, or client.nudge_session(...).
+        # A turn is already running. Wait and send again, or steer it with
+        # send_session_input(..., SendSessionInputOptions(delivery="current_turn", ...)).
         pass
     else:
         raise

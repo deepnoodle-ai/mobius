@@ -12,9 +12,8 @@ from deepnoodle.mobius import (
     Client,
     ClientOptions,
     GetSessionTranscriptOptions,
-    InvokeAgentOptions,
     MobiusAPIError,
-    NudgeSessionOptions,
+    SendSessionInputOptions,
     SessionTranscript,
     TranscriptStreamEvent,
     WatchSessionTranscriptOptions,
@@ -392,54 +391,15 @@ def test_ordinary_request_exposes_structured_mobius_api_error() -> None:
 
     client = _client_with(handler)
     with pytest.raises(MobiusAPIError) as caught:
-        client.invoke_agent(
-            InvokeAgentOptions(
-                agent_name="support", content=[{"type": "text", "text": "next"}]
-            )
+        client.send_session_input(
+            "s1",
+            SendSessionInputOptions(content=[{"type": "text", "text": "next"}]),
         )
     assert caught.value.status == 409
     assert caught.value.code == "session_turn_active"
     assert caught.value.details == {"turn_id": "turn_blocking", "status": "running"}
     assert caught.value.request_id == "req_1"
     assert caught.value.retry_after == 2
-
-
-def test_nudge_session_is_a_thin_typed_wrapper() -> None:
-    seen: dict[str, object] = {}
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        seen["path"] = request.url.path
-        seen["body"] = __import__("json").loads(request.content)
-        seen["idempotency_key"] = request.headers.get("Idempotency-Key")
-        return httpx.Response(
-            202,
-            json={
-                "nudge_id": "nudge_1",
-                "delivery": "current_turn",
-                "status": "pending",
-                "session": _ack_body()["session"],
-                "turn": _ack_body()["turn"],
-                "after_sequence": 2,
-                "deduped": False,
-                "woke_turn": True,
-            },
-        )
-
-    client = _client_with(handler)
-    ack = client.nudge_session(
-        "s1",
-        NudgeSessionOptions(
-            content="Use the shorter name", idempotency_key="event_2", wake=True
-        ),
-    )
-    assert ack.nudge_id == "nudge_1"
-    assert seen["path"] == "/v1/sessions/s1/nudges"
-    assert seen["idempotency_key"] == "event_2"
-    assert seen["body"] == {
-        "content": "Use the shorter name",
-        "idempotency_key": "event_2",
-        "wake": True,
-    }
 
 
 def test_watch_session_transcript_raises_auth_revoked_on_401() -> None:
@@ -516,12 +476,12 @@ def test_watch_session_transcript_follow_reconnects_on_idle() -> None:
     assert calls == 2
 
 
-def test_invoke_agent_streams_turn_to_terminal() -> None:
+def test_send_session_input_streams_turn_to_terminal() -> None:
     stream_calls = 0
 
     def handler(request: httpx.Request) -> httpx.Response:
         nonlocal stream_calls
-        if request.url.path.endswith("/agents/invoke"):
+        if request.url.path.endswith("/sessions/s1/inputs"):
             return httpx.Response(202, json=_ack_body())
         if request.url.path.endswith("/sessions/s1/transcript"):
             assert request.url.params.get("cursor") == "41.6"
@@ -546,12 +506,12 @@ def test_invoke_agent_streams_turn_to_terminal() -> None:
         return httpx.Response(200, text=body, headers={"Content-Type": "text/event-stream"})
 
     client = _client_with(handler)
-    turn = client.invoke_agent(
-        InvokeAgentOptions(agent_name="support", content=[{"type": "text", "text": "hi"}])
-    )
+    turn = client.send_session_input(
+        "s1", SendSessionInputOptions(content=[{"type": "text", "text": "hi"}])
+    ).turn
     assert turn.id == "t1"
     assert turn.session_id == "s1"
-    assert turn.status == "queued"  # seeded from the invoke response
+    assert turn.status == "queued"  # seeded from the send response
     assert turn.deduped is False
     assert stream_calls == 0  # lazy: no stream until iteration
     # The caller's message row is seeded before any streaming.
@@ -570,9 +530,9 @@ def test_turn_transcript_exposes_structured_output() -> None:
         return httpx.Response(202, json=_ack_body())
 
     client = _client_with(handler)
-    turn = client.invoke_agent(
-        InvokeAgentOptions(agent_name="support", content=[{"type": "text", "text": "hi"}])
-    )
+    turn = client.send_session_input(
+        "s1", SendSessionInputOptions(content=[{"type": "text", "text": "hi"}])
+    ).turn
     assert turn.output is None
     assert turn.output_source is None
 
@@ -585,7 +545,7 @@ def test_turn_transcript_exposes_structured_output() -> None:
     assert turn.output_source == "tool"
 
 
-def test_invoke_agent_redrains_from_invocation_cursor_before_final_update() -> None:
+def test_send_session_input_redrains_from_invocation_cursor_before_final_update() -> None:
     durable_messages = [
         _ack_body()["user_message"],
         {
@@ -652,7 +612,7 @@ def test_invoke_agent_redrains_from_invocation_cursor_before_final_update() -> N
     }
 
     def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.path.endswith("/agents/invoke"):
+        if request.url.path.endswith("/sessions/s1/inputs"):
             return httpx.Response(202, json=_ack_body())
         if request.url.path.endswith("/sessions/s1/transcript/stream"):
             body = (
@@ -706,9 +666,9 @@ def test_invoke_agent_redrains_from_invocation_cursor_before_final_update() -> N
         raise AssertionError(f"unexpected request: {request.url}")
 
     client = _client_with(handler)
-    turn = client.invoke_agent(
-        InvokeAgentOptions(agent_name="support", content=[{"type": "text", "text": "hi"}])
-    )
+    turn = client.send_session_input(
+        "s1", SendSessionInputOptions(content=[{"type": "text", "text": "hi"}])
+    ).turn
     updates = list(turn.updates())
 
     assert len(updates) == 3
@@ -732,7 +692,7 @@ def test_invoke_agent_redrains_from_invocation_cursor_before_final_update() -> N
 
 def test_deduped_in_flight_turn_replays_from_stable_cursor() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.path.endswith("/agents/invoke"):
+        if request.url.path.endswith("/sessions/s1/inputs"):
             ack = _ack_body()
             ack["deduped"] = True
             ack.pop("user_message")
@@ -779,13 +739,13 @@ def test_deduped_in_flight_turn_replays_from_stable_cursor() -> None:
         raise AssertionError(f"unexpected request: {request.url}")
 
     client = _client_with(handler)
-    turn = client.invoke_agent(
-        InvokeAgentOptions(
-            agent_name="support",
+    turn = client.send_session_input(
+        "s1",
+        SendSessionInputOptions(
             content=[{"type": "text", "text": "hi"}],
             idempotency_key="evt_1",
-        )
-    )
+        ),
+    ).turn
     list(turn)
     tool_use = next(
         block
@@ -799,9 +759,9 @@ def test_deduped_in_flight_turn_replays_from_stable_cursor() -> None:
     }
 
 
-def test_invoke_agent_surfaces_terminal_reconciliation_error() -> None:
+def test_send_session_input_surfaces_terminal_reconciliation_error() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.path.endswith("/agents/invoke"):
+        if request.url.path.endswith("/sessions/s1/inputs"):
             return httpx.Response(202, json=_ack_body())
         if request.url.path.endswith("/sessions/s1/transcript/stream"):
             body = (
@@ -818,9 +778,9 @@ def test_invoke_agent_surfaces_terminal_reconciliation_error() -> None:
         raise AssertionError(f"unexpected request: {request.url}")
 
     client = _client_with(handler)
-    turn = client.invoke_agent(
-        InvokeAgentOptions(agent_name="support", content=[{"type": "text", "text": "hi"}])
-    )
+    turn = client.send_session_input(
+        "s1", SendSessionInputOptions(content=[{"type": "text", "text": "hi"}])
+    ).turn
     with pytest.raises(MobiusAPIError) as exc_info:
         list(turn.updates())
 
@@ -833,9 +793,9 @@ def test_turn_transcript_exposes_live_failed_turn_errors() -> None:
         return httpx.Response(202, json=_ack_body())
 
     client = _client_with(handler)
-    turn = client.invoke_agent(
-        InvokeAgentOptions(agent_name="support", content=[{"type": "text", "text": "hi"}])
-    )
+    turn = client.send_session_input(
+        "s1", SendSessionInputOptions(content=[{"type": "text", "text": "hi"}])
+    ).turn
     _apply(
         turn.transcript,
         _turn(
@@ -851,7 +811,7 @@ def test_turn_transcript_exposes_live_failed_turn_errors() -> None:
     )
 
 
-def test_invoke_agent_rejects_blank_resume_cursor() -> None:
+def test_send_session_input_rejects_blank_resume_cursor() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         ack = _ack_body()
         ack["resume_cursor"] = " "
@@ -859,19 +819,18 @@ def test_invoke_agent_rejects_blank_resume_cursor() -> None:
 
     client = _client_with(handler)
     with pytest.raises(ValueError, match="resume_cursor"):
-        client.invoke_agent(
-            InvokeAgentOptions(
-                agent_name="support", content=[{"type": "text", "text": "hi"}]
-            )
+        client.send_session_input(
+            "s1",
+            SendSessionInputOptions(content=[{"type": "text", "text": "hi"}]),
         )
 
 
-def test_invoke_agent_hydrates_terminal_turn_from_snapshot() -> None:
+def test_send_session_input_hydrates_terminal_turn_from_snapshot() -> None:
     stream_calls = 0
 
     def handler(request: httpx.Request) -> httpx.Response:
         nonlocal stream_calls
-        if request.url.path.endswith("/agents/invoke"):
+        if request.url.path.endswith("/sessions/s1/inputs"):
             ack = _ack_body()
             ack["deduped"] = True
             ack["resume_cursor"] = "31.6"
@@ -911,13 +870,13 @@ def test_invoke_agent_hydrates_terminal_turn_from_snapshot() -> None:
         return httpx.Response(404)
 
     client = _client_with(handler)
-    turn = client.invoke_agent(
-        InvokeAgentOptions(
-            agent_name="support",
+    turn = client.send_session_input(
+        "s1",
+        SendSessionInputOptions(
             content=[{"type": "text", "text": "hi"}],
             idempotency_key="evt_1",
-        )
-    )
+        ),
+    ).turn
     assert turn.deduped is True
     assert turn.status == "completed"
 
@@ -938,6 +897,9 @@ def test_is_terminal_turn_status() -> None:
 
 def _ack_body() -> dict[str, object]:
     return {
+        "delivery": "new_turn",
+        "deduped": False,
+        "woke_turn": False,
         "after_sequence": 42,
         "resume_cursor": "41.6",
         "user_message": {

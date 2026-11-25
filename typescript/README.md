@@ -23,7 +23,11 @@ Requires Node.js 22+ (the worker uses the global `WebSocket`, stable since Node 
 
 ## Quick start
 
-### Invoke a multi-tool agent
+### Talk to an agent in a session
+
+Resolve a session with `createSession` using a stable `session_key`, then send
+each inbound message with `sendSessionInput`. When the input starts a new turn,
+`result.turn` is a lazy transcript handle you can iterate to follow it.
 
 ```ts
 import {
@@ -37,38 +41,35 @@ const client = new Client({
   apiKey: process.env.MOBIUS_API_KEY!,
 });
 
+const session = await client.createSession({
+  agent_id: agentId,
+  session_key: `research:${customerId}`,
+});
+
 try {
-  const turn = await client.invokeAgent({
-    agentName: "launch-scout",
-    session: {
-      mode: "continue_or_create",
-      session_key: `research:${customerId}`,
-    },
+  const result = await client.sendSessionInput(session.id, {
     idempotencyKey: inboundMessageId,
     content: [{ type: "text", text: "Check the name and create a shortlist." }],
-    config: {
-      toolkits: [
-        { name: "naming", actions: ["naming.domain.check"] },
-        { name: "shortlists", actions: ["shortlists.create"] },
-      ],
-    },
   });
-
-  for await (const update of turn.updates()) {
-    for (const message of update.transcript.renderableMessages()) {
-      console.log(textOf(message));
-      for (const block of message.content) {
-        if (block.type === "tool_use") {
-          const tool = normalizeToolUse(block);
-          console.log(tool.resolvedAction?.name ?? tool.wireName);
+  const turn = result.turn;
+  if (turn) {
+    for await (const update of turn.updates()) {
+      for (const message of update.transcript.renderableMessages()) {
+        console.log(textOf(message));
+        for (const block of message.content) {
+          if (block.type === "tool_use") {
+            const tool = normalizeToolUse(block);
+            console.log(tool.resolvedAction?.name ?? tool.wireName);
+          }
         }
       }
     }
+    if (turn.error) throw turn.error;
   }
-  if (turn.error) throw turn.error;
 } catch (error) {
   if (error instanceof MobiusAPIError && error.code === "session_turn_active") {
-    // Choose explicitly: wait and re-invoke, or client.nudgeSession(...).
+    // A turn is already running. Wait and send again, or steer it:
+    // client.sendSessionInput(session.id, { content, delivery: "current_turn" }).
   } else {
     throw error;
   }

@@ -40,7 +40,7 @@ func TestClientSendsClientHeader(t *testing.T) {
 				t.Fatal(err)
 			}
 			// A generated-client call and a hand-written request.
-			if _, err := c.ac.GetOrgContextWithResponse(context.Background()); err != nil {
+			if _, err := c.ac.GetOrgContextWithResponse(context.Background(), currentOrg); err != nil {
 				t.Fatal(err)
 			}
 			if err := c.doWithHeaders(context.Background(), c.httpClient, http.MethodGet, "/v1/x", "", nil, nil, nil); err != nil {

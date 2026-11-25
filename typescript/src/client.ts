@@ -11,7 +11,6 @@ import type {
   AgentTurnListResponse,
   AgentTurnOperationPolicy,
   AgentTurnOutputSource,
-  AgentRef,
   Artifact,
   ApplyBlueprintRequest,
   BlueprintApplyResult,
@@ -19,18 +18,15 @@ import type {
   BlueprintDeleteResult,
   BillingUsageEvent,
   BillingUsageEventListResponse,
-  ChannelContext,
   CreateAgentRequest,
   CreatePrincipalRequest,
   CreateRoleAssignmentRequest,
   CreateRoleRequest,
+  CreateSessionRequest,
   ImportSkillRequest,
   Interaction,
   InteractionKind,
   InteractionListResponse,
-  InvokeAgentRequest,
-  InvokeInput,
-  InvokeSessionSpec,
   MemoryKind,
   MemorySearchMode,
   OAuthReturnOrigins,
@@ -44,13 +40,15 @@ import type {
   SaveAgentMemoryEntryRequest,
   Session,
   SessionAttachmentResponse,
+  SessionInputAck,
+  SessionInputDelivery,
+  SessionInputOutcome,
+  SessionInputRequest,
   SessionListResponse,
   SessionMessageListResponse,
   SessionNudge,
-  SessionNudgeAck,
   SessionNudgeListResponse,
   SessionNudgeStatus,
-  SessionStreamFrame,
   SessionTranscriptFrame,
   SessionTranscriptMessage,
   SessionTranscriptSnapshot,
@@ -63,10 +61,8 @@ import type {
   SkillAssignmentListResponse,
   SkillListResponse,
   SkillRequest,
-  StartTurnRequest,
   StreamEndFrame,
   TagMap,
-  TurnAck,
   TurnOutputSpec,
   UpdatePrincipalRequest,
   UpdateRoleRequest,
@@ -308,91 +304,85 @@ export interface ListBillingUsageEventsOptions {
   limit?: number;
 }
 
-export interface InvokeAgentOptions {
-  /** Agent identifier. Mutually exclusive with agentName. */
-  agentId?: string;
-  /** Org-unique agent name. Mutually exclusive with agentId. */
-  agentName?: string;
-  /** Ordered content blocks (text, images, …) for the caller's input message. Required. */
+export interface SendSessionInputOptions {
+  /**
+   * Ordered content blocks (text, images, documents, …) for the input.
+   * Required and non-empty. With `delivery: "current_turn"` every block must
+   * be `text`.
+   */
   content: Record<string, unknown>[];
   /**
-   * Ordered application-owned state snapshots for this turn. Send full,
+   * Where the input goes. `"new_turn"` (the default) appends it as a user
+   * message and starts a turn; the call fails with `409
+   * session_turn_active` when a turn is already active. `"current_turn"`
+   * adds it as direction to the active turn, or starts a new turn when the
+   * session is idle.
+   */
+  delivery?: SessionInputDelivery;
+  /**
+   * Ordered application-owned state snapshots for the turn. Send full,
    * deterministic values; Mobius records only first use, changes, and
-   * post-compaction re-entry.
+   * post-compaction re-entry. Only with `delivery: "new_turn"`.
    */
   context?: RuntimeContextItem[];
   /**
-   * Dedup key scoped to the resolved session. A repeat call with the same
-   * key resolves the same session and returns the existing invocation
-   * without restarting it or starting a second one — derive it from the
-   * provider event id for Slack/Telegram webhook retries. The SDK retries
-   * admission automatically unless `session.mode` is `new`, which cannot be
-   * safely replayed with a session-scoped key.
+   * Dedup key scoped to the session. A repeat call with the same key returns
+   * the original result and writes nothing new; it never restarts a terminal
+   * turn. Derive it from the inbound event id (for example a Slack or
+   * Telegram webhook retry). The SDK retries the request automatically only
+   * when a key is set.
    */
   idempotencyKey?: string;
-  /** Free-form caller metadata attached to the input message. */
-  inputMetadata?: Record<string, unknown>;
   /**
-   * How to resolve or create the session this invocation runs in. Omit to
-   * use a single default session per agent in continue_or_create mode. Set
-   * `session.thinking_effort` to override the agent's reasoning-effort
-   * default for this session.
-   */
-  session?: InvokeSessionSpec;
-  /**
-   * Policy for only this newly admitted turn. Its timeout takes precedence
-   * over the stored agent timeout and is not saved on the session.
+   * Policy for only the newly started turn. Its timeout takes precedence
+   * over the stored agent timeout and is not saved on the session. Only with
+   * `delivery: "new_turn"`.
    */
   operation?: AgentTurnOperationPolicy;
   /**
-   * Structured-output contract for this turn. When set, Mobius exposes a
+   * Structured-output contract for the turn. When set, Mobius exposes a
    * reserved submit tool for the schema, validates the submission
    * server-side, and fails the turn if it never produces a schema-valid
    * object. Read the validated value from {@link TurnTranscript.output}.
+   * Only with `delivery: "new_turn"`.
    */
   output?: TurnOutputSpec;
-  /**
-   * Optional messaging provider/channel routing context (Slack, Telegram,
-   * …) recorded on the started turn.
-   */
-  channelContext?: ChannelContext;
-}
-
-export interface StartTurnOptions {
-  /** Ordered content blocks (text, images, …) for the caller's input message. */
-  content: Record<string, unknown>[];
-  /** Ordered application-owned state snapshots for this turn. */
-  context?: RuntimeContextItem[];
-  /**
-   * Dedup key scoped to the existing session. A repeat returns the existing
-   * invocation, writes no new input, and never restarts a terminal turn.
-   */
-  idempotencyKey?: string;
-  /**
-   * Policy for only this newly admitted turn. Its timeout takes precedence
-   * over the stored agent timeout and is not saved on the session.
-   */
-  operation?: AgentTurnOperationPolicy;
-  /**
-   * Structured-output contract for this turn. See
-   * {@link InvokeAgentOptions.output}; read the validated value from
-   * {@link TurnTranscript.output}.
-   */
-  output?: TurnOutputSpec;
-  /** Free-form caller metadata attached to the input message. */
+  /** Free-form caller metadata attached to the input. */
   metadata?: Record<string, unknown>;
+  /**
+   * Only with `delivery: "current_turn"`. When the target turn is waiting on
+   * an interruptible agent tool, interrupt that tool and resume the turn so
+   * the agent reads the direction now.
+   */
+  wake?: boolean;
 }
 
 /**
- * A single decoded frame from a session SSE stream. eventType is the
- * authoritative SSE `event:` name (e.g. "user.message", "turn.completed",
- * "tool.call") — {@link SessionStreamFrame} is a reference-only union that
- * cannot be shape-matched from data alone, so dispatch on eventType and cast
- * data to the corresponding payload type.
+ * Where a {@link Client.sendSessionInput} call put its input.
+ *
+ * - `"new_turn"`: the input is a user message on a new turn. {@link turn} is
+ *   set; iterate it to follow the turn.
+ * - `"current_turn"`: the input is direction for the active turn
+ *   ({@link turnId}). {@link nudge} tracks it.
+ * - `"queued"`: another person's turn is running; the direction waits behind
+ *   it ({@link turnId}). {@link nudge} tracks it.
  */
-export interface SessionStreamEvent {
-  eventType: string;
-  data: SessionStreamFrame;
+export interface SessionInput {
+  delivery: SessionInputOutcome;
+  sessionId: string;
+  /**
+   * The new turn, the turn the direction is queued for, or the running turn
+   * it waits behind.
+   */
+  turnId: string;
+  /** True when a repeated idempotency key returned the original result without writing again. */
+  deduped: boolean;
+  /** True when `wake` interrupted a waiting tool and requeued the turn. */
+  wokeTurn: boolean;
+  /** The nudge queue entry, present for `delivery: "current_turn"` requests. */
+  nudge?: SessionNudge;
+  /** Lazy handle on the new turn. Present exactly when `delivery` is `"new_turn"`. */
+  turn?: TurnTranscript;
 }
 
 export interface GetSessionTranscriptOptions {
@@ -541,13 +531,6 @@ export interface ListSessionTurnsOptions {
   order?: "asc" | "desc";
   cursor?: string;
   limit?: number;
-}
-
-export interface NudgeSessionOptions {
-  content: string;
-  idempotencyKey?: string;
-  metadata?: Record<string, unknown>;
-  wake?: boolean;
 }
 
 export interface ListSessionNudgesOptions {
@@ -1176,7 +1159,7 @@ export class Client {
    * embedded return is disabled. Requires Admin or Owner membership.
    */
   async getOAuthReturnOrigins(): Promise<OAuthReturnOrigins> {
-    const resp = await this.request("/v1/organization/oauth-return-origins", {
+    const resp = await this.request("/v1/orgs/current/oauth-return-origins", {
       method: "GET",
     });
     return (await resp.json()) as OAuthReturnOrigins;
@@ -1193,7 +1176,7 @@ export class Client {
     origins: string[],
   ): Promise<OAuthReturnOrigins> {
     const body: PutOAuthReturnOriginsRequest = { origins };
-    const resp = await this.request("/v1/organization/oauth-return-origins", {
+    const resp = await this.request("/v1/orgs/current/oauth-return-origins", {
       method: "PUT",
       body,
     });
@@ -1345,6 +1328,20 @@ export class Client {
       if (!page.has_more || !page.next_cursor) return entries;
       cursor = page.next_cursor;
     }
+  }
+
+  /**
+   * Resolve or create a session for an agent. With the default
+   * `continue_or_create` mode and a stable `session_key` (for example
+   * `app:${accountId}:${userId}`), repeated calls return the same session.
+   * Send input to it with {@link Client.sendSessionInput}.
+   */
+  async createSession(request: CreateSessionRequest): Promise<Session> {
+    const resp = await this.request("/v1/sessions", {
+      method: "POST",
+      body: request,
+    });
+    return (await resp.json()) as Session;
   }
 
   async getSession(sessionId: string): Promise<Session> {
@@ -1557,27 +1554,6 @@ export class Client {
     return (await resp.json()) as SessionMessageListResponse;
   }
 
-  async nudgeSession(
-    sessionId: string,
-    opts: NudgeSessionOptions,
-  ): Promise<SessionNudgeAck> {
-    const body = removeUndefined({
-      content: opts.content,
-      idempotency_key: normalizeIdempotencyKey(opts.idempotencyKey),
-      metadata: opts.metadata,
-      wake: opts.wake,
-    });
-    const resp = await this.request(
-      `/v1/sessions/${encodeURIComponent(sessionId)}/nudges`,
-      {
-        method: "POST",
-        body,
-        idempotencyKey: body.idempotency_key,
-      },
-    );
-    return (await resp.json()) as SessionNudgeAck;
-  }
-
   async listNudges(
     sessionId: string,
     opts: ListSessionNudgesOptions = {},
@@ -1669,26 +1645,43 @@ export class Client {
     );
   }
 
-  /** Start a turn in an existing session and return its lazy transcript handle. */
-  async startTurn(
+  /**
+   * Send caller input to a session: the one way to add a user message or
+   * steer a running turn. Resolve the session first with
+   * {@link Client.createSession} (using a `session_key`), then call this per
+   * inbound message.
+   *
+   * With `delivery: "new_turn"` (the default) the result's `turn` is a lazy
+   * {@link TurnTranscript}: its identity is available immediately, and the
+   * transcript stream opens only when you iterate it. With `delivery:
+   * "current_turn"` the input becomes direction for the active turn, and
+   * `nudge` tracks it; when the session is idle the server starts a new turn
+   * instead and reports `delivery: "new_turn"`.
+   *
+   * The request carries `idempotencyKey` in the body and as the
+   * `Idempotency-Key` header, and is retried automatically only when a key
+   * is set.
+   */
+  async sendSessionInput(
     sessionId: string,
-    opts: StartTurnOptions,
+    opts: SendSessionInputOptions,
     streamOpts: { signal?: AbortSignal } = {},
-  ): Promise<TurnTranscript> {
+  ): Promise<SessionInput> {
     if (!opts.content || opts.content.length === 0) {
-      throw new Error("mobius: start turn: content is required");
+      throw new ConfigError("mobius: send session input: content is required");
     }
-    const body: StartTurnRequest = removeUndefined({
-      role: "user",
+    const body: SessionInputRequest = removeUndefined({
       content: opts.content,
-      context: opts.context,
+      delivery: opts.delivery,
       idempotency_key: normalizeIdempotencyKey(opts.idempotencyKey),
       operation: opts.operation,
+      context: opts.context,
       output: opts.output,
       metadata: opts.metadata,
+      wake: opts.wake,
     });
     const resp = await this.request(
-      `/v1/sessions/${encodeURIComponent(sessionId)}/turns`,
+      `/v1/sessions/${encodeURIComponent(sessionId)}/inputs`,
       {
         method: "POST",
         body,
@@ -1696,84 +1689,21 @@ export class Client {
         signal: streamOpts.signal,
       },
     );
-    const ack = (await resp.json()) as TurnAck;
-    const transcript = new SessionTranscript();
-    transcript.seed(ack);
-    return new TurnTranscript(this, ack, transcript, streamOpts.signal);
-  }
-
-  /**
-   * Resolves (or creates) a session, appends opts.content as the caller's
-   * input message, and starts an agent turn — collapsing the
-   * create-or-resolve-session + start-turn sequence into one retryable
-   * call. This is the entry point for a product backend (an embedded app,
-   * a Slack handler, a Telegram bot) calling per inbound message.
-   *
-   * Resolves once the turn is accepted. The returned {@link TurnTranscript}
-   * carries the turn's identity (`id`, `sessionId`, `status`) immediately and
-   * its live transcript on demand: the stream is lazy, so `for await` the
-   * handle to render the turn as it runs, or never iterate for
-   * fire-and-forget. Use {@link Client.invokeAgentStream} instead to observe
-   * the turn's activity inline on the same connection with v1 session-stream
-   * framing.
-   */
-  async invokeAgent(
-    opts: InvokeAgentOptions,
-    streamOpts: { signal?: AbortSignal } = {},
-  ): Promise<TurnTranscript> {
-    const body = invokeAgentRequest(opts);
-    const resp = await this.request("/v1/agents/invoke", {
-      method: "POST",
-      body,
-      idempotencyKey: invokeAgentReplayKey(body),
-      signal: streamOpts.signal,
-    });
-    const ack = (await resp.json()) as TurnAck;
-    if (!ack.resume_cursor?.trim()) {
-      throw new Error("mobius: invoke agent response missing resume_cursor");
+    const ack = (await resp.json()) as SessionInputAck;
+    const input: SessionInput = {
+      delivery: ack.delivery,
+      sessionId: ack.session.id,
+      turnId: ack.turn.id,
+      deduped: ack.deduped ?? false,
+      wokeTurn: ack.woke_turn ?? false,
+    };
+    if (ack.nudge) input.nudge = ack.nudge;
+    if (ack.delivery === "new_turn") {
+      const transcript = new SessionTranscript();
+      transcript.seed(ack);
+      input.turn = new TurnTranscript(this, ack, transcript, streamOpts.signal);
     }
-    const transcript = new SessionTranscript();
-    transcript.seed(ack);
-    return new TurnTranscript(this, ack, transcript, streamOpts.signal);
-  }
-
-  /**
-   * Behaves like {@link Client.invokeAgent} but streams the turn's
-   * activity inline on the same connection instead of waiting for a
-   * TurnAck. The inline stream cannot be resumed; to follow the turn after
-   * it drops, open `GET …/transcript/stream` from the turn's `resume_cursor`.
-   */
-  async *invokeAgentStream(
-    opts: InvokeAgentOptions,
-    streamOpts: { signal?: AbortSignal } = {},
-  ): AsyncGenerator<SessionStreamEvent> {
-    const path = "/v1/agents/invoke";
-    const body = invokeAgentRequest(opts);
-    const resp = await this.fetchFn(this.url(path), {
-      method: "POST",
-      headers: this.requestHeaders(
-        invokeAgentReplayKey(body),
-        "text/event-stream",
-      ),
-      body: JSON.stringify(body),
-      signal: streamOpts.signal,
-    });
-    if (!resp.ok) {
-      if (resp.status === 401) throw new AuthRevokedError();
-      throw await responseError(resp, "POST", path, true);
-    }
-    if (!resp.body) {
-      throw new Error(
-        "mobius API POST agents/invoke: response body is not readable",
-      );
-    }
-    for await (const evt of parseSSE(resp.body)) {
-      if (!evt.event || !evt.data) continue;
-      yield {
-        eventType: evt.event,
-        data: JSON.parse(evt.data) as SessionStreamFrame,
-      };
-    }
+    return input;
   }
 
   /**
@@ -2004,14 +1934,10 @@ export class Client {
     return resp;
   }
 
-  private requestHeaders(
-    idempotencyKey?: string,
-    accept?: string,
-  ): Headers {
+  private requestHeaders(idempotencyKey?: string): Headers {
     const headers = new Headers(this.headers);
     const normalizedKey = normalizeIdempotencyKey(idempotencyKey);
     if (normalizedKey) headers.set("Idempotency-Key", normalizedKey);
-    if (accept) headers.set("Accept", accept);
     return headers;
   }
 
@@ -2029,10 +1955,11 @@ export class Client {
 }
 
 /**
- * A started agent turn and its live transcript, returned by
- * {@link Client.invokeAgent}. The identity fields (`id`, `sessionId`, …) are
- * available immediately; the transcript stream is lazy — iteration opens it,
- * so a caller that never iterates pays for nothing beyond the invoke itself.
+ * A started agent turn and its live transcript, returned as `turn` by
+ * {@link Client.sendSessionInput} when the input started a new turn. The
+ * identity fields (`id`, `sessionId`, …) are available immediately; the
+ * transcript stream is lazy — iteration opens it, so a caller that never
+ * iterates pays for nothing beyond the send itself.
  *
  * `for await` the handle to render the turn as it streams; it yields after
  * every state change and completes once this turn reaches a terminal
@@ -2043,9 +1970,15 @@ export class Client {
  * {@link transcript} exposes the whole session view.
  *
  * ```ts
- * const turn = await client.invokeAgent({ agentName: "support", content });
- * for await (const t of turn) render(t.messages());
- * turn.status; // "completed"
+ * const session = await client.createSession({
+ *   agent_id: agentId,
+ *   session_key: `app:${accountId}:${userId}`,
+ * });
+ * const { turn } = await client.sendSessionInput(session.id, { content });
+ * if (turn) {
+ *   for await (const t of turn) render(t.messages());
+ *   turn.status; // "completed"
+ * }
  * ```
  */
 export class TurnTranscript implements AsyncIterable<TurnTranscript> {
@@ -2054,7 +1987,7 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
   /** Id of the session this turn runs in. */
   readonly sessionId: string;
   /**
-   * Message sequence from the turn-start response. It is not a stream
+   * Message sequence from the send response. It is not a stream
    * cursor: to follow the turn yourself, open `GET …/transcript/stream` from
    * the response's `resume_cursor`.
    */
@@ -2081,10 +2014,10 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
     connection: "idle",
   };
 
-  /** @internal Constructed by {@link Client.invokeAgent}. */
+  /** @internal Constructed by {@link Client.sendSessionInput}. */
   constructor(
     client: Client,
-    ack: TurnAck,
+    ack: SessionInputAck,
     transcript: SessionTranscript,
     signal?: AbortSignal,
   ) {
@@ -2095,7 +2028,11 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
     this.afterSequence = ack.after_sequence;
     this.deduped = ack.deduped ?? false;
     this.transcript = transcript;
-    this.#invocationCursor = ack.resume_cursor;
+    const cursor = ack.resume_cursor?.trim();
+    if (!cursor) {
+      throw new Error("mobius: send session input response missing resume_cursor");
+    }
+    this.#invocationCursor = cursor;
     this.#hydrate = isTerminalTurnStatus(ack.turn.status);
     this.#diagnostics.status = ack.turn.status;
     this.#diagnostics.cursor = transcript.cursor;
@@ -2119,7 +2056,7 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
 
   /**
    * The turn's validated structured output, present only on a completed turn
-   * that declared an output contract (see {@link InvokeAgentOptions.output}).
+   * that declared an output contract (see {@link SendSessionInputOptions.output}).
    * `undefined` until the terminal `turn.upsert` frame is applied. Read this
    * instead of parsing the transcript messages.
    */
@@ -2270,36 +2207,6 @@ function withQuery(path: string, params: object): string {
   }
   const qs = query.toString();
   return qs ? `${path}?${qs}` : path;
-}
-
-function invokeAgentRequest(opts: InvokeAgentOptions): InvokeAgentRequest {
-  if (!opts.agentId && !opts.agentName) {
-    throw new Error("mobius: invoke agent: agentId or agentName is required");
-  }
-  if (!opts.content || opts.content.length === 0) {
-    throw new Error("mobius: invoke agent: content is required");
-  }
-  return removeUndefined({
-    agent_ref: removeUndefined({
-      id: opts.agentId,
-      name: opts.agentName,
-    }) as AgentRef,
-    input: removeUndefined({
-      content: opts.content,
-      context: opts.context,
-      idempotency_key: normalizeIdempotencyKey(opts.idempotencyKey),
-      metadata: opts.inputMetadata,
-    }) as InvokeInput,
-    session: opts.session,
-    operation: opts.operation,
-    output: opts.output,
-    channel_context: opts.channelContext,
-  }) as InvokeAgentRequest;
-}
-
-function invokeAgentReplayKey(body: InvokeAgentRequest): string | undefined {
-  if (body.session?.mode === "new") return undefined;
-  return normalizeIdempotencyKey(body.input.idempotency_key);
 }
 
 function normalizeIdempotencyKey(value?: string): string | undefined {

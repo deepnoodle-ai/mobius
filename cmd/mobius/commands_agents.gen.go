@@ -444,69 +444,6 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "getAgentTools", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("invoke").
-		Description("Invoke an agent").
-		Flags(
-			cli.String("agent-ref", "").Help("[required] Reference to an agent in this org. Supply exactly one of `id` (the agent identifier) or `name` (the org-unique agent name). A blueprint-binding reference form is reserved for a later release and is not resolvable yet. Accepts JSON, @file, or @-."),
-			cli.String("channel-context", "").Help("Optional messaging provider/channel routing context (Slack, Telegram, …). Persisted on the started turn's input-message metadata under a `channel_context` key so chat history and support views can trace a turn back to the provider thread it came from. Accepts JSON, @file, or @-."),
-			cli.String("input", "").Help("[required] The caller input message that starts the agent turn. Accepts JSON, @file, or @-."),
-			cli.String("operation", "").Help("Operational policy for this newly admitted turn only. It is not saved on the session. Its timeout takes precedence over the agent default and must be at least one second. Accepts JSON, @file, or @-."),
-			cli.String("session", "").Help("How to resolve or create the session this invocation runs in. Mirrors the create-session policy: `mode` + `session_key` resolve a durable conversation for the agent, and the remaining fields seed a session that does not already exist (they are ignored when an existing session is resolved). Omit the whole object to use a single default session per agent in `continue_or_create` mode. Accepts JSON, @file, or @-."),
-			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
-			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			var body api.InvokeAgentJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
-				return err
-			}
-			if ctx.IsSet("agent-ref") {
-				if err := decodeFlagJSON(ctx, "agent-ref", ctx.String("agent-ref"), &body.AgentRef); err != nil {
-					return err
-				}
-			}
-			if ctx.IsSet("channel-context") {
-				if err := decodeFlagJSON(ctx, "channel-context", ctx.String("channel-context"), &body.ChannelContext); err != nil {
-					return err
-				}
-			}
-			if ctx.IsSet("input") {
-				if err := decodeFlagJSON(ctx, "input", ctx.String("input"), &body.Input); err != nil {
-					return err
-				}
-			}
-			if ctx.IsSet("operation") {
-				if err := decodeFlagJSON(ctx, "operation", ctx.String("operation"), &body.Operation); err != nil {
-					return err
-				}
-			}
-			if ctx.IsSet("session") {
-				if err := decodeFlagJSON(ctx, "session", ctx.String("session"), &body.Session); err != nil {
-					return err
-				}
-			}
-			if ctx.String("file") == "" && !ctx.IsSet("agent-ref") {
-				return fmt.Errorf("--agent-ref is required (or supply it via --file)")
-			}
-			if ctx.String("file") == "" && !ctx.IsSet("input") {
-				return fmt.Errorf("--input is required (or supply it via --file)")
-			}
-			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body, "agent_ref", "channel_context", "input", "operation", "output", "session")
-			}
-			resp, err := client.InvokeAgentWithResponse(ctx.Context(), body)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "invokeAgent", resp.StatusCode(), resp.Body)
-		})
-
 	agentsGrp.Command("list").
 		Description("List agents").
 		Flags(

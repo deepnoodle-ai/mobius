@@ -114,3 +114,84 @@ test("SessionChat does not resolve a terminal interaction first seen after recon
   assert.deepEqual(observed, ["iact_1"]);
   assert.deepEqual(resolved, []);
 });
+
+test("SessionChat.send follows the started turn and yields nothing for direction", async () => {
+  const transcript = new SessionTranscript();
+  const runningTurn = {
+    event_type: "turn.upsert",
+    id: "turn_1",
+    agent_id: "agent_1",
+    session_id: "sess_1",
+    attempt: 1,
+    status: "running",
+    created_at: AT,
+    updated_at: AT,
+  } as SessionTranscriptFrame;
+  const sent: Array<{ sessionId: string; delivery?: string }> = [];
+  let newTurn = true;
+  const client = {
+    async sendSessionInput(
+      sessionId: string,
+      options: { delivery?: string },
+    ) {
+      sent.push({ sessionId, delivery: options.delivery });
+      if (!newTurn) {
+        return {
+          delivery: "current_turn",
+          sessionId,
+          turnId: "turn_1",
+          deduped: false,
+          wokeTurn: false,
+        };
+      }
+      return {
+        delivery: "new_turn",
+        sessionId,
+        turnId: "turn_1",
+        deduped: false,
+        wokeTurn: false,
+        turn: {
+          async *updates(): AsyncGenerator<TranscriptUpdate> {
+            transcript.apply({ frame: runningTurn });
+            yield {
+              frame: runningTurn,
+              cursor: transcript.cursor,
+              transcript,
+              connection: "open",
+              reconnectCount: 0,
+            };
+          },
+        },
+      };
+    },
+  } as unknown as Client;
+
+  const phases: Array<string | null> = [];
+  const chat = new SessionChat(client, {
+    onPhase: (phase) => phases.push(phase),
+  });
+
+  const started = [];
+  for await (const update of chat.send("sess_1", {
+    content: [{ type: "text", text: "hi" }],
+  })) {
+    started.push(update);
+  }
+  assert.equal(started.length, 1);
+  assert.equal(started[0].phase, "running");
+  assert.deepEqual(phases, ["running"]);
+
+  newTurn = false;
+  const steered = [];
+  for await (const update of chat.send("sess_1", {
+    content: [{ type: "text", text: "shorter" }],
+    delivery: "current_turn",
+  })) {
+    steered.push(update);
+  }
+  assert.equal(steered.length, 0);
+  assert.deepEqual(sent, [
+    { sessionId: "sess_1", delivery: undefined },
+    { sessionId: "sess_1", delivery: "current_turn" },
+  ]);
+});

@@ -81,8 +81,8 @@ type TranscriptDiagnostics struct {
 // write wins and nothing is an increment except message.delta text. Ignoring
 // deltas entirely still converges.
 //
-// The streaming client methods drive one for you: InvokeAgent returns a
-// TurnTranscript and WatchSessionTranscript returns a TranscriptWatcher, both
+// The streaming client methods drive one for you: SendSessionInput returns a
+// TurnTranscript (SessionInput.Turn) and WatchSessionTranscript returns a TranscriptWatcher, both
 // of which fold frames into an embedded view as you iterate. Construct one
 // directly (NewSessionTranscript) only for the escape hatches: polling
 // GetSessionTranscript into ApplySnapshot, or feeding StreamSessionTranscript
@@ -444,10 +444,10 @@ func (t *SessionTranscript) ApplySnapshot(snap *api.SessionTranscriptSnapshot) {
 	t.cursor = snap.ResumeCursor
 }
 
-// Seed folds a turn-start response into the view: the caller's message row,
-// the acked turn, and the resume cursor. InvokeAgent calls it for you; it is
-// public for callers wiring their own transport around a raw invoke.
-func (t *SessionTranscript) Seed(ack *api.TurnAck) {
+// Seed folds a send-input response into the view: the caller's message row,
+// the turn, and the resume cursor. SendSessionInput calls it for you; it is
+// public for callers wiring their own transport around a raw send.
+func (t *SessionTranscript) Seed(ack *api.SessionInputAck) {
 	if ack == nil {
 		return
 	}
@@ -459,8 +459,8 @@ func (t *SessionTranscript) Seed(ack *api.TurnAck) {
 	if turn := turnFromAck(&ack.Turn); turn != nil {
 		t.turns[turn.Id] = turn
 	}
-	if ack.ResumeCursor != "" {
-		t.cursor = ack.ResumeCursor
+	if ack.ResumeCursor != nil && *ack.ResumeCursor != "" {
+		t.cursor = *ack.ResumeCursor
 	}
 }
 
@@ -482,10 +482,10 @@ func (t *SessionTranscript) turnCreatedAt(row *api.SessionTranscriptMessage) tim
 	return time.Time{}
 }
 
-// TurnTranscript is a started agent turn and its live transcript, returned by
-// InvokeAgent. The identity accessors (ID, SessionID, …) are available
+// TurnTranscript is a started agent turn and its live transcript, returned in
+// SessionInput.Turn by SendSessionInput. The identity accessors (ID, SessionID, …) are available
 // immediately; the transcript stream is lazy — the first Next call opens it,
-// so a caller that never iterates pays for nothing beyond the invoke itself.
+// so a caller that never iterates pays for nothing beyond the send itself.
 //
 // Iterate with Next/Err, rendering Messages between calls:
 //
@@ -552,7 +552,7 @@ func (t *TurnTranscript) ErrorMessage() string {
 }
 
 // Output is the turn's validated structured output, present only on a
-// completed turn that declared an output contract (see InvokeAgentOptions.Output).
+// completed turn that declared an output contract (see SendSessionInputOptions.Output).
 // It is nil until the terminal turn.upsert frame is applied. Read this instead
 // of parsing the transcript messages.
 func (t *TurnTranscript) Output() map[string]interface{} {

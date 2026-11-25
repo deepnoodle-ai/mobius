@@ -39,6 +39,7 @@ func registerOrganizationsCommands(app *cli.App) {
 
 	organizationsGrp.Command("get-context").
 		Description("Get the organization's shared context").
+		AddArg(&cli.Arg{Name: "org-id", Description: "Organization ID, or `current` for the caller's active organization. Any organization the caller may not act in answers 404.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -46,7 +47,8 @@ func registerOrganizationsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			resp, err := client.GetOrgContextWithResponse(ctx.Context())
+			p0 := api.OrgPathParam(ctx.Arg(0))
+			resp, err := client.GetOrgContextWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -73,6 +75,7 @@ func registerOrganizationsCommands(app *cli.App) {
 
 	organizationsGrp.Command("get-oauth-return-origins").
 		Description("Get the org's OAuth return-origin allowlist").
+		AddArg(&cli.Arg{Name: "org-id", Description: "Organization ID, or `current` for the caller's active organization. Any organization the caller may not act in answers 404.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -80,7 +83,8 @@ func registerOrganizationsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			resp, err := client.GetOAuthReturnOriginsWithResponse(ctx.Context())
+			p0 := api.OrgPathParam(ctx.Arg(0))
+			resp, err := client.GetOAuthReturnOriginsWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -89,6 +93,7 @@ func registerOrganizationsCommands(app *cli.App) {
 
 	organizationsGrp.Command("replace-context").
 		Description("Replace the organization's shared context").
+		AddArg(&cli.Arg{Name: "org-id", Description: "Organization ID, or `current` for the caller's active organization. Any organization the caller may not act in answers 404.", Required: true}).
 		Flags(
 			cli.String("content", "").Help("[required] The new context, in Markdown. At most 16384 bytes of UTF-8."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -101,6 +106,7 @@ func registerOrganizationsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
+			p0 := api.OrgPathParam(ctx.Arg(0))
 			var body api.ReplaceOrgContextJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -114,7 +120,7 @@ func registerOrganizationsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.ReplaceOrgContextWithResponse(ctx.Context(), body)
+			resp, err := client.ReplaceOrgContextWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}

@@ -18,7 +18,7 @@ from deepnoodle.mobius import (
     AgentTurnOperationPolicy,
     Client,
     ClientOptions,
-    InvokeAgentOptions,
+    CreateSessionRequest,
     ListBlueprintBindingsOptions,
     ListInteractionsOptions,
     ListPrincipalsOptions,
@@ -26,8 +26,9 @@ from deepnoodle.mobius import (
     ListRolesOptions,
     ListSessionMessagesOptions,
     ListSessionNudgesOptions,
+    MobiusAPIError,
     RuntimeContextItem,
-    StartTurnOptions,
+    SendSessionInputOptions,
     SyntheticWebhookDelivery,
     TurnOutputSpec,
     build_synthetic_webhook_payload,
@@ -35,9 +36,6 @@ from deepnoodle.mobius import (
     parse_webhook_delivery,
     sign_delivery,
     verify_signed_delivery,
-)
-from deepnoodle.mobius._api.models import (
-    InvokeSessionSpec,
 )
 
 
@@ -113,54 +111,35 @@ def test_org_resource_list_helpers() -> None:
     ).items == []
 
 
-def test_invoke_agent_posts_the_compound_invoke_request_shape() -> None:
+def test_create_session_posts_the_resolve_policy() -> None:
     seen: dict[str, object] = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
+        seen["method"] = request.method
         seen["path"] = request.url.path
-        seen["body"] = request.read().decode()
-        seen["idempotency_key"] = request.headers.get("Idempotency-Key")
-        return httpx.Response(202, json=_turn_ack_body("sess_1", "turn_1", 7))
+        seen["body"] = json.loads(request.read())
+        return httpx.Response(200, json=_turn_ack_body("sess_1", "turn_1", 7)["session"])
 
     client = _client_with(handler)
-    turn = client.invoke_agent(
-        InvokeAgentOptions(
+    session = client.create_session(
+        CreateSessionRequest(
             agent_id="agent_1",
-            content=[{"type": "text", "text": "hi"}],
-            context=[RuntimeContextItem(name="naming-board", content="Chosen: none")],
-            idempotency_key="evt_1",
-            session=InvokeSessionSpec(
-                session_key="app:acct_1:user_2", model_override="claude-sonnet-5"
-            ),
-            operation=AgentTurnOperationPolicy(timeout_seconds=90),
-            output=TurnOutputSpec(schema={"type": "object"}),
+            session_key="app:acct_1:user_2",
+            model_override="claude-sonnet-5",
         )
     )
 
-    assert turn.after_sequence == 7
-    assert turn.session_id == "sess_1"
-    assert turn.id == "turn_1"
-    assert turn.deduped is False
-    assert seen["path"] == "/v1/agents/invoke"
-    assert seen["idempotency_key"] == "evt_1"
-    assert '"agent_ref":{"id":"agent_1"}' in str(seen["body"])
-    assert '"idempotency_key":"evt_1"' in str(seen["body"])
-    assert '"context":[{"name":"naming-board","content":"Chosen: none"}]' in str(
-        seen["body"]
-    )
-    assert '"session_key":"app:acct_1:user_2"' in str(seen["body"])
-    assert '"model_override":"claude-sonnet-5"' in str(seen["body"])
-    # The stored agent is the sole definition authority: model_override above is
-    # the one execution override an invocation carries, so there is no inline
-    # config alongside it.
-    assert '"config"' not in str(seen["body"])
-    assert '"operation":{"timeout_seconds":90}' in str(seen["body"])
-    # The schema field is aliased off the python-reserved name; it must
-    # serialize under its wire name "schema", not "schema_".
-    assert '"output":{"schema":{"type":"object"}}' in str(seen["body"])
+    assert session.id == "sess_1"
+    assert seen["method"] == "POST"
+    assert seen["path"] == "/v1/sessions"
+    assert seen["body"] == {
+        "agent_id": "agent_1",
+        "session_key": "app:acct_1:user_2",
+        "model_override": "claude-sonnet-5",
+    }
 
 
-def test_start_turn_passes_runtime_context_to_existing_session() -> None:
+def test_send_session_input_new_turn_posts_input_and_returns_turn() -> None:
     seen: dict[str, object] = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -170,9 +149,9 @@ def test_start_turn_passes_runtime_context_to_existing_session() -> None:
         return httpx.Response(202, json=_turn_ack_body("sess_1", "turn_1", 7))
 
     client = _client_with(handler)
-    turn = client.start_turn(
+    result = client.send_session_input(
         "sess_1",
-        StartTurnOptions(
+        SendSessionInputOptions(
             content=[{"type": "text", "text": "hi"}],
             context=[RuntimeContextItem(name="naming-board", content="Chosen: none")],
             idempotency_key="evt_1",
@@ -182,17 +161,77 @@ def test_start_turn_passes_runtime_context_to_existing_session() -> None:
         ),
     )
 
-    assert turn.id == "turn_1"
-    assert seen["path"] == "/v1/sessions/sess_1/turns"
+    assert result.delivery == "new_turn"
+    assert result.session_id == "sess_1"
+    assert result.turn_id == "turn_1"
+    assert result.deduped is False
+    assert result.woke_turn is False
+    assert result.nudge is None
+    assert result.turn is not None
+    assert result.turn.id == "turn_1"
+    assert result.turn.session_id == "sess_1"
+    assert result.turn.after_sequence == 7
+    assert seen["path"] == "/v1/sessions/sess_1/inputs"
     assert seen["idempotency_key"] == "evt_1"
+    # Server defaults (delivery, wake) are not sent; the schema field is
+    # aliased off the python-reserved name and must serialize as "schema".
     assert seen["body"] == {
-        "role": "user",
         "content": [{"type": "text", "text": "hi"}],
         "context": [{"name": "naming-board", "content": "Chosen: none"}],
         "idempotency_key": "evt_1",
         "operation": {"timeout_seconds": 45},
         "output": {"schema": {"type": "object"}},
         "metadata": {"source": "app"},
+    }
+
+
+def test_send_session_input_current_turn_returns_nudge_without_turn() -> None:
+    seen: dict[str, object] = {}
+    ack = _turn_ack_body("sess_1", "turn_1", 7)
+    ack.pop("user_message")
+    ack.pop("resume_cursor")
+    ack["delivery"] = "current_turn"
+    ack["woke_turn"] = True
+    ack["nudge"] = {
+        "id": "nudge_1",
+        "status": "pending",
+        "delivery": "current_turn",
+        "content": "Use the shorter name",
+        "turn": {"id": "turn_1", "status": "waiting"},
+        "sender_principal_id": "principal_1",
+        "created_at": "2026-07-14T12:00:00Z",
+    }
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["path"] = request.url.path
+        seen["body"] = json.loads(request.read())
+        seen["idempotency_key"] = request.headers.get("Idempotency-Key")
+        return httpx.Response(202, json=ack)
+
+    client = _client_with(handler)
+    result = client.send_session_input(
+        "sess_1",
+        SendSessionInputOptions(
+            content=[{"type": "text", "text": "Use the shorter name"}],
+            delivery="current_turn",
+            idempotency_key="event_2",
+            wake=True,
+        ),
+    )
+
+    assert result.delivery == "current_turn"
+    assert result.turn is None
+    assert result.turn_id == "turn_1"
+    assert result.woke_turn is True
+    assert result.nudge is not None
+    assert result.nudge.id == "nudge_1"
+    assert seen["path"] == "/v1/sessions/sess_1/inputs"
+    assert seen["idempotency_key"] == "event_2"
+    assert seen["body"] == {
+        "content": [{"type": "text", "text": "Use the shorter name"}],
+        "delivery": "current_turn",
+        "idempotency_key": "event_2",
+        "wake": True,
     }
 
 
@@ -235,29 +274,49 @@ def test_list_session_messages_can_include_runtime_context() -> None:
     assert reminder.content == "Chosen: none"
 
 
-def test_invoke_agent_mode_new_is_not_marked_replay_safe() -> None:
-    seen: dict[str, object] = {}
+def test_send_session_input_without_key_is_not_retried() -> None:
+    calls = 0
 
     def handler(request: httpx.Request) -> httpx.Response:
-        seen["body"] = json.loads(request.read())
-        seen["idempotency_key"] = request.headers.get("Idempotency-Key")
-        return httpx.Response(202, json=_turn_ack_body("sess_1", "turn_1", 7))
+        nonlocal calls
+        calls += 1
+        return httpx.Response(503, json={"error": {"code": "unavailable"}})
 
     client = _client_with(handler)
-    client.invoke_agent(
-        InvokeAgentOptions(
-            agent_name="support",
-            content=[{"type": "text", "text": "hi"}],
-            idempotency_key="evt_1",
-            session=InvokeSessionSpec(mode="new"),
+    with pytest.raises(MobiusAPIError):
+        client.send_session_input(
+            "sess_1", SendSessionInputOptions(content=[{"type": "text", "text": "hi"}])
         )
+    assert calls == 1
+
+
+def test_send_session_input_with_key_is_retried() -> None:
+    calls = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        assert request.headers.get("Idempotency-Key") == "evt_1"
+        if calls == 1:
+            return httpx.Response(
+                503,
+                json={"error": {"code": "unavailable"}},
+                headers={"Retry-After": "0"},
+            )
+        return httpx.Response(202, json=_turn_ack_body("sess_1", "turn_1", 7))
+
+    client = _client_with(handler)
+    result = client.send_session_input(
+        "sess_1",
+        SendSessionInputOptions(
+            content=[{"type": "text", "text": "hi"}], idempotency_key="evt_1"
+        ),
     )
+    assert calls == 2
+    assert result.turn is not None
 
-    assert seen["body"]["input"]["idempotency_key"] == "evt_1"
-    assert seen["idempotency_key"] is None
 
-
-def test_invoke_agent_whitespace_idempotency_key_is_omitted() -> None:
+def test_send_session_input_whitespace_idempotency_key_is_omitted() -> None:
     seen: dict[str, object] = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -266,15 +325,15 @@ def test_invoke_agent_whitespace_idempotency_key_is_omitted() -> None:
         return httpx.Response(202, json=_turn_ack_body("sess_1", "turn_1", 7))
 
     client = _client_with(handler)
-    client.invoke_agent(
-        InvokeAgentOptions(
-            agent_name="support",
+    client.send_session_input(
+        "sess_1",
+        SendSessionInputOptions(
             content=[{"type": "text", "text": "hi"}],
             idempotency_key="  \t  ",
-        )
+        ),
     )
 
-    assert "idempotency_key" not in seen["body"]["input"]
+    assert "idempotency_key" not in seen["body"]
     assert seen["idempotency_key"] is None
 
 
@@ -321,39 +380,11 @@ def test_session_nudge_lifecycle_routes() -> None:
     ]
 
 
-def test_invoke_agent_requires_agent_ref_and_content() -> None:
+def test_send_session_input_requires_content() -> None:
     client = _client_with(lambda _: httpx.Response(404))
 
-    with pytest.raises(ValueError):
-        client.invoke_agent(InvokeAgentOptions(content=[{"type": "text", "text": "hi"}]))
-    with pytest.raises(ValueError):
-        client.invoke_agent(InvokeAgentOptions(agent_id="agent_1", content=[]))
-
-
-def test_invoke_agent_stream_streams_session_frames_inline() -> None:
-    def handler(request: httpx.Request) -> httpx.Response:
-        assert request.headers["accept"] == "text/event-stream"
-        assert request.headers["idempotency-key"] == "evt_stream_1"
-        return httpx.Response(
-            200,
-            text='event: turn.completed\ndata: {"usage":{"input_tokens":42}}\n\n',
-            headers={"Content-Type": "text/event-stream"},
-        )
-
-    client = _client_with(handler)
-    events = list(
-        client.invoke_agent_stream(
-            InvokeAgentOptions(
-                agent_name="support",
-                content=[{"type": "text", "text": "hi"}],
-                idempotency_key="evt_stream_1",
-            )
-        )
-    )
-
-    assert len(events) == 1
-    assert events[0].event_type == "turn.completed"
-    assert events[0].data == {"usage": {"input_tokens": 42}}
+    with pytest.raises(ValueError, match="content is required"):
+        client.send_session_input("sess_1", SendSessionInputOptions(content=[]))
 
 
 def test_signing_helpers_verify_and_parse_webhook_deliveries() -> None:
@@ -447,8 +478,24 @@ def test_synthetic_webhook_delivery_posts_signed_envelope() -> None:
 
 def _turn_ack_body(session_id: str, turn_id: str, after_sequence: int) -> dict[str, object]:
     return {
+        "delivery": "new_turn",
         "after_sequence": after_sequence,
+        "deduped": False,
+        "woke_turn": False,
         "resume_cursor": "41.6",
+        "user_message": {
+            "id": "m_user",
+            "session_id": session_id,
+            "agent_id": "agent_1",
+            "role": "user",
+            "status": "final",
+            "turn_id": turn_id,
+            "turn_index": 0,
+            "sequence": after_sequence,
+            "entry_type": "message",
+            "content": [{"type": "text", "text": "hi"}],
+            "created_at": "2026-05-27T00:00:00Z",
+        },
         "session": {
             "id": session_id,
             "owner": {"kind": "team"},

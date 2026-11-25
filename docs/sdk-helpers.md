@@ -464,19 +464,31 @@ terminal upserts. `onInteractionResolved` is narrower: it reports only an
 observed pending-to-terminal transition, so a terminal interaction first seen
 after reconnect is delivered through `onInteraction` only.
 
-`InvokeAgent` starts a turn and returns a `TurnTranscript`: the turn's
-identity (`ID`, `SessionID`, `Status`) immediately, and its live transcript
-when iterated. The stream is lazy — a caller that never iterates pays for
-nothing beyond the invoke itself. Iteration yields after every state change
-and ends at the turn's terminal state:
+A product backend first resolves a session with `CreateSession` /
+`create_session` / `createSession`, passing a stable `session_key` (a chat
+thread, a support ticket) so repeat calls resolve the same session. It then
+puts each inbound message into the session with `SendSessionInput` /
+`send_session_input` / `sendSessionInput`.
+
+`SendSessionInput` returns a `SessionInput` that says where the input went.
+By default (`delivery: new_turn`) the input starts a turn, and
+`SessionInput.Turn` / `.turn` is a `TurnTranscript`: the turn's identity
+(`ID`, `SessionID`, `Status`) immediately, and its live transcript when
+iterated. The stream is lazy — a caller that never iterates pays for nothing
+beyond the send itself. Iteration yields after every state change and ends at
+the turn's terminal state:
 
 ```go
-turn, err := client.InvokeAgent(ctx, mobius.InvokeAgentOptions{
-	AgentName: "support",
-	Content:   []map[string]any{{"type": "text", "text": "check the deploy"}},
-	Context:   []mobius.RuntimeContextItem{{Name: "deploy", Content: "Status: canary"}},
+session, err := client.CreateSession(ctx, mobius.CreateSessionRequest{
+	AgentId: agentID, SessionKey: &threadKey,
 })
 if err != nil { return err }
+in, err := client.SendSessionInput(ctx, session.Id, mobius.SendSessionInputOptions{
+	Content: []map[string]any{{"type": "text", "text": "check the deploy"}},
+	Context: []mobius.RuntimeContextItem{{Name: "deploy", Content: "Status: canary"}},
+})
+if err != nil { return err }
+turn := in.Turn
 for turn.Next() {
 	render(turn.RenderableMessages())
 }
@@ -485,11 +497,14 @@ if err := turn.TurnError(); err != nil { return err }
 ```
 
 ```python
-turn = client.invoke_agent(mobius.InvokeAgentOptions(
-    agent_name="support",
+session = client.create_session(
+    mobius.CreateSessionRequest(agent_id=agent_id, session_key=thread_key)
+)
+sent = client.send_session_input(session.id, mobius.SendSessionInputOptions(
     content=[{"type": "text", "text": "check the deploy"}],
     context=[mobius.RuntimeContextItem(name="deploy", content="Status: canary")],
 ))
+turn = sent.turn
 for t in turn:
     render(t.renderable_messages())
 if turn.error:
@@ -498,11 +513,12 @@ if turn.error:
 ```
 
 ```ts
-const turn = await client.invokeAgent({
-  agentName: "support",
+const session = await client.createSession({ agent_id: agentId, session_key: threadKey });
+const sent = await client.sendSessionInput(session.id, {
   content: [{ type: "text", text: "check the deploy" }],
   context: [{ name: "deploy", content: "Status: canary" }],
 });
+const turn = sent.turn!;
 for await (const t of turn) {
   render(t.renderableMessages());
 }
@@ -510,31 +526,10 @@ if (turn.error) throw turn.error;
 // turn.status === "completed"
 ```
 
-Use `StartTurn` / `start_turn` / `startTurn` with the same `content`, `context`,
-and idempotency options when the session already exists:
+To follow a started turn yourself instead, open the transcript stream from
+the turn's resume cursor; the send request has no inline stream.
 
-```go
-turn, err := client.StartTurn(ctx, sessionID, mobius.StartTurnOptions{
-	Content: []map[string]any{{"type": "text", "text": "check again"}},
-	Context: []mobius.RuntimeContextItem{{Name: "deploy", Content: "Status: stable"}},
-})
-```
-
-```python
-turn = client.start_turn(session_id, mobius.StartTurnOptions(
-    content=[{"type": "text", "text": "check again"}],
-    context=[mobius.RuntimeContextItem(name="deploy", content="Status: stable")],
-))
-```
-
-```ts
-const turn = await client.startTurn(sessionId, {
-  content: [{ type: "text", text: "check again" }],
-  context: [{ name: "deploy", content: "Status: stable" }],
-});
-```
-
-Both invoke and existing-session turn helpers accept a one-shot execution
+A new turn accepts a one-shot execution
 timeout. Set `Operation: &api.AgentTurnOperationPolicy{TimeoutSeconds: &seconds}`
 in Go, `operation=mobius.AgentTurnOperationPolicy(timeout_seconds=90)` in
 Python, or `operation: { timeout_seconds: 90 }` in TypeScript. This policy
@@ -565,9 +560,9 @@ page = client.list_session_messages(
 const page = await client.listSessionMessages(sessionId, { include: "context" });
 ```
 
-`Messages` is scoped to the invoked turn (the caller's message row is seeded
+`Messages` is scoped to the started turn (the caller's message row is seeded
 before any streaming); the full session view is on `Transcript()` /
-`transcript`. If the invoke dedupes onto an already-finished turn, iteration
+`transcript`. If the send dedupes onto an already-finished turn, iteration
 hydrates once from the snapshot endpoint instead of streaming, so `Messages`
 is complete either way.
 
@@ -624,39 +619,46 @@ For tool results, `ToolResultText` / `tool_result_text` / `toolResultText`
 handles both allowed content forms: a string or an array of typed blocks.
 Meta-router `help` and built-in tools legitimately have no resolved action.
 
-### Active-turn conflicts and nudges
+### Active-turn conflicts and steering
 
-Only one direct invocation may be `queued`, `running`, or `waiting` in a
-session. A distinct overlapping call fails before its input is appended. It
+Only one new turn may be `queued`, `running`, or `waiting` in a session. A
+distinct overlapping `new_turn` send fails before its input is appended. It
 surfaces as `APIError` / `MobiusAPIError` with status `409`, code
 `session_turn_active`, and `details.turn_id` plus `details.status`.
 
-Same-key retries still dedupe. For `running`/`waiting`, explicitly nudge when
-the user intends to steer the active response:
+Same-key retries still dedupe. To steer the active response instead, send the
+input with `delivery: current_turn`. Direction carries text blocks only:
 
 ```go
-ack, err := client.NudgeSession(ctx, sessionID, mobius.NudgeSessionOptions{
-	Content: incomingText, IdempotencyKey: inboundID, Wake: true,
+in, err := client.SendSessionInput(ctx, sessionID, mobius.SendSessionInputOptions{
+	Content:        []map[string]any{{"type": "text", "text": incomingText}},
+	Delivery:       mobius.DeliverCurrentTurn,
+	IdempotencyKey: inboundID,
+	Wake:           true,
 })
 ```
 
 ```python
-ack = client.nudge_session(session_id, mobius.NudgeSessionOptions(
-    content=incoming_text, idempotency_key=inbound_id, wake=True,
+sent = client.send_session_input(session_id, mobius.SendSessionInputOptions(
+    content=[{"type": "text", "text": incoming_text}],
+    delivery="current_turn", idempotency_key=inbound_id, wake=True,
 ))
 ```
 
 ```ts
-const ack = await client.nudgeSession(sessionId, {
-  content: incomingText,
+const sent = await client.sendSessionInput(sessionId, {
+  content: [{ type: "text", text: incomingText }],
+  delivery: "current_turn",
   idempotencyKey: inboundId,
   wake: true,
 });
 ```
 
-Inspect `ack.delivery`: `current_turn` means the direction targets the active
-turn; `new_turn` means a terminal race promoted it to follow-up work. A queued
-turn cannot be steered, so normally wait and invoke again for that status.
+Inspect the result's `delivery`: `current_turn` means the direction is queued
+for the active turn (follow it through `nudge`, and cancel it with
+`CancelNudge` while it is pending); `queued` means it waits behind a turn
+someone else is running; `new_turn` means no turn could absorb it, so it
+started a new turn and `turn` is set.
 
 For an existing session, `WatchSessionTranscript` / `watch_session_transcript`
 / `watchSessionTranscript` follows the live transcript across reconnects
@@ -705,15 +707,15 @@ headers, bodies, credentials, or message content.
 ## Session Management
 
 The curated clients cover the common session lifecycle without dropping to a
-raw generated client: list/get sessions, cancel, compact, list durable
-messages, nudge list/get/cancel, and turn list/get/cancel. Names follow each
+raw generated client: create/list/get sessions, send input, cancel, compact,
+list durable messages, nudge list/get/cancel, and turn list/get/cancel. Names follow each
 language's conventions (`ListSessions`, `list_sessions`, `listSessions`, and
 so on). The generated client remains the escape hatch for less common session
 operations.
 
 Turn cancellation is idempotent, cooperative, and non-resumable. It retains
 committed transcript rows but cannot roll back model, tool, or external effects;
-reusing the invocation idempotency key returns the same cancelled turn.
+reusing the input's idempotency key returns the same cancelled turn.
 
 ## Server-to-browser boundary
 
@@ -724,9 +726,9 @@ components interpret raw provider tool names. Re-projecting from each
 `updates()` frame keeps this adapter incremental without making it part of the
 SDK contract.
 
-Store the inbound message and its idempotency key before invoke. Store the
-Mobius acknowledgement/cursor before acknowledging an upstream webhook. If
-only the stream fails, resume it; invoking a distinct second message is not a
+Store the inbound message and its idempotency key before sending it. Store the
+turn id and resume cursor before acknowledging an upstream webhook. If only
+the stream fails, resume it; sending a distinct second message is not a
 reconnect strategy. Hosted callbacks also cannot reach localhost: use a public
 tunnel for a real callback test or a signed synthetic-webhook bridge locally.
 

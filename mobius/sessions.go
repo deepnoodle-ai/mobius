@@ -4,90 +4,86 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/deepnoodle-ai/mobius/mobius/api"
-	"github.com/deepnoodle-ai/wonton/sse"
 )
 
-// InvokeAgentOptions configures InvokeAgent and InvokeAgentStream. Provide
-// exactly one of AgentID or AgentName to select the agent, and Content for
-// the caller's input message.
-type InvokeAgentOptions struct {
-	// AgentID is the agent identifier. Mutually exclusive with AgentName.
-	AgentID string
-	// AgentName is the org-unique agent name. Mutually exclusive with
-	// AgentID.
-	AgentName string
+// CreateSessionRequest resolves or creates a durable session for an agent.
+// Set SessionKey to a stable conversation key (a Slack thread, a support
+// ticket, a user id) so repeat calls resolve the same session.
+type CreateSessionRequest = api.CreateSessionRequest
 
-	// Content is the ordered content blocks (text, images, …) for the
-	// caller's input message. Required.
+// SessionInputDelivery says where SendSessionInput puts the input.
+type SessionInputDelivery string
+
+const (
+	// DeliverNewTurn appends the input as a user message and starts an agent
+	// turn to respond. It is the default. A send while another turn is
+	// queued, running, or waiting fails with 409 session_turn_active.
+	DeliverNewTurn SessionInputDelivery = "new_turn"
+	// DeliverCurrentTurn steers the newest turn that can still absorb the
+	// input; the agent receives it at the turn's next safe boundary. When no
+	// turn can take it, the server starts a new turn instead. Text blocks
+	// only.
+	DeliverCurrentTurn SessionInputDelivery = "current_turn"
+	// DeliveredQueued is reported (never requested) when the input waits
+	// behind a turn someone else is running.
+	DeliveredQueued SessionInputDelivery = "queued"
+)
+
+// SendSessionInputOptions configures SendSessionInput.
+type SendSessionInputOptions struct {
+	// Content is the ordered content blocks (text, images, documents, …) for
+	// the input. Required. With DeliverCurrentTurn every block must be text.
 	Content []map[string]interface{}
-	// Context is the ordered application-owned state for this turn.
+	// Delivery picks whether the input starts a new turn (the default) or
+	// steers the running one.
+	Delivery SessionInputDelivery
+	// Context is the ordered application-owned state for a new turn.
 	Context []RuntimeContextItem
-	// IdempotencyKey dedupes the call: a repeat call with the same key
-	// resolves the same session and returns the existing invocation without
-	// restarting it or starting a second one. Derive it from the provider event
-	// id for Slack/Telegram webhook retries. The SDK automatically retries the
-	// admission request unless Session.Mode is "new", which cannot be safely
-	// replayed with a session-scoped key.
+	// IdempotencyKey dedupes the call within the session: a repeat returns the
+	// original result and writes nothing new. Derive it from the provider
+	// event id for webhook retries. The SDK retries the request automatically
+	// only when a key is set.
 	IdempotencyKey string
-	// InputMetadata is free-form caller metadata attached to the input
-	// message.
-	InputMetadata map[string]interface{}
-
-	// Session controls how the session this turn runs in is resolved or
-	// created. Omit to use a single default session per agent in
-	// continue_or_create mode. Set Session.ThinkingEffort to override the
-	// agent's reasoning-effort default for this session.
-	Session *api.InvokeSessionSpec
-	// Operation configures policy for only this newly admitted turn. Its
-	// timeout takes precedence over the stored agent timeout and is not saved.
+	// Operation configures policy for only a newly admitted turn. Its timeout
+	// takes precedence over the stored agent timeout and is not saved.
 	Operation *api.AgentTurnOperationPolicy
-	// Output attaches a structured-output contract to this turn. When set,
-	// Mobius exposes a reserved submit tool for the schema, validates the
-	// submission server-side, and fails the turn if it never produces a
-	// schema-valid object. Read the validated value from TurnTranscript.Output.
+	// Output attaches a structured-output contract to a new turn. Mobius
+	// exposes a reserved submit tool for the schema, validates the submission
+	// server-side, and fails the turn if it never produces a schema-valid
+	// object. Read the validated value from TurnTranscript.Output.
 	Output *api.TurnOutputSpec
-	// ChannelContext records optional messaging provider/channel routing
-	// context (Slack, Telegram, …) on the started turn.
-	ChannelContext *api.ChannelContext
-}
-
-// StartTurnOptions configures StartTurn for an existing session.
-type StartTurnOptions struct {
-	// Content is the ordered content blocks (text, images, …) for the
-	// caller's input message. Required.
-	Content []map[string]interface{}
-	// Context is the ordered application-owned state for this turn.
-	Context []RuntimeContextItem
-	// IdempotencyKey dedupes the call within the session. A repeat returns the
-	// existing invocation, writes no new input, and never restarts a terminal
-	// turn.
-	IdempotencyKey string
-	// Operation configures policy for only this newly admitted turn. Its
-	// timeout takes precedence over the stored agent timeout and is not saved.
-	Operation *api.AgentTurnOperationPolicy
-	// Output attaches a structured-output contract to this turn. See
-	// InvokeAgentOptions.Output; read the validated value from
-	// TurnTranscript.Output.
-	Output *api.TurnOutputSpec
-	// Metadata is free-form caller metadata attached to the input message.
+	// Metadata is free-form caller metadata attached to the input.
 	Metadata map[string]interface{}
+	// Wake, with DeliverCurrentTurn, interrupts a turn waiting on an
+	// interruptible tool so it absorbs the direction now.
+	Wake bool
 }
 
-// SessionStreamEvent is a single decoded frame from a session SSE stream.
-// EventType is the authoritative SSE event: name (e.g. "user.message",
-// "turn.completed", "tool.call") — decode Frame with the matching
-// api.SessionStreamFrame AsXxxPayload accessor. The union is reference-only
-// and cannot be shape-matched from the payload alone, per
-// api.SessionStreamFrame's doc.
-type SessionStreamEvent struct {
-	EventType string
-	Frame     api.SessionStreamFrame
+// SessionInput reports where SendSessionInput put the input.
+type SessionInput struct {
+	// Delivery is DeliverNewTurn, DeliverCurrentTurn, or DeliveredQueued.
+	Delivery SessionInputDelivery
+	// SessionID is the session the input went to.
+	SessionID string
+	// TurnID is the new turn carrying the input, the turn direction is queued
+	// for, or the running turn it waits behind.
+	TurnID string
+	// Deduped is true when a repeated idempotency key returned the original
+	// result without writing again.
+	Deduped bool
+	// WokeTurn is true when Wake interrupted a waiting tool.
+	WokeTurn bool
+	// Nudge is the queued direction, present for DeliverCurrentTurn
+	// requests. Cancel it with CancelNudge while it is pending.
+	Nudge *api.SessionNudge
+	// Turn is the started turn and its lazy live transcript. It is set
+	// exactly when Delivery is DeliverNewTurn.
+	Turn *TurnTranscript
 }
 
 // ListSessionsOptions configures ListSessions.
@@ -117,15 +113,6 @@ type ListSessionMessagesOptions struct {
 	Include string
 }
 
-// NudgeSessionOptions is explicit mid-turn user direction. The same
-// IdempotencyKey and Content dedupe; Wake may interrupt a waiting tool.
-type NudgeSessionOptions struct {
-	Content        string
-	IdempotencyKey string
-	Metadata       map[string]interface{}
-	Wake           bool
-}
-
 // ListSessionNudgesOptions configures ListSessionNudges.
 type ListSessionNudgesOptions struct {
 	Statuses []string
@@ -142,42 +129,40 @@ type ListSessionTurnsOptions struct {
 	Limit  int
 }
 
-// InvokeAgent resolves (or creates) a session, appends Content as the
-// caller's input message, and starts an agent turn — collapsing the
-// create-or-resolve-session + start-turn sequence into one retryable call.
-// This is the entry point for a product backend (an embedded app, a Slack
-// handler, a Telegram bot) calling per inbound message; use the lower-level
-// session and turn operations on RawClient for finer control.
-//
-// It returns once the turn is accepted. The returned TurnTranscript carries
-// the turn's identity (ID, SessionID, Status) immediately and its live
-// transcript on demand: the stream is lazy, so iterate with Next/Err to
-// render the turn as it runs, or never iterate for fire-and-forget. Use
-// InvokeAgentStream instead to observe the turn's activity inline on the
-// same connection with v1 session-stream framing.
-func (c *Client) InvokeAgent(ctx context.Context, opts InvokeAgentOptions) (*TurnTranscript, error) {
-	req, err := invokeAgentRequest(opts)
+// CreateSession resolves or creates a durable session for an agent. With the
+// default continue_or_create mode, a repeat call with the same SessionKey
+// returns the existing session. A product backend calls it per inbound
+// conversation, then sends each message with SendSessionInput.
+func (c *Client) CreateSession(ctx context.Context, req CreateSessionRequest) (*api.Session, error) {
+	if strings.TrimSpace(req.AgentId) == "" {
+		return nil, errors.New("mobius: create session: AgentId is required")
+	}
+	resp, err := c.ac.CreateSessionWithResponse(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("mobius: create session: %w", err)
 	}
-	resp, err := c.ac.InvokeAgentWithResponse(ctx, req, idempotencyRequestEditors(invokeAgentReplayKey(req))...)
-	if err != nil {
-		return nil, fmt.Errorf("mobius: invoke agent: %w", err)
+	if resp.JSON200 == nil {
+		return nil, unexpectedSessionStatus("create session", resp.StatusCode(), resp.Status(), resp.HTTPResponse, resp.Body)
 	}
-	if resp.JSON202 == nil {
-		return nil, unexpectedSessionStatus("invoke agent", resp.StatusCode(), resp.Status(), resp.HTTPResponse, resp.Body)
-	}
-	return c.turnTranscript(ctx, "invoke agent", resp.JSON202)
+	return resp.JSON200, nil
 }
 
-// StartTurn appends Content to an existing session and starts an agent turn.
-// Like InvokeAgent, it returns once the turn is accepted and exposes the live
-// transcript lazily through the returned handle.
-func (c *Client) StartTurn(ctx context.Context, sessionID string, opts StartTurnOptions) (*TurnTranscript, error) {
+// SendSessionInput puts caller input into a session. By default it appends
+// the input as a user message and starts an agent turn; the returned
+// SessionInput.Turn carries the turn's identity immediately and its live
+// transcript on demand (iterate with Next/Err to render the turn as it runs,
+// or never iterate for fire-and-forget). With DeliverCurrentTurn the input
+// steers the running turn instead and SessionInput.Nudge tracks it; when the
+// session is idle the server starts a new turn and Turn is set.
+func (c *Client) SendSessionInput(ctx context.Context, sessionID string, opts SendSessionInputOptions) (*SessionInput, error) {
 	if len(opts.Content) == 0 {
-		return nil, errors.New("mobius: start turn: content is required")
+		return nil, errors.New("mobius: send session input: content is required")
 	}
-	body := api.StartTurnRequest{Content: opts.Content}
+	body := api.SessionInputRequest{Content: opts.Content}
+	if opts.Delivery != "" {
+		delivery := api.SessionInputDelivery(opts.Delivery)
+		body.Delivery = &delivery
+	}
 	if opts.Context != nil {
 		runtimeContext := api.RuntimeContext(opts.Context)
 		body.Context = &runtimeContext
@@ -189,23 +174,45 @@ func (c *Client) StartTurn(ctx context.Context, sessionID string, opts StartTurn
 	if opts.Metadata != nil {
 		body.Metadata = &opts.Metadata
 	}
-	resp, err := c.ac.StartTurnWithResponse(ctx, api.SessionIdParam(sessionID), body, idempotencyRequestEditors(key)...)
+	if opts.Wake {
+		body.Wake = &opts.Wake
+	}
+	resp, err := c.ac.SendSessionInputWithResponse(ctx, api.SessionIdParam(sessionID), body, idempotencyRequestEditors(key)...)
 	if err != nil {
-		return nil, fmt.Errorf("mobius: start turn: %w", err)
+		return nil, fmt.Errorf("mobius: send session input: %w", err)
 	}
 	if resp.JSON202 == nil {
-		return nil, unexpectedSessionStatus("start turn", resp.StatusCode(), resp.Status(), resp.HTTPResponse, resp.Body)
+		return nil, unexpectedSessionStatus("send session input", resp.StatusCode(), resp.Status(), resp.HTTPResponse, resp.Body)
 	}
-	return c.turnTranscript(ctx, "start turn", resp.JSON202)
+	return c.sessionInput(ctx, resp.JSON202)
 }
 
-func (c *Client) turnTranscript(ctx context.Context, op string, ack *api.TurnAck) (*TurnTranscript, error) {
-	if strings.TrimSpace(ack.ResumeCursor) == "" {
+func (c *Client) sessionInput(ctx context.Context, ack *api.SessionInputAck) (*SessionInput, error) {
+	in := &SessionInput{
+		Delivery:  SessionInputDelivery(ack.Delivery),
+		SessionID: ack.Session.Id,
+		TurnID:    ack.Turn.Id,
+		Deduped:   ack.Deduped,
+		WokeTurn:  ack.WokeTurn,
+		Nudge:     ack.Nudge,
+	}
+	if ack.Delivery != api.SessionInputOutcomeNewTurn {
+		return in, nil
+	}
+	turn, err := c.turnTranscript(ctx, "send session input", ack)
+	if err != nil {
+		return nil, err
+	}
+	in.Turn = turn
+	return in, nil
+}
+
+func (c *Client) turnTranscript(ctx context.Context, op string, ack *api.SessionInputAck) (*TurnTranscript, error) {
+	if ack.ResumeCursor == nil || strings.TrimSpace(*ack.ResumeCursor) == "" {
 		return nil, fmt.Errorf("mobius: %s response missing resume_cursor", op)
 	}
 	view := NewSessionTranscript()
 	view.Seed(ack)
-	deduped := ack.Deduped != nil && *ack.Deduped
 	return &TurnTranscript{
 		stream: transcriptStream{
 			client:     c,
@@ -219,37 +226,10 @@ func (c *Client) turnTranscript(ctx context.Context, op string, ack *api.TurnAck
 		turnID:           ack.Turn.Id,
 		sessionID:        ack.Session.Id,
 		afterSequence:    ack.AfterSequence,
-		deduped:          deduped,
-		invocationCursor: ack.ResumeCursor,
+		deduped:          ack.Deduped,
+		invocationCursor: *ack.ResumeCursor,
 		hydrate:          IsTerminalTurnStatus(string(ack.Turn.Status)),
 	}, nil
-}
-
-// InvokeAgentStream behaves like InvokeAgent but streams the turn's activity
-// inline on the same connection instead of waiting for a TurnAck. The inline
-// stream cannot be resumed; to follow the turn after it drops, open
-// GET …/transcript/stream from the turn's resume_cursor. The channel is closed
-// when ctx is cancelled or the server closes the connection.
-func (c *Client) InvokeAgentStream(ctx context.Context, opts InvokeAgentOptions) (<-chan SessionStreamEvent, error) {
-	req, err := invokeAgentRequest(opts)
-	if err != nil {
-		return nil, err
-	}
-	requestEditors := idempotencyRequestEditors(invokeAgentReplayKey(req))
-	requestEditors = append(requestEditors, acceptEventStream)
-	resp, err := c.ac.InvokeAgent(ctx, req, requestEditors...)
-	if err != nil {
-		return nil, fmt.Errorf("mobius: invoke agent stream: %w", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		_ = resp.Body.Close()
-		return nil, unexpectedAPIStatus("invoke agent stream", resp.StatusCode, resp.Status, resp.Header, body)
-	}
-
-	ch := make(chan SessionStreamEvent)
-	go c.readSessionStream(ctx, resp.Body, ch)
-	return ch, nil
 }
 
 // ListSessions returns a cursor-paginated org session page.
@@ -365,28 +345,6 @@ func (c *Client) ListSessionMessages(ctx context.Context, sessionID string, opts
 		return nil, unexpectedSessionStatus("list session messages", resp.StatusCode(), resp.Status(), resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
-}
-
-// NudgeSession sends explicit direction to an in-flight turn, or queues a
-// follow-up turn when the terminal race wins.
-func (c *Client) NudgeSession(ctx context.Context, sessionID string, opts NudgeSessionOptions) (*api.SessionNudgeAck, error) {
-	body := api.NudgeSessionRequest{Content: opts.Content}
-	key := normalizeIdempotencyKey(opts.IdempotencyKey)
-	body.IdempotencyKey = stringPointer(key)
-	if opts.Metadata != nil {
-		body.Metadata = &opts.Metadata
-	}
-	if opts.Wake {
-		body.Wake = &opts.Wake
-	}
-	resp, err := c.ac.NudgeSessionWithResponse(ctx, api.SessionIdParam(sessionID), body, idempotencyRequestEditors(key)...)
-	if err != nil {
-		return nil, fmt.Errorf("mobius: nudge session: %w", err)
-	}
-	if resp.JSON202 == nil {
-		return nil, unexpectedSessionStatus("nudge session", resp.StatusCode(), resp.Status(), resp.HTTPResponse, resp.Body)
-	}
-	return resp.JSON202, nil
 }
 
 // ListSessionNudges returns the authoritative durable nudge queue.
@@ -521,94 +479,6 @@ func stringPointer(value string) *string {
 		return nil
 	}
 	return &value
-}
-
-// readSessionStream decodes SSE frames from body using wonton/sse and
-// forwards them on ch. The body is closed when the stream ends or ctx is
-// cancelled.
-func (c *Client) readSessionStream(ctx context.Context, body io.ReadCloser, ch chan<- SessionStreamEvent) {
-	defer close(ch)
-	defer func() { _ = body.Close() }()
-
-	reader := sse.NewReader(body)
-	reader.Buffer(sseReadBufferSize)
-
-	for {
-		if ctx.Err() != nil {
-			return
-		}
-
-		evt, err := reader.Read()
-		if errors.Is(err, io.EOF) {
-			return
-		}
-		if err != nil {
-			if ctx.Err() == nil {
-				c.config.Logger.Error("SSE stream error", "error", err)
-			}
-			return
-		}
-		if evt.Event == "" {
-			continue
-		}
-
-		var frame api.SessionStreamFrame
-		if err := frame.UnmarshalJSON([]byte(evt.Data)); err != nil {
-			c.config.Logger.Error("failed to parse SSE event", "error", err)
-			continue
-		}
-
-		select {
-		case ch <- SessionStreamEvent{EventType: evt.Event, Frame: frame}:
-		case <-ctx.Done():
-			return
-		}
-	}
-}
-
-func invokeAgentRequest(opts InvokeAgentOptions) (api.InvokeAgentRequest, error) {
-	if opts.AgentID == "" && opts.AgentName == "" {
-		return api.InvokeAgentRequest{}, errors.New("mobius: invoke agent: AgentID or AgentName is required")
-	}
-	if len(opts.Content) == 0 {
-		return api.InvokeAgentRequest{}, errors.New("mobius: invoke agent: content is required")
-	}
-
-	agentRef := api.AgentRef{}
-	if opts.AgentID != "" {
-		agentRef.Id = &opts.AgentID
-	}
-	if opts.AgentName != "" {
-		agentRef.Name = &opts.AgentName
-	}
-
-	input := api.InvokeInput{Content: opts.Content}
-	if opts.Context != nil {
-		runtimeContext := api.RuntimeContext(opts.Context)
-		input.Context = &runtimeContext
-	}
-	key := normalizeIdempotencyKey(opts.IdempotencyKey)
-	if key != "" {
-		input.IdempotencyKey = &key
-	}
-	if opts.InputMetadata != nil {
-		input.Metadata = &opts.InputMetadata
-	}
-
-	req := api.InvokeAgentRequest{AgentRef: agentRef, Input: input}
-	if opts.Session != nil {
-		req.Session = opts.Session
-	}
-	if opts.Operation != nil {
-		req.Operation = opts.Operation
-	}
-	if opts.Output != nil {
-		req.Output = opts.Output
-	}
-	if opts.ChannelContext != nil {
-		req.ChannelContext = opts.ChannelContext
-	}
-	return req, nil
 }
 
 func unexpectedSessionStatus(op string, statusCode int, status string, response *http.Response, body []byte) error {
