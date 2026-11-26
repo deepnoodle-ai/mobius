@@ -82,6 +82,9 @@ tags:
 - name: artifacts
   x-displayName: Artifacts
   description: Files produced by agents during loop runs and stored for later inspection.
+- name: library
+  x-displayName: Library
+  description: Addressing and audience for company and personal library files.
 paths:
   /v1/api-keys:
     post:
@@ -6435,6 +6438,261 @@ paths:
                   message: folder "reports" still contains 3 files; move or delete them first
                   details:
                     file_count: 3
+  /v1/library/files:
+    get:
+      operationId: listLibraryFiles
+      tags:
+      - library
+      summary: List library files
+      description: 'Returns the files in the places the caller can read: the company''s, plus
+        their own. Optional filters narrow by place, folder, and path substring. Ordered by
+        path so a listing reads like a directory rather than a feed.'
+      parameters:
+      - name: place
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/LibraryPlaceKind'
+        description: Narrow to one place. Omit for every place the caller can read.
+      - name: folder
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 256
+        description: Folder to list, as a relative path with no leading or trailing slash.
+          A file's folder is the directory part of its path. Omit it or send an empty value
+          for the root.
+      - name: recursive
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: true
+        description: Include files in subfolders of `folder`. With `false`, only files whose
+          folder is exactly `folder` are returned.
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 256
+        description: Case-insensitive substring match on the file's path.
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryFileListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: createLibraryFile
+      tags:
+      - library
+      summary: Create library file
+      description: 'Files an artifact that is not in the Library yet, such as a file attached
+        to a chat, at a path in its owner''s own files. Every version of its lineage comes
+        with it, and it stops expiring with its chat; the chat keeps a reference so its later
+        turns can still read it. Only the file''s owner can file it. A path that is already
+        taken is refused, naming the file that holds it, and so is an artifact that is already
+        filed: that one moves through its file''s routes.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLibraryFileRequest'
+      responses:
+        '201':
+          description: Filed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryFile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/library/files/{file_id}:
+    get:
+      operationId: getLibraryFile
+      tags:
+      - library
+      summary: Get library file
+      description: 'Returns one file''s address and the version it currently serves, `head_artifact_id`:
+        an explicitly restored live version, or else the latest live one. A file in a place
+        the caller cannot read answers not found rather than forbidden.'
+      parameters:
+      - $ref: '#/components/parameters/LibraryFileIdParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryFile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateLibraryFile
+      tags:
+      - library
+      summary: Update library file
+      description: Renames a file within its own place. The audience does not change. Only
+        the person who shared the file can rename it; a file the company owns has no sharer,
+        so anyone who can build may rename it. A destination path that is already taken is
+        refused, naming the file that holds it.
+      parameters:
+      - $ref: '#/components/parameters/LibraryFileIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLibraryFileRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryFile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      operationId: deleteLibraryFile
+      tags:
+      - library
+      summary: Delete library file
+      description: 'Deletes the file: the address and every version behind it. Only the person
+        who shared it can delete it; a file the company owns has no sharer, so anyone who
+        can build may delete it.'
+      parameters:
+      - $ref: '#/components/parameters/LibraryFileIdParam'
+      responses:
+        '204':
+          description: Deleted
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/library/files/{file_id}/versions:
+    get:
+      operationId: listLibraryFileVersions
+      tags:
+      - library
+      summary: List library file versions
+      description: Returns every live version of the file's lineage, newest first. The version
+        readers get is the one marked `current`, which is the newest unless an earlier version
+        was restored, so read `current` (or the file's `head_artifact_id`) rather than the
+        position in the list.
+      parameters:
+      - $ref: '#/components/parameters/LibraryFileIdParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryFileVersionListResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/library/files/{file_id}/move:
+    post:
+      operationId: moveLibraryFile
+      tags:
+      - library
+      summary: Move library file
+      description: Moves a file between places, which is how it is shared or taken back. Moving
+        into the company's files makes the whole lineage readable by every member and detaches
+        the assistant container; it takes the ordinary build permission and `confirm_audience_expansion`,
+        never organization administration. Moving a file the company owns into a person's
+        files takes an administrator, so a file nobody owns cannot be claimed by whoever gets
+        there first. A destination path that is already taken is always refused.
+      parameters:
+      - $ref: '#/components/parameters/LibraryFileIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveLibraryFileRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryFile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/library/files/{file_id}/content:
+    get:
+      operationId: getLibraryFileContent
+      tags:
+      - library
+      summary: Get library file content
+      description: Returns a short-lived download URL for a version, or streams the bytes
+        with `inline=true`. Authorization is the file's place, never the artifact's own container
+        or custody.
+      parameters:
+      - $ref: '#/components/parameters/LibraryFileIdParam'
+      - name: artifact_id
+        in: query
+        required: false
+        schema:
+          type: string
+        description: A version of this file's lineage. Omit for the current one.
+      - name: inline
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+        description: Stream the bytes through the API instead of returning a signed URL.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryFileContent'
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 components:
   securitySchemes:
     BearerAuth:
@@ -6776,6 +7034,13 @@ components:
         - docx
         - pptx
       description: Authoring format the template applies to
+    LibraryFileIdParam:
+      name: file_id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Library file ID (`file_...`), which is not an artifact ID.
   responses:
     BadRequest:
       description: Bad Request
@@ -18774,6 +19039,205 @@ components:
             are omitted.
           items:
             $ref: '#/components/schemas/Artifact'
+    LibraryPlaceKind:
+      type: string
+      enum:
+      - team
+      - person
+      description: Which place a file is in. `team` is the company's files, identical for
+        every member; `person` is one person's own. It is the same vocabulary as resource
+        ownership, because it is the same distinction.
+    LibraryPlace:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      properties:
+        kind:
+          $ref: '#/components/schemas/LibraryPlaceKind'
+        id:
+          type: string
+          description: The person whose files these are, for `person`. Absent for `team`,
+            which belongs to the organization rather than a person.
+        display_path:
+          type: string
+          description: 'The address as the Library shows it: `My files/reports/q3.md` for
+            a person''s file, the bare path otherwise. Only the person can read their own
+            files, so "My files" is right for every reader. Display only: it is never accepted
+            as input.'
+    LibraryFile:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - place
+      - path
+      - name
+      - parent_path
+      - root_id
+      - created_at
+      properties:
+        id:
+          type: string
+          description: Library file ID (`file_...`).
+        place:
+          $ref: '#/components/schemas/LibraryPlace'
+        path:
+          type: string
+          description: The file's address within its place, folder included.
+        name:
+          type: string
+          description: The file name, which is the last segment of the path.
+        parent_path:
+          type: string
+          description: The folder part of the path; empty at the root of the place.
+        root_id:
+          type: string
+          description: The artifact lineage at this address.
+        head_artifact_id:
+          type: string
+          description: 'The version readers get: an explicitly restored live version, or the
+            latest live one. Absent only while every version has been deleted.'
+        viewer_actions:
+          $ref: '#/components/schemas/ViewerActions'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        trashed_at:
+          type: string
+          format: date-time
+          description: When the file entered reversible trash. Absent for an active file.
+    LibraryFileListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - has_more
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LibraryFile'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+    LibraryFileVersion:
+      type: object
+      additionalProperties: false
+      required:
+      - artifact_id
+      - version
+      - created_at
+      properties:
+        artifact_id:
+          type: string
+        version:
+          type: integer
+          description: The version number within the lineage.
+        previous_artifact_id:
+          type: string
+          description: The version this one descends from. Absent on the first.
+        name:
+          type: string
+          description: The file's name. A file has one name, so a rename renames every version.
+        mime_type:
+          type: string
+        size_bytes:
+          type: integer
+          format: int64
+        created_at:
+          type: string
+          format: date-time
+        created_by:
+          type: string
+          description: Who wrote it. Absent when no person did.
+        current:
+          type: boolean
+          description: Whether this is the version readers get now.
+    LibraryFileVersionListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LibraryFileVersion'
+    CreateLibraryFileRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - artifact_id
+      - path
+      properties:
+        artifact_id:
+          type: string
+          description: Any version of the artifact to file. Its whole lineage is filed.
+        path:
+          type: string
+          maxLength: 256
+          description: The address in the owner's own files, folder included.
+    UpdateLibraryFileRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - path
+      properties:
+        path:
+          type: string
+          maxLength: 256
+          description: The new address within the same place.
+    MoveLibraryFileRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - place
+      properties:
+        place:
+          allOf:
+          - $ref: '#/components/schemas/LibraryPlaceKind'
+          description: 'Where the file goes: `team` for the company''s files, `person` for
+            one person''s own.'
+        place_id:
+          type: string
+          description: Whose files, when `place` is `person`. Defaults to the caller's own;
+            another person's is refused.
+        path:
+          type: string
+          maxLength: 256
+          description: An address in the destination. Defaults to the path it already has.
+        confirm_audience_expansion:
+          type: boolean
+          description: Required when moving into the company's files. It is the same confirmation
+            sharing an artifact takes.
+    LibraryFileContent:
+      type: object
+      additionalProperties: false
+      required:
+      - artifact_id
+      - url
+      - expires_at
+      properties:
+        artifact_id:
+          type: string
+          description: The version these bytes belong to.
+        url:
+          type: string
+          description: Short-lived download URL for the version.
+        expires_at:
+          type: string
+          format: date-time
+          description: When the download URL stops working.
+        mime_type:
+          type: string
+        size_bytes:
+          type: integer
+          format: int64
   requestBodies:
     SignedActionInvocationV1:
       required: true
@@ -18840,3 +19304,6 @@ x-tagGroups:
 - name: Artifacts
   tags:
   - artifacts
+- name: Library
+  tags:
+  - library

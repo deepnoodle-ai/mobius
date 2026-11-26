@@ -38,6 +38,7 @@ func registerGeneratedCommands(app *cli.App) {
 	registerChannelsCommands(app)
 	registerExternalAgentsCommands(app)
 	registerInteractionsCommands(app)
+	registerLibraryCommands(app)
 	registerOrganizationsCommands(app)
 	registerPermissionsCommands(app)
 	registerPrincipalsCommands(app)
@@ -528,8 +529,10 @@ func renderResponse(ctx *cli.Context, opID string, body []byte) error {
 	}
 
 	if !looksLikeJSON(body) {
-		// Non-JSON body: print as-is, ignore --fields.
-		ctx.Println(string(body))
+		// Non-JSON body: write the bytes unchanged, ignore --fields. A
+		// trailing newline would corrupt file content such as
+		// library get-file-content --inline.
+		ctx.Print(string(body))
 		return nil
 	}
 

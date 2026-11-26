@@ -19,9 +19,7 @@ removed operations no longer exist in production.
 ### Removed
 
 - `updateArtifact` (`PATCH /v1/artifacts/{id}`) and its `UpdateArtifactRequest`
-  schema. CLI: `artifacts move`. Renaming and moving a file now goes through
-  the Library file routes, which are not in the public API, so do it in the
-  Mobius web app.
+  schema. CLI: `artifacts move`. Use `mobius library rename` (see Added).
 - `getOAuthReturnOrigins` and `replaceOAuthReturnOrigins`, the org setting
   they managed, and the SDK helpers wrapping them (`GetOAuthReturnOrigins`,
   `ReplaceOAuthReturnOrigins` and Python/TS twins). CLI:
@@ -46,6 +44,10 @@ removed operations no longer exist in production.
 
 - `listCatalogProviders` (`GET /v1/catalog/providers`), the integration
   provider catalog. CLI: `catalog list-providers`.
+- The Library operations under `/v1/library/files`, and the `mobius library`
+  command group. `library rename` replaces `artifacts move`; `library move`
+  shares a file into the team's files or takes it back. See
+  `mobius library --help`.
 
 ## [0.9.0] - 2026-11-25
 

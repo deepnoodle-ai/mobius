@@ -113,6 +113,13 @@ var overrides = map[string]Override{
 	// the public CLI entrypoint for this path.
 	"openWorkerSocket": {Skip: true},
 
+	// --- library ----------------------------------------------------------
+	// `moveLibraryFile` would derive to `move-library-file`. `updateLibraryFile`
+	// only renames a file within its place, so it reads as `rename`; moving
+	// between places (sharing a file or taking it back) is `move`.
+	"moveLibraryFile":   {Command: "move", Description: "Move a file to the team's files or a person's own"},
+	"updateLibraryFile": {Command: "rename", Description: "Rename or refile a file within its place"},
+
 	// --- routines ---------------------------------------------------------
 	"runRoutineNow":          {Command: "run-now"},
 	"pauseRoutine":           {Command: "pause"},

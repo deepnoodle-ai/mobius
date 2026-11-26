@@ -2812,6 +2812,118 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/library/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List library files
+         * @description Returns the files in the places the caller can read: the company's, plus their own. Optional filters narrow by place, folder, and path substring. Ordered by path so a listing reads like a directory rather than a feed.
+         */
+        get: operations["listLibraryFiles"];
+        put?: never;
+        /**
+         * Create library file
+         * @description Files an artifact that is not in the Library yet, such as a file attached to a chat, at a path in its owner's own files. Every version of its lineage comes with it, and it stops expiring with its chat; the chat keeps a reference so its later turns can still read it. Only the file's owner can file it. A path that is already taken is refused, naming the file that holds it, and so is an artifact that is already filed: that one moves through its file's routes.
+         */
+        post: operations["createLibraryFile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/files/{file_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get library file
+         * @description Returns one file's address and the version it currently serves, `head_artifact_id`: an explicitly restored live version, or else the latest live one. A file in a place the caller cannot read answers not found rather than forbidden.
+         */
+        get: operations["getLibraryFile"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete library file
+         * @description Deletes the file: the address and every version behind it. Only the person who shared it can delete it; a file the company owns has no sharer, so anyone who can build may delete it.
+         */
+        delete: operations["deleteLibraryFile"];
+        options?: never;
+        head?: never;
+        /**
+         * Update library file
+         * @description Renames a file within its own place. The audience does not change. Only the person who shared the file can rename it; a file the company owns has no sharer, so anyone who can build may rename it. A destination path that is already taken is refused, naming the file that holds it.
+         */
+        patch: operations["updateLibraryFile"];
+        trace?: never;
+    };
+    "/v1/library/files/{file_id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List library file versions
+         * @description Returns every live version of the file's lineage, newest first. The version readers get is the one marked `current`, which is the newest unless an earlier version was restored, so read `current` (or the file's `head_artifact_id`) rather than the position in the list.
+         */
+        get: operations["listLibraryFileVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/files/{file_id}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move library file
+         * @description Moves a file between places, which is how it is shared or taken back. Moving into the company's files makes the whole lineage readable by every member and detaches the assistant container; it takes the ordinary build permission and `confirm_audience_expansion`, never organization administration. Moving a file the company owns into a person's files takes an administrator, so a file nobody owns cannot be claimed by whoever gets there first. A destination path that is already taken is always refused.
+         */
+        post: operations["moveLibraryFile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/files/{file_id}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get library file content
+         * @description Returns a short-lived download URL for a version, or streams the bytes with `inline=true`. Authorization is the file's place, never the artifact's own container or custody.
+         */
+        get: operations["getLibraryFileContent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -9098,6 +9210,103 @@ export interface components {
             /** @description Accessible available versions ordered oldest to newest. Deleted versions are omitted. */
             versions: components["schemas"]["Artifact"][];
         };
+        /**
+         * @description Which place a file is in. `team` is the company's files, identical for every member; `person` is one person's own. It is the same vocabulary as resource ownership, because it is the same distinction.
+         * @enum {string}
+         */
+        LibraryPlaceKind: "team" | "person";
+        LibraryPlace: {
+            kind: components["schemas"]["LibraryPlaceKind"];
+            /** @description The person whose files these are, for `person`. Absent for `team`, which belongs to the organization rather than a person. */
+            id?: string;
+            /** @description The address as the Library shows it: `My files/reports/q3.md` for a person's file, the bare path otherwise. Only the person can read their own files, so "My files" is right for every reader. Display only: it is never accepted as input. */
+            display_path?: string;
+        };
+        LibraryFile: {
+            /** @description Library file ID (`file_...`). */
+            id: string;
+            place: components["schemas"]["LibraryPlace"];
+            /** @description The file's address within its place, folder included. */
+            path: string;
+            /** @description The file name, which is the last segment of the path. */
+            name: string;
+            /** @description The folder part of the path; empty at the root of the place. */
+            parent_path: string;
+            /** @description The artifact lineage at this address. */
+            root_id: string;
+            /** @description The version readers get: an explicitly restored live version, or the latest live one. Absent only while every version has been deleted. */
+            head_artifact_id?: string;
+            viewer_actions?: components["schemas"]["ViewerActions"];
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at?: string;
+            /**
+             * Format: date-time
+             * @description When the file entered reversible trash. Absent for an active file.
+             */
+            trashed_at?: string;
+        };
+        LibraryFileListResponse: {
+            items: components["schemas"]["LibraryFile"][];
+            has_more: boolean;
+            next_cursor?: string;
+        };
+        LibraryFileVersion: {
+            artifact_id: string;
+            /** @description The version number within the lineage. */
+            version: number;
+            /** @description The version this one descends from. Absent on the first. */
+            previous_artifact_id?: string;
+            /** @description The file's name. A file has one name, so a rename renames every version. */
+            name?: string;
+            mime_type?: string;
+            /** Format: int64 */
+            size_bytes?: number;
+            /** Format: date-time */
+            created_at: string;
+            /** @description Who wrote it. Absent when no person did. */
+            created_by?: string;
+            /** @description Whether this is the version readers get now. */
+            current?: boolean;
+        };
+        LibraryFileVersionListResponse: {
+            items: components["schemas"]["LibraryFileVersion"][];
+        };
+        CreateLibraryFileRequest: {
+            /** @description Any version of the artifact to file. Its whole lineage is filed. */
+            artifact_id: string;
+            /** @description The address in the owner's own files, folder included. */
+            path: string;
+        };
+        UpdateLibraryFileRequest: {
+            /** @description The new address within the same place. */
+            path: string;
+        };
+        MoveLibraryFileRequest: {
+            /** @description Where the file goes: `team` for the company's files, `person` for one person's own. */
+            place: components["schemas"]["LibraryPlaceKind"];
+            /** @description Whose files, when `place` is `person`. Defaults to the caller's own; another person's is refused. */
+            place_id?: string;
+            /** @description An address in the destination. Defaults to the path it already has. */
+            path?: string;
+            /** @description Required when moving into the company's files. It is the same confirmation sharing an artifact takes. */
+            confirm_audience_expansion?: boolean;
+        };
+        LibraryFileContent: {
+            /** @description The version these bytes belong to. */
+            artifact_id: string;
+            /** @description Short-lived download URL for the version. */
+            url: string;
+            /**
+             * Format: date-time
+             * @description When the download URL stops working.
+             */
+            expires_at: string;
+            mime_type?: string;
+            /** Format: int64 */
+            size_bytes?: number;
+        };
     };
     responses: {
         /** @description Bad Request */
@@ -9259,6 +9468,8 @@ export interface components {
         LibraryPlaceParam: "company" | "personal";
         /** @description Authoring format the template applies to */
         DocumentTemplateFormatParam: "docx" | "pptx";
+        /** @description Library file ID (`file_...`), which is not an artifact ID. */
+        LibraryFileIdParam: string;
     };
     requestBodies: {
         /** @description Outbound signed-context HTTP action request. */
@@ -15334,6 +15545,236 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+        };
+    };
+    listLibraryFiles: {
+        parameters: {
+            query?: {
+                /** @description Narrow to one place. Omit for every place the caller can read. */
+                place?: components["schemas"]["LibraryPlaceKind"];
+                /** @description Folder to list, as a relative path with no leading or trailing slash. A file's folder is the directory part of its path. Omit it or send an empty value for the root. */
+                folder?: string;
+                /** @description Include files in subfolders of `folder`. With `false`, only files whose folder is exactly `folder` are returned. */
+                recursive?: boolean;
+                /** @description Case-insensitive substring match on the file's path. */
+                q?: string;
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryFileListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createLibraryFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateLibraryFileRequest"];
+            };
+        };
+        responses: {
+            /** @description Filed */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryFile"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getLibraryFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Library file ID (`file_...`), which is not an artifact ID. */
+                file_id: components["parameters"]["LibraryFileIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryFile"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteLibraryFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Library file ID (`file_...`), which is not an artifact ID. */
+                file_id: components["parameters"]["LibraryFileIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateLibraryFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Library file ID (`file_...`), which is not an artifact ID. */
+                file_id: components["parameters"]["LibraryFileIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateLibraryFileRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryFile"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listLibraryFileVersions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Library file ID (`file_...`), which is not an artifact ID. */
+                file_id: components["parameters"]["LibraryFileIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryFileVersionListResponse"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    moveLibraryFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Library file ID (`file_...`), which is not an artifact ID. */
+                file_id: components["parameters"]["LibraryFileIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveLibraryFileRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryFile"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getLibraryFileContent: {
+        parameters: {
+            query?: {
+                /** @description A version of this file's lineage. Omit for the current one. */
+                artifact_id?: string;
+                /** @description Stream the bytes through the API instead of returning a signed URL. */
+                inline?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Library file ID (`file_...`), which is not an artifact ID. */
+                file_id: components["parameters"]["LibraryFileIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryFileContent"];
+                    "application/octet-stream": string;
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
 }

@@ -2141,6 +2141,24 @@ func (e InteractionUpsertFrameEventType) Valid() bool {
 	}
 }
 
+// Defines values for LibraryPlaceKind.
+const (
+	LibraryPlaceKindPerson LibraryPlaceKind = "person"
+	LibraryPlaceKindTeam   LibraryPlaceKind = "team"
+)
+
+// Valid indicates whether the value is a known member of the LibraryPlaceKind enum.
+func (e LibraryPlaceKind) Valid() bool {
+	switch e {
+	case LibraryPlaceKindPerson:
+		return true
+	case LibraryPlaceKindTeam:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for MemoryContextMode.
 const (
 	MemoryContextModeFull  MemoryContextMode = "full"
@@ -7187,6 +7205,15 @@ type CreateInteractionRequest struct {
 	Title string `json:"title"`
 }
 
+// CreateLibraryFileRequest defines model for CreateLibraryFileRequest.
+type CreateLibraryFileRequest struct {
+	// ArtifactId Any version of the artifact to file. Its whole lineage is filed.
+	ArtifactId string `json:"artifact_id"`
+
+	// Path The address in the owner's own files, folder included.
+	Path string `json:"path"`
+}
+
 // CreatePrincipalRequest defines model for CreatePrincipalRequest.
 type CreatePrincipalRequest struct {
 	// Description Optional human-readable description.
@@ -8578,6 +8605,101 @@ type InvokeActionRequest struct {
 	TimeoutSeconds *int `json:"timeout_seconds,omitempty"`
 }
 
+// LibraryFile defines model for LibraryFile.
+type LibraryFile struct {
+	CreatedAt time.Time `json:"created_at"`
+
+	// HeadArtifactId The version readers get: an explicitly restored live version, or the latest live one. Absent only while every version has been deleted.
+	HeadArtifactId *string `json:"head_artifact_id,omitempty"`
+
+	// Id Library file ID (`file_...`).
+	Id string `json:"id"`
+
+	// Name The file name, which is the last segment of the path.
+	Name string `json:"name"`
+
+	// ParentPath The folder part of the path; empty at the root of the place.
+	ParentPath string `json:"parent_path"`
+
+	// Path The file's address within its place, folder included.
+	Path  string       `json:"path"`
+	Place LibraryPlace `json:"place"`
+
+	// RootId The artifact lineage at this address.
+	RootId string `json:"root_id"`
+
+	// TrashedAt When the file entered reversible trash. Absent for an active file.
+	TrashedAt *time.Time `json:"trashed_at,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+
+	// ViewerActions The four access levels the current caller holds on this resource, answered by the shared access function. Clients show or enable actions from these fields rather than re-deriving them from ownership, visibility, or role.
+	ViewerActions *ViewerActions `json:"viewer_actions,omitempty"`
+}
+
+// LibraryFileContent defines model for LibraryFileContent.
+type LibraryFileContent struct {
+	// ArtifactId The version these bytes belong to.
+	ArtifactId string `json:"artifact_id"`
+
+	// ExpiresAt When the download URL stops working.
+	ExpiresAt time.Time `json:"expires_at"`
+	MimeType  *string   `json:"mime_type,omitempty"`
+	SizeBytes *int64    `json:"size_bytes,omitempty"`
+
+	// Url Short-lived download URL for the version.
+	Url string `json:"url"`
+}
+
+// LibraryFileListResponse defines model for LibraryFileListResponse.
+type LibraryFileListResponse struct {
+	HasMore    bool          `json:"has_more"`
+	Items      []LibraryFile `json:"items"`
+	NextCursor *string       `json:"next_cursor,omitempty"`
+}
+
+// LibraryFileVersion defines model for LibraryFileVersion.
+type LibraryFileVersion struct {
+	ArtifactId string    `json:"artifact_id"`
+	CreatedAt  time.Time `json:"created_at"`
+
+	// CreatedBy Who wrote it. Absent when no person did.
+	CreatedBy *string `json:"created_by,omitempty"`
+
+	// Current Whether this is the version readers get now.
+	Current  *bool   `json:"current,omitempty"`
+	MimeType *string `json:"mime_type,omitempty"`
+
+	// Name The file's name. A file has one name, so a rename renames every version.
+	Name *string `json:"name,omitempty"`
+
+	// PreviousArtifactId The version this one descends from. Absent on the first.
+	PreviousArtifactId *string `json:"previous_artifact_id,omitempty"`
+	SizeBytes          *int64  `json:"size_bytes,omitempty"`
+
+	// Version The version number within the lineage.
+	Version int `json:"version"`
+}
+
+// LibraryFileVersionListResponse defines model for LibraryFileVersionListResponse.
+type LibraryFileVersionListResponse struct {
+	Items []LibraryFileVersion `json:"items"`
+}
+
+// LibraryPlace defines model for LibraryPlace.
+type LibraryPlace struct {
+	// DisplayPath The address as the Library shows it: `My files/reports/q3.md` for a person's file, the bare path otherwise. Only the person can read their own files, so "My files" is right for every reader. Display only: it is never accepted as input.
+	DisplayPath *string `json:"display_path,omitempty"`
+
+	// Id The person whose files these are, for `person`. Absent for `team`, which belongs to the organization rather than a person.
+	Id *string `json:"id,omitempty"`
+
+	// Kind Which place a file is in. `team` is the company's files, identical for every member; `person` is one person's own. It is the same vocabulary as resource ownership, because it is the same distinction.
+	Kind LibraryPlaceKind `json:"kind"`
+}
+
+// LibraryPlaceKind Which place a file is in. `team` is the company's files, identical for every member; `person` is one person's own. It is the same vocabulary as resource ownership, because it is the same distinction.
+type LibraryPlaceKind string
+
 // MemoryContextMode Automatic memory delivery mode for agent turns.
 type MemoryContextMode string
 
@@ -8767,6 +8889,21 @@ type ModelProviderGroup struct {
 
 // ModelProviderGroupSource Where credentials come from — an org integration (`byok`) or a platform-managed key (`platform`).
 type ModelProviderGroupSource string
+
+// MoveLibraryFileRequest defines model for MoveLibraryFileRequest.
+type MoveLibraryFileRequest struct {
+	// ConfirmAudienceExpansion Required when moving into the company's files. It is the same confirmation sharing an artifact takes.
+	ConfirmAudienceExpansion *bool `json:"confirm_audience_expansion,omitempty"`
+
+	// Path An address in the destination. Defaults to the path it already has.
+	Path *string `json:"path,omitempty"`
+
+	// Place Where the file goes: `team` for the company's files, `person` for one person's own.
+	Place LibraryPlaceKind `json:"place"`
+
+	// PlaceId Whose files, when `place` is `person`. Defaults to the caller's own; another person's is refused.
+	PlaceId *string `json:"place_id,omitempty"`
+}
 
 // NotRestoredItem One thing that did not come back with a restored agent, and why.
 type NotRestoredItem struct {
@@ -11287,6 +11424,12 @@ type UpdateChannelReadStateRequest struct {
 	MessageId *string `json:"message_id,omitempty"`
 }
 
+// UpdateLibraryFileRequest defines model for UpdateLibraryFileRequest.
+type UpdateLibraryFileRequest struct {
+	// Path The new address within the same place.
+	Path string `json:"path"`
+}
+
 // UpdateMemoryContextPolicy Replacement automatic memory delivery policy. Send an empty object to clear the stored override and restore the bounded index default. Otherwise `mode` is required (`index`, `full`, or `off`) and `max_bytes` is optional.
 type UpdateMemoryContextPolicy struct {
 	// MaxBytes UTF-8 byte budget. Omit or send `0` for the selected mode's default. Off mode ignores this field.
@@ -11850,6 +11993,9 @@ type ExternalAgentID = string
 // IDParam defines model for IDParam.
 type IDParam = string
 
+// LibraryFileIdParam defines model for LibraryFileIdParam.
+type LibraryFileIdParam = string
+
 // LibraryPlaceParam defines model for LibraryPlaceParam.
 type LibraryPlaceParam string
 
@@ -12297,6 +12443,36 @@ type ListInteractionsParams struct {
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// ListLibraryFilesParams defines parameters for ListLibraryFiles.
+type ListLibraryFilesParams struct {
+	// Place Narrow to one place. Omit for every place the caller can read.
+	Place *LibraryPlaceKind `form:"place,omitempty" json:"place,omitempty"`
+
+	// Folder Folder to list, as a relative path with no leading or trailing slash. A file's folder is the directory part of its path. Omit it or send an empty value for the root.
+	Folder *string `form:"folder,omitempty" json:"folder,omitempty"`
+
+	// Recursive Include files in subfolders of `folder`. With `false`, only files whose folder is exactly `folder` are returned.
+	Recursive *bool `form:"recursive,omitempty" json:"recursive,omitempty"`
+
+	// Q Case-insensitive substring match on the file's path.
+	Q *string `form:"q,omitempty" json:"q,omitempty"`
+
+	// Cursor Cursor for pagination (opaque string from previous response)
+	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// GetLibraryFileContentParams defines parameters for GetLibraryFileContent.
+type GetLibraryFileContentParams struct {
+	// ArtifactId A version of this file's lineage. Omit for the current one.
+	ArtifactId *string `form:"artifact_id,omitempty" json:"artifact_id,omitempty"`
+
+	// Inline Stream the bytes through the API instead of returning a signed URL.
+	Inline *bool `form:"inline,omitempty" json:"inline,omitempty"`
+}
+
 // ListPrincipalsParams defines parameters for ListPrincipals.
 type ListPrincipalsParams struct {
 	// Kind Filter principals by kind.
@@ -12653,6 +12829,15 @@ type CancelInteractionJSONRequestBody = CancelInteractionRequest
 
 // RespondToInteractionJSONRequestBody defines body for RespondToInteraction for application/json ContentType.
 type RespondToInteractionJSONRequestBody = RespondToInteractionRequest
+
+// CreateLibraryFileJSONRequestBody defines body for CreateLibraryFile for application/json ContentType.
+type CreateLibraryFileJSONRequestBody = CreateLibraryFileRequest
+
+// UpdateLibraryFileJSONRequestBody defines body for UpdateLibraryFile for application/json ContentType.
+type UpdateLibraryFileJSONRequestBody = UpdateLibraryFileRequest
+
+// MoveLibraryFileJSONRequestBody defines body for MoveLibraryFile for application/json ContentType.
+type MoveLibraryFileJSONRequestBody = MoveLibraryFileRequest
 
 // ScheduleOrgDeletionJSONRequestBody defines body for ScheduleOrgDeletion for application/json ContentType.
 type ScheduleOrgDeletionJSONRequestBody = OrgDeletionRequest
@@ -15908,6 +16093,36 @@ type ClientInterface interface {
 
 	RespondToInteraction(ctx context.Context, resourceId IDParam, body RespondToInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListLibraryFiles request
+	ListLibraryFiles(ctx context.Context, params *ListLibraryFilesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateLibraryFileWithBody request with any body
+	CreateLibraryFileWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateLibraryFile(ctx context.Context, body CreateLibraryFileJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteLibraryFile request
+	DeleteLibraryFile(ctx context.Context, fileId LibraryFileIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLibraryFile request
+	GetLibraryFile(ctx context.Context, fileId LibraryFileIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateLibraryFileWithBody request with any body
+	UpdateLibraryFileWithBody(ctx context.Context, fileId LibraryFileIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateLibraryFile(ctx context.Context, fileId LibraryFileIdParam, body UpdateLibraryFileJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLibraryFileContent request
+	GetLibraryFileContent(ctx context.Context, fileId LibraryFileIdParam, params *GetLibraryFileContentParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// MoveLibraryFileWithBody request with any body
+	MoveLibraryFileWithBody(ctx context.Context, fileId LibraryFileIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	MoveLibraryFile(ctx context.Context, fileId LibraryFileIdParam, body MoveLibraryFileJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListLibraryFileVersions request
+	ListLibraryFileVersions(ctx context.Context, fileId LibraryFileIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ScheduleOrgDeletionWithBody request with any body
 	ScheduleOrgDeletionWithBody(ctx context.Context, orgId OrgIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -17556,6 +17771,138 @@ func (c *Client) RespondToInteractionWithBody(ctx context.Context, resourceId ID
 
 func (c *Client) RespondToInteraction(ctx context.Context, resourceId IDParam, body RespondToInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRespondToInteractionRequest(c.Server, resourceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListLibraryFiles(ctx context.Context, params *ListLibraryFilesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListLibraryFilesRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateLibraryFileWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateLibraryFileRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateLibraryFile(ctx context.Context, body CreateLibraryFileJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateLibraryFileRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteLibraryFile(ctx context.Context, fileId LibraryFileIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteLibraryFileRequest(c.Server, fileId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLibraryFile(ctx context.Context, fileId LibraryFileIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLibraryFileRequest(c.Server, fileId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateLibraryFileWithBody(ctx context.Context, fileId LibraryFileIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateLibraryFileRequestWithBody(c.Server, fileId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateLibraryFile(ctx context.Context, fileId LibraryFileIdParam, body UpdateLibraryFileJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateLibraryFileRequest(c.Server, fileId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLibraryFileContent(ctx context.Context, fileId LibraryFileIdParam, params *GetLibraryFileContentParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLibraryFileContentRequest(c.Server, fileId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) MoveLibraryFileWithBody(ctx context.Context, fileId LibraryFileIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewMoveLibraryFileRequestWithBody(c.Server, fileId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) MoveLibraryFile(ctx context.Context, fileId LibraryFileIdParam, body MoveLibraryFileJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewMoveLibraryFileRequest(c.Server, fileId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListLibraryFileVersions(ctx context.Context, fileId LibraryFileIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListLibraryFileVersionsRequest(c.Server, fileId)
 	if err != nil {
 		return nil, err
 	}
@@ -23560,6 +23907,429 @@ func NewRespondToInteractionRequestWithBody(server string, resourceId IDParam, c
 	return req, nil
 }
 
+// NewListLibraryFilesRequest generates requests for ListLibraryFiles
+func NewListLibraryFilesRequest(server string, params *ListLibraryFilesParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/library/files")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Place != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "place", *params.Place, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Folder != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "folder", *params.Folder, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Recursive != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "recursive", *params.Recursive, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Q != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "q", *params.Q, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateLibraryFileRequest calls the generic CreateLibraryFile builder with application/json body
+func NewCreateLibraryFileRequest(server string, body CreateLibraryFileJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateLibraryFileRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateLibraryFileRequestWithBody generates requests for CreateLibraryFile with any type of body
+func NewCreateLibraryFileRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/library/files")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteLibraryFileRequest generates requests for DeleteLibraryFile
+func NewDeleteLibraryFileRequest(server string, fileId LibraryFileIdParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "file_id", fileId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/library/files/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLibraryFileRequest generates requests for GetLibraryFile
+func NewGetLibraryFileRequest(server string, fileId LibraryFileIdParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "file_id", fileId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/library/files/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateLibraryFileRequest calls the generic UpdateLibraryFile builder with application/json body
+func NewUpdateLibraryFileRequest(server string, fileId LibraryFileIdParam, body UpdateLibraryFileJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateLibraryFileRequestWithBody(server, fileId, "application/json", bodyReader)
+}
+
+// NewUpdateLibraryFileRequestWithBody generates requests for UpdateLibraryFile with any type of body
+func NewUpdateLibraryFileRequestWithBody(server string, fileId LibraryFileIdParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "file_id", fileId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/library/files/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetLibraryFileContentRequest generates requests for GetLibraryFileContent
+func NewGetLibraryFileContentRequest(server string, fileId LibraryFileIdParam, params *GetLibraryFileContentParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "file_id", fileId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/library/files/%s/content", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.ArtifactId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "artifact_id", *params.ArtifactId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Inline != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "inline", *params.Inline, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewMoveLibraryFileRequest calls the generic MoveLibraryFile builder with application/json body
+func NewMoveLibraryFileRequest(server string, fileId LibraryFileIdParam, body MoveLibraryFileJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewMoveLibraryFileRequestWithBody(server, fileId, "application/json", bodyReader)
+}
+
+// NewMoveLibraryFileRequestWithBody generates requests for MoveLibraryFile with any type of body
+func NewMoveLibraryFileRequestWithBody(server string, fileId LibraryFileIdParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "file_id", fileId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/library/files/%s/move", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListLibraryFileVersionsRequest generates requests for ListLibraryFileVersions
+func NewListLibraryFileVersionsRequest(server string, fileId LibraryFileIdParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "file_id", fileId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/library/files/%s/versions", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewScheduleOrgDeletionRequest calls the generic ScheduleOrgDeletion builder with application/json body
 func NewScheduleOrgDeletionRequest(server string, orgId OrgIDParam, body ScheduleOrgDeletionJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -28356,6 +29126,36 @@ type ClientWithResponsesInterface interface {
 
 	RespondToInteractionWithResponse(ctx context.Context, resourceId IDParam, body RespondToInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*RespondToInteractionResponse, error)
 
+	// ListLibraryFilesWithResponse request
+	ListLibraryFilesWithResponse(ctx context.Context, params *ListLibraryFilesParams, reqEditors ...RequestEditorFn) (*ListLibraryFilesResponse, error)
+
+	// CreateLibraryFileWithBodyWithResponse request with any body
+	CreateLibraryFileWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateLibraryFileResponse, error)
+
+	CreateLibraryFileWithResponse(ctx context.Context, body CreateLibraryFileJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateLibraryFileResponse, error)
+
+	// DeleteLibraryFileWithResponse request
+	DeleteLibraryFileWithResponse(ctx context.Context, fileId LibraryFileIdParam, reqEditors ...RequestEditorFn) (*DeleteLibraryFileResponse, error)
+
+	// GetLibraryFileWithResponse request
+	GetLibraryFileWithResponse(ctx context.Context, fileId LibraryFileIdParam, reqEditors ...RequestEditorFn) (*GetLibraryFileResponse, error)
+
+	// UpdateLibraryFileWithBodyWithResponse request with any body
+	UpdateLibraryFileWithBodyWithResponse(ctx context.Context, fileId LibraryFileIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateLibraryFileResponse, error)
+
+	UpdateLibraryFileWithResponse(ctx context.Context, fileId LibraryFileIdParam, body UpdateLibraryFileJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateLibraryFileResponse, error)
+
+	// GetLibraryFileContentWithResponse request
+	GetLibraryFileContentWithResponse(ctx context.Context, fileId LibraryFileIdParam, params *GetLibraryFileContentParams, reqEditors ...RequestEditorFn) (*GetLibraryFileContentResponse, error)
+
+	// MoveLibraryFileWithBodyWithResponse request with any body
+	MoveLibraryFileWithBodyWithResponse(ctx context.Context, fileId LibraryFileIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*MoveLibraryFileResponse, error)
+
+	MoveLibraryFileWithResponse(ctx context.Context, fileId LibraryFileIdParam, body MoveLibraryFileJSONRequestBody, reqEditors ...RequestEditorFn) (*MoveLibraryFileResponse, error)
+
+	// ListLibraryFileVersionsWithResponse request
+	ListLibraryFileVersionsWithResponse(ctx context.Context, fileId LibraryFileIdParam, reqEditors ...RequestEditorFn) (*ListLibraryFileVersionsResponse, error)
+
 	// ScheduleOrgDeletionWithBodyWithResponse request with any body
 	ScheduleOrgDeletionWithBodyWithResponse(ctx context.Context, orgId OrgIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ScheduleOrgDeletionResponse, error)
 
@@ -31459,6 +32259,268 @@ func (r RespondToInteractionResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r RespondToInteractionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListLibraryFilesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *LibraryFileListResponse
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ListLibraryFilesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListLibraryFilesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListLibraryFilesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateLibraryFileResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *LibraryFile
+	JSON400      *BadRequest
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateLibraryFileResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateLibraryFileResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateLibraryFileResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteLibraryFileResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteLibraryFileResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteLibraryFileResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteLibraryFileResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetLibraryFileResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *LibraryFile
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLibraryFileResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLibraryFileResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetLibraryFileResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateLibraryFileResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *LibraryFile
+	JSON400      *BadRequest
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateLibraryFileResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateLibraryFileResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateLibraryFileResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetLibraryFileContentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *LibraryFileContent
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLibraryFileContentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLibraryFileContentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetLibraryFileContentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type MoveLibraryFileResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *LibraryFile
+	JSON400      *BadRequest
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r MoveLibraryFileResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r MoveLibraryFileResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r MoveLibraryFileResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListLibraryFileVersionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *LibraryFileVersionListResponse
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListLibraryFileVersionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListLibraryFileVersionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListLibraryFileVersionsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -35437,6 +36499,102 @@ func (c *ClientWithResponses) RespondToInteractionWithResponse(ctx context.Conte
 		return nil, err
 	}
 	return ParseRespondToInteractionResponse(rsp)
+}
+
+// ListLibraryFilesWithResponse request returning *ListLibraryFilesResponse
+func (c *ClientWithResponses) ListLibraryFilesWithResponse(ctx context.Context, params *ListLibraryFilesParams, reqEditors ...RequestEditorFn) (*ListLibraryFilesResponse, error) {
+	rsp, err := c.ListLibraryFiles(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListLibraryFilesResponse(rsp)
+}
+
+// CreateLibraryFileWithBodyWithResponse request with arbitrary body returning *CreateLibraryFileResponse
+func (c *ClientWithResponses) CreateLibraryFileWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateLibraryFileResponse, error) {
+	rsp, err := c.CreateLibraryFileWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateLibraryFileResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateLibraryFileWithResponse(ctx context.Context, body CreateLibraryFileJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateLibraryFileResponse, error) {
+	rsp, err := c.CreateLibraryFile(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateLibraryFileResponse(rsp)
+}
+
+// DeleteLibraryFileWithResponse request returning *DeleteLibraryFileResponse
+func (c *ClientWithResponses) DeleteLibraryFileWithResponse(ctx context.Context, fileId LibraryFileIdParam, reqEditors ...RequestEditorFn) (*DeleteLibraryFileResponse, error) {
+	rsp, err := c.DeleteLibraryFile(ctx, fileId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteLibraryFileResponse(rsp)
+}
+
+// GetLibraryFileWithResponse request returning *GetLibraryFileResponse
+func (c *ClientWithResponses) GetLibraryFileWithResponse(ctx context.Context, fileId LibraryFileIdParam, reqEditors ...RequestEditorFn) (*GetLibraryFileResponse, error) {
+	rsp, err := c.GetLibraryFile(ctx, fileId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLibraryFileResponse(rsp)
+}
+
+// UpdateLibraryFileWithBodyWithResponse request with arbitrary body returning *UpdateLibraryFileResponse
+func (c *ClientWithResponses) UpdateLibraryFileWithBodyWithResponse(ctx context.Context, fileId LibraryFileIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateLibraryFileResponse, error) {
+	rsp, err := c.UpdateLibraryFileWithBody(ctx, fileId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateLibraryFileResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateLibraryFileWithResponse(ctx context.Context, fileId LibraryFileIdParam, body UpdateLibraryFileJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateLibraryFileResponse, error) {
+	rsp, err := c.UpdateLibraryFile(ctx, fileId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateLibraryFileResponse(rsp)
+}
+
+// GetLibraryFileContentWithResponse request returning *GetLibraryFileContentResponse
+func (c *ClientWithResponses) GetLibraryFileContentWithResponse(ctx context.Context, fileId LibraryFileIdParam, params *GetLibraryFileContentParams, reqEditors ...RequestEditorFn) (*GetLibraryFileContentResponse, error) {
+	rsp, err := c.GetLibraryFileContent(ctx, fileId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLibraryFileContentResponse(rsp)
+}
+
+// MoveLibraryFileWithBodyWithResponse request with arbitrary body returning *MoveLibraryFileResponse
+func (c *ClientWithResponses) MoveLibraryFileWithBodyWithResponse(ctx context.Context, fileId LibraryFileIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*MoveLibraryFileResponse, error) {
+	rsp, err := c.MoveLibraryFileWithBody(ctx, fileId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseMoveLibraryFileResponse(rsp)
+}
+
+func (c *ClientWithResponses) MoveLibraryFileWithResponse(ctx context.Context, fileId LibraryFileIdParam, body MoveLibraryFileJSONRequestBody, reqEditors ...RequestEditorFn) (*MoveLibraryFileResponse, error) {
+	rsp, err := c.MoveLibraryFile(ctx, fileId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseMoveLibraryFileResponse(rsp)
+}
+
+// ListLibraryFileVersionsWithResponse request returning *ListLibraryFileVersionsResponse
+func (c *ClientWithResponses) ListLibraryFileVersionsWithResponse(ctx context.Context, fileId LibraryFileIdParam, reqEditors ...RequestEditorFn) (*ListLibraryFileVersionsResponse, error) {
+	rsp, err := c.ListLibraryFileVersions(ctx, fileId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListLibraryFileVersionsResponse(rsp)
 }
 
 // ScheduleOrgDeletionWithBodyWithResponse request with arbitrary body returning *ScheduleOrgDeletionResponse
@@ -40859,6 +42017,371 @@ func ParseRespondToInteractionResponse(rsp *http.Response) (*RespondToInteractio
 			return nil, err
 		}
 		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListLibraryFilesResponse parses an HTTP response from a ListLibraryFilesWithResponse call
+func ParseListLibraryFilesResponse(rsp *http.Response) (*ListLibraryFilesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListLibraryFilesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LibraryFileListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateLibraryFileResponse parses an HTTP response from a CreateLibraryFileWithResponse call
+func ParseCreateLibraryFileResponse(rsp *http.Response) (*CreateLibraryFileResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateLibraryFileResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest LibraryFile
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteLibraryFileResponse parses an HTTP response from a DeleteLibraryFileWithResponse call
+func ParseDeleteLibraryFileResponse(rsp *http.Response) (*DeleteLibraryFileResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteLibraryFileResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLibraryFileResponse parses an HTTP response from a GetLibraryFileWithResponse call
+func ParseGetLibraryFileResponse(rsp *http.Response) (*GetLibraryFileResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLibraryFileResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LibraryFile
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateLibraryFileResponse parses an HTTP response from a UpdateLibraryFileWithResponse call
+func ParseUpdateLibraryFileResponse(rsp *http.Response) (*UpdateLibraryFileResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateLibraryFileResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LibraryFile
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLibraryFileContentResponse parses an HTTP response from a GetLibraryFileContentWithResponse call
+func ParseGetLibraryFileContentResponse(rsp *http.Response) (*GetLibraryFileContentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLibraryFileContentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LibraryFileContent
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case rsp.StatusCode == 200:
+		// Content-type (application/octet-stream) unsupported
+
+	}
+
+	return response, nil
+}
+
+// ParseMoveLibraryFileResponse parses an HTTP response from a MoveLibraryFileWithResponse call
+func ParseMoveLibraryFileResponse(rsp *http.Response) (*MoveLibraryFileResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &MoveLibraryFileResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LibraryFile
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListLibraryFileVersionsResponse parses an HTTP response from a ListLibraryFileVersionsWithResponse call
+func ParseListLibraryFileVersionsResponse(rsp *http.Response) (*ListLibraryFileVersionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListLibraryFileVersionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LibraryFileVersionListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
