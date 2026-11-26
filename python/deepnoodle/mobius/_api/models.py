@@ -7851,7 +7851,10 @@ class MoveLibraryFileRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    place: LibraryPlaceKind
+    place: LibraryPlaceKind = Field(
+        ...,
+        description="Where the file goes: `team` for the company's files, `person` for one person's own.",
+    )
     place_id: str | None = Field(
         None,
         description="Whose files, when `place` is `person`. Defaults to the caller's own; another person's is refused.",

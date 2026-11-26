@@ -19,8 +19,7 @@ removed operations no longer exist in production.
 ### Removed
 
 - `updateArtifact` (`PATCH /v1/artifacts/{id}`) and its `UpdateArtifactRequest`
-  schema. CLI: `artifacts move`. Rename a file with `mobius library rename`
-  instead (see Added).
+  schema. CLI: `artifacts move`. Use `mobius library rename` (see Added).
 - `getOAuthReturnOrigins` and `replaceOAuthReturnOrigins`, the org setting
   they managed, and the SDK helpers wrapping them (`GetOAuthReturnOrigins`,
   `ReplaceOAuthReturnOrigins` and Python/TS twins). CLI:
@@ -45,15 +44,10 @@ removed operations no longer exist in production.
 
 - `listCatalogProviders` (`GET /v1/catalog/providers`), the integration
   provider catalog. CLI: `catalog list-providers`.
-- The Library: `listLibraryFiles`, `getLibraryFile`, `getLibraryFileContent`,
-  `listLibraryFileVersions`, `createLibraryFile`, `updateLibraryFile`,
-  `moveLibraryFile` and `deleteLibraryFile` under `/v1/library/files`. CLI: the
-  `library` group. `library rename FILE_ID --path NEW/PATH` renames or refiles
-  a file within its place (it replaces `artifacts move`). `library move`
-  shares a file into the team's files or takes it back. `library create-file`
-  files a chat attachment. `list-files`, `get-file`, `get-file-content`,
-  `list-file-versions` and `delete-file` round it out. A file ID (`file_…`) is
-  not an artifact ID; an artifact's `file_id` names its file.
+- The Library operations under `/v1/library/files`, and the `mobius library`
+  command group. `library rename` replaces `artifacts move`; `library move`
+  shares a file into the team's files or takes it back. See
+  `mobius library --help`.
 
 ## [0.9.0] - 2026-11-25
 

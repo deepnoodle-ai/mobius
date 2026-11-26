@@ -2845,7 +2845,7 @@ export interface paths {
         };
         /**
          * Get library file
-         * @description Returns one file's address and the version it currently serves, which is the latest live version of its lineage. A file in a place the caller cannot read answers not found rather than forbidden.
+         * @description Returns one file's address and the version it currently serves, `head_artifact_id`: an explicitly restored live version, or else the latest live one. A file in a place the caller cannot read answers not found rather than forbidden.
          */
         get: operations["getLibraryFile"];
         put?: never;
@@ -2873,7 +2873,7 @@ export interface paths {
         };
         /**
          * List library file versions
-         * @description Returns every live version of the file's lineage, newest first. The first entry is what readers get; there is no separate head pointer that could disagree with it.
+         * @description Returns every live version of the file's lineage, newest first. The version readers get is the one marked `current`, which is the newest unless an earlier version was restored, so read `current` (or the file's `head_artifact_id`) rather than the position in the list.
          */
         get: operations["listLibraryFileVersions"];
         put?: never;
@@ -9284,6 +9284,7 @@ export interface components {
             path: string;
         };
         MoveLibraryFileRequest: {
+            /** @description Where the file goes: `team` for the company's files, `person` for one person's own. */
             place: components["schemas"]["LibraryPlaceKind"];
             /** @description Whose files, when `place` is `person`. Defaults to the caller's own; another person's is refused. */
             place_id?: string;

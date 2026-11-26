@@ -203,7 +203,7 @@ func registerLibraryCommands(app *cli.App) {
 		Flags(
 			cli.Bool("confirm-audience-expansion", "").Help("Required when moving into the company's files. It is the same confirmation sharing an artifact takes."),
 			cli.String("path", "").Help("An address in the destination. Defaults to the path it already has."),
-			cli.String("place", "").Help("[required] Which place a file is in. `team` is the company's files, identical for every member; `person` is one person's own. It is the same vocabulary as resource ownership, because it is the same distinction."),
+			cli.String("place", "").Help("[required] Where the file goes: `team` for the company's files, `person` for one person's own."),
 			cli.String("place-id", "").Help("Whose files, when `place` is `person`. Defaults to the caller's own; another person's is refused."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),

@@ -8898,7 +8898,7 @@ type MoveLibraryFileRequest struct {
 	// Path An address in the destination. Defaults to the path it already has.
 	Path *string `json:"path,omitempty"`
 
-	// Place Which place a file is in. `team` is the company's files, identical for every member; `person` is one person's own. It is the same vocabulary as resource ownership, because it is the same distinction.
+	// Place Where the file goes: `team` for the company's files, `person` for one person's own.
 	Place LibraryPlaceKind `json:"place"`
 
 	// PlaceId Whose files, when `place` is `person`. Defaults to the caller's own; another person's is refused.

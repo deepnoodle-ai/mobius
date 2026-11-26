@@ -6529,9 +6529,9 @@ paths:
       tags:
       - library
       summary: Get library file
-      description: Returns one file's address and the version it currently serves, which is
-        the latest live version of its lineage. A file in a place the caller cannot read answers
-        not found rather than forbidden.
+      description: 'Returns one file''s address and the version it currently serves, `head_artifact_id`:
+        an explicitly restored live version, or else the latest live one. A file in a place
+        the caller cannot read answers not found rather than forbidden.'
       parameters:
       - $ref: '#/components/parameters/LibraryFileIdParam'
       responses:
@@ -6602,9 +6602,10 @@ paths:
       tags:
       - library
       summary: List library file versions
-      description: Returns every live version of the file's lineage, newest first. The first
-        entry is what readers get; there is no separate head pointer that could disagree with
-        it.
+      description: Returns every live version of the file's lineage, newest first. The version
+        readers get is the one marked `current`, which is the newest unless an earlier version
+        was restored, so read `current` (or the file's `head_artifact_id`) rather than the
+        position in the list.
       parameters:
       - $ref: '#/components/parameters/LibraryFileIdParam'
       responses:
@@ -19198,7 +19199,10 @@ components:
       - place
       properties:
         place:
-          $ref: '#/components/schemas/LibraryPlaceKind'
+          allOf:
+          - $ref: '#/components/schemas/LibraryPlaceKind'
+          description: 'Where the file goes: `team` for the company''s files, `person` for
+            one person''s own.'
         place_id:
           type: string
           description: Whose files, when `place` is `person`. Defaults to the caller's own;
