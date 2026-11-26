@@ -7730,6 +7730,156 @@ class ArtifactVersionList(BaseModel):
     )
 
 
+class LibraryPlaceKind(StrEnum):
+    """
+    Which place a file is in. `team` is the company's files, identical for every member; `person` is one person's own. It is the same vocabulary as resource ownership, because it is the same distinction.
+    """
+
+    team = 'team'
+    person = 'person'
+
+
+class LibraryPlace(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: LibraryPlaceKind
+    id: str | None = Field(
+        None,
+        description='The person whose files these are, for `person`. Absent for `team`, which belongs to the organization rather than a person.',
+    )
+    display_path: str | None = Field(
+        None,
+        description='The address as the Library shows it: `My files/reports/q3.md` for a person\'s file, the bare path otherwise. Only the person can read their own files, so "My files" is right for every reader. Display only: it is never accepted as input.',
+    )
+
+
+class LibraryFile(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Library file ID (`file_...`).')
+    place: LibraryPlace
+    path: str = Field(
+        ..., description="The file's address within its place, folder included."
+    )
+    name: str = Field(
+        ..., description='The file name, which is the last segment of the path.'
+    )
+    parent_path: str = Field(
+        ..., description='The folder part of the path; empty at the root of the place.'
+    )
+    root_id: str = Field(..., description='The artifact lineage at this address.')
+    head_artifact_id: str | None = Field(
+        None,
+        description='The version readers get: an explicitly restored live version, or the latest live one. Absent only while every version has been deleted.',
+    )
+    viewer_actions: ViewerActions | None = None
+    created_at: AwareDatetime
+    updated_at: AwareDatetime | None = None
+    trashed_at: AwareDatetime | None = Field(
+        None,
+        description='When the file entered reversible trash. Absent for an active file.',
+    )
+
+
+class LibraryFileListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[LibraryFile]
+    has_more: bool
+    next_cursor: str | None = None
+
+
+class LibraryFileVersion(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    artifact_id: str
+    version: int = Field(..., description='The version number within the lineage.')
+    previous_artifact_id: str | None = Field(
+        None, description='The version this one descends from. Absent on the first.'
+    )
+    name: str | None = Field(
+        None,
+        description="The file's name. A file has one name, so a rename renames every version.",
+    )
+    mime_type: str | None = None
+    size_bytes: int | None = None
+    created_at: AwareDatetime
+    created_by: str | None = Field(
+        None, description='Who wrote it. Absent when no person did.'
+    )
+    current: bool | None = Field(
+        None, description='Whether this is the version readers get now.'
+    )
+
+
+class LibraryFileVersionListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[LibraryFileVersion]
+
+
+class CreateLibraryFileRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    artifact_id: str = Field(
+        ...,
+        description='Any version of the artifact to file. Its whole lineage is filed.',
+    )
+    path: str = Field(
+        ...,
+        description="The address in the owner's own files, folder included.",
+        max_length=256,
+    )
+
+
+class UpdateLibraryFileRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    path: str = Field(
+        ..., description='The new address within the same place.', max_length=256
+    )
+
+
+class MoveLibraryFileRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    place: LibraryPlaceKind
+    place_id: str | None = Field(
+        None,
+        description="Whose files, when `place` is `person`. Defaults to the caller's own; another person's is refused.",
+    )
+    path: str | None = Field(
+        None,
+        description='An address in the destination. Defaults to the path it already has.',
+        max_length=256,
+    )
+    confirm_audience_expansion: bool | None = Field(
+        None,
+        description="Required when moving into the company's files. It is the same confirmation sharing an artifact takes.",
+    )
+
+
+class LibraryFileContent(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    artifact_id: str = Field(..., description='The version these bytes belong to.')
+    url: str = Field(..., description='Short-lived download URL for the version.')
+    expires_at: AwareDatetime = Field(
+        ..., description='When the download URL stops working.'
+    )
+    mime_type: str | None = None
+    size_bytes: int | None = None
+
+
 class ActionInvocationContextV1(BaseModel):
     model_config = ConfigDict(
         extra='allow',
