@@ -708,6 +708,10 @@ class Session(BaseModel):
         description='Agent that contains and executes this session. The agent never owns it.',
     )
     container: ResourceContainer | None = None
+    project_id: str | None = Field(
+        None,
+        description="Project the chat is in. Absent for a chat in no project. A chat in a project uses the project's instructions and stays in it.",
+    )
     title: str = Field(..., description='Human-readable session title.')
     status: SessionStatus = Field(..., description='Lifecycle status of the session.')
     origin: SessionOrigin = Field(..., description='Surface that created the session.')
@@ -1767,21 +1771,17 @@ class RoutineFollowTarget(BaseModel):
 
 class IntegrationCategory(StrEnum):
     """
-    Stable integration directory grouping.
+    The group a provider is browsed under, as customers read it. Each provider has exactly one.
     """
 
-    Code_and_DevOps = 'Code and DevOps'
-    Sales___CRM = 'Sales & CRM'
-    Issue_Tracking = 'Issue Tracking'
-    Productivity = 'Productivity'
-    Messaging = 'Messaging'
-    Social_Media = 'Social Media'
-    Email = 'Email'
-    Actions = 'Actions'
-    Web_and_Data = 'Web and Data'
-    Storage = 'Storage'
-    Environments = 'Environments'
-    Model_Providers = 'Model Providers'
+    Email_and_calendar = 'Email and calendar'
+    Chat_and_meetings = 'Chat and meetings'
+    Files = 'Files'
+    Sales = 'Sales'
+    Finance = 'Finance'
+    Projects = 'Projects'
+    Research = 'Research'
+    Developer_tools = 'Developer tools'
     Built_in = 'Built in'
 
 
@@ -4724,6 +4724,10 @@ class UpdateSessionRequest(BaseModel):
         None,
         description="Model later turns in this session run on. The history is kept and each reply records the model that produced it. Send an empty string to go back to the agent's own model. Omit to leave it unchanged. Worker-routed agents return `400 invalid_argument` with `details.argument = model_override`.",
     )
+    project_id: str | None = Field(
+        None,
+        description="Move the chat into this project. Only the owner's own private chat moves, and only from no project: a chat already in another project is refused with `409 conflict`, because a chat never moves between projects. Sending the project the chat is already in changes nothing. Requires the projects feature and a project the caller may open.",
+    )
 
 
 class Status5(StrEnum):
@@ -5405,6 +5409,10 @@ class CreateSessionRequest(BaseModel):
     agent_id: str = Field(
         ...,
         description='Agent container that executes the session. The agent never owns it.',
+    )
+    project_id: str | None = Field(
+        None,
+        description="Start the chat in this project. The chat must be the caller's own private chat, and the caller must be a member of the project or invited to it. A closed project returns `409 conflict`. A `session_key` already used by a chat outside this project returns `409 conflict`. Requires the projects feature.",
     )
     mode: Mode2 | None = Field(
         None,

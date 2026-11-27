@@ -3333,6 +3333,8 @@ export interface components {
             /** @description Agent that contains and executes this session. The agent never owns it. */
             agent_id: string;
             container?: components["schemas"]["ResourceContainer"];
+            /** @description Project the chat is in. Absent for a chat in no project. A chat in a project uses the project's instructions and stays in it. */
+            project_id?: string;
             /** @description Human-readable session title. */
             title: string;
             /** @description Lifecycle status of the session. */
@@ -4259,10 +4261,10 @@ export interface components {
             default_for?: string[];
         };
         /**
-         * @description Stable integration directory grouping.
+         * @description The group a provider is browsed under, as customers read it. Each provider has exactly one.
          * @enum {string}
          */
-        IntegrationCategory: "Code and DevOps" | "Sales & CRM" | "Issue Tracking" | "Productivity" | "Messaging" | "Social Media" | "Email" | "Actions" | "Web and Data" | "Storage" | "Environments" | "Model Providers" | "Built in";
+        IntegrationCategory: "Email and calendar" | "Chat and meetings" | "Files" | "Sales" | "Finance" | "Projects" | "Research" | "Developer tools" | "Built in";
         /**
          * @description What one connection to a provider represents.
          *
@@ -6321,6 +6323,8 @@ export interface components {
             thinking_effort?: components["schemas"]["ThinkingEffort"];
             /** @description Model later turns in this session run on. The history is kept and each reply records the model that produced it. Send an empty string to go back to the agent's own model. Omit to leave it unchanged. Worker-routed agents return `400 invalid_argument` with `details.argument = model_override`. */
             model_override?: string;
+            /** @description Move the chat into this project. Only the owner's own private chat moves, and only from no project: a chat already in another project is refused with `409 conflict`, because a chat never moves between projects. Sending the project the chat is already in changes nothing. Requires the projects feature and a project the caller may open. */
+            project_id?: string;
         };
         SessionTranscriptMessage: {
             id: string;
@@ -7015,6 +7019,8 @@ export interface components {
         CreateSessionRequest: {
             /** @description Agent container that executes the session. The agent never owns it. */
             agent_id: string;
+            /** @description Start the chat in this project. The chat must be the caller's own private chat, and the caller must be a member of the project or invited to it. A closed project returns `409 conflict`. A `session_key` already used by a chat outside this project returns `409 conflict`. Requires the projects feature. */
+            project_id?: string;
             /**
              * @description `continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.
              * @enum {string}
@@ -9492,6 +9498,10 @@ export interface components {
         GroupID: string;
         /** @description The person. */
         GroupPrincipalID: string;
+        /** @description The project's ID. */
+        ProjectID: string;
+        /** @description The invited person. */
+        ProjectPrincipalID: string;
     };
     requestBodies: {
         /** @description Outbound signed-context HTTP action request. */
@@ -9811,6 +9821,8 @@ export interface operations {
                 limit?: components["parameters"]["LimitParam"];
                 /** @description Filter to invocations from a specific job. */
                 job_id?: string;
+                /** @description List the invocations made in this project, after a check that the caller is a member or invited. The usual content rule still applies: a person's private chat in the project stays theirs, and only the project's own work opens to every member. Without it the list holds only invocations in no project. Requires the projects feature. */
+                project_id?: string;
                 /** @description Filter to invocations executed in a specific environment. */
                 environment_id?: string;
                 /** @description Filter to invocations of a specific action. */
@@ -11927,6 +11939,8 @@ export interface operations {
                 integration_id?: string;
                 /** @description Only include sessions with activity after this timestamp. */
                 since?: string;
+                /** @description List the chats in this project, after a check that the caller is a member or invited. Without it the list holds only chats in no project. No value mixes projects. Requires the projects feature. */
+                project_id?: string;
                 /** @description Return at most this many sessions per agent, each agent's newest activity first, so one busy agent cannot crowd the others out of the page. `limit` still caps the total. Cannot be combined with `cursor`, `agent_id`, or `agent_name`. */
                 per_agent_limit?: number;
                 /** @description Keep only conversations that contain every word of this text somewhere in the title or in the person's or the assistant's message text. Tool calls and tool results are not searched. Case and accents are ignored, and a word of 3 or more characters also matches longer words that start with it. Uses the table search syntax: `OR` between two words accepts either, and a leading `-` excludes a word. Quoted words must all appear, in any order. A search with no word to find is a 400. The trimmed text must be 2 to 200 characters. Cannot be combined with `per_agent_limit`. With `q`, `limit` is capped at 20, and a search that runs too long is a 503 with code `search_timeout`. */

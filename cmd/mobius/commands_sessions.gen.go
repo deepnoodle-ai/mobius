@@ -121,6 +121,7 @@ func registerSessionsCommands(app *cli.App) {
 			cli.String("mode", "").Help("`continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists."),
 			cli.String("model-override", "").Help("Model to use for a newly created session. Overrides the stored agent's model. Ignored when an existing session is resolved. Creating a session for a worker-routed agent returns `400 invalid_argument` with `details.argument = model_override`."),
 			cli.String("owner", "").Help("The human, team, or group responsible for this resource. Accepts JSON, @file, or @-."),
+			cli.String("project-id", "").Help("Start the chat in this project. The chat must be the caller's own private chat, and the caller must be a member of the project or invited to it. A closed project returns `409 conflict`. A `session_key` already used by a chat outside this project returns `409 conflict`. Requires the projects feature."),
 			cli.String("retention", "").Help("Controls how long a session is retained. Applied only when the session is first created (like `compaction_policy`); ignored when an existing session is resolved. `standard` is the default and keeps the session forever. `bounded` expires the session — pruning its transcript from every read path — once it has been idle past `ttl_seconds`. Kept for audit after expiry: a tombstone session row with its token totals, and the turn rows with their status, error, usage, and timings. Accepts JSON, @file, or @-."),
 			cli.String("session-key", "").Help("Stable key identifying the conversation within the agent."),
 			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session, or the provider's own default when nothing sets a level."),
@@ -165,6 +166,10 @@ func registerSessionsCommands(app *cli.App) {
 				if err := decodeFlagJSON(ctx, "owner", ctx.String("owner"), &body.Owner); err != nil {
 					return err
 				}
+			}
+			if ctx.IsSet("project-id") {
+				v := ctx.String("project-id")
+				body.ProjectId = &v
 			}
 			if ctx.IsSet("retention") {
 				if err := decodeFlagJSON(ctx, "retention", ctx.String("retention"), &body.Retention); err != nil {
@@ -399,6 +404,7 @@ func registerSessionsCommands(app *cli.App) {
 			cli.String("provider", "").Help("Filter messaging sessions by provider metadata, e.g. `slack` or `telegram`."),
 			cli.String("integration-id", "").Help("Filter to sessions created by this integration, e.g. agent sessions started from a connected provider."),
 			cli.String("since", "").Help("Only include sessions with activity after this timestamp. Accepts an RFC3339 timestamp (for example: 2026-07-22T12:00:00Z)."),
+			cli.String("project-id", "").Help("List the chats in this project, after a check that the caller is a member or invited. Without it the list holds only chats in no project. No value mixes projects. Requires the projects feature."),
 			cli.Int("per-agent-limit", "").Help("Return at most this many sessions per agent, each agent's newest activity first, so one busy agent cannot crowd the others out of the page. `limit` still caps the total. Cannot be combined with `cursor`, `agent_id`, or `agent_name`."),
 			cli.String("q", "").Help("Keep only conversations that contain every word of this text somewhere in the title or in the person's or the assistant's message text. Tool calls and tool results are not searched. Case and accents are ignored, and a word of 3 or more characters also matches longer words that start with it. Uses the table search syntax: `OR` between two words accepts either, and a leading `-` excludes a word. Quoted words must all appear, in any order. A search with no word to find is a 400. The trimmed text must be 2 to 200 characters. Cannot be combined with `per_agent_limit`. With `q`, `limit` is capped at 20, and a search that runs too long is a 503 with code `search_timeout`."),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
@@ -446,6 +452,10 @@ func registerSessionsCommands(app *cli.App) {
 					return err
 				}
 				params.Since = &v
+			}
+			if ctx.IsSet("project-id") {
+				v := ctx.String("project-id")
+				params.ProjectId = &v
 			}
 			if ctx.IsSet("per-agent-limit") {
 				v := ctx.Int("per-agent-limit")
@@ -821,6 +831,7 @@ func registerSessionsCommands(app *cli.App) {
 		Flags(
 			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values. Accepts JSON, @file, or @-."),
 			cli.String("model-override", "").Help("Model later turns in this session run on. The history is kept and each reply records the model that produced it. Send an empty string to go back to the agent's own model. Omit to leave it unchanged. Worker-routed agents return `400 invalid_argument` with `details.argument = model_override`."),
+			cli.String("project-id", "").Help("Move the chat into this project. Only the owner's own private chat moves, and only from no project: a chat already in another project is refused with `409 conflict`, because a chat never moves between projects. Sending the project the chat is already in changes nothing. Requires the projects feature and a project the caller may open."),
 			cli.String("status", "").Help("Durable conversation session status: `active`, `archived`, or `deleted`."),
 			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session, or the provider's own default when nothing sets a level."),
 			cli.String("title", "").Help("Human-readable session title."),
@@ -848,6 +859,10 @@ func registerSessionsCommands(app *cli.App) {
 				v := ctx.String("model-override")
 				body.ModelOverride = &v
 			}
+			if ctx.IsSet("project-id") {
+				v := ctx.String("project-id")
+				body.ProjectId = &v
+			}
 			if ctx.IsSet("status") {
 				v := api.SessionStatus(ctx.String("status"))
 				body.Status = &v
@@ -860,7 +875,7 @@ func registerSessionsCommands(app *cli.App) {
 				v := ctx.String("title")
 				body.Title = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("compaction-policy") && !ctx.IsSet("model-override") && !ctx.IsSet("status") && !ctx.IsSet("thinking-effort") && !ctx.IsSet("title") {
+			if ctx.String("file") == "" && !ctx.IsSet("compaction-policy") && !ctx.IsSet("model-override") && !ctx.IsSet("project-id") && !ctx.IsSet("status") && !ctx.IsSet("thinking-effort") && !ctx.IsSet("title") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

@@ -104,6 +104,7 @@ func registerActionsCommands(app *cli.App) {
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 			cli.String("job-id", "").Help("Filter to invocations from a specific job."),
+			cli.String("project-id", "").Help("List the invocations made in this project, after a check that the caller is a member or invited. The usual content rule still applies: a person's private chat in the project stays theirs, and only the project's own work opens to every member. Without it the list holds only invocations in no project. Requires the projects feature."),
 			cli.String("environment-id", "").Help("Filter to invocations executed in a specific environment."),
 			cli.String("action-name", "").Help("Filter to invocations of a specific action."),
 			cli.String("action-id", "").Help("Filter to an immutable custom Action ID."),
@@ -137,6 +138,10 @@ func registerActionsCommands(app *cli.App) {
 			if ctx.IsSet("job-id") {
 				v := ctx.String("job-id")
 				params.JobId = &v
+			}
+			if ctx.IsSet("project-id") {
+				v := ctx.String("project-id")
+				params.ProjectId = &v
 			}
 			if ctx.IsSet("environment-id") {
 				v := ctx.String("environment-id")

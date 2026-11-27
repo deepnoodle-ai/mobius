@@ -20,6 +20,13 @@ the caller may do in `viewer_actions` (`view`, `work_with`, `manage`,
 - Library folder operations: `listLibraryFolders`, `createLibraryFolder`,
   `deleteLibraryFolder`, and `moveLibraryFolder`. CLI: `library list-folders`,
   `create-folder`, `delete-folder`, and `move-library-folder`.
+- `project_id` on sessions (create, update, list filter) and on the
+  invocation list filter.
+
+### Changed
+
+- `IntegrationCategory` has new values (`Email and calendar`, `Files`,
+  `Developer tools`, and others). The old values are gone.
 
 ### Removed
 
@@ -30,7 +37,9 @@ the caller may do in `viewer_actions` (`view`, `work_with`, `manage`,
   `viewer_actions` instead.
 - `listArtifactFolders`, `createArtifactFolder`, and `deleteArtifactFolder`
   (`/v1/artifact-folders`). CLI: `artifacts folders`, `artifacts mkdir`, and
-  `artifacts rmdir`. Use the `library` folder commands.
+  `artifacts rmdir`. Use the `library` folder commands. Unlike `rmdir`,
+  `library delete-folder` does not refuse a non-empty folder: it moves every
+  file in it, subfolders included, to the trash. Preview with `--dry-run`.
 
 ## [0.10.0] - 2026-11-25
 

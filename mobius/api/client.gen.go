@@ -1801,49 +1801,37 @@ func (e IntegrationAccountModel) Valid() bool {
 
 // Defines values for IntegrationCategory.
 const (
-	IntegrationCategoryActions        IntegrationCategory = "Actions"
-	IntegrationCategoryBuiltIn        IntegrationCategory = "Built in"
-	IntegrationCategoryCodeAndDevOps  IntegrationCategory = "Code and DevOps"
-	IntegrationCategoryEmail          IntegrationCategory = "Email"
-	IntegrationCategoryEnvironments   IntegrationCategory = "Environments"
-	IntegrationCategoryIssueTracking  IntegrationCategory = "Issue Tracking"
-	IntegrationCategoryMessaging      IntegrationCategory = "Messaging"
-	IntegrationCategoryModelProviders IntegrationCategory = "Model Providers"
-	IntegrationCategoryProductivity   IntegrationCategory = "Productivity"
-	IntegrationCategorySalesCRM       IntegrationCategory = "Sales & CRM"
-	IntegrationCategorySocialMedia    IntegrationCategory = "Social Media"
-	IntegrationCategoryStorage        IntegrationCategory = "Storage"
-	IntegrationCategoryWebAndData     IntegrationCategory = "Web and Data"
+	IntegrationCategoryBuiltIn          IntegrationCategory = "Built in"
+	IntegrationCategoryChatAndMeetings  IntegrationCategory = "Chat and meetings"
+	IntegrationCategoryDeveloperTools   IntegrationCategory = "Developer tools"
+	IntegrationCategoryEmailAndCalendar IntegrationCategory = "Email and calendar"
+	IntegrationCategoryFiles            IntegrationCategory = "Files"
+	IntegrationCategoryFinance          IntegrationCategory = "Finance"
+	IntegrationCategoryProjects         IntegrationCategory = "Projects"
+	IntegrationCategoryResearch         IntegrationCategory = "Research"
+	IntegrationCategorySales            IntegrationCategory = "Sales"
 )
 
 // Valid indicates whether the value is a known member of the IntegrationCategory enum.
 func (e IntegrationCategory) Valid() bool {
 	switch e {
-	case IntegrationCategoryActions:
-		return true
 	case IntegrationCategoryBuiltIn:
 		return true
-	case IntegrationCategoryCodeAndDevOps:
+	case IntegrationCategoryChatAndMeetings:
 		return true
-	case IntegrationCategoryEmail:
+	case IntegrationCategoryDeveloperTools:
 		return true
-	case IntegrationCategoryEnvironments:
+	case IntegrationCategoryEmailAndCalendar:
 		return true
-	case IntegrationCategoryIssueTracking:
+	case IntegrationCategoryFiles:
 		return true
-	case IntegrationCategoryMessaging:
+	case IntegrationCategoryFinance:
 		return true
-	case IntegrationCategoryModelProviders:
+	case IntegrationCategoryProjects:
 		return true
-	case IntegrationCategoryProductivity:
+	case IntegrationCategoryResearch:
 		return true
-	case IntegrationCategorySalesCRM:
-		return true
-	case IntegrationCategorySocialMedia:
-		return true
-	case IntegrationCategoryStorage:
-		return true
-	case IntegrationCategoryWebAndData:
+	case IntegrationCategorySales:
 		return true
 	default:
 		return false
@@ -7218,6 +7206,9 @@ type CreateSessionRequest struct {
 	// Owner The human, team, or group responsible for this resource.
 	Owner *ResourceOwner `json:"owner,omitempty"`
 
+	// ProjectId Start the chat in this project. The chat must be the caller's own private chat, and the caller must be a member of the project or invited to it. A closed project returns `409 conflict`. A `session_key` already used by a chat outside this project returns `409 conflict`. Requires the projects feature.
+	ProjectId *string `json:"project_id,omitempty"`
+
 	// Retention Controls how long a session is retained. Applied only when the session is first created (like `compaction_policy`); ignored when an existing session is resolved. `standard` is the default and keeps the session forever. `bounded` expires the session — pruning its transcript from every read path — once it has been idle past `ttl_seconds`. Kept for audit after expiry: a tombstone session row with its token totals, and the turn rows with their status, error, usage, and timings.
 	//
 	// `ttl_seconds` is required when `mode` is `bounded` and ignored for `standard`; the server validates this (a `oneOf` encoding was dropped because it only produced untyped union codegen without adding runtime enforcement in the generated Go/TypeScript clients).
@@ -7777,7 +7768,7 @@ type InsertRowRequest struct {
 // It decides the default owner of a new connection and whether the connection is offered to an agent by default.
 type IntegrationAccountModel string
 
-// IntegrationCategory Stable integration directory grouping.
+// IntegrationCategory The group a provider is browsed under, as customers read it. Each provider has exactly one.
 type IntegrationCategory string
 
 // IntegrationConnection One connection to a provider, as the catalog presents it.
@@ -9935,6 +9926,9 @@ type Session struct {
 	// Posture Employee-facing effective ownership and audience posture for the current caller. `shared_with_everyone` is a person's thing the whole organization can see, whoever owns it. `shared_with_group` is a thing only named people reach: a group assistant, or a routine shown to named people. `space` is a file in a Library space, which only the space's members see.
 	Posture ResourcePosture `json:"posture"`
 
+	// ProjectId Project the chat is in. Absent for a chat in no project. A chat in a project uses the project's instructions and stays in it.
+	ProjectId *string `json:"project_id,omitempty"`
+
 	// Retention Controls how long a session is retained. Applied only when the session is first created (like `compaction_policy`); ignored when an existing session is resolved. `standard` is the default and keeps the session forever. `bounded` expires the session — pruning its transcript from every read path — once it has been idle past `ttl_seconds`. Kept for audit after expiry: a tombstone session row with its token totals, and the turn rows with their status, error, usage, and timings.
 	//
 	// `ttl_seconds` is required when `mode` is `bounded` and ignored for `standard`; the server validates this (a `oneOf` encoding was dropped because it only produced untyped union codegen without adding runtime enforcement in the generated Go/TypeScript clients).
@@ -11447,6 +11441,9 @@ type UpdateSessionRequest struct {
 	// ModelOverride Model later turns in this session run on. The history is kept and each reply records the model that produced it. Send an empty string to go back to the agent's own model. Omit to leave it unchanged. Worker-routed agents return `400 invalid_argument` with `details.argument = model_override`.
 	ModelOverride *string `json:"model_override,omitempty"`
 
+	// ProjectId Move the chat into this project. Only the owner's own private chat moves, and only from no project: a chat already in another project is refused with `409 conflict`, because a chat never moves between projects. Sending the project the chat is already in changes nothing. Requires the projects feature and a project the caller may open.
+	ProjectId *string `json:"project_id,omitempty"`
+
 	// Status Durable conversation session status: `active`, `archived`, or `deleted`.
 	Status *SessionStatus `json:"status,omitempty"`
 
@@ -12040,6 +12037,9 @@ type ListActionInvocationsParams struct {
 	// JobId Filter to invocations from a specific job.
 	JobId *string `form:"job_id,omitempty" json:"job_id,omitempty"`
 
+	// ProjectId List the invocations made in this project, after a check that the caller is a member or invited. The usual content rule still applies: a person's private chat in the project stays theirs, and only the project's own work opens to every member. Without it the list holds only invocations in no project. Requires the projects feature.
+	ProjectId *string `form:"project_id,omitempty" json:"project_id,omitempty"`
+
 	// EnvironmentId Filter to invocations executed in a specific environment.
 	EnvironmentId *string `form:"environment_id,omitempty" json:"environment_id,omitempty"`
 
@@ -12583,6 +12583,9 @@ type ListSessionsParams struct {
 
 	// Since Only include sessions with activity after this timestamp.
 	Since *time.Time `form:"since,omitempty" json:"since,omitempty"`
+
+	// ProjectId List the chats in this project, after a check that the caller is a member or invited. Without it the list holds only chats in no project. No value mixes projects. Requires the projects feature.
+	ProjectId *string `form:"project_id,omitempty" json:"project_id,omitempty"`
 
 	// PerAgentLimit Return at most this many sessions per agent, each agent's newest activity first, so one busy agent cannot crowd the others out of the page. `limit` still caps the total. Cannot be combined with `cursor`, `agent_id`, or `agent_name`.
 	PerAgentLimit *int `form:"per_agent_limit,omitempty" json:"per_agent_limit,omitempty"`
@@ -19398,6 +19401,18 @@ func NewListActionInvocationsRequest(server string, params *ListActionInvocation
 		if params.JobId != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "job_id", *params.JobId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ProjectId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "project_id", *params.ProjectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -26488,6 +26503,18 @@ func NewListSessionsRequest(server string, params *ListSessionsParams) (*http.Re
 		if params.Since != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "since", *params.Since, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ProjectId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "project_id", *params.ProjectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {

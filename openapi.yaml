@@ -371,6 +371,15 @@ paths:
         description: Filter to invocations from a specific job.
         schema:
           type: string
+      - name: project_id
+        in: query
+        description: 'List the invocations made in this project, after a check that the caller
+          is a member or invited. The usual content rule still applies: a person''s private
+          chat in the project stays theirs, and only the project''s own work opens to every
+          member. Without it the list holds only invocations in no project. Requires the projects
+          feature.'
+        schema:
+          type: string
       - name: environment_id
         in: query
         description: Filter to invocations executed in a specific environment.
@@ -2611,6 +2620,13 @@ paths:
         schema:
           type: string
           format: date-time
+      - name: project_id
+        in: query
+        description: List the chats in this project, after a check that the caller is a member
+          or invited. Without it the list holds only chats in no project. No value mixes projects.
+          Requires the projects feature.
+        schema:
+          type: string
       - name: per_agent_limit
         in: query
         description: Return at most this many sessions per agent, each agent's newest activity
@@ -7117,6 +7133,20 @@ components:
       description: The person.
       schema:
         type: string
+    ProjectID:
+      name: project_id
+      in: path
+      required: true
+      description: The project's ID.
+      schema:
+        type: string
+    ProjectPrincipalID:
+      name: principal_id
+      in: path
+      required: true
+      description: The invited person.
+      schema:
+        type: string
   responses:
     BadRequest:
       description: Bad Request
@@ -7971,6 +8001,10 @@ components:
             it.
         container:
           $ref: '#/components/schemas/ResourceContainer'
+        project_id:
+          type: string
+          description: Project the chat is in. Absent for a chat in no project. A chat in
+            a project uses the project's instructions and stays in it.
         title:
           type: string
           description: Human-readable session title.
@@ -9444,20 +9478,17 @@ components:
             follows this target.
     IntegrationCategory:
       type: string
-      description: Stable integration directory grouping.
+      description: The group a provider is browsed under, as customers read it. Each provider
+        has exactly one.
       enum:
-      - Code and DevOps
-      - Sales & CRM
-      - Issue Tracking
-      - Productivity
-      - Messaging
-      - Social Media
-      - Email
-      - Actions
-      - Web and Data
-      - Storage
-      - Environments
-      - Model Providers
+      - Email and calendar
+      - Chat and meetings
+      - Files
+      - Sales
+      - Finance
+      - Projects
+      - Research
+      - Developer tools
       - Built in
     IntegrationAccountModel:
       type: string
@@ -13663,6 +13694,13 @@ components:
             reply records the model that produced it. Send an empty string to go back to the
             agent's own model. Omit to leave it unchanged. Worker-routed agents return `400
             invalid_argument` with `details.argument = model_override`.
+        project_id:
+          type: string
+          description: 'Move the chat into this project. Only the owner''s own private chat
+            moves, and only from no project: a chat already in another project is refused
+            with `409 conflict`, because a chat never moves between projects. Sending the
+            project the chat is already in changes nothing. Requires the projects feature
+            and a project the caller may open.'
     SessionTranscriptMessage:
       type: object
       additionalProperties: false
@@ -14980,6 +15018,12 @@ components:
         agent_id:
           type: string
           description: Agent container that executes the session. The agent never owns it.
+        project_id:
+          type: string
+          description: Start the chat in this project. The chat must be the caller's own private
+            chat, and the caller must be a member of the project or invited to it. A closed
+            project returns `409 conflict`. A `session_key` already used by a chat outside
+            this project returns `409 conflict`. Requires the projects feature.
         mode:
           type: string
           enum:
