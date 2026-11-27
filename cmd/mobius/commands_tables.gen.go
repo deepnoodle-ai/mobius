@@ -63,7 +63,7 @@ func registerTablesCommands(app *cli.App) {
 			cli.String("description", "").Help("Optional human-readable description of the table."),
 			cli.String("instructions", "").Help("Optional author guidance for how this table should be used (e.g. surfaced to agents). Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
 			cli.String("name", "").Help("[required] Table name (lowercase, snake_case); unique within the org."),
-			cli.String("owner", "").Help("The human or team responsible for this resource. Accepts JSON, @file, or @-."),
+			cli.String("owner", "").Help("The human, team, or group responsible for this resource. Accepts JSON, @file, or @-."),
 			cli.String("schema", "").Help("[required] Column definition for a virtual table. Each table has exactly one required string identity column and may nominate one optional string secondary key column. Accepts JSON, @file, or @-."),
 			cli.String("visibility", "").Help("Who the custodian chose to share the resource with."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),

@@ -2768,50 +2768,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/artifact-folders": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List folders
-         * @description Returns the immediate subfolders of a folder, ordered by name. A folder exists either because it was declared through this API or because a file the caller can see carries it in its `name`; both are returned, and `declared` says which. Implied folders are derived only from files the caller could list, so browsing never reveals a hidden file.
-         */
-        get: operations["listArtifactFolders"];
-        put?: never;
-        /**
-         * Create folder
-         * @description Declares a folder so it can exist before any file is in it. The call is idempotent: declaring a folder that already exists returns the existing one with 200 rather than failing, so "new folder" on a name already in use simply opens it. A declared folder holds nothing itself and charges no quota; it never widens access to any file.
-         */
-        post: operations["createArtifactFolder"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/artifact-folders/{folder_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Delete folder
-         * @description Removes a declared folder. The folder must be empty: the call is refused with `409 folder_not_empty` while any visible file lives in it or below it, or while a declared subfolder remains. The refusal carries `file_count` in `error.details`. Files are never deleted by this call.
-         */
-        delete: operations["deleteArtifactFolder"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/library/files": {
         parameters: {
             query?: never;
@@ -2924,6 +2880,56 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/library/folders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List library folders
+         * @description Returns the immediate subfolders of a folder in one place, ordered by name. A folder exists because someone created it or because a file's path carries it; both are returned, and they behave the same way.
+         */
+        get: operations["listLibraryFolders"];
+        put?: never;
+        /**
+         * Create library folder
+         * @description Creates a folder so it can exist before any file is in it. Creating a folder that already exists returns it with 200 rather than failing. A folder holds nothing itself and never changes who can open a file.
+         */
+        post: operations["createLibraryFolder"];
+        /**
+         * Delete library folder
+         * @description Deletes a folder by moving every file in it, subfolders included, to the trash, where each can be restored. Refused, naming the files, when the caller may not delete all of them. `dry_run` reports the count without changing anything.
+         */
+        delete: operations["deleteLibraryFolder"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/folders/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move library folder
+         * @description Renames a folder or moves it under another folder in the same place, or, with `to_place`, moves it to another place. Every file and subfolder in it moves together, or none do. Refused, naming the files, when the caller may not move all of them, and when the new path is already taken.
+         *
+         *     A move to another place follows the file move's rules for every file: the caller needs the right to change files in both places, a move that narrows who sees the files (out of the company's files into a space, or into the caller's own files) takes an administrator who is in the space, and a move that lets more people see the files needs `confirm_audience_expansion`.
+         */
+        post: operations["moveLibraryFolder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2942,11 +2948,14 @@ export interface components {
                 };
             };
         };
-        /** @description The human or team responsible for this resource. */
+        /** @description The human, team, or group responsible for this resource. */
         ResourceOwner: {
-            /** @enum {string} */
-            kind: "person" | "team";
-            /** @description Human principal ID when kind is person; null for the team. */
+            /**
+             * @description `group` is returned only for files in a Library space; no request may ask for it.
+             * @enum {string}
+             */
+            kind: "person" | "team" | "group";
+            /** @description Human principal ID when kind is person, the group's ID when kind is group; null for the team. */
             id?: string | null;
         };
         /**
@@ -2961,10 +2970,10 @@ export interface components {
             id: string;
         } | null;
         /**
-         * @description Employee-facing effective ownership and audience posture for the current caller.
+         * @description Employee-facing effective ownership and audience posture for the current caller. `shared_with_everyone` is a person's thing the whole organization can see, whoever owns it. `shared_with_group` is a thing only named people reach: a group assistant, or a routine shown to named people. `space` is a file in a Library space, which only the space's members see.
          * @enum {string}
          */
-        ResourcePosture: "only_you" | "shared_by_you" | "shared_with_group" | "team" | "someone_else";
+        ResourcePosture: "only_you" | "shared_with_everyone" | "shared_with_group" | "team" | "someone_else" | "space";
         /** @description What the current caller may do to this resource, answered by the same access rule the update and delete routes run. Clients offer controls from this and never re-derive it from posture or role. Team-owned resources are changed only by those who look after them. */
         ResourceControls: {
             /** @description Whether the caller may change the resource, including its content, rows, or secrets. */
@@ -3206,8 +3215,6 @@ export interface components {
             visibility: components["schemas"]["AgentVisibility"];
             /** @description How many principals are in this agent's audience. Zero for an `organization` agent, which carries no member rows. */
             member_count?: number;
-            /** @description Whether the caller may change this assistant's setup: exactly what `PATCH /v1/agents/{resource_id}` would allow. False on internal administration listings. */
-            can_edit: boolean;
             viewer_actions?: components["schemas"]["ViewerActions"];
             /** @description Number of distinct shared chats where this assistant was active in the past 7 days. Populated only for organization administrators; absent for other callers. Reveals no chat name, member, or message content. */
             active_chat_count?: number;
@@ -3326,6 +3333,8 @@ export interface components {
             /** @description Agent that contains and executes this session. The agent never owns it. */
             agent_id: string;
             container?: components["schemas"]["ResourceContainer"];
+            /** @description Project the chat is in. Absent for a chat in no project. A chat in a project uses the project's instructions and stays in it. */
+            project_id?: string;
             /** @description Human-readable session title. */
             title: string;
             /** @description Lifecycle status of the session. */
@@ -3345,7 +3354,6 @@ export interface components {
             session_key: string;
             visibility: components["schemas"]["ResourceVisibility"];
             posture: components["schemas"]["ResourcePosture"];
-            controls: components["schemas"]["ResourceControls"];
             viewer_actions?: components["schemas"]["ViewerActions"];
             /** @description Model selected for this session. Omitted when the session inherits the agent's model. */
             model_override?: string;
@@ -3821,7 +3829,6 @@ export interface components {
             visibility: components["schemas"]["ResourceVisibility"];
             container?: components["schemas"]["ResourceContainer"];
             posture: components["schemas"]["ResourcePosture"];
-            controls: components["schemas"]["ResourceControls"];
             viewer_actions?: components["schemas"]["ViewerActions"];
             /** @description Stable identifier the action is called by. */
             name: string;
@@ -3945,8 +3952,6 @@ export interface components {
             container?: components["schemas"]["ResourceContainer"];
             /** @description Present for an organization-authored custom action. */
             posture?: components["schemas"]["ResourcePosture"];
-            /** @description Present for an organization-authored custom action. */
-            controls?: components["schemas"]["ResourceControls"];
             /** @description Present for an organization-authored custom action. */
             viewer_actions?: components["schemas"]["ViewerActions"];
         };
@@ -4256,10 +4261,10 @@ export interface components {
             default_for?: string[];
         };
         /**
-         * @description Stable integration directory grouping.
+         * @description The group a provider is browsed under, as customers read it. Each provider has exactly one.
          * @enum {string}
          */
-        IntegrationCategory: "Code and DevOps" | "Sales & CRM" | "Issue Tracking" | "Productivity" | "Messaging" | "Social Media" | "Email" | "Actions" | "Web and Data" | "Storage" | "Environments" | "Model Providers" | "Built in";
+        IntegrationCategory: "Email and calendar" | "Chat and meetings" | "Files" | "Sales" | "Finance" | "Projects" | "Research" | "Developer tools" | "Built in";
         /**
          * @description What one connection to a provider represents.
          *
@@ -5430,8 +5435,6 @@ export interface components {
             items?: components["schemas"]["AgentMember"][];
             /** @description How many people are members. */
             count: number;
-            /** @description Whether the caller manages this assistant: an Admin, or a manager of a group assistant whose role can build. */
-            can_manage: boolean;
         };
         UpdateAgentMemberRequest: {
             manager: boolean;
@@ -6143,7 +6146,6 @@ export interface components {
             visibility: components["schemas"]["ResourceVisibility"];
             container: components["schemas"]["ResourceContainer"];
             posture: components["schemas"]["ResourcePosture"];
-            controls: components["schemas"]["ResourceControls"];
             viewer_actions?: components["schemas"]["ViewerActions"];
             /**
              * @description Canonical action names, wildcard selectors, or group references naming the actions this skill needs. Uses the same selector vocabulary as agent action selections.
@@ -6321,6 +6323,8 @@ export interface components {
             thinking_effort?: components["schemas"]["ThinkingEffort"];
             /** @description Model later turns in this session run on. The history is kept and each reply records the model that produced it. Send an empty string to go back to the agent's own model. Omit to leave it unchanged. Worker-routed agents return `400 invalid_argument` with `details.argument = model_override`. */
             model_override?: string;
+            /** @description Move the chat into this project. Only the owner's own private chat moves, and only from no project: a chat already in another project is refused with `409 conflict`, because a chat never moves between projects. Sending the project the chat is already in changes nothing. Requires the projects feature and a project the caller may open. */
+            project_id?: string;
         };
         SessionTranscriptMessage: {
             id: string;
@@ -7015,6 +7019,8 @@ export interface components {
         CreateSessionRequest: {
             /** @description Agent container that executes the session. The agent never owns it. */
             agent_id: string;
+            /** @description Start the chat in this project. The chat must be the caller's own private chat, and the caller must be a member of the project or invited to it. A closed project returns `409 conflict`. A `session_key` already used by a chat outside this project returns `409 conflict`. Requires the projects feature. */
+            project_id?: string;
             /**
              * @description `continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.
              * @enum {string}
@@ -7534,8 +7540,6 @@ export interface components {
              * @default 5
              */
             concurrency?: number;
-            /** @description Actions permitted for this caller; the server rechecks each request. `edit` changes the name, schedule, model, and lowers limits. `configure` also changes the instructions, the watched event, the accounts it uses, and raises limits: on a person's routine only its owner may. */
-            available_actions?: ("edit" | "configure" | "run" | "pause" | "resume" | "delete" | "invite")[];
             viewer_actions?: components["schemas"]["ViewerActions"];
             posture?: components["schemas"]["ResourcePosture"];
             /** @enum {string} */
@@ -8267,7 +8271,6 @@ export interface components {
             owner: components["schemas"]["ResourceOwner"];
             visibility: components["schemas"]["ResourceVisibility"];
             posture: components["schemas"]["ResourcePosture"];
-            controls: components["schemas"]["ResourceControls"];
             viewer_actions?: components["schemas"]["ViewerActions"];
             /** @description Lowercase snake_case table name, unique within the org. */
             name: string;
@@ -9030,81 +9033,6 @@ export interface components {
             expires_at: string;
         };
         /**
-         * @description A declared Library folder.
-         * @example {
-         *       "id": "afd_2m7q9x5v3p8n4r6t",
-         *       "path": "reports/2026",
-         *       "name": "2026",
-         *       "parent_path": "reports",
-         *       "owner": {
-         *         "kind": "team"
-         *       },
-         *       "visibility": "organization",
-         *       "created_at": "2026-09-14T14:30:00Z"
-         *     }
-         */
-        ArtifactFolder: {
-            /** @description Folder ID. */
-            id: string;
-            /** @description Normalized folder path, with no leading or trailing slash. */
-            path: string;
-            /** @description Last segment of the path. */
-            name: string;
-            /** @description Path of the containing folder; empty at the root. */
-            parent_path: string;
-            owner: components["schemas"]["ResourceOwner"];
-            visibility: components["schemas"]["ResourceVisibility"];
-            viewer_actions?: components["schemas"]["ViewerActions"];
-            /** Format: date-time */
-            created_at: string;
-            /** @description Principal that declared the folder. */
-            created_by?: string;
-        };
-        /** @description One immediate subfolder, declared or implied by a file name. */
-        ArtifactFolderSummary: {
-            /** @description Normalized folder path. */
-            path: string;
-            /** @description Last segment of the path, for display. */
-            name: string;
-            /** @description Whether a folder record exists. Only a declared folder can be deleted; an implied one disappears with its last file. */
-            declared: boolean;
-            /** @description Folder ID, present only when the folder is declared. */
-            id?: string;
-        };
-        /**
-         * @example {
-         *       "items": [
-         *         {
-         *           "path": "reports",
-         *           "name": "reports",
-         *           "declared": true,
-         *           "id": "afd_2m7q9x5v3p8n4r6t"
-         *         },
-         *         {
-         *           "path": "invoices",
-         *           "name": "invoices",
-         *           "declared": false
-         *         }
-         *       ]
-         *     }
-         */
-        ArtifactFolderListResponse: {
-            /** @description Immediate subfolders, ordered by name. */
-            items: components["schemas"]["ArtifactFolderSummary"][];
-        };
-        /**
-         * @example {
-         *       "path": "reports/2026",
-         *       "visibility": "organization"
-         *     }
-         */
-        CreateArtifactFolderRequest: {
-            /** @description Folder path to declare, relative and with no leading or trailing slash. Intermediate folders are implied by this path and need no declaration of their own. */
-            path: string;
-            /** @description Who sees the folder. Omit for `private`, visible only to the person creating it. It never changes who can open the files inside. */
-            visibility?: components["schemas"]["ResourceVisibility"];
-        };
-        /**
          * @example {
          *       "items": [
          *         {
@@ -9152,6 +9080,8 @@ export interface components {
             owner?: components["schemas"]["ResourceOwner"];
             /** @description Optional audience. Omit to keep the upload private. */
             visibility?: components["schemas"]["ResourceVisibility"];
+            /** @description Upload into this space. The caller must be a member who can change its files. `owner` and `visibility` must then be omitted. */
+            group_id?: string;
             /**
              * @description When "true" and the uploaded file is DOCX, XLSX, or PPTX, extract a Markdown rendition asynchronously for model delivery. Ignored for other file types.
              * @enum {string}
@@ -9211,14 +9141,16 @@ export interface components {
             versions: components["schemas"]["Artifact"][];
         };
         /**
-         * @description Which place a file is in. `team` is the company's files, identical for every member; `person` is one person's own. It is the same vocabulary as resource ownership, because it is the same distinction.
+         * @description Which place a file is in. `team` is the company's files, identical for every member; `person` is one person's own; `group` is a space, which only its group's members can see. It is the same vocabulary as resource ownership, because it is the same distinction.
          * @enum {string}
          */
-        LibraryPlaceKind: "team" | "person";
+        LibraryPlaceKind: "team" | "person" | "group";
         LibraryPlace: {
             kind: components["schemas"]["LibraryPlaceKind"];
-            /** @description The person whose files these are, for `person`. Absent for `team`, which belongs to the organization rather than a person. */
+            /** @description The person whose files these are, for `person`, or the space's group ID, for `group`. Absent for `team`, which belongs to the organization rather than a person. */
             id?: string;
+            /** @description The space's name, for `group`. */
+            name?: string;
             /** @description The address as the Library shows it: `My files/reports/q3.md` for a person's file, the bare path otherwise. Only the person can read their own files, so "My files" is right for every reader. Display only: it is never accepted as input. */
             display_path?: string;
         };
@@ -9284,13 +9216,13 @@ export interface components {
             path: string;
         };
         MoveLibraryFileRequest: {
-            /** @description Where the file goes: `team` for the company's files, `person` for one person's own. */
+            /** @description Where the file goes: `team` for the company's files, `person` for one person's own, `group` for a space. */
             place: components["schemas"]["LibraryPlaceKind"];
-            /** @description Whose files, when `place` is `person`. Defaults to the caller's own; another person's is refused. */
+            /** @description Whose files, when `place` is `person`. Defaults to the caller's own; another person's is refused. The space's group ID when `place` is `group`. */
             place_id?: string;
             /** @description An address in the destination. Defaults to the path it already has. */
             path?: string;
-            /** @description Required when moving into the company's files. It is the same confirmation sharing an artifact takes. */
+            /** @description Required when the move lets more people see the file: into the company's files, or into a space with someone who could not see it before. */
             confirm_audience_expansion?: boolean;
         };
         LibraryFileContent: {
@@ -9306,6 +9238,96 @@ export interface components {
             mime_type?: string;
             /** Format: int64 */
             size_bytes?: number;
+        };
+        /**
+         * @description A folder in one place, created or implied by file paths.
+         * @example {
+         *       "path": "reports/2026",
+         *       "name": "2026"
+         *     }
+         */
+        LibraryFolder: {
+            /** @description The folder's path within its place, with no leading or trailing slash. */
+            path: string;
+            /** @description The last segment of the path, for display. */
+            name: string;
+        };
+        /**
+         * @example {
+         *       "items": [
+         *         {
+         *           "path": "invoices",
+         *           "name": "invoices"
+         *         },
+         *         {
+         *           "path": "reports",
+         *           "name": "reports"
+         *         }
+         *       ]
+         *     }
+         */
+        LibraryFolderListResponse: {
+            /** @description Immediate subfolders, ordered by name. */
+            items: components["schemas"]["LibraryFolder"][];
+        };
+        /**
+         * @example {
+         *       "place": "team",
+         *       "path": "reports/2026"
+         *     }
+         */
+        CreateLibraryFolderRequest: {
+            /** @description Where the folder goes. `person` is always the caller's own files. */
+            place: components["schemas"]["LibraryPlaceKind"];
+            /** @description The space's group ID, when `place` is `group`. */
+            place_id?: string;
+            /** @description Folder path, relative and with no leading or trailing slash. Folders above it need no creating of their own. */
+            path: string;
+        };
+        /**
+         * @example {
+         *       "place": "team",
+         *       "path": "reports",
+         *       "new_path": "archive/reports-2026"
+         *     }
+         */
+        MoveLibraryFolderRequest: {
+            /** @description Whose folder. `person` is always the caller's own files. */
+            place: components["schemas"]["LibraryPlaceKind"];
+            /** @description The space's group ID, when `place` is `group`. */
+            place_id?: string;
+            /** @description The folder to move, as a relative path. */
+            path: string;
+            /** @description Where it goes. In the same place, change the last segment to rename it, or the part before it to move it under another folder. With `to_place`, it is the folder in the destination that receives the contents; empty puts them at the top of that place. */
+            new_path: string;
+            /** @description Move the folder to another place. Omit to stay in `place`. `person` is always the caller's own files. */
+            to_place?: components["schemas"]["LibraryPlaceKind"];
+            /** @description The space's group ID, when `to_place` is `group`. */
+            to_place_id?: string;
+            /** @description Required when a move to another place lets more people see the files: into the company's files, or into a space with someone who could not see them before. */
+            confirm_audience_expansion?: boolean;
+        };
+        /**
+         * @example {
+         *       "place": "team",
+         *       "path": "reports",
+         *       "new_path": "archive/reports-2026",
+         *       "file_count": 12
+         *     }
+         */
+        LibraryFolderChangeResult: {
+            /** @description The place the folder was in. */
+            place: components["schemas"]["LibraryPlaceKind"];
+            /** @description The place the folder moved to. Absent when it stayed in `place`. */
+            new_place?: components["schemas"]["LibraryPlaceKind"];
+            /** @description The folder's path before the change. */
+            path: string;
+            /** @description The folder's path after a move. Absent for a delete. */
+            new_path?: string;
+            /** @description Files moved by a move, or moved to the trash by a delete. Files already in the trash are not counted for a delete. */
+            file_count: number;
+            /** @description True when nothing was changed. */
+            dry_run?: boolean;
         };
     };
     responses: {
@@ -9462,14 +9484,24 @@ export interface components {
         ExternalAgentID: string;
         /** @description Channel message ID. */
         ChannelMessageID: string;
-        /** @description ID of the declared folder */
-        ArtifactFolderIdParam: string;
-        /** @description Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read. `personal` is the caller's own files, which only the caller can read. Omit it to list every section the caller can read. */
-        LibraryPlaceParam: "company" | "personal";
+        /** @description Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read. `personal` is the caller's own files, which only the caller can read. `group` is a space, named by `group_id`, which only its members can read. Omit it to list every section the caller can read. */
+        LibraryPlaceParam: "company" | "personal" | "group";
+        /** @description The space's group ID, when `place` is `group`. */
+        LibraryGroupParam: string;
         /** @description Authoring format the template applies to */
         DocumentTemplateFormatParam: "docx" | "pptx";
         /** @description Library file ID (`file_...`), which is not an artifact ID. */
         LibraryFileIdParam: string;
+        /** @description The space's group ID, when `place` is `group`. */
+        LibraryFolderPlaceIdParam: string;
+        /** @description The group's ID. */
+        GroupID: string;
+        /** @description The person. */
+        GroupPrincipalID: string;
+        /** @description The project's ID. */
+        ProjectID: string;
+        /** @description The invited person. */
+        ProjectPrincipalID: string;
     };
     requestBodies: {
         /** @description Outbound signed-context HTTP action request. */
@@ -9789,6 +9821,8 @@ export interface operations {
                 limit?: components["parameters"]["LimitParam"];
                 /** @description Filter to invocations from a specific job. */
                 job_id?: string;
+                /** @description List the invocations made in this project, after a check that the caller is a member or invited. The usual content rule still applies: a person's private chat in the project stays theirs, and only the project's own work opens to every member. Without it the list holds only invocations in no project. Requires the projects feature. */
+                project_id?: string;
                 /** @description Filter to invocations executed in a specific environment. */
                 environment_id?: string;
                 /** @description Filter to invocations of a specific action. */
@@ -11905,6 +11939,8 @@ export interface operations {
                 integration_id?: string;
                 /** @description Only include sessions with activity after this timestamp. */
                 since?: string;
+                /** @description List the chats in this project, after a check that the caller is a member or invited. Without it the list holds only chats in no project. No value mixes projects. Requires the projects feature. */
+                project_id?: string;
                 /** @description Return at most this many sessions per agent, each agent's newest activity first, so one busy agent cannot crowd the others out of the page. `limit` still caps the total. Cannot be combined with `cursor`, `agent_id`, or `agent_name`. */
                 per_agent_limit?: number;
                 /** @description Keep only conversations that contain every word of this text somewhere in the title or in the person's or the assistant's message text. Tool calls and tool results are not searched. Case and accents are ignored, and a word of 3 or more characters also matches longer words that start with it. Uses the table search syntax: `OR` between two words accepts either, and a leading `-` excludes a word. Quoted words must all appear, in any order. A search with no word to find is a 400. The trimmed text must be 2 to 200 characters. Cannot be combined with `per_agent_limit`. With `q`, `limit` is capped at 20, and a search that runs too long is a 503 with code `search_timeout`. */
@@ -15193,8 +15229,10 @@ export interface operations {
                 agent_id?: string;
                 /** @description Only files created by this principal (for example, an assistant's `principal_id`). With `latest_only=true`, this matches the creator of the returned current version. */
                 created_by?: string;
-                /** @description Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read. `personal` is the caller's own files, which only the caller can read. Omit it to list every section the caller can read. */
+                /** @description Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read. `personal` is the caller's own files, which only the caller can read. `group` is a space, named by `group_id`, which only its members can read. Omit it to list every section the caller can read. */
                 place?: components["parameters"]["LibraryPlaceParam"];
+                /** @description The space's group ID, when `place` is `group`. */
+                group_id?: components["parameters"]["LibraryGroupParam"];
                 /** @description Cursor for pagination (opaque string from previous response) */
                 cursor?: components["parameters"]["CursorParam"];
                 /** @description Maximum number of items to return */
@@ -15439,119 +15477,13 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    listArtifactFolders: {
-        parameters: {
-            query?: {
-                /** @description Folder whose children are listed. Omit for the root. */
-                parent?: string;
-                /** @description Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read. `personal` is the caller's own files, which only the caller can read. Omit it to list every section the caller can read. */
-                place?: components["parameters"]["LibraryPlaceParam"];
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ArtifactFolderListResponse"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-        };
-    };
-    createArtifactFolder: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateArtifactFolderRequest"];
-            };
-        };
-        responses: {
-            /** @description The folder was already declared */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ArtifactFolder"];
-                };
-            };
-            /** @description Folder created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ArtifactFolder"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-        };
-    };
-    deleteArtifactFolder: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of the declared folder */
-                folder_id: components["parameters"]["ArtifactFolderIdParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Deleted */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            /** @description The folder still contains files or subfolders */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": {
-                     *         "code": "folder_not_empty",
-                     *         "message": "folder \"reports\" still contains 3 files; move or delete them first",
-                     *         "details": {
-                     *           "file_count": 3
-                     *         }
-                     *       }
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
     listLibraryFiles: {
         parameters: {
             query?: {
                 /** @description Narrow to one place. Omit for every place the caller can read. */
                 place?: components["schemas"]["LibraryPlaceKind"];
+                /** @description The space's group ID, when `place` is `group`. */
+                place_id?: string;
                 /** @description Folder to list, as a relative path with no leading or trailing slash. A file's folder is the directory part of its path. Omit it or send an empty value for the root. */
                 folder?: string;
                 /** @description Include files in subfolders of `folder`. With `false`, only files whose folder is exactly `folder` are returned. */
@@ -15775,6 +15707,134 @@ export interface operations {
             };
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    listLibraryFolders: {
+        parameters: {
+            query: {
+                /** @description Whose folders. `person` is always the caller's own. */
+                place: components["schemas"]["LibraryPlaceKind"];
+                /** @description The space's group ID, when `place` is `group`. */
+                place_id?: components["parameters"]["LibraryFolderPlaceIdParam"];
+                /** @description Folder whose children are listed. Omit for the top level. */
+                parent?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryFolderListResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createLibraryFolder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateLibraryFolderRequest"];
+            };
+        };
+        responses: {
+            /** @description The folder already existed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryFolder"];
+                };
+            };
+            /** @description Folder created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryFolder"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    deleteLibraryFolder: {
+        parameters: {
+            query: {
+                /** @description Whose folder. `person` is always the caller's own. */
+                place: components["schemas"]["LibraryPlaceKind"];
+                /** @description The space's group ID, when `place` is `group`. */
+                place_id?: components["parameters"]["LibraryFolderPlaceIdParam"];
+                /** @description The folder to delete, as a relative path. */
+                path: string;
+                /** @description Make every check and report what would happen, changing nothing. */
+                dry_run?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted, or for a dry run, what deleting would do */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryFolderChangeResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    moveLibraryFolder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveLibraryFolderRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryFolderChangeResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
 }

@@ -48,21 +48,30 @@ class ErrorResponse(BaseModel):
 
 
 class Kind(StrEnum):
+    """
+    `group` is returned only for files in a Library space; no request may ask for it.
+    """
+
     person = 'person'
     team = 'team'
+    group = 'group'
 
 
 class ResourceOwner(BaseModel):
     """
-    The human or team responsible for this resource.
+    The human, team, or group responsible for this resource.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind
+    kind: Kind = Field(
+        ...,
+        description='`group` is returned only for files in a Library space; no request may ask for it.',
+    )
     id: str | None = Field(
-        None, description='Human principal ID when kind is person; null for the team.'
+        None,
+        description="Human principal ID when kind is person, the group's ID when kind is group; null for the team.",
     )
 
 
@@ -93,14 +102,15 @@ class ResourceContainer(BaseModel):
 
 class ResourcePosture(StrEnum):
     """
-    Employee-facing effective ownership and audience posture for the current caller.
+    Employee-facing effective ownership and audience posture for the current caller. `shared_with_everyone` is a person's thing the whole organization can see, whoever owns it. `shared_with_group` is a thing only named people reach: a group assistant, or a routine shown to named people. `space` is a file in a Library space, which only the space's members see.
     """
 
     only_you = 'only_you'
-    shared_by_you = 'shared_by_you'
+    shared_with_everyone = 'shared_with_everyone'
     shared_with_group = 'shared_with_group'
     team = 'team'
     someone_else = 'someone_else'
+    space = 'space'
 
 
 class ResourceControls(BaseModel):
@@ -504,10 +514,6 @@ class Agent(BaseModel):
         None,
         description="How many principals are in this agent's audience. Zero for an `organization` agent, which carries no member rows.",
     )
-    can_edit: bool = Field(
-        ...,
-        description="Whether the caller may change this assistant's setup: exactly what `PATCH /v1/agents/{resource_id}` would allow. False on internal administration listings.",
-    )
     viewer_actions: ViewerActions | None = None
     active_chat_count: int | None = Field(
         None,
@@ -702,6 +708,10 @@ class Session(BaseModel):
         description='Agent that contains and executes this session. The agent never owns it.',
     )
     container: ResourceContainer | None = None
+    project_id: str | None = Field(
+        None,
+        description="Project the chat is in. Absent for a chat in no project. A chat in a project uses the project's instructions and stays in it.",
+    )
     title: str = Field(..., description='Human-readable session title.')
     status: SessionStatus = Field(..., description='Lifecycle status of the session.')
     origin: SessionOrigin = Field(..., description='Surface that created the session.')
@@ -723,7 +733,6 @@ class Session(BaseModel):
     )
     visibility: ResourceVisibility
     posture: ResourcePosture
-    controls: ResourceControls
     viewer_actions: ViewerActions | None = None
     model_override: str | None = Field(
         None,
@@ -1194,7 +1203,6 @@ class Action(BaseModel):
     visibility: ResourceVisibility
     container: ResourceContainer | None = None
     posture: ResourcePosture
-    controls: ResourceControls
     viewer_actions: ViewerActions | None = None
     name: str = Field(..., description='Stable identifier the action is called by.')
     title: str | None = Field(
@@ -1763,21 +1771,17 @@ class RoutineFollowTarget(BaseModel):
 
 class IntegrationCategory(StrEnum):
     """
-    Stable integration directory grouping.
+    The group a provider is browsed under, as customers read it. Each provider has exactly one.
     """
 
-    Code_and_DevOps = 'Code and DevOps'
-    Sales___CRM = 'Sales & CRM'
-    Issue_Tracking = 'Issue Tracking'
-    Productivity = 'Productivity'
-    Messaging = 'Messaging'
-    Social_Media = 'Social Media'
-    Email = 'Email'
-    Actions = 'Actions'
-    Web_and_Data = 'Web and Data'
-    Storage = 'Storage'
-    Environments = 'Environments'
-    Model_Providers = 'Model Providers'
+    Email_and_calendar = 'Email and calendar'
+    Chat_and_meetings = 'Chat and meetings'
+    Files = 'Files'
+    Sales = 'Sales'
+    Finance = 'Finance'
+    Projects = 'Projects'
+    Research = 'Research'
+    Developer_tools = 'Developer tools'
     Built_in = 'Built in'
 
 
@@ -3591,10 +3595,6 @@ class AgentMemberListResponse(BaseModel):
     )
     items: list[AgentMember] | None = Field(None, description='The current members.')
     count: int = Field(..., description='How many people are members.')
-    can_manage: bool = Field(
-        ...,
-        description='Whether the caller manages this assistant: an Admin, or a manager of a group assistant whose role can build.',
-    )
 
 
 class UpdateAgentMemberRequest(BaseModel):
@@ -4594,7 +4594,6 @@ class Skill(BaseModel):
     visibility: ResourceVisibility
     container: ResourceContainer | None
     posture: ResourcePosture
-    controls: ResourceControls
     viewer_actions: ViewerActions | None = None
     allowed_actions: list[str] | None = Field(
         None,
@@ -4724,6 +4723,10 @@ class UpdateSessionRequest(BaseModel):
     model_override: str | None = Field(
         None,
         description="Model later turns in this session run on. The history is kept and each reply records the model that produced it. Send an empty string to go back to the agent's own model. Omit to leave it unchanged. Worker-routed agents return `400 invalid_argument` with `details.argument = model_override`.",
+    )
+    project_id: str | None = Field(
+        None,
+        description="Move the chat into this project. Only the owner's own private chat moves, and only from no project: a chat already in another project is refused with `409 conflict`, because a chat never moves between projects. Sending the project the chat is already in changes nothing. Requires the projects feature and a project the caller may open.",
     )
 
 
@@ -5407,6 +5410,10 @@ class CreateSessionRequest(BaseModel):
         ...,
         description='Agent container that executes the session. The agent never owns it.',
     )
+    project_id: str | None = Field(
+        None,
+        description="Start the chat in this project. The chat must be the caller's own private chat, and the caller must be a member of the project or invited to it. A closed project returns `409 conflict`. A `session_key` already used by a chat outside this project returns `409 conflict`. Requires the projects feature.",
+    )
     mode: Mode2 | None = Field(
         None,
         description='`continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.',
@@ -5879,16 +5886,6 @@ class RoutineTrigger(StrEnum):
 
     schedule = 'schedule'
     event = 'event'
-
-
-class AvailableAction(StrEnum):
-    edit = 'edit'
-    configure = 'configure'
-    run = 'run'
-    pause = 'pause'
-    resume = 'resume'
-    delete = 'delete'
-    invite = 'invite'
 
 
 class Audience(StrEnum):
@@ -6735,7 +6732,6 @@ class Table(BaseModel):
     owner: ResourceOwner
     visibility: ResourceVisibility
     posture: ResourcePosture
-    controls: ResourceControls
     viewer_actions: ViewerActions | None = None
     name: str = Field(
         ...,
@@ -7532,74 +7528,6 @@ class ExternalAgentAccessToken(BaseModel):
     )
 
 
-class ArtifactFolder(BaseModel):
-    """
-    A declared Library folder.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Folder ID.')
-    path: str = Field(
-        ..., description='Normalized folder path, with no leading or trailing slash.'
-    )
-    name: str = Field(..., description='Last segment of the path.')
-    parent_path: str = Field(
-        ..., description='Path of the containing folder; empty at the root.'
-    )
-    owner: ResourceOwner
-    visibility: ResourceVisibility
-    viewer_actions: ViewerActions | None = None
-    created_at: AwareDatetime
-    created_by: str | None = Field(
-        None, description='Principal that declared the folder.'
-    )
-
-
-class ArtifactFolderSummary(BaseModel):
-    """
-    One immediate subfolder, declared or implied by a file name.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    path: str = Field(..., description='Normalized folder path.')
-    name: str = Field(..., description='Last segment of the path, for display.')
-    declared: bool = Field(
-        ...,
-        description='Whether a folder record exists. Only a declared folder can be deleted; an implied one disappears with its last file.',
-    )
-    id: str | None = Field(
-        None, description='Folder ID, present only when the folder is declared.'
-    )
-
-
-class ArtifactFolderListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[ArtifactFolderSummary] = Field(
-        ..., description='Immediate subfolders, ordered by name.'
-    )
-
-
-class CreateArtifactFolderRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    path: str = Field(
-        ...,
-        description='Folder path to declare, relative and with no leading or trailing slash. Intermediate folders are implied by this path and need no declaration of their own.',
-        max_length=256,
-    )
-    visibility: ResourceVisibility | None = Field(
-        None,
-        description='Who sees the folder. Omit for `private`, visible only to the person creating it. It never changes who can open the files inside.',
-    )
-
-
 class ArtifactListResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -7656,6 +7584,10 @@ class CreateArtifactRequest(BaseModel):
     )
     visibility: ResourceVisibility | None = Field(
         None, description='Optional audience. Omit to keep the upload private.'
+    )
+    group_id: str | None = Field(
+        None,
+        description='Upload into this space. The caller must be a member who can change its files. `owner` and `visibility` must then be omitted.',
     )
     convert: Convert | None = Field(
         None,
@@ -7732,11 +7664,12 @@ class ArtifactVersionList(BaseModel):
 
 class LibraryPlaceKind(StrEnum):
     """
-    Which place a file is in. `team` is the company's files, identical for every member; `person` is one person's own. It is the same vocabulary as resource ownership, because it is the same distinction.
+    Which place a file is in. `team` is the company's files, identical for every member; `person` is one person's own; `group` is a space, which only its group's members can see. It is the same vocabulary as resource ownership, because it is the same distinction.
     """
 
     team = 'team'
     person = 'person'
+    group = 'group'
 
 
 class LibraryPlace(BaseModel):
@@ -7746,8 +7679,9 @@ class LibraryPlace(BaseModel):
     kind: LibraryPlaceKind
     id: str | None = Field(
         None,
-        description='The person whose files these are, for `person`. Absent for `team`, which belongs to the organization rather than a person.',
+        description="The person whose files these are, for `person`, or the space's group ID, for `group`. Absent for `team`, which belongs to the organization rather than a person.",
     )
+    name: str | None = Field(None, description="The space's name, for `group`.")
     display_path: str | None = Field(
         None,
         description='The address as the Library shows it: `My files/reports/q3.md` for a person\'s file, the bare path otherwise. Only the person can read their own files, so "My files" is right for every reader. Display only: it is never accepted as input.',
@@ -7853,11 +7787,11 @@ class MoveLibraryFileRequest(BaseModel):
     )
     place: LibraryPlaceKind = Field(
         ...,
-        description="Where the file goes: `team` for the company's files, `person` for one person's own.",
+        description="Where the file goes: `team` for the company's files, `person` for one person's own, `group` for a space.",
     )
     place_id: str | None = Field(
         None,
-        description="Whose files, when `place` is `person`. Defaults to the caller's own; another person's is refused.",
+        description="Whose files, when `place` is `person`. Defaults to the caller's own; another person's is refused. The space's group ID when `place` is `group`.",
     )
     path: str | None = Field(
         None,
@@ -7866,7 +7800,7 @@ class MoveLibraryFileRequest(BaseModel):
     )
     confirm_audience_expansion: bool | None = Field(
         None,
-        description="Required when moving into the company's files. It is the same confirmation sharing an artifact takes.",
+        description="Required when the move lets more people see the file: into the company's files, or into a space with someone who could not see it before.",
     )
 
 
@@ -7881,6 +7815,99 @@ class LibraryFileContent(BaseModel):
     )
     mime_type: str | None = None
     size_bytes: int | None = None
+
+
+class LibraryFolder(BaseModel):
+    """
+    A folder in one place, created or implied by file paths.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    path: str = Field(
+        ...,
+        description="The folder's path within its place, with no leading or trailing slash.",
+    )
+    name: str = Field(..., description='The last segment of the path, for display.')
+
+
+class LibraryFolderListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[LibraryFolder] = Field(
+        ..., description='Immediate subfolders, ordered by name.'
+    )
+
+
+class CreateLibraryFolderRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    place: LibraryPlaceKind = Field(
+        ...,
+        description="Where the folder goes. `person` is always the caller's own files.",
+    )
+    place_id: str | None = Field(
+        None, description="The space's group ID, when `place` is `group`."
+    )
+    path: str = Field(
+        ...,
+        description='Folder path, relative and with no leading or trailing slash. Folders above it need no creating of their own.',
+        max_length=256,
+    )
+
+
+class MoveLibraryFolderRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    place: LibraryPlaceKind = Field(
+        ..., description="Whose folder. `person` is always the caller's own files."
+    )
+    place_id: str | None = Field(
+        None, description="The space's group ID, when `place` is `group`."
+    )
+    path: str = Field(
+        ..., description='The folder to move, as a relative path.', max_length=256
+    )
+    new_path: str = Field(
+        ...,
+        description='Where it goes. In the same place, change the last segment to rename it, or the part before it to move it under another folder. With `to_place`, it is the folder in the destination that receives the contents; empty puts them at the top of that place.',
+        max_length=256,
+    )
+    to_place: LibraryPlaceKind | None = Field(
+        None,
+        description="Move the folder to another place. Omit to stay in `place`. `person` is always the caller's own files.",
+    )
+    to_place_id: str | None = Field(
+        None, description="The space's group ID, when `to_place` is `group`."
+    )
+    confirm_audience_expansion: bool | None = Field(
+        None,
+        description="Required when a move to another place lets more people see the files: into the company's files, or into a space with someone who could not see them before.",
+    )
+
+
+class LibraryFolderChangeResult(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    place: LibraryPlaceKind = Field(..., description='The place the folder was in.')
+    new_place: LibraryPlaceKind | None = Field(
+        None,
+        description='The place the folder moved to. Absent when it stayed in `place`.',
+    )
+    path: str = Field(..., description="The folder's path before the change.")
+    new_path: str | None = Field(
+        None, description="The folder's path after a move. Absent for a delete."
+    )
+    file_count: int = Field(
+        ...,
+        description='Files moved by a move, or moved to the trash by a delete. Files already in the trash are not counted for a delete.',
+    )
+    dry_run: bool | None = Field(None, description='True when nothing was changed.')
 
 
 class ActionInvocationContextV1(BaseModel):
@@ -7988,9 +8015,6 @@ class ActionCatalogEntry(BaseModel):
         description='Present when a custom action is narrowed by an agent container.',
     )
     posture: ResourcePosture | None = Field(
-        None, description='Present for an organization-authored custom action.'
-    )
-    controls: ResourceControls | None = Field(
         None, description='Present for an organization-authored custom action.'
     )
     viewer_actions: ViewerActions | None = Field(
@@ -8833,10 +8857,6 @@ class Routine(BaseModel):
         description='Maximum concurrent threads. Only a human can raise it.',
         ge=1,
         le=20,
-    )
-    available_actions: list[AvailableAction] | None = Field(
-        None,
-        description="Actions permitted for this caller; the server rechecks each request. `edit` changes the name, schedule, model, and lowers limits. `configure` also changes the instructions, the watched event, the accounts it uses, and raises limits: on a person's routine only its owner may.",
     )
     viewer_actions: ViewerActions | None = None
     posture: ResourcePosture | None = None

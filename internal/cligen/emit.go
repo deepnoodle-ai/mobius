@@ -80,6 +80,9 @@ type BodyField struct {
 	ElemType    string // unwrapped element type (e.g. "string", or a named alias)
 	Kind        string // "string", "int", "int64", "bool", "strings", "skip"
 	Required    bool   // true if the struct field is non-pointer
+	// EmptyOK marks a required string whose empty value is real, so the
+	// required check tests key presence instead of the zero value.
+	EmptyOK bool
 }
 
 // buildPlan resolves every ClientWithResponses method against the OpenAPI spec
@@ -139,6 +142,18 @@ func buildPlan(client *ClientInfo, spec map[string]*SpecOp, overrides map[string
 		if pc.Body != nil {
 			pc.Body.Required = op.BodyRequired
 			pc.Body.AllowEmpty = ov.AllowEmptyBody
+			for _, name := range ov.EmptyStringFields {
+				found := false
+				for i := range pc.Body.Fields {
+					if pc.Body.Fields[i].JSONName == name {
+						pc.Body.Fields[i].EmptyOK = true
+						found = true
+					}
+				}
+				if !found {
+					warns = append(warns, fmt.Sprintf("override %s: no body field %q", opID, name))
+				}
+			}
 		}
 		if pc.QueryBlock != nil && op != nil {
 			for i := range pc.QueryBlock.Fields {
@@ -385,7 +400,7 @@ func summarizeHelp(s string) string {
 // presence instead.
 func needsFileKeys(body *BodyArg) bool {
 	for _, f := range body.Fields {
-		if (f.Kind == "bool" || f.Kind == "strings") && f.Required && !isReservedFlag(f.FlagName) {
+		if (f.Kind == "bool" || f.Kind == "strings" || f.EmptyOK) && f.Required && !isReservedFlag(f.FlagName) {
 			return true
 		}
 	}
@@ -1045,7 +1060,11 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 			var zeroExpr string
 			switch f.Kind {
 			case "string":
-				zeroExpr = fmt.Sprintf("body.%s == \"\"", f.GoField)
+				if f.EmptyOK {
+					zeroExpr = fmt.Sprintf("!ctx.IsSet(%q) && !fileKeys[%q]", f.FlagName, f.JSONName)
+				} else {
+					zeroExpr = fmt.Sprintf("body.%s == \"\"", f.GoField)
+				}
 			case "int", "int64":
 				zeroExpr = fmt.Sprintf("body.%s == 0", f.GoField)
 			case "strings", "bool":

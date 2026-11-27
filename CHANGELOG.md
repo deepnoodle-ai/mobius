@@ -10,6 +10,37 @@ the minor version.
 
 ## [Unreleased]
 
+Breaking: syncs the access reshape in mobius-cloud. Resources now say what
+the caller may do in `viewer_actions` (`view`, `work_with`, `manage`,
+`stop`).
+
+### Added
+
+- `viewer_actions` on resources, and the posture `shared_with_everyone`.
+- Library folder operations: `listLibraryFolders`, `createLibraryFolder`,
+  `deleteLibraryFolder`, and `moveLibraryFolder`. CLI: `library list-folders`,
+  `create-folder`, `delete-folder`, and `move-library-folder`.
+- `project_id` on sessions (create, update, list filter) and on the
+  invocation list filter.
+
+### Changed
+
+- `IntegrationCategory` has new values (`Email and calendar`, `Files`,
+  `Developer tools`, and others). The old values are gone.
+
+### Removed
+
+- The retired access fields: `controls` on sessions, tables, computers,
+  skills, and actions; `Agent.can_edit`; `can_manage` on workflows and
+  assistant member lists; `Routine.available_actions`;
+  `Session.viewer_access`; and the posture `shared_by_you`. Read
+  `viewer_actions` instead.
+- `listArtifactFolders`, `createArtifactFolder`, and `deleteArtifactFolder`
+  (`/v1/artifact-folders`). CLI: `artifacts folders`, `artifacts mkdir`, and
+  `artifacts rmdir`. Use the `library` folder commands. Unlike `rmdir`,
+  `library delete-folder` does not refuse a non-empty folder: it moves every
+  file in it, subfolders included, to the trash. Preview with `--dry-run`.
+
 ## [0.10.0] - 2026-11-25
 
 Breaking: syncs the next round of the API reshape in mobius-cloud
