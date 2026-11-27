@@ -266,3 +266,26 @@ func TestParseSpecReadsEmptySecurityAsNoAuth(t *testing.T) {
 		t.Fatal("an operation without security should keep the default auth")
 	}
 }
+
+// A required string whose empty value is real (EmptyOK) is checked for key
+// presence, so `--new-path ""` reaches the server. Other required strings
+// keep the zero-value check.
+func TestRequiredStringEmptyOKChecksPresence(t *testing.T) {
+	var b bytes.Buffer
+	err := renderCommand(&b, "library", PlannedCommand{
+		OperationID: "moveLibraryFolder",
+		Command:     "move-library-folder",
+		Description: "Move library folder",
+		Method:      &Method{Name: "MoveLibraryFolder", Params: []Param{{Name: "body", Type: "MoveLibraryFolderJSONRequestBody"}}},
+		Body: &BodyArg{GoName: "body", TypeName: "MoveLibraryFolderJSONRequestBody", Required: true, Fields: []BodyField{
+			{GoField: "NewPath", FlagName: "new-path", JSONName: "new_path", ElemType: "string", Kind: "string", Required: true, EmptyOK: true},
+			{GoField: "Path", FlagName: "path", JSONName: "path", ElemType: "string", Kind: "string", Required: true},
+		}},
+	})
+	assert.NoError(t, err)
+	got := b.String()
+	assert.Contains(t, got, `fileKeys, err := readJSONBodyKeys(ctx, &body)`)
+	assert.Contains(t, got, `if !ctx.IsSet("new-path") && !fileKeys["new_path"] {`)
+	assert.Contains(t, got, `if body.Path == "" {`)
+	assert.NotContains(t, got, `if body.NewPath == "" {`)
+}

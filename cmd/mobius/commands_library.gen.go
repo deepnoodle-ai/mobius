@@ -384,7 +384,8 @@ func registerLibraryCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			var body api.MoveLibraryFolderJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
+			fileKeys, err := readJSONBodyKeys(ctx, &body)
+			if err != nil {
 				return err
 			}
 			if ctx.IsSet("confirm-audience-expansion") {
@@ -412,7 +413,7 @@ func registerLibraryCommands(app *cli.App) {
 				v := ctx.String("to-place-id")
 				body.ToPlaceId = &v
 			}
-			if body.NewPath == "" {
+			if !ctx.IsSet("new-path") && !fileKeys["new_path"] {
 				return fmt.Errorf("--new-path is required (or supply it via --file)")
 			}
 			if body.Path == "" {

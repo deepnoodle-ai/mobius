@@ -15,12 +15,16 @@ package main
 //     field is optional. By default such a command requires at least one
 //     flag or --file, so that a bare `update` does not silently no-op. Set it
 //     when the empty body is a real request.
+//   - EmptyStringFields names required string body fields, by wire name,
+//     whose empty string is a real value. The required check then fails only
+//     when neither the flag nor --file supplies the key, so `--x ""` passes.
 type Override struct {
-	Skip           bool
-	Group          string
-	Command        string
-	Description    string
-	AllowEmptyBody bool
+	Skip              bool
+	Group             string
+	Command           string
+	Description       string
+	AllowEmptyBody    bool
+	EmptyStringFields []string
 }
 
 // overrides is the generator's override table, keyed by operationId.
@@ -109,6 +113,9 @@ var overrides = map[string]Override{
 	// between places (sharing a file or taking it back) is `move`.
 	"moveLibraryFile":   {Command: "move", Description: "Move a file to the team's files or a person's own"},
 	"updateLibraryFile": {Command: "rename", Description: "Rename or refile a file within its place"},
+	// An empty `new_path` with `to_place` moves the contents to the top of
+	// the destination place.
+	"moveLibraryFolder": {EmptyStringFields: []string{"new_path"}},
 
 	// --- routines ---------------------------------------------------------
 	"runRoutineNow":          {Command: "run-now"},
