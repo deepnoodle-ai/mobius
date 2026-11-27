@@ -124,7 +124,7 @@ func registerLibraryCommands(app *cli.App) {
 		})
 
 	libraryGrp.Command("delete-folder").
-		Description("Delete library folder").
+		Description("Move a folder and every file under it to the trash (preview with --dry-run)").
 		Flags(
 			cli.String("place", "").Help("[required] Whose folder. `person` is always the caller's own.").Required(),
 			cli.String("place-id", "").Help("The space's group ID, when `place` is `group`."),

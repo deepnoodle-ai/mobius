@@ -113,6 +113,9 @@ var overrides = map[string]Override{
 	// between places (sharing a file or taking it back) is `move`.
 	"moveLibraryFile":   {Command: "move", Description: "Move a file to the team's files or a person's own"},
 	"updateLibraryFile": {Command: "rename", Description: "Rename or refile a file within its place"},
+	// The old `artifacts rmdir` refused a non-empty folder. This one trashes
+	// everything under it, so the help line says so.
+	"deleteLibraryFolder": {Description: "Move a folder and every file under it to the trash (preview with --dry-run)"},
 	// An empty `new_path` with `to_place` moves the contents to the top of
 	// the destination place.
 	"moveLibraryFolder": {EmptyStringFields: []string{"new_path"}},
