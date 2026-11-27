@@ -9,7 +9,7 @@ function agent(id = "agent_1"): Agent {
     id,
     principal_id: id,
     owner: { kind: "person", id: "user_1" },
-    posture: "shared_by_you",
+    posture: "shared_with_everyone",
     name: "PR reviewer",
     status: "active",
     visibility: "organization",
@@ -17,7 +17,6 @@ function agent(id = "agent_1"): Agent {
     created_at: "2026-07-17T00:00:00Z",
     updated_at: "2026-07-17T00:00:00Z",
     tool_approval_mode: "destructive",
-    can_edit: true,
     memory_enabled: false,
     email_replies: "audience",
   };

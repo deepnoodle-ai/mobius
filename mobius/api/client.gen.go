@@ -2143,6 +2143,7 @@ func (e InteractionUpsertFrameEventType) Valid() bool {
 
 // Defines values for LibraryPlaceKind.
 const (
+	LibraryPlaceKindGroup  LibraryPlaceKind = "group"
 	LibraryPlaceKindPerson LibraryPlaceKind = "person"
 	LibraryPlaceKindTeam   LibraryPlaceKind = "team"
 )
@@ -2150,6 +2151,8 @@ const (
 // Valid indicates whether the value is a known member of the LibraryPlaceKind enum.
 func (e LibraryPlaceKind) Valid() bool {
 	switch e {
+	case LibraryPlaceKindGroup:
+		return true
 	case LibraryPlaceKindPerson:
 		return true
 	case LibraryPlaceKindTeam:
@@ -2656,6 +2659,7 @@ func (e ResourceContainerKind) Valid() bool {
 
 // Defines values for ResourceOwnerKind.
 const (
+	ResourceOwnerKindGroup  ResourceOwnerKind = "group"
 	ResourceOwnerKindPerson ResourceOwnerKind = "person"
 	ResourceOwnerKindTeam   ResourceOwnerKind = "team"
 )
@@ -2663,6 +2667,8 @@ const (
 // Valid indicates whether the value is a known member of the ResourceOwnerKind enum.
 func (e ResourceOwnerKind) Valid() bool {
 	switch e {
+	case ResourceOwnerKindGroup:
+		return true
 	case ResourceOwnerKindPerson:
 		return true
 	case ResourceOwnerKindTeam:
@@ -2674,11 +2680,12 @@ func (e ResourceOwnerKind) Valid() bool {
 
 // Defines values for ResourcePosture.
 const (
-	ResourcePostureOnlyYou         ResourcePosture = "only_you"
-	ResourcePostureSharedByYou     ResourcePosture = "shared_by_you"
-	ResourcePostureSharedWithGroup ResourcePosture = "shared_with_group"
-	ResourcePostureSomeoneElse     ResourcePosture = "someone_else"
-	ResourcePostureTeam            ResourcePosture = "team"
+	ResourcePostureOnlyYou            ResourcePosture = "only_you"
+	ResourcePostureSharedWithEveryone ResourcePosture = "shared_with_everyone"
+	ResourcePostureSharedWithGroup    ResourcePosture = "shared_with_group"
+	ResourcePostureSomeoneElse        ResourcePosture = "someone_else"
+	ResourcePostureSpace              ResourcePosture = "space"
+	ResourcePostureTeam               ResourcePosture = "team"
 )
 
 // Valid indicates whether the value is a known member of the ResourcePosture enum.
@@ -2686,11 +2693,13 @@ func (e ResourcePosture) Valid() bool {
 	switch e {
 	case ResourcePostureOnlyYou:
 		return true
-	case ResourcePostureSharedByYou:
+	case ResourcePostureSharedWithEveryone:
 		return true
 	case ResourcePostureSharedWithGroup:
 		return true
 	case ResourcePostureSomeoneElse:
+		return true
+	case ResourcePostureSpace:
 		return true
 	case ResourcePostureTeam:
 		return true
@@ -2765,39 +2774,6 @@ func (e RoutineAudience) Valid() bool {
 	case RoutineAudiencePrivate:
 		return true
 	case RoutineAudienceTeam:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for RoutineAvailableActions.
-const (
-	RoutineAvailableActionsConfigure RoutineAvailableActions = "configure"
-	RoutineAvailableActionsDelete    RoutineAvailableActions = "delete"
-	RoutineAvailableActionsEdit      RoutineAvailableActions = "edit"
-	RoutineAvailableActionsInvite    RoutineAvailableActions = "invite"
-	RoutineAvailableActionsPause     RoutineAvailableActions = "pause"
-	RoutineAvailableActionsResume    RoutineAvailableActions = "resume"
-	RoutineAvailableActionsRun       RoutineAvailableActions = "run"
-)
-
-// Valid indicates whether the value is a known member of the RoutineAvailableActions enum.
-func (e RoutineAvailableActions) Valid() bool {
-	switch e {
-	case RoutineAvailableActionsConfigure:
-		return true
-	case RoutineAvailableActionsDelete:
-		return true
-	case RoutineAvailableActionsEdit:
-		return true
-	case RoutineAvailableActionsInvite:
-		return true
-	case RoutineAvailableActionsPause:
-		return true
-	case RoutineAvailableActionsResume:
-		return true
-	case RoutineAvailableActionsRun:
 		return true
 	default:
 		return false
@@ -4223,6 +4199,7 @@ func (e WorkerSocketWorkerDrainingFrameType) Valid() bool {
 // Defines values for LibraryPlaceParam.
 const (
 	LibraryPlaceParamCompany  LibraryPlaceParam = "company"
+	LibraryPlaceParamGroup    LibraryPlaceParam = "group"
 	LibraryPlaceParamPersonal LibraryPlaceParam = "personal"
 )
 
@@ -4230,6 +4207,8 @@ const (
 func (e LibraryPlaceParam) Valid() bool {
 	switch e {
 	case LibraryPlaceParamCompany:
+		return true
+	case LibraryPlaceParamGroup:
 		return true
 	case LibraryPlaceParamPersonal:
 		return true
@@ -4298,27 +4277,10 @@ func (e ListAgentInboxMessagesParamsStatus) Valid() bool {
 	}
 }
 
-// Defines values for ListArtifactFoldersParamsPlace.
-const (
-	ListArtifactFoldersParamsPlaceCompany  ListArtifactFoldersParamsPlace = "company"
-	ListArtifactFoldersParamsPlacePersonal ListArtifactFoldersParamsPlace = "personal"
-)
-
-// Valid indicates whether the value is a known member of the ListArtifactFoldersParamsPlace enum.
-func (e ListArtifactFoldersParamsPlace) Valid() bool {
-	switch e {
-	case ListArtifactFoldersParamsPlaceCompany:
-		return true
-	case ListArtifactFoldersParamsPlacePersonal:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for ListArtifactsParamsPlace.
 const (
 	ListArtifactsParamsPlaceCompany  ListArtifactsParamsPlace = "company"
+	ListArtifactsParamsPlaceGroup    ListArtifactsParamsPlace = "group"
 	ListArtifactsParamsPlacePersonal ListArtifactsParamsPlace = "personal"
 )
 
@@ -4326,6 +4288,8 @@ const (
 func (e ListArtifactsParamsPlace) Valid() bool {
 	switch e {
 	case ListArtifactsParamsPlaceCompany:
+		return true
+	case ListArtifactsParamsPlaceGroup:
 		return true
 	case ListArtifactsParamsPlacePersonal:
 		return true
@@ -4567,9 +4531,6 @@ type Action struct {
 	// Container The agent that contains this resource and may further narrow who can reach it.
 	Container *ResourceContainer `json:"container,omitempty"`
 
-	// Controls What the current caller may do to this resource, answered by the same access rule the update and delete routes run. Clients offer controls from this and never re-derive it from posture or role. Team-owned resources are changed only by those who look after them.
-	Controls ResourceControls `json:"controls"`
-
 	// CreatedAt Timestamp when this action was created.
 	CreatedAt time.Time `json:"created_at"`
 
@@ -4597,10 +4558,10 @@ type Action struct {
 	// OutputSchema JSON Schema describing the expected output shape.
 	OutputSchema *map[string]interface{} `json:"output_schema,omitempty"`
 
-	// Owner The human or team responsible for this resource.
+	// Owner The human, team, or group responsible for this resource.
 	Owner ResourceOwner `json:"owner"`
 
-	// Posture Employee-facing effective ownership and audience posture for the current caller.
+	// Posture Employee-facing effective ownership and audience posture for the current caller. `shared_with_everyone` is a person's thing the whole organization can see, whoever owns it. `shared_with_group` is a thing only named people reach: a group assistant, or a routine shown to named people. `space` is a file in a Library space, which only the space's members see.
 	Posture ResourcePosture `json:"posture"`
 
 	// SigningSecret One-time `whsec_` plus raw-URL-base64 encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; absent on all other reads. Store this value securely on first receipt — it cannot be retrieved again.
@@ -4655,9 +4616,6 @@ type ActionCatalogEntry struct {
 	// Container The agent that contains this resource and may further narrow who can reach it.
 	Container *ResourceContainer `json:"container,omitempty"`
 
-	// Controls What the current caller may do to this resource, answered by the same access rule the update and delete routes run. Clients offer controls from this and never re-derive it from posture or role. Team-owned resources are changed only by those who look after them.
-	Controls *ResourceControls `json:"controls,omitempty"`
-
 	// DefinitionScope Scope that owns the selected definition: `platform` for Mobius and integration actions, or `custom` for an action authored in the current organization.
 	DefinitionScope ActionCatalogEntryDefinitionScope `json:"definition_scope"`
 
@@ -4697,10 +4655,10 @@ type ActionCatalogEntry struct {
 	// OutputSchema JSON Schema describing the expected output shape.
 	OutputSchema *map[string]interface{} `json:"output_schema,omitempty"`
 
-	// Owner The human or team responsible for this resource.
+	// Owner The human, team, or group responsible for this resource.
 	Owner *ResourceOwner `json:"owner,omitempty"`
 
-	// Posture Employee-facing effective ownership and audience posture for the current caller.
+	// Posture Employee-facing effective ownership and audience posture for the current caller. `shared_with_everyone` is a person's thing the whole organization can see, whoever owns it. `shared_with_group` is a thing only named people reach: a group assistant, or a routine shown to named people. `space` is a file in a Library space, which only the space's members see.
 	Posture *ResourcePosture `json:"posture,omitempty"`
 
 	// Readiness Whether a catalog capability — an action, an event source, or an integration provider — is usable right now. `ready` means it can be used as-is; `needs_setup` means it is known and supported but blocked by configuration, credentials, permissions, provider runtime availability, or implementation status. This is catalog *readiness*, and is deliberately separate from a resource's lifecycle state (such as integration `status` or artifact lifecycle).
@@ -4979,9 +4937,6 @@ type Agent struct {
 	// ActiveChatCount Number of distinct shared chats where this assistant was active in the past 7 days. Populated only for organization administrators; absent for other callers. Reveals no chat name, member, or message content.
 	ActiveChatCount *int `json:"active_chat_count,omitempty"`
 
-	// CanEdit Whether the caller may change this assistant's setup: exactly what `PATCH /v1/agents/{resource_id}` would allow. False on internal administration listings.
-	CanEdit bool `json:"can_edit"`
-
 	// Color Display color for this agent in UI surfaces. One of the Mantine color palette keys (e.g. `indigo`, `teal`, `grape`); empty string falls back to a hash-derived color.
 	Color *string `json:"color,omitempty"`
 
@@ -5027,10 +4982,10 @@ type Agent struct {
 	// Name Mutable unique name within the org. Free-form human-readable label; use `id` for stable references and job targeting.
 	Name string `json:"name"`
 
-	// Owner The human or team responsible for this resource.
+	// Owner The human, team, or group responsible for this resource.
 	Owner ResourceOwner `json:"owner"`
 
-	// Posture Employee-facing effective ownership and audience posture for the current caller.
+	// Posture Employee-facing effective ownership and audience posture for the current caller. `shared_with_everyone` is a person's thing the whole organization can see, whoever owns it. `shared_with_group` is a thing only named people reach: a group assistant, or a routine shown to named people. `space` is a file in a Library space, which only the space's members see.
 	Posture ResourcePosture `json:"posture"`
 
 	// PrincipalId The machine principal (principals.id, kind `agent`) this agent IS. Created atomically with the agent and immutable. It is an execution identity, never the human custodian of an ordinary resource.
@@ -5406,9 +5361,6 @@ type AgentMemberKind string
 
 // AgentMemberListResponse defines model for AgentMemberListResponse.
 type AgentMemberListResponse struct {
-	// CanManage Whether the caller manages this assistant: an Admin, or a manager of a group assistant whose role can build.
-	CanManage bool `json:"can_manage"`
-
 	// Count How many people are members.
 	Count int `json:"count"`
 
@@ -5884,10 +5836,10 @@ type Artifact struct {
 	// Name Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or organization-visible space.
 	Name string `json:"name"`
 
-	// Owner The human or team responsible for this resource.
+	// Owner The human, team, or group responsible for this resource.
 	Owner ResourceOwner `json:"owner"`
 
-	// Posture Employee-facing effective ownership and audience posture for the current caller.
+	// Posture Employee-facing effective ownership and audience posture for the current caller. `shared_with_everyone` is a person's thing the whole organization can see, whoever owns it. `shared_with_group` is a thing only named people reach: a group assistant, or a routine shown to named people. `space` is a file in a Library space, which only the space's members see.
 	Posture ResourcePosture `json:"posture"`
 
 	// PreviousId Exact parent artifact ID; empty for version one. May point to a deleted version.
@@ -5959,56 +5911,6 @@ type ArtifactDelivery struct {
 
 	// WebUrl Destination browser URL.
 	WebUrl *string `json:"web_url,omitempty"`
-}
-
-// ArtifactFolder A declared Library folder.
-type ArtifactFolder struct {
-	CreatedAt time.Time `json:"created_at"`
-
-	// CreatedBy Principal that declared the folder.
-	CreatedBy *string `json:"created_by,omitempty"`
-
-	// Id Folder ID.
-	Id string `json:"id"`
-
-	// Name Last segment of the path.
-	Name string `json:"name"`
-
-	// Owner The human or team responsible for this resource.
-	Owner ResourceOwner `json:"owner"`
-
-	// ParentPath Path of the containing folder; empty at the root.
-	ParentPath string `json:"parent_path"`
-
-	// Path Normalized folder path, with no leading or trailing slash.
-	Path string `json:"path"`
-
-	// ViewerActions The four access levels the current caller holds on this resource, answered by the shared access function. Clients show or enable actions from these fields rather than re-deriving them from ownership, visibility, or role.
-	ViewerActions *ViewerActions `json:"viewer_actions,omitempty"`
-
-	// Visibility Who the custodian chose to share the resource with.
-	Visibility ResourceVisibility `json:"visibility"`
-}
-
-// ArtifactFolderListResponse defines model for ArtifactFolderListResponse.
-type ArtifactFolderListResponse struct {
-	// Items Immediate subfolders, ordered by name.
-	Items []ArtifactFolderSummary `json:"items"`
-}
-
-// ArtifactFolderSummary One immediate subfolder, declared or implied by a file name.
-type ArtifactFolderSummary struct {
-	// Declared Whether a folder record exists. Only a declared folder can be deleted; an implied one disappears with its last file.
-	Declared bool `json:"declared"`
-
-	// Id Folder ID, present only when the folder is declared.
-	Id *string `json:"id,omitempty"`
-
-	// Name Last segment of the path, for display.
-	Name string `json:"name"`
-
-	// Path Normalized folder path.
-	Path string `json:"path"`
 }
 
 // ArtifactListResponse defines model for ArtifactListResponse.
@@ -6999,7 +6901,7 @@ type CreateActionRequest struct {
 	// OutputSchema JSON Schema describing the expected output shape.
 	OutputSchema *map[string]interface{} `json:"output_schema,omitempty"`
 
-	// Owner The human or team responsible for this resource.
+	// Owner The human, team, or group responsible for this resource.
 	Owner *ResourceOwner `json:"owner,omitempty"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
@@ -7084,15 +6986,6 @@ type CreateAgentRequest struct {
 	Visibility *AgentVisibility `json:"visibility,omitempty"`
 }
 
-// CreateArtifactFolderRequest defines model for CreateArtifactFolderRequest.
-type CreateArtifactFolderRequest struct {
-	// Path Folder path to declare, relative and with no leading or trailing slash. Intermediate folders are implied by this path and need no declaration of their own.
-	Path string `json:"path"`
-
-	// Visibility Who sees the folder. Omit for `private`, visible only to the person creating it. It never changes who can open the files inside.
-	Visibility *ResourceVisibility `json:"visibility,omitempty"`
-}
-
 // CreateArtifactRequest defines model for CreateArtifactRequest.
 type CreateArtifactRequest struct {
 	// Convert When "true" and the uploaded file is DOCX, XLSX, or PPTX, extract a Markdown rendition asynchronously for model delivery. Ignored for other file types.
@@ -7100,6 +6993,9 @@ type CreateArtifactRequest struct {
 
 	// File File bytes to upload into artifact storage. Multipart parts may be sent in any order; Mobius reads metadata fields and temporarily spools the file part when needed before streaming bytes to artifact storage.
 	File openapi_types.File `json:"file"`
+
+	// GroupId Upload into this space. The caller must be a member who can change its files. `owner` and `visibility` must then be omitted.
+	GroupId *string `json:"group_id,omitempty"`
 
 	// Metadata Optional caller metadata JSON object. Encoded as JSON in the multipart field and limited to 64 KiB.
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
@@ -7110,7 +7006,7 @@ type CreateArtifactRequest struct {
 	// Name Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or organization-visible space.
 	Name string `json:"name"`
 
-	// Owner The human or team responsible for this resource.
+	// Owner The human, team, or group responsible for this resource.
 	Owner *ResourceOwner `json:"owner,omitempty"`
 
 	// PreviousArtifactId Optional exact parent artifact ID. Requires edit access and inherits its custody and visibility. Creates new bytes and a new ID; never changes existing references.
@@ -7214,6 +7110,18 @@ type CreateLibraryFileRequest struct {
 	Path string `json:"path"`
 }
 
+// CreateLibraryFolderRequest defines model for CreateLibraryFolderRequest.
+type CreateLibraryFolderRequest struct {
+	// Path Folder path, relative and with no leading or trailing slash. Folders above it need no creating of their own.
+	Path string `json:"path"`
+
+	// Place Where the folder goes. `person` is always the caller's own files.
+	Place LibraryPlaceKind `json:"place"`
+
+	// PlaceId The space's group ID, when `place` is `group`.
+	PlaceId *string `json:"place_id,omitempty"`
+}
+
 // CreatePrincipalRequest defines model for CreatePrincipalRequest.
 type CreatePrincipalRequest struct {
 	// Description Optional human-readable description.
@@ -7307,7 +7215,7 @@ type CreateSessionRequest struct {
 	// ModelOverride Model to use for a newly created session. Overrides the stored agent's model. Ignored when an existing session is resolved. Creating a session for a worker-routed agent returns `400 invalid_argument` with `details.argument = model_override`.
 	ModelOverride *string `json:"model_override,omitempty"`
 
-	// Owner The human or team responsible for this resource.
+	// Owner The human, team, or group responsible for this resource.
 	Owner *ResourceOwner `json:"owner,omitempty"`
 
 	// Retention Controls how long a session is retained. Applied only when the session is first created (like `compaction_policy`); ignored when an existing session is resolved. `standard` is the default and keeps the session forever. `bounded` expires the session — pruning its transcript from every read path — once it has been idle past `ttl_seconds`. Kept for audit after expiry: a tombstone session row with its token totals, and the turn rows with their status, error, usage, and timings.
@@ -7342,7 +7250,7 @@ type CreateTableRequest struct {
 	// Name Table name (lowercase, snake_case); unique within the org.
 	Name string `json:"name"`
 
-	// Owner The human or team responsible for this resource.
+	// Owner The human, team, or group responsible for this resource.
 	Owner *ResourceOwner `json:"owner,omitempty"`
 
 	// Schema Column definition for a virtual table. Each table has exactly one required string identity column and may nominate one optional string secondary key column.
@@ -8111,10 +8019,10 @@ type Interaction struct {
 	// Outcome Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
 	Outcome *InteractionValue `json:"outcome,omitempty"`
 
-	// Owner The human or team responsible for this resource.
+	// Owner The human, team, or group responsible for this resource.
 	Owner ResourceOwner `json:"owner"`
 
-	// Posture Employee-facing effective ownership and audience posture for the current caller.
+	// Posture Employee-facing effective ownership and audience posture for the current caller. `shared_with_everyone` is a person's thing the whole organization can see, whoever owns it. `shared_with_group` is a thing only named people reach: a group assistant, or a routine shown to named people. `space` is a file in a Library space, which only the space's members see.
 	Posture ResourcePosture `json:"posture"`
 
 	// Properties Free-form structured metadata attached to the interaction; null when no metadata is attached.
@@ -8497,10 +8405,10 @@ type InteractionUpsertFrame struct {
 	// Outcome Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
 	Outcome *InteractionValue `json:"outcome,omitempty"`
 
-	// Owner The human or team responsible for this resource.
+	// Owner The human, team, or group responsible for this resource.
 	Owner ResourceOwner `json:"owner"`
 
-	// Posture Employee-facing effective ownership and audience posture for the current caller.
+	// Posture Employee-facing effective ownership and audience posture for the current caller. `shared_with_everyone` is a person's thing the whole organization can see, whoever owns it. `shared_with_group` is a thing only named people reach: a group assistant, or a routine shown to named people. `space` is a file in a Library space, which only the space's members see.
 	Posture ResourcePosture `json:"posture"`
 
 	// Properties Free-form structured metadata attached to the interaction; null when no metadata is attached.
@@ -8685,19 +8593,58 @@ type LibraryFileVersionListResponse struct {
 	Items []LibraryFileVersion `json:"items"`
 }
 
+// LibraryFolder A folder in one place, created or implied by file paths.
+type LibraryFolder struct {
+	// Name The last segment of the path, for display.
+	Name string `json:"name"`
+
+	// Path The folder's path within its place, with no leading or trailing slash.
+	Path string `json:"path"`
+}
+
+// LibraryFolderChangeResult defines model for LibraryFolderChangeResult.
+type LibraryFolderChangeResult struct {
+	// DryRun True when nothing was changed.
+	DryRun *bool `json:"dry_run,omitempty"`
+
+	// FileCount Files moved by a move, or moved to the trash by a delete. Files already in the trash are not counted for a delete.
+	FileCount int `json:"file_count"`
+
+	// NewPath The folder's path after a move. Absent for a delete.
+	NewPath *string `json:"new_path,omitempty"`
+
+	// NewPlace The place the folder moved to. Absent when it stayed in `place`.
+	NewPlace *LibraryPlaceKind `json:"new_place,omitempty"`
+
+	// Path The folder's path before the change.
+	Path string `json:"path"`
+
+	// Place The place the folder was in.
+	Place LibraryPlaceKind `json:"place"`
+}
+
+// LibraryFolderListResponse defines model for LibraryFolderListResponse.
+type LibraryFolderListResponse struct {
+	// Items Immediate subfolders, ordered by name.
+	Items []LibraryFolder `json:"items"`
+}
+
 // LibraryPlace defines model for LibraryPlace.
 type LibraryPlace struct {
 	// DisplayPath The address as the Library shows it: `My files/reports/q3.md` for a person's file, the bare path otherwise. Only the person can read their own files, so "My files" is right for every reader. Display only: it is never accepted as input.
 	DisplayPath *string `json:"display_path,omitempty"`
 
-	// Id The person whose files these are, for `person`. Absent for `team`, which belongs to the organization rather than a person.
+	// Id The person whose files these are, for `person`, or the space's group ID, for `group`. Absent for `team`, which belongs to the organization rather than a person.
 	Id *string `json:"id,omitempty"`
 
-	// Kind Which place a file is in. `team` is the company's files, identical for every member; `person` is one person's own. It is the same vocabulary as resource ownership, because it is the same distinction.
+	// Kind Which place a file is in. `team` is the company's files, identical for every member; `person` is one person's own; `group` is a space, which only its group's members can see. It is the same vocabulary as resource ownership, because it is the same distinction.
 	Kind LibraryPlaceKind `json:"kind"`
+
+	// Name The space's name, for `group`.
+	Name *string `json:"name,omitempty"`
 }
 
-// LibraryPlaceKind Which place a file is in. `team` is the company's files, identical for every member; `person` is one person's own. It is the same vocabulary as resource ownership, because it is the same distinction.
+// LibraryPlaceKind Which place a file is in. `team` is the company's files, identical for every member; `person` is one person's own; `group` is a space, which only its group's members can see. It is the same vocabulary as resource ownership, because it is the same distinction.
 type LibraryPlaceKind string
 
 // MemoryContextMode Automatic memory delivery mode for agent turns.
@@ -8892,17 +8839,41 @@ type ModelProviderGroupSource string
 
 // MoveLibraryFileRequest defines model for MoveLibraryFileRequest.
 type MoveLibraryFileRequest struct {
-	// ConfirmAudienceExpansion Required when moving into the company's files. It is the same confirmation sharing an artifact takes.
+	// ConfirmAudienceExpansion Required when the move lets more people see the file: into the company's files, or into a space with someone who could not see it before.
 	ConfirmAudienceExpansion *bool `json:"confirm_audience_expansion,omitempty"`
 
 	// Path An address in the destination. Defaults to the path it already has.
 	Path *string `json:"path,omitempty"`
 
-	// Place Where the file goes: `team` for the company's files, `person` for one person's own.
+	// Place Where the file goes: `team` for the company's files, `person` for one person's own, `group` for a space.
 	Place LibraryPlaceKind `json:"place"`
 
-	// PlaceId Whose files, when `place` is `person`. Defaults to the caller's own; another person's is refused.
+	// PlaceId Whose files, when `place` is `person`. Defaults to the caller's own; another person's is refused. The space's group ID when `place` is `group`.
 	PlaceId *string `json:"place_id,omitempty"`
+}
+
+// MoveLibraryFolderRequest defines model for MoveLibraryFolderRequest.
+type MoveLibraryFolderRequest struct {
+	// ConfirmAudienceExpansion Required when a move to another place lets more people see the files: into the company's files, or into a space with someone who could not see them before.
+	ConfirmAudienceExpansion *bool `json:"confirm_audience_expansion,omitempty"`
+
+	// NewPath Where it goes. In the same place, change the last segment to rename it, or the part before it to move it under another folder. With `to_place`, it is the folder in the destination that receives the contents; empty puts them at the top of that place.
+	NewPath string `json:"new_path"`
+
+	// Path The folder to move, as a relative path.
+	Path string `json:"path"`
+
+	// Place Whose folder. `person` is always the caller's own files.
+	Place LibraryPlaceKind `json:"place"`
+
+	// PlaceId The space's group ID, when `place` is `group`.
+	PlaceId *string `json:"place_id,omitempty"`
+
+	// ToPlace Move the folder to another place. Omit to stay in `place`. `person` is always the caller's own files.
+	ToPlace *LibraryPlaceKind `json:"to_place,omitempty"`
+
+	// ToPlaceId The space's group ID, when `to_place` is `group`.
+	ToPlaceId *string `json:"to_place_id,omitempty"`
 }
 
 // NotRestoredItem One thing that did not come back with a restored agent, and why.
@@ -9219,17 +9190,19 @@ type ResourceControls struct {
 	CanEdit bool `json:"can_edit"`
 }
 
-// ResourceOwner The human or team responsible for this resource.
+// ResourceOwner The human, team, or group responsible for this resource.
 type ResourceOwner struct {
-	// Id Human principal ID when kind is person; null for the team.
-	Id   *string           `json:"id,omitempty"`
+	// Id Human principal ID when kind is person, the group's ID when kind is group; null for the team.
+	Id *string `json:"id,omitempty"`
+
+	// Kind `group` is returned only for files in a Library space; no request may ask for it.
 	Kind ResourceOwnerKind `json:"kind"`
 }
 
-// ResourceOwnerKind defines model for ResourceOwner.Kind.
+// ResourceOwnerKind `group` is returned only for files in a Library space; no request may ask for it.
 type ResourceOwnerKind string
 
-// ResourcePosture Employee-facing effective ownership and audience posture for the current caller.
+// ResourcePosture Employee-facing effective ownership and audience posture for the current caller. `shared_with_everyone` is a person's thing the whole organization can see, whoever owns it. `shared_with_group` is a thing only named people reach: a group assistant, or a routine shown to named people. `space` is a file in a Library space, which only the space's members see.
 type ResourcePosture string
 
 // ResourceVisibility Who the custodian chose to share the resource with.
@@ -9354,12 +9327,9 @@ type Routine struct {
 	AgentId string `json:"agent_id"`
 
 	// Attention Caller-specific persistent attention state. Absence does not prove provider connectivity.
-	Attention *RoutineAttention `json:"attention,omitempty"`
-	Audience  *RoutineAudience  `json:"audience,omitempty"`
-
-	// AvailableActions Actions permitted for this caller; the server rechecks each request. `edit` changes the name, schedule, model, and lowers limits. `configure` also changes the instructions, the watched event, the accounts it uses, and raises limits: on a person's routine only its owner may.
-	AvailableActions *[]RoutineAvailableActions `json:"available_actions,omitempty"`
-	CompletedAt      *time.Time                 `json:"completed_at,omitempty"`
+	Attention   *RoutineAttention `json:"attention,omitempty"`
+	Audience    *RoutineAudience  `json:"audience,omitempty"`
+	CompletedAt *time.Time        `json:"completed_at,omitempty"`
 
 	// Concurrency Maximum concurrent threads. Only a human can raise it.
 	Concurrency *int `json:"concurrency,omitempty"`
@@ -9420,7 +9390,7 @@ type Routine struct {
 	PauseReason               *string          `json:"pause_reason,omitempty"`
 	PerOccurrenceCeilingMilli int64            `json:"per_occurrence_ceiling_milli"`
 
-	// Posture Employee-facing effective ownership and audience posture for the current caller.
+	// Posture Employee-facing effective ownership and audience posture for the current caller. `shared_with_everyone` is a person's thing the whole organization can see, whoever owns it. `shared_with_group` is a thing only named people reach: a group assistant, or a routine shown to named people. `space` is a file in a Library space, which only the space's members see.
 	Posture *ResourcePosture `json:"posture,omitempty"`
 
 	// Responsible The people this routine waits on. Non-empty under team custody, except on a routine installed from a blueprint that still waits for setup.
@@ -9450,9 +9420,6 @@ type RoutineAttention string
 
 // RoutineAudience defines model for Routine.Audience.
 type RoutineAudience string
-
-// RoutineAvailableActions defines model for Routine.AvailableActions.
-type RoutineAvailableActions string
 
 // RoutineChange One recorded change to a routine, read from the audit trail.
 //
@@ -9920,9 +9887,6 @@ type Session struct {
 	// Container The agent that contains this resource and may further narrow who can reach it.
 	Container *ResourceContainer `json:"container,omitempty"`
 
-	// Controls What the current caller may do to this resource, answered by the same access rule the update and delete routes run. Clients offer controls from this and never re-derive it from posture or role. Team-owned resources are changed only by those who look after them.
-	Controls ResourceControls `json:"controls"`
-
 	// CreatedAt Record creation timestamp.
 	CreatedAt time.Time `json:"created_at"`
 
@@ -9965,10 +9929,10 @@ type Session struct {
 	// Origin Surface that created the session: `manual`, `api`, `interaction`, `routine`, or `assistant` (one of a person's assistants asking another of theirs a question).
 	Origin SessionOrigin `json:"origin"`
 
-	// Owner The human or team responsible for this resource.
+	// Owner The human, team, or group responsible for this resource.
 	Owner ResourceOwner `json:"owner"`
 
-	// Posture Employee-facing effective ownership and audience posture for the current caller.
+	// Posture Employee-facing effective ownership and audience posture for the current caller. `shared_with_everyone` is a person's thing the whole organization can see, whoever owns it. `shared_with_group` is a thing only named people reach: a group assistant, or a routine shown to named people. `space` is a file in a Library space, which only the space's members see.
 	Posture ResourcePosture `json:"posture"`
 
 	// Retention Controls how long a session is retained. Applied only when the session is first created (like `compaction_policy`); ignored when an existing session is resolved. `standard` is the default and keeps the session forever. `bounded` expires the session — pruning its transcript from every read path — once it has been idle past `ttl_seconds`. Kept for audit after expiry: a tombstone session row with its token totals, and the turn rows with their status, error, usage, and timings.
@@ -10920,9 +10884,6 @@ type Skill struct {
 	// Container The agent that contains this resource and may further narrow who can reach it.
 	Container *ResourceContainer `json:"container"`
 
-	// Controls What the current caller may do to this resource, answered by the same access rule the update and delete routes run. Clients offer controls from this and never re-derive it from posture or role. Team-owned resources are changed only by those who look after them.
-	Controls ResourceControls `json:"controls"`
-
 	// CreatedAt Record creation timestamp.
 	CreatedAt time.Time `json:"created_at"`
 
@@ -10941,10 +10902,10 @@ type Skill struct {
 	// Name Human-readable skill name.
 	Name string `json:"name"`
 
-	// Owner The human or team responsible for this resource.
+	// Owner The human, team, or group responsible for this resource.
 	Owner ResourceOwner `json:"owner"`
 
-	// Posture Employee-facing effective ownership and audience posture for the current caller.
+	// Posture Employee-facing effective ownership and audience posture for the current caller. `shared_with_everyone` is a person's thing the whole organization can see, whoever owns it. `shared_with_group` is a thing only named people reach: a group assistant, or a routine shown to named people. `space` is a file in a Library space, which only the space's members see.
 	Posture ResourcePosture `json:"posture"`
 
 	// RecommendedActions Action selectors that improve this skill. Missing recommendations produce warnings only; they never select or present actions.
@@ -11043,7 +11004,7 @@ type SkillRequest struct {
 	// Name Human-readable skill name.
 	Name string `json:"name"`
 
-	// Owner The human or team responsible for this resource.
+	// Owner The human, team, or group responsible for this resource.
 	Owner *ResourceOwner `json:"owner,omitempty"`
 
 	// RecommendedActions Optional action selectors that produce warnings when absent and never select actions.
@@ -11084,9 +11045,6 @@ type StreamReadyFrameEventType string
 
 // Table Table metadata and schema.
 type Table struct {
-	// Controls What the current caller may do to this resource, answered by the same access rule the update and delete routes run. Clients offer controls from this and never re-derive it from posture or role. Team-owned resources are changed only by those who look after them.
-	Controls ResourceControls `json:"controls"`
-
 	// CreatedAt Time the table was created.
 	CreatedAt time.Time `json:"created_at"`
 
@@ -11105,10 +11063,10 @@ type Table struct {
 	// Name Lowercase snake_case table name, unique within the org.
 	Name string `json:"name"`
 
-	// Owner The human or team responsible for this resource.
+	// Owner The human, team, or group responsible for this resource.
 	Owner ResourceOwner `json:"owner"`
 
-	// Posture Employee-facing effective ownership and audience posture for the current caller.
+	// Posture Employee-facing effective ownership and audience posture for the current caller. `shared_with_everyone` is a person's thing the whole organization can see, whoever owns it. `shared_with_group` is a thing only named people reach: a group assistant, or a routine shown to named people. `space` is a file in a Library space, which only the space's members see.
 	Posture ResourcePosture `json:"posture"`
 
 	// Schema Column and index schema enforced for table rows.
@@ -11969,9 +11927,6 @@ type ActionNameParam = string
 // AfterSequenceParam defines model for AfterSequenceParam.
 type AfterSequenceParam = int64
 
-// ArtifactFolderIdParam defines model for ArtifactFolderIdParam.
-type ArtifactFolderIdParam = string
-
 // ArtifactIdParam defines model for ArtifactIdParam.
 type ArtifactIdParam = string
 
@@ -11995,6 +11950,12 @@ type IDParam = string
 
 // LibraryFileIdParam defines model for LibraryFileIdParam.
 type LibraryFileIdParam = string
+
+// LibraryFolderPlaceIdParam defines model for LibraryFolderPlaceIdParam.
+type LibraryFolderPlaceIdParam = string
+
+// LibraryGroupParam defines model for LibraryGroupParam.
+type LibraryGroupParam = string
 
 // LibraryPlaceParam defines model for LibraryPlaceParam.
 type LibraryPlaceParam string
@@ -12239,18 +12200,6 @@ type ListAPIKeysParams struct {
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
 }
 
-// ListArtifactFoldersParams defines parameters for ListArtifactFolders.
-type ListArtifactFoldersParams struct {
-	// Parent Folder whose children are listed. Omit for the root.
-	Parent *string `form:"parent,omitempty" json:"parent,omitempty"`
-
-	// Place Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read. `personal` is the caller's own files, which only the caller can read. Omit it to list every section the caller can read.
-	Place *ListArtifactFoldersParamsPlace `form:"place,omitempty" json:"place,omitempty"`
-}
-
-// ListArtifactFoldersParamsPlace defines parameters for ListArtifactFolders.
-type ListArtifactFoldersParamsPlace string
-
 // ListArtifactsParams defines parameters for ListArtifacts.
 type ListArtifactsParams struct {
 	// LatestOnly Return the explicitly selected current version when accessible, otherwise the latest available and accessible version per root. Excludes trashed files. Apply before name/MIME filters and pagination. This is the default, and what the Library shows. Only an explicit `true` adds the lineage fields (`root_id`, `previous_id`, `version`) to each item. `false` returns every available version of every file, including superseded versions and files in the trash.
@@ -12274,8 +12223,11 @@ type ListArtifactsParams struct {
 	// CreatedBy Only files created by this principal (for example, an assistant's `principal_id`). With `latest_only=true`, this matches the creator of the returned current version.
 	CreatedBy *string `form:"created_by,omitempty" json:"created_by,omitempty"`
 
-	// Place Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read. `personal` is the caller's own files, which only the caller can read. Omit it to list every section the caller can read.
+	// Place Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read. `personal` is the caller's own files, which only the caller can read. `group` is a space, named by `group_id`, which only its members can read. Omit it to list every section the caller can read.
 	Place *ListArtifactsParamsPlace `form:"place,omitempty" json:"place,omitempty"`
+
+	// GroupId The space's group ID, when `place` is `group`.
+	GroupId *LibraryGroupParam `form:"group_id,omitempty" json:"group_id,omitempty"`
 
 	// Cursor Cursor for pagination (opaque string from previous response)
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
@@ -12448,6 +12400,9 @@ type ListLibraryFilesParams struct {
 	// Place Narrow to one place. Omit for every place the caller can read.
 	Place *LibraryPlaceKind `form:"place,omitempty" json:"place,omitempty"`
 
+	// PlaceId The space's group ID, when `place` is `group`.
+	PlaceId *string `form:"place_id,omitempty" json:"place_id,omitempty"`
+
 	// Folder Folder to list, as a relative path with no leading or trailing slash. A file's folder is the directory part of its path. Omit it or send an empty value for the root.
 	Folder *string `form:"folder,omitempty" json:"folder,omitempty"`
 
@@ -12471,6 +12426,33 @@ type GetLibraryFileContentParams struct {
 
 	// Inline Stream the bytes through the API instead of returning a signed URL.
 	Inline *bool `form:"inline,omitempty" json:"inline,omitempty"`
+}
+
+// DeleteLibraryFolderParams defines parameters for DeleteLibraryFolder.
+type DeleteLibraryFolderParams struct {
+	// Place Whose folder. `person` is always the caller's own.
+	Place LibraryPlaceKind `form:"place" json:"place"`
+
+	// PlaceId The space's group ID, when `place` is `group`.
+	PlaceId *LibraryFolderPlaceIdParam `form:"place_id,omitempty" json:"place_id,omitempty"`
+
+	// Path The folder to delete, as a relative path.
+	Path string `form:"path" json:"path"`
+
+	// DryRun Make every check and report what would happen, changing nothing.
+	DryRun *bool `form:"dry_run,omitempty" json:"dry_run,omitempty"`
+}
+
+// ListLibraryFoldersParams defines parameters for ListLibraryFolders.
+type ListLibraryFoldersParams struct {
+	// Place Whose folders. `person` is always the caller's own.
+	Place LibraryPlaceKind `form:"place" json:"place"`
+
+	// PlaceId The space's group ID, when `place` is `group`.
+	PlaceId *LibraryFolderPlaceIdParam `form:"place_id,omitempty" json:"place_id,omitempty"`
+
+	// Parent Folder whose children are listed. Omit for the top level.
+	Parent *string `form:"parent,omitempty" json:"parent,omitempty"`
 }
 
 // ListPrincipalsParams defines parameters for ListPrincipals.
@@ -12785,9 +12767,6 @@ type ReplaceAgentSkillAssignmentsJSONRequestBody = ReplaceSkillsRequest
 // CreateAPIKeyJSONRequestBody defines body for CreateAPIKey for application/json ContentType.
 type CreateAPIKeyJSONRequestBody = CreateAPIKeyRequest
 
-// CreateArtifactFolderJSONRequestBody defines body for CreateArtifactFolder for application/json ContentType.
-type CreateArtifactFolderJSONRequestBody = CreateArtifactFolderRequest
-
 // CreateArtifactMultipartRequestBody defines body for CreateArtifact for multipart/form-data ContentType.
 type CreateArtifactMultipartRequestBody = CreateArtifactRequest
 
@@ -12838,6 +12817,12 @@ type UpdateLibraryFileJSONRequestBody = UpdateLibraryFileRequest
 
 // MoveLibraryFileJSONRequestBody defines body for MoveLibraryFile for application/json ContentType.
 type MoveLibraryFileJSONRequestBody = MoveLibraryFileRequest
+
+// CreateLibraryFolderJSONRequestBody defines body for CreateLibraryFolder for application/json ContentType.
+type CreateLibraryFolderJSONRequestBody = CreateLibraryFolderRequest
+
+// MoveLibraryFolderJSONRequestBody defines body for MoveLibraryFolder for application/json ContentType.
+type MoveLibraryFolderJSONRequestBody = MoveLibraryFolderRequest
 
 // ScheduleOrgDeletionJSONRequestBody defines body for ScheduleOrgDeletion for application/json ContentType.
 type ScheduleOrgDeletionJSONRequestBody = OrgDeletionRequest
@@ -15942,17 +15927,6 @@ type ClientInterface interface {
 	// DeleteAPIKey request
 	DeleteAPIKey(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListArtifactFolders request
-	ListArtifactFolders(ctx context.Context, params *ListArtifactFoldersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateArtifactFolderWithBody request with any body
-	CreateArtifactFolderWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateArtifactFolder(ctx context.Context, body CreateArtifactFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeleteArtifactFolder request
-	DeleteArtifactFolder(ctx context.Context, folderId ArtifactFolderIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ListArtifacts request
 	ListArtifacts(ctx context.Context, params *ListArtifactsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -16122,6 +16096,22 @@ type ClientInterface interface {
 
 	// ListLibraryFileVersions request
 	ListLibraryFileVersions(ctx context.Context, fileId LibraryFileIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteLibraryFolder request
+	DeleteLibraryFolder(ctx context.Context, params *DeleteLibraryFolderParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListLibraryFolders request
+	ListLibraryFolders(ctx context.Context, params *ListLibraryFoldersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateLibraryFolderWithBody request with any body
+	CreateLibraryFolderWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateLibraryFolder(ctx context.Context, body CreateLibraryFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// MoveLibraryFolderWithBody request with any body
+	MoveLibraryFolderWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	MoveLibraryFolder(ctx context.Context, body MoveLibraryFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ScheduleOrgDeletionWithBody request with any body
 	ScheduleOrgDeletionWithBody(ctx context.Context, orgId OrgIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -17121,54 +17111,6 @@ func (c *Client) DeleteAPIKey(ctx context.Context, resourceId IDParam, reqEditor
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListArtifactFolders(ctx context.Context, params *ListArtifactFoldersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListArtifactFoldersRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateArtifactFolderWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateArtifactFolderRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateArtifactFolder(ctx context.Context, body CreateArtifactFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateArtifactFolderRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DeleteArtifactFolder(ctx context.Context, folderId ArtifactFolderIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteArtifactFolderRequest(c.Server, folderId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) ListArtifacts(ctx context.Context, params *ListArtifactsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListArtifactsRequest(c.Server, params)
 	if err != nil {
@@ -17903,6 +17845,78 @@ func (c *Client) MoveLibraryFile(ctx context.Context, fileId LibraryFileIdParam,
 
 func (c *Client) ListLibraryFileVersions(ctx context.Context, fileId LibraryFileIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListLibraryFileVersionsRequest(c.Server, fileId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteLibraryFolder(ctx context.Context, params *DeleteLibraryFolderParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteLibraryFolderRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListLibraryFolders(ctx context.Context, params *ListLibraryFoldersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListLibraryFoldersRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateLibraryFolderWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateLibraryFolderRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateLibraryFolder(ctx context.Context, body CreateLibraryFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateLibraryFolderRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) MoveLibraryFolderWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewMoveLibraryFolderRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) MoveLibraryFolder(ctx context.Context, body MoveLibraryFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewMoveLibraryFolderRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -21629,146 +21643,6 @@ func NewDeleteAPIKeyRequest(server string, resourceId IDParam) (*http.Request, e
 	return req, nil
 }
 
-// NewListArtifactFoldersRequest generates requests for ListArtifactFolders
-func NewListArtifactFoldersRequest(server string, params *ListArtifactFoldersParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/artifact-folders")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Parent != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "parent", *params.Parent, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Place != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "place", *params.Place, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateArtifactFolderRequest calls the generic CreateArtifactFolder builder with application/json body
-func NewCreateArtifactFolderRequest(server string, body CreateArtifactFolderJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateArtifactFolderRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateArtifactFolderRequestWithBody generates requests for CreateArtifactFolder with any type of body
-func NewCreateArtifactFolderRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/artifact-folders")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDeleteArtifactFolderRequest generates requests for DeleteArtifactFolder
-func NewDeleteArtifactFolderRequest(server string, folderId ArtifactFolderIdParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "folder_id", folderId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/artifact-folders/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
 // NewListArtifactsRequest generates requests for ListArtifacts
 func NewListArtifactsRequest(server string, params *ListArtifactsParams) (*http.Request, error) {
 	var err error
@@ -21884,6 +21758,18 @@ func NewListArtifactsRequest(server string, params *ListArtifactsParams) (*http.
 		if params.Place != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "place", *params.Place, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.GroupId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "group_id", *params.GroupId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -23947,6 +23833,18 @@ func NewListLibraryFilesRequest(server string, params *ListLibraryFilesParams) (
 
 		}
 
+		if params.PlaceId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "place_id", *params.PlaceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if params.Folder != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "folder", *params.Folder, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
@@ -24326,6 +24224,242 @@ func NewListLibraryFileVersionsRequest(server string, fileId LibraryFileIdParam)
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewDeleteLibraryFolderRequest generates requests for DeleteLibraryFolder
+func NewDeleteLibraryFolderRequest(server string, params *DeleteLibraryFolderParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/library/folders")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "place", params.Place, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if params.PlaceId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "place_id", *params.PlaceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "path", params.Path, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if params.DryRun != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "dry_run", *params.DryRun, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListLibraryFoldersRequest generates requests for ListLibraryFolders
+func NewListLibraryFoldersRequest(server string, params *ListLibraryFoldersParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/library/folders")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "place", params.Place, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if params.PlaceId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "place_id", *params.PlaceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Parent != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "parent", *params.Parent, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateLibraryFolderRequest calls the generic CreateLibraryFolder builder with application/json body
+func NewCreateLibraryFolderRequest(server string, body CreateLibraryFolderJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateLibraryFolderRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateLibraryFolderRequestWithBody generates requests for CreateLibraryFolder with any type of body
+func NewCreateLibraryFolderRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/library/folders")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewMoveLibraryFolderRequest calls the generic MoveLibraryFolder builder with application/json body
+func NewMoveLibraryFolderRequest(server string, body MoveLibraryFolderJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewMoveLibraryFolderRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewMoveLibraryFolderRequestWithBody generates requests for MoveLibraryFolder with any type of body
+func NewMoveLibraryFolderRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/library/folders/move")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -28975,17 +29109,6 @@ type ClientWithResponsesInterface interface {
 	// DeleteAPIKeyWithResponse request
 	DeleteAPIKeyWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*DeleteAPIKeyResponse, error)
 
-	// ListArtifactFoldersWithResponse request
-	ListArtifactFoldersWithResponse(ctx context.Context, params *ListArtifactFoldersParams, reqEditors ...RequestEditorFn) (*ListArtifactFoldersResponse, error)
-
-	// CreateArtifactFolderWithBodyWithResponse request with any body
-	CreateArtifactFolderWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateArtifactFolderResponse, error)
-
-	CreateArtifactFolderWithResponse(ctx context.Context, body CreateArtifactFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateArtifactFolderResponse, error)
-
-	// DeleteArtifactFolderWithResponse request
-	DeleteArtifactFolderWithResponse(ctx context.Context, folderId ArtifactFolderIdParam, reqEditors ...RequestEditorFn) (*DeleteArtifactFolderResponse, error)
-
 	// ListArtifactsWithResponse request
 	ListArtifactsWithResponse(ctx context.Context, params *ListArtifactsParams, reqEditors ...RequestEditorFn) (*ListArtifactsResponse, error)
 
@@ -29155,6 +29278,22 @@ type ClientWithResponsesInterface interface {
 
 	// ListLibraryFileVersionsWithResponse request
 	ListLibraryFileVersionsWithResponse(ctx context.Context, fileId LibraryFileIdParam, reqEditors ...RequestEditorFn) (*ListLibraryFileVersionsResponse, error)
+
+	// DeleteLibraryFolderWithResponse request
+	DeleteLibraryFolderWithResponse(ctx context.Context, params *DeleteLibraryFolderParams, reqEditors ...RequestEditorFn) (*DeleteLibraryFolderResponse, error)
+
+	// ListLibraryFoldersWithResponse request
+	ListLibraryFoldersWithResponse(ctx context.Context, params *ListLibraryFoldersParams, reqEditors ...RequestEditorFn) (*ListLibraryFoldersResponse, error)
+
+	// CreateLibraryFolderWithBodyWithResponse request with any body
+	CreateLibraryFolderWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateLibraryFolderResponse, error)
+
+	CreateLibraryFolderWithResponse(ctx context.Context, body CreateLibraryFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateLibraryFolderResponse, error)
+
+	// MoveLibraryFolderWithBodyWithResponse request with any body
+	MoveLibraryFolderWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*MoveLibraryFolderResponse, error)
+
+	MoveLibraryFolderWithResponse(ctx context.Context, body MoveLibraryFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*MoveLibraryFolderResponse, error)
 
 	// ScheduleOrgDeletionWithBodyWithResponse request with any body
 	ScheduleOrgDeletionWithBodyWithResponse(ctx context.Context, orgId OrgIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ScheduleOrgDeletionResponse, error)
@@ -30877,106 +31016,6 @@ func (r DeleteAPIKeyResponse) ContentType() string {
 	return ""
 }
 
-type ListArtifactFoldersResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *ArtifactFolderListResponse
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-}
-
-// Status returns HTTPResponse.Status
-func (r ListArtifactFoldersResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListArtifactFoldersResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListArtifactFoldersResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type CreateArtifactFolderResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *ArtifactFolder
-	JSON201      *ArtifactFolder
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateArtifactFolderResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateArtifactFolderResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreateArtifactFolderResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type DeleteArtifactFolderResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-	JSON409      *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r DeleteArtifactFolderResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeleteArtifactFolderResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DeleteArtifactFolderResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 type ListArtifactsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -32521,6 +32560,142 @@ func (r ListLibraryFileVersionsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListLibraryFileVersionsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteLibraryFolderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *LibraryFolderChangeResult
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteLibraryFolderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteLibraryFolderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteLibraryFolderResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListLibraryFoldersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *LibraryFolderListResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ListLibraryFoldersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListLibraryFoldersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListLibraryFoldersResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateLibraryFolderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *LibraryFolder
+	JSON201      *LibraryFolder
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateLibraryFolderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateLibraryFolderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateLibraryFolderResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type MoveLibraryFolderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *LibraryFolderChangeResult
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r MoveLibraryFolderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r MoveLibraryFolderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r MoveLibraryFolderResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -36020,41 +36195,6 @@ func (c *ClientWithResponses) DeleteAPIKeyWithResponse(ctx context.Context, reso
 	return ParseDeleteAPIKeyResponse(rsp)
 }
 
-// ListArtifactFoldersWithResponse request returning *ListArtifactFoldersResponse
-func (c *ClientWithResponses) ListArtifactFoldersWithResponse(ctx context.Context, params *ListArtifactFoldersParams, reqEditors ...RequestEditorFn) (*ListArtifactFoldersResponse, error) {
-	rsp, err := c.ListArtifactFolders(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListArtifactFoldersResponse(rsp)
-}
-
-// CreateArtifactFolderWithBodyWithResponse request with arbitrary body returning *CreateArtifactFolderResponse
-func (c *ClientWithResponses) CreateArtifactFolderWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateArtifactFolderResponse, error) {
-	rsp, err := c.CreateArtifactFolderWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateArtifactFolderResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateArtifactFolderWithResponse(ctx context.Context, body CreateArtifactFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateArtifactFolderResponse, error) {
-	rsp, err := c.CreateArtifactFolder(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateArtifactFolderResponse(rsp)
-}
-
-// DeleteArtifactFolderWithResponse request returning *DeleteArtifactFolderResponse
-func (c *ClientWithResponses) DeleteArtifactFolderWithResponse(ctx context.Context, folderId ArtifactFolderIdParam, reqEditors ...RequestEditorFn) (*DeleteArtifactFolderResponse, error) {
-	rsp, err := c.DeleteArtifactFolder(ctx, folderId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeleteArtifactFolderResponse(rsp)
-}
-
 // ListArtifactsWithResponse request returning *ListArtifactsResponse
 func (c *ClientWithResponses) ListArtifactsWithResponse(ctx context.Context, params *ListArtifactsParams, reqEditors ...RequestEditorFn) (*ListArtifactsResponse, error) {
 	rsp, err := c.ListArtifacts(ctx, params, reqEditors...)
@@ -36595,6 +36735,58 @@ func (c *ClientWithResponses) ListLibraryFileVersionsWithResponse(ctx context.Co
 		return nil, err
 	}
 	return ParseListLibraryFileVersionsResponse(rsp)
+}
+
+// DeleteLibraryFolderWithResponse request returning *DeleteLibraryFolderResponse
+func (c *ClientWithResponses) DeleteLibraryFolderWithResponse(ctx context.Context, params *DeleteLibraryFolderParams, reqEditors ...RequestEditorFn) (*DeleteLibraryFolderResponse, error) {
+	rsp, err := c.DeleteLibraryFolder(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteLibraryFolderResponse(rsp)
+}
+
+// ListLibraryFoldersWithResponse request returning *ListLibraryFoldersResponse
+func (c *ClientWithResponses) ListLibraryFoldersWithResponse(ctx context.Context, params *ListLibraryFoldersParams, reqEditors ...RequestEditorFn) (*ListLibraryFoldersResponse, error) {
+	rsp, err := c.ListLibraryFolders(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListLibraryFoldersResponse(rsp)
+}
+
+// CreateLibraryFolderWithBodyWithResponse request with arbitrary body returning *CreateLibraryFolderResponse
+func (c *ClientWithResponses) CreateLibraryFolderWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateLibraryFolderResponse, error) {
+	rsp, err := c.CreateLibraryFolderWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateLibraryFolderResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateLibraryFolderWithResponse(ctx context.Context, body CreateLibraryFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateLibraryFolderResponse, error) {
+	rsp, err := c.CreateLibraryFolder(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateLibraryFolderResponse(rsp)
+}
+
+// MoveLibraryFolderWithBodyWithResponse request with arbitrary body returning *MoveLibraryFolderResponse
+func (c *ClientWithResponses) MoveLibraryFolderWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*MoveLibraryFolderResponse, error) {
+	rsp, err := c.MoveLibraryFolderWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseMoveLibraryFolderResponse(rsp)
+}
+
+func (c *ClientWithResponses) MoveLibraryFolderWithResponse(ctx context.Context, body MoveLibraryFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*MoveLibraryFolderResponse, error) {
+	rsp, err := c.MoveLibraryFolder(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseMoveLibraryFolderResponse(rsp)
 }
 
 // ScheduleOrgDeletionWithBodyWithResponse request with arbitrary body returning *ScheduleOrgDeletionResponse
@@ -39851,154 +40043,6 @@ func ParseDeleteAPIKeyResponse(rsp *http.Response) (*DeleteAPIKeyResponse, error
 	return response, nil
 }
 
-// ParseListArtifactFoldersResponse parses an HTTP response from a ListArtifactFoldersWithResponse call
-func ParseListArtifactFoldersResponse(rsp *http.Response) (*ListArtifactFoldersResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListArtifactFoldersResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ArtifactFolderListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateArtifactFolderResponse parses an HTTP response from a CreateArtifactFolderWithResponse call
-func ParseCreateArtifactFolderResponse(rsp *http.Response) (*CreateArtifactFolderResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateArtifactFolderResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ArtifactFolder
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest ArtifactFolder
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeleteArtifactFolderResponse parses an HTTP response from a DeleteArtifactFolderWithResponse call
-func ParseDeleteArtifactFolderResponse(rsp *http.Response) (*DeleteArtifactFolderResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeleteArtifactFolderResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseListArtifactsResponse parses an HTTP response from a ListArtifactsWithResponse call
 func ParseListArtifactsResponse(rsp *http.Response) (*ListArtifactsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -42382,6 +42426,222 @@ func ParseListLibraryFileVersionsResponse(rsp *http.Response) (*ListLibraryFileV
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteLibraryFolderResponse parses an HTTP response from a DeleteLibraryFolderWithResponse call
+func ParseDeleteLibraryFolderResponse(rsp *http.Response) (*DeleteLibraryFolderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteLibraryFolderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LibraryFolderChangeResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListLibraryFoldersResponse parses an HTTP response from a ListLibraryFoldersWithResponse call
+func ParseListLibraryFoldersResponse(rsp *http.Response) (*ListLibraryFoldersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListLibraryFoldersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LibraryFolderListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateLibraryFolderResponse parses an HTTP response from a CreateLibraryFolderWithResponse call
+func ParseCreateLibraryFolderResponse(rsp *http.Response) (*CreateLibraryFolderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateLibraryFolderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LibraryFolder
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest LibraryFolder
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseMoveLibraryFolderResponse parses an HTTP response from a MoveLibraryFolderWithResponse call
+func ParseMoveLibraryFolderResponse(rsp *http.Response) (*MoveLibraryFolderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &MoveLibraryFolderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LibraryFolderChangeResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 

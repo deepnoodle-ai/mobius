@@ -66,35 +66,6 @@ func registerArtifactsCommands(app *cli.App) {
 			return printResponse(ctx, "deleteArtifact", resp.StatusCode(), resp.Body)
 		})
 
-	artifactsGrp.Command("folders").
-		Description("List folders").
-		Flags(
-			cli.String("parent", "").Help("Folder whose children are listed. Omit for the root."),
-			cli.String("place", "").Help("Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read. `personal` is the caller's own files, which only the caller can read. Omit it to list every section the caller can read."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			params := &api.ListArtifactFoldersParams{}
-			if ctx.IsSet("parent") {
-				v := ctx.String("parent")
-				params.Parent = &v
-			}
-			if ctx.IsSet("place") {
-				v := api.ListArtifactFoldersParamsPlace(ctx.String("place"))
-				params.Place = &v
-			}
-			resp, err := client.ListArtifactFoldersWithResponse(ctx.Context(), params)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "listArtifactFolders", resp.StatusCode(), resp.Body)
-		})
-
 	artifactsGrp.Command("get").
 		Description("Get artifact").
 		AddArg(&cli.Arg{Name: "artifact-id", Description: "ID of the artifact", Required: true}).
@@ -159,7 +130,8 @@ func registerArtifactsCommands(app *cli.App) {
 			cli.Bool("no-recursive", "").Help("Turn off --recursive, which the server applies by default."),
 			cli.String("agent-id", "").Help("Only files this assistant made, in any folder. An assistant picks a folder for each file, so its files are not in one place."),
 			cli.String("created-by", "").Help("Only files created by this principal (for example, an assistant's `principal_id`). With `latest_only=true`, this matches the creator of the returned current version."),
-			cli.String("place", "").Help("Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read. `personal` is the caller's own files, which only the caller can read. Omit it to list every section the caller can read."),
+			cli.String("place", "").Help("Narrows the listing to one section of the Library. `company` is the company's files, which everyone in the organization can read. `personal` is the caller's own files, which only the caller can read. `group` is a space, named by `group_id`, which only its members can read. Omit it to list every section the caller can read."),
+			cli.String("group-id", "").Help("The space's group ID, when `place` is `group`."),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
@@ -208,6 +180,10 @@ func registerArtifactsCommands(app *cli.App) {
 			if ctx.IsSet("place") {
 				v := api.ListArtifactsParamsPlace(ctx.String("place"))
 				params.Place = &v
+			}
+			if ctx.IsSet("group-id") {
+				v := api.LibraryGroupParam(ctx.String("group-id"))
+				params.GroupId = &v
 			}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))

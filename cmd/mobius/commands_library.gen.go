@@ -59,6 +59,52 @@ func registerLibraryCommands(app *cli.App) {
 			return printResponse(ctx, "createLibraryFile", resp.StatusCode(), resp.Body)
 		})
 
+	libraryGrp.Command("create-folder").
+		Description("Create library folder").
+		Flags(
+			cli.String("path", "").Help("[required] Folder path, relative and with no leading or trailing slash. Folders above it need no creating of their own."),
+			cli.String("place", "").Help("[required] Where the folder goes. `person` is always the caller's own files."),
+			cli.String("place-id", "").Help("The space's group ID, when `place` is `group`."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			var body api.CreateLibraryFolderJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("path") {
+				body.Path = ctx.String("path")
+			}
+			if ctx.IsSet("place") {
+				body.Place = api.LibraryPlaceKind(ctx.String("place"))
+			}
+			if ctx.IsSet("place-id") {
+				v := ctx.String("place-id")
+				body.PlaceId = &v
+			}
+			if body.Path == "" {
+				return fmt.Errorf("--path is required (or supply it via --file)")
+			}
+			if body.Place == "" {
+				return fmt.Errorf("--place is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.CreateLibraryFolderWithResponse(ctx.Context(), body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "createLibraryFolder", resp.StatusCode(), resp.Body)
+		})
+
 	libraryGrp.Command("delete-file").
 		Description("Delete library file").
 		AddArg(&cli.Arg{Name: "file-id", Description: "Library file ID (`file_...`), which is not an artifact ID.", Required: true}).
@@ -75,6 +121,39 @@ func registerLibraryCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "deleteLibraryFile", resp.StatusCode(), resp.Body)
+		})
+
+	libraryGrp.Command("delete-folder").
+		Description("Delete library folder").
+		Flags(
+			cli.String("place", "").Help("[required] Whose folder. `person` is always the caller's own.").Required(),
+			cli.String("place-id", "").Help("The space's group ID, when `place` is `group`."),
+			cli.String("path", "").Help("[required] The folder to delete, as a relative path.").Required(),
+			cli.Bool("dry-run", "").Help("Make every check and report what would happen, changing nothing."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			params := &api.DeleteLibraryFolderParams{}
+			params.Place = api.LibraryPlaceKind(ctx.String("place"))
+			if ctx.IsSet("place-id") {
+				v := api.LibraryFolderPlaceIdParam(ctx.String("place-id"))
+				params.PlaceId = &v
+			}
+			params.Path = ctx.String("path")
+			if ctx.IsSet("dry-run") {
+				v := ctx.Bool("dry-run")
+				params.DryRun = &v
+			}
+			resp, err := client.DeleteLibraryFolderWithResponse(ctx.Context(), params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "deleteLibraryFolder", resp.StatusCode(), resp.Body)
 		})
 
 	libraryGrp.Command("get-file").
@@ -148,6 +227,7 @@ func registerLibraryCommands(app *cli.App) {
 		Description("List library files").
 		Flags(
 			cli.String("place", "").Help("Narrow to one place. Omit for every place the caller can read."),
+			cli.String("place-id", "").Help("The space's group ID, when `place` is `group`."),
 			cli.String("folder", "").Help("Folder to list, as a relative path with no leading or trailing slash. A file's folder is the directory part of its path. Omit it or send an empty value for the root."),
 			cli.Bool("recursive", "").Help("Include files in subfolders of `folder`. With `false`, only files whose folder is exactly `folder` are returned."),
 			cli.Bool("no-recursive", "").Help("Turn off --recursive, which the server applies by default."),
@@ -166,6 +246,10 @@ func registerLibraryCommands(app *cli.App) {
 			if ctx.IsSet("place") {
 				v := api.LibraryPlaceKind(ctx.String("place"))
 				params.Place = &v
+			}
+			if ctx.IsSet("place-id") {
+				v := ctx.String("place-id")
+				params.PlaceId = &v
 			}
 			if ctx.IsSet("folder") {
 				v := ctx.String("folder")
@@ -197,14 +281,45 @@ func registerLibraryCommands(app *cli.App) {
 			return printResponse(ctx, "listLibraryFiles", resp.StatusCode(), resp.Body)
 		})
 
+	libraryGrp.Command("list-folders").
+		Description("List library folders").
+		Flags(
+			cli.String("place", "").Help("[required] Whose folders. `person` is always the caller's own.").Required(),
+			cli.String("place-id", "").Help("The space's group ID, when `place` is `group`."),
+			cli.String("parent", "").Help("Folder whose children are listed. Omit for the top level."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			params := &api.ListLibraryFoldersParams{}
+			params.Place = api.LibraryPlaceKind(ctx.String("place"))
+			if ctx.IsSet("place-id") {
+				v := api.LibraryFolderPlaceIdParam(ctx.String("place-id"))
+				params.PlaceId = &v
+			}
+			if ctx.IsSet("parent") {
+				v := ctx.String("parent")
+				params.Parent = &v
+			}
+			resp, err := client.ListLibraryFoldersWithResponse(ctx.Context(), params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listLibraryFolders", resp.StatusCode(), resp.Body)
+		})
+
 	libraryGrp.Command("move").
 		Description("Move a file to the team's files or a person's own").
 		AddArg(&cli.Arg{Name: "file-id", Description: "Library file ID (`file_...`), which is not an artifact ID.", Required: true}).
 		Flags(
-			cli.Bool("confirm-audience-expansion", "").Help("Required when moving into the company's files. It is the same confirmation sharing an artifact takes."),
+			cli.Bool("confirm-audience-expansion", "").Help("Required when the move lets more people see the file: into the company's files, or into a space with someone who could not see it before."),
 			cli.String("path", "").Help("An address in the destination. Defaults to the path it already has."),
-			cli.String("place", "").Help("[required] Where the file goes: `team` for the company's files, `person` for one person's own."),
-			cli.String("place-id", "").Help("Whose files, when `place` is `person`. Defaults to the caller's own; another person's is refused."),
+			cli.String("place", "").Help("[required] Where the file goes: `team` for the company's files, `person` for one person's own, `group` for a space."),
+			cli.String("place-id", "").Help("Whose files, when `place` is `person`. Defaults to the caller's own; another person's is refused. The space's group ID when `place` is `group`."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -246,6 +361,74 @@ func registerLibraryCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "moveLibraryFile", resp.StatusCode(), resp.Body)
+		})
+
+	libraryGrp.Command("move-library-folder").
+		Description("Move library folder").
+		Flags(
+			cli.Bool("confirm-audience-expansion", "").Help("Required when a move to another place lets more people see the files: into the company's files, or into a space with someone who could not see them before."),
+			cli.String("new-path", "").Help("[required] Where it goes. In the same place, change the last segment to rename it, or the part before it to move it under another folder. With `to_place`, it is the folder in the destination that receives the contents; empty puts them at the top of that place."),
+			cli.String("path", "").Help("[required] The folder to move, as a relative path."),
+			cli.String("place", "").Help("[required] Whose folder. `person` is always the caller's own files."),
+			cli.String("place-id", "").Help("The space's group ID, when `place` is `group`."),
+			cli.String("to-place", "").Help("Move the folder to another place. Omit to stay in `place`. `person` is always the caller's own files."),
+			cli.String("to-place-id", "").Help("The space's group ID, when `to_place` is `group`."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			var body api.MoveLibraryFolderJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("confirm-audience-expansion") {
+				v := ctx.Bool("confirm-audience-expansion")
+				body.ConfirmAudienceExpansion = &v
+			}
+			if ctx.IsSet("new-path") {
+				body.NewPath = ctx.String("new-path")
+			}
+			if ctx.IsSet("path") {
+				body.Path = ctx.String("path")
+			}
+			if ctx.IsSet("place") {
+				body.Place = api.LibraryPlaceKind(ctx.String("place"))
+			}
+			if ctx.IsSet("place-id") {
+				v := ctx.String("place-id")
+				body.PlaceId = &v
+			}
+			if ctx.IsSet("to-place") {
+				v := api.LibraryPlaceKind(ctx.String("to-place"))
+				body.ToPlace = &v
+			}
+			if ctx.IsSet("to-place-id") {
+				v := ctx.String("to-place-id")
+				body.ToPlaceId = &v
+			}
+			if body.NewPath == "" {
+				return fmt.Errorf("--new-path is required (or supply it via --file)")
+			}
+			if body.Path == "" {
+				return fmt.Errorf("--path is required (or supply it via --file)")
+			}
+			if body.Place == "" {
+				return fmt.Errorf("--place is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.MoveLibraryFolderWithResponse(ctx.Context(), body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "moveLibraryFolder", resp.StatusCode(), resp.Body)
 		})
 
 	libraryGrp.Command("rename").

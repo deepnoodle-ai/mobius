@@ -6098,6 +6098,7 @@ paths:
         description: Only files created by this principal (for example, an assistant's `principal_id`).
           With `latest_only=true`, this matches the creator of the returned current version.
       - $ref: '#/components/parameters/LibraryPlaceParam'
+      - $ref: '#/components/parameters/LibraryGroupParam'
       - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
       responses:
@@ -6338,106 +6339,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/artifact-folders:
-    get:
-      operationId: listArtifactFolders
-      tags:
-      - artifacts
-      summary: List folders
-      description: Returns the immediate subfolders of a folder, ordered by name. A folder
-        exists either because it was declared through this API or because a file the caller
-        can see carries it in its `name`; both are returned, and `declared` says which. Implied
-        folders are derived only from files the caller could list, so browsing never reveals
-        a hidden file.
-      parameters:
-      - name: parent
-        in: query
-        required: false
-        schema:
-          type: string
-          maxLength: 256
-        description: Folder whose children are listed. Omit for the root.
-      - $ref: '#/components/parameters/LibraryPlaceParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ArtifactFolderListResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-    post:
-      operationId: createArtifactFolder
-      tags:
-      - artifacts
-      summary: Create folder
-      description: 'Declares a folder so it can exist before any file is in it. The call is
-        idempotent: declaring a folder that already exists returns the existing one with 200
-        rather than failing, so "new folder" on a name already in use simply opens it. A declared
-        folder holds nothing itself and charges no quota; it never widens access to any file.'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateArtifactFolderRequest'
-      responses:
-        '200':
-          description: The folder was already declared
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ArtifactFolder'
-        '201':
-          description: Folder created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ArtifactFolder'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-  /v1/artifact-folders/{folder_id}:
-    delete:
-      operationId: deleteArtifactFolder
-      tags:
-      - artifacts
-      summary: Delete folder
-      description: 'Removes a declared folder. The folder must be empty: the call is refused
-        with `409 folder_not_empty` while any visible file lives in it or below it, or while
-        a declared subfolder remains. The refusal carries `file_count` in `error.details`.
-        Files are never deleted by this call.'
-      parameters:
-      - $ref: '#/components/parameters/ArtifactFolderIdParam'
-      responses:
-        '204':
-          description: Deleted
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          description: The folder still contains files or subfolders
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                error:
-                  code: folder_not_empty
-                  message: folder "reports" still contains 3 files; move or delete them first
-                  details:
-                    file_count: 3
   /v1/library/files:
     get:
       operationId: listLibraryFiles
@@ -6454,6 +6355,12 @@ paths:
         schema:
           $ref: '#/components/schemas/LibraryPlaceKind'
         description: Narrow to one place. Omit for every place the caller can read.
+      - name: place_id
+        in: query
+        required: false
+        schema:
+          type: string
+        description: The space's group ID, when `place` is `group`.
       - name: folder
         in: query
         required: false
@@ -6693,6 +6600,154 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/library/folders:
+    get:
+      operationId: listLibraryFolders
+      tags:
+      - library
+      summary: List library folders
+      description: Returns the immediate subfolders of a folder in one place, ordered by name.
+        A folder exists because someone created it or because a file's path carries it; both
+        are returned, and they behave the same way.
+      parameters:
+      - name: place
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/LibraryPlaceKind'
+        description: Whose folders. `person` is always the caller's own.
+      - $ref: '#/components/parameters/LibraryFolderPlaceIdParam'
+      - name: parent
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 256
+        description: Folder whose children are listed. Omit for the top level.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryFolderListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: createLibraryFolder
+      tags:
+      - library
+      summary: Create library folder
+      description: Creates a folder so it can exist before any file is in it. Creating a folder
+        that already exists returns it with 200 rather than failing. A folder holds nothing
+        itself and never changes who can open a file.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLibraryFolderRequest'
+      responses:
+        '200':
+          description: The folder already existed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryFolder'
+        '201':
+          description: Folder created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryFolder'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    delete:
+      operationId: deleteLibraryFolder
+      tags:
+      - library
+      summary: Delete library folder
+      description: Deletes a folder by moving every file in it, subfolders included, to the
+        trash, where each can be restored. Refused, naming the files, when the caller may
+        not delete all of them. `dry_run` reports the count without changing anything.
+      parameters:
+      - name: place
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/LibraryPlaceKind'
+        description: Whose folder. `person` is always the caller's own.
+      - $ref: '#/components/parameters/LibraryFolderPlaceIdParam'
+      - name: path
+        in: query
+        required: true
+        schema:
+          type: string
+          maxLength: 256
+        description: The folder to delete, as a relative path.
+      - name: dry_run
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+        description: Make every check and report what would happen, changing nothing.
+      responses:
+        '200':
+          description: Deleted, or for a dry run, what deleting would do
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryFolderChangeResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/library/folders/move:
+    post:
+      operationId: moveLibraryFolder
+      tags:
+      - library
+      summary: Move library folder
+      description: |-
+        Renames a folder or moves it under another folder in the same place, or, with `to_place`, moves it to another place. Every file and subfolder in it moves together, or none do. Refused, naming the files, when the caller may not move all of them, and when the new path is already taken.
+
+        A move to another place follows the file move's rules for every file: the caller needs the right to change files in both places, a move that narrows who sees the files (out of the company's files into a space, or into the caller's own files) takes an administrator who is in the space, and a move that lets more people see the files needs `confirm_audience_expansion`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveLibraryFolderRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryFolderChangeResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 components:
   securitySchemes:
     BearerAuth:
@@ -7003,14 +7058,6 @@ components:
       description: Channel message ID.
       schema:
         type: string
-    ArtifactFolderIdParam:
-      name: folder_id
-      in: path
-      required: true
-      schema:
-        type: string
-        pattern: ^afd_[A-Za-z0-9]+$
-      description: ID of the declared folder
     LibraryPlaceParam:
       name: place
       in: query
@@ -7020,10 +7067,18 @@ components:
         enum:
         - company
         - personal
+        - group
       description: Narrows the listing to one section of the Library. `company` is the company's
         files, which everyone in the organization can read. `personal` is the caller's own
-        files, which only the caller can read. Omit it to list every section the caller can
-        read.
+        files, which only the caller can read. `group` is a space, named by `group_id`, which
+        only its members can read. Omit it to list every section the caller can read.
+    LibraryGroupParam:
+      name: group_id
+      in: query
+      required: false
+      schema:
+        type: string
+      description: The space's group ID, when `place` is `group`.
     DocumentTemplateFormatParam:
       name: format
       in: path
@@ -7041,6 +7096,27 @@ components:
       schema:
         type: string
       description: Library file ID (`file_...`), which is not an artifact ID.
+    LibraryFolderPlaceIdParam:
+      name: place_id
+      in: query
+      required: false
+      schema:
+        type: string
+      description: The space's group ID, when `place` is `group`.
+    GroupID:
+      name: group_id
+      in: path
+      required: true
+      description: The group's ID.
+      schema:
+        type: string
+    GroupPrincipalID:
+      name: principal_id
+      in: path
+      required: true
+      description: The person.
+      schema:
+        type: string
   responses:
     BadRequest:
       description: Bad Request
@@ -7166,17 +7242,21 @@ components:
       additionalProperties: false
       required:
       - kind
-      description: The human or team responsible for this resource.
+      description: The human, team, or group responsible for this resource.
       properties:
         kind:
           type: string
           enum:
           - person
           - team
+          - group
+          description: '`group` is returned only for files in a Library space; no request
+            may ask for it.'
         id:
           type: string
           nullable: true
-          description: Human principal ID when kind is person; null for the team.
+          description: Human principal ID when kind is person, the group's ID when kind is
+            group; null for the team.
     ResourceVisibility:
       type: string
       enum:
@@ -7203,12 +7283,16 @@ components:
       type: string
       enum:
       - only_you
-      - shared_by_you
+      - shared_with_everyone
       - shared_with_group
       - team
       - someone_else
-      description: Employee-facing effective ownership and audience posture for the current
-        caller.
+      - space
+      description: 'Employee-facing effective ownership and audience posture for the current
+        caller. `shared_with_everyone` is a person''s thing the whole organization can see,
+        whoever owns it. `shared_with_group` is a thing only named people reach: a group assistant,
+        or a routine shown to named people. `space` is a file in a Library space, which only
+        the space''s members see.'
     ResourceControls:
       type: object
       additionalProperties: false
@@ -7653,11 +7737,6 @@ components:
           type: integer
           description: How many principals are in this agent's audience. Zero for an `organization`
             agent, which carries no member rows.
-        can_edit:
-          type: boolean
-          description: 'Whether the caller may change this assistant''s setup: exactly what
-            `PATCH /v1/agents/{resource_id}` would allow. False on internal administration
-            listings.'
         viewer_actions:
           $ref: '#/components/schemas/ViewerActions'
         active_chat_count:
@@ -7872,7 +7951,6 @@ components:
       - session_key
       - visibility
       - posture
-      - controls
       - message_count
       - token_input_total
       - token_output_total
@@ -7921,8 +7999,6 @@ components:
           $ref: '#/components/schemas/ResourceVisibility'
         posture:
           $ref: '#/components/schemas/ResourcePosture'
-        controls:
-          $ref: '#/components/schemas/ResourceControls'
         viewer_actions:
           $ref: '#/components/schemas/ViewerActions'
         model_override:
@@ -8545,7 +8621,6 @@ components:
       - owner
       - visibility
       - posture
-      - controls
       - name
       - endpoint_kind
       - invocation_format
@@ -8563,8 +8638,6 @@ components:
           $ref: '#/components/schemas/ResourceContainer'
         posture:
           $ref: '#/components/schemas/ResourcePosture'
-        controls:
-          $ref: '#/components/schemas/ResourceControls'
         viewer_actions:
           $ref: '#/components/schemas/ViewerActions'
         name:
@@ -8789,9 +8862,6 @@ components:
           description: Present when a custom action is narrowed by an agent container.
         posture:
           $ref: '#/components/schemas/ResourcePosture'
-          description: Present for an organization-authored custom action.
-        controls:
-          $ref: '#/components/schemas/ResourceControls'
           description: Present for an organization-authored custom action.
         viewer_actions:
           $ref: '#/components/schemas/ViewerActions'
@@ -11954,7 +12024,6 @@ components:
       additionalProperties: false
       required:
       - count
-      - can_manage
       properties:
         items:
           type: array
@@ -11964,10 +12033,6 @@ components:
         count:
           type: integer
           description: How many people are members.
-        can_manage:
-          type: boolean
-          description: 'Whether the caller manages this assistant: an Admin, or a manager
-            of a group assistant whose role can build.'
     UpdateAgentMemberRequest:
       type: object
       additionalProperties: false
@@ -13265,7 +13330,6 @@ components:
       - visibility
       - container
       - posture
-      - controls
       - created_at
       - updated_at
       properties:
@@ -13295,8 +13359,6 @@ components:
           $ref: '#/components/schemas/ResourceContainer'
         posture:
           $ref: '#/components/schemas/ResourcePosture'
-        controls:
-          $ref: '#/components/schemas/ResourceControls'
         viewer_actions:
           $ref: '#/components/schemas/ViewerActions'
         allowed_actions:
@@ -15919,22 +15981,6 @@ components:
           maximum: 20
           default: 5
           description: Maximum concurrent threads. Only a human can raise it.
-        available_actions:
-          type: array
-          description: 'Actions permitted for this caller; the server rechecks each request.
-            `edit` changes the name, schedule, model, and lowers limits. `configure` also
-            changes the instructions, the watched event, the accounts it uses, and raises
-            limits: on a person''s routine only its owner may.'
-          items:
-            type: string
-            enum:
-            - edit
-            - configure
-            - run
-            - pause
-            - resume
-            - delete
-            - invite
         viewer_actions:
           $ref: '#/components/schemas/ViewerActions'
         posture:
@@ -17379,7 +17425,6 @@ components:
       - owner
       - visibility
       - posture
-      - controls
       - name
       - schema
       - created_at
@@ -17395,8 +17440,6 @@ components:
           $ref: '#/components/schemas/ResourceVisibility'
         posture:
           $ref: '#/components/schemas/ResourcePosture'
-        controls:
-          $ref: '#/components/schemas/ResourceControls'
         viewer_actions:
           $ref: '#/components/schemas/ViewerActions'
         name:
@@ -18777,114 +18820,6 @@ components:
           type: string
           format: date-time
           description: When the access token stops working.
-    ArtifactFolder:
-      type: object
-      additionalProperties: false
-      description: A declared Library folder.
-      required:
-      - id
-      - path
-      - name
-      - parent_path
-      - owner
-      - visibility
-      - created_at
-      properties:
-        id:
-          type: string
-          description: Folder ID.
-        path:
-          type: string
-          description: Normalized folder path, with no leading or trailing slash.
-        name:
-          type: string
-          description: Last segment of the path.
-        parent_path:
-          type: string
-          description: Path of the containing folder; empty at the root.
-        owner:
-          $ref: '#/components/schemas/ResourceOwner'
-        visibility:
-          $ref: '#/components/schemas/ResourceVisibility'
-        viewer_actions:
-          $ref: '#/components/schemas/ViewerActions'
-        created_at:
-          type: string
-          format: date-time
-        created_by:
-          type: string
-          description: Principal that declared the folder.
-      example:
-        id: afd_2m7q9x5v3p8n4r6t
-        path: reports/2026
-        name: '2026'
-        parent_path: reports
-        owner:
-          kind: team
-        visibility: organization
-        created_at: '2026-09-14T14:30:00Z'
-    ArtifactFolderSummary:
-      type: object
-      additionalProperties: false
-      description: One immediate subfolder, declared or implied by a file name.
-      required:
-      - path
-      - name
-      - declared
-      properties:
-        path:
-          type: string
-          description: Normalized folder path.
-        name:
-          type: string
-          description: Last segment of the path, for display.
-        declared:
-          type: boolean
-          description: Whether a folder record exists. Only a declared folder can be deleted;
-            an implied one disappears with its last file.
-        id:
-          type: string
-          description: Folder ID, present only when the folder is declared.
-    ArtifactFolderListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      properties:
-        items:
-          type: array
-          description: Immediate subfolders, ordered by name.
-          items:
-            $ref: '#/components/schemas/ArtifactFolderSummary'
-      example:
-        items:
-        - path: reports
-          name: reports
-          declared: true
-          id: afd_2m7q9x5v3p8n4r6t
-        - path: invoices
-          name: invoices
-          declared: false
-    CreateArtifactFolderRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - path
-      properties:
-        path:
-          type: string
-          maxLength: 256
-          description: Folder path to declare, relative and with no leading or trailing slash.
-            Intermediate folders are implied by this path and need no declaration of their
-            own.
-        visibility:
-          allOf:
-          - $ref: '#/components/schemas/ResourceVisibility'
-          description: Who sees the folder. Omit for `private`, visible only to the person
-            creating it. It never changes who can open the files inside.
-      example:
-        path: reports/2026
-        visibility: organization
     ArtifactListResponse:
       type: object
       required:
@@ -18957,6 +18892,10 @@ components:
         visibility:
           $ref: '#/components/schemas/ResourceVisibility'
           description: Optional audience. Omit to keep the upload private.
+        group_id:
+          type: string
+          description: Upload into this space. The caller must be a member who can change
+            its files. `owner` and `visibility` must then be omitted.
         convert:
           type: string
           enum:
@@ -19044,9 +18983,11 @@ components:
       enum:
       - team
       - person
+      - group
       description: Which place a file is in. `team` is the company's files, identical for
-        every member; `person` is one person's own. It is the same vocabulary as resource
-        ownership, because it is the same distinction.
+        every member; `person` is one person's own; `group` is a space, which only its group's
+        members can see. It is the same vocabulary as resource ownership, because it is the
+        same distinction.
     LibraryPlace:
       type: object
       additionalProperties: false
@@ -19057,8 +18998,12 @@ components:
           $ref: '#/components/schemas/LibraryPlaceKind'
         id:
           type: string
-          description: The person whose files these are, for `person`. Absent for `team`,
-            which belongs to the organization rather than a person.
+          description: The person whose files these are, for `person`, or the space's group
+            ID, for `group`. Absent for `team`, which belongs to the organization rather than
+            a person.
+        name:
+          type: string
+          description: The space's name, for `group`.
         display_path:
           type: string
           description: 'The address as the Library shows it: `My files/reports/q3.md` for
@@ -19202,19 +19147,19 @@ components:
           allOf:
           - $ref: '#/components/schemas/LibraryPlaceKind'
           description: 'Where the file goes: `team` for the company''s files, `person` for
-            one person''s own.'
+            one person''s own, `group` for a space.'
         place_id:
           type: string
           description: Whose files, when `place` is `person`. Defaults to the caller's own;
-            another person's is refused.
+            another person's is refused. The space's group ID when `place` is `group`.
         path:
           type: string
           maxLength: 256
           description: An address in the destination. Defaults to the path it already has.
         confirm_audience_expansion:
           type: boolean
-          description: Required when moving into the company's files. It is the same confirmation
-            sharing an artifact takes.
+          description: 'Required when the move lets more people see the file: into the company''s
+            files, or into a space with someone who could not see it before.'
     LibraryFileContent:
       type: object
       additionalProperties: false
@@ -19238,6 +19183,139 @@ components:
         size_bytes:
           type: integer
           format: int64
+    LibraryFolder:
+      type: object
+      additionalProperties: false
+      description: A folder in one place, created or implied by file paths.
+      required:
+      - path
+      - name
+      properties:
+        path:
+          type: string
+          description: The folder's path within its place, with no leading or trailing slash.
+        name:
+          type: string
+          description: The last segment of the path, for display.
+      example:
+        path: reports/2026
+        name: '2026'
+    LibraryFolderListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          description: Immediate subfolders, ordered by name.
+          items:
+            $ref: '#/components/schemas/LibraryFolder'
+      example:
+        items:
+        - path: invoices
+          name: invoices
+        - path: reports
+          name: reports
+    CreateLibraryFolderRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - place
+      - path
+      properties:
+        place:
+          allOf:
+          - $ref: '#/components/schemas/LibraryPlaceKind'
+          description: Where the folder goes. `person` is always the caller's own files.
+        place_id:
+          type: string
+          description: The space's group ID, when `place` is `group`.
+        path:
+          type: string
+          maxLength: 256
+          description: Folder path, relative and with no leading or trailing slash. Folders
+            above it need no creating of their own.
+      example:
+        place: team
+        path: reports/2026
+    MoveLibraryFolderRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - place
+      - path
+      - new_path
+      properties:
+        place:
+          allOf:
+          - $ref: '#/components/schemas/LibraryPlaceKind'
+          description: Whose folder. `person` is always the caller's own files.
+        place_id:
+          type: string
+          description: The space's group ID, when `place` is `group`.
+        path:
+          type: string
+          maxLength: 256
+          description: The folder to move, as a relative path.
+        new_path:
+          type: string
+          maxLength: 256
+          description: Where it goes. In the same place, change the last segment to rename
+            it, or the part before it to move it under another folder. With `to_place`, it
+            is the folder in the destination that receives the contents; empty puts them at
+            the top of that place.
+        to_place:
+          allOf:
+          - $ref: '#/components/schemas/LibraryPlaceKind'
+          description: Move the folder to another place. Omit to stay in `place`. `person`
+            is always the caller's own files.
+        to_place_id:
+          type: string
+          description: The space's group ID, when `to_place` is `group`.
+        confirm_audience_expansion:
+          type: boolean
+          description: 'Required when a move to another place lets more people see the files:
+            into the company''s files, or into a space with someone who could not see them
+            before.'
+      example:
+        place: team
+        path: reports
+        new_path: archive/reports-2026
+    LibraryFolderChangeResult:
+      type: object
+      additionalProperties: false
+      required:
+      - place
+      - path
+      - file_count
+      properties:
+        place:
+          allOf:
+          - $ref: '#/components/schemas/LibraryPlaceKind'
+          description: The place the folder was in.
+        new_place:
+          allOf:
+          - $ref: '#/components/schemas/LibraryPlaceKind'
+          description: The place the folder moved to. Absent when it stayed in `place`.
+        path:
+          type: string
+          description: The folder's path before the change.
+        new_path:
+          type: string
+          description: The folder's path after a move. Absent for a delete.
+        file_count:
+          type: integer
+          description: Files moved by a move, or moved to the trash by a delete. Files already
+            in the trash are not counted for a delete.
+        dry_run:
+          type: boolean
+          description: True when nothing was changed.
+      example:
+        place: team
+        path: reports
+        new_path: archive/reports-2026
+        file_count: 12
   requestBodies:
     SignedActionInvocationV1:
       required: true

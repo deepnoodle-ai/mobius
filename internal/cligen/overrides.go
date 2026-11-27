@@ -96,16 +96,6 @@ var overrides = map[string]Override{
 	// Multipart upload: the generated client exposes it only in raw-body
 	// form, so `artifacts upload` is hand-written in artifacts.go.
 	"createArtifact": {Skip: true},
-	// Folders are the directory part of an artifact name, so the folder
-	// commands read as their filesystem counterparts. Each is hand-written in
-	// artifact_folders.go for a positional argument the generated body/params
-	// shape cannot express:
-	//   - `artifacts mkdir PATH` instead of `create-folder --path`.
-	//   - `artifacts rmdir ID-OR-PATH`, which resolves a path to a folder ID
-	//     and explains a `folder_not_empty` refusal.
-	"createArtifactFolder": {Skip: true},
-	"deleteArtifactFolder": {Skip: true},
-	"listArtifactFolders":  {Command: "folders"},
 
 	// --- jobs -------------------------------------------------------------
 	// The worker socket is a WebSocket transport endpoint, not a normal JSON
